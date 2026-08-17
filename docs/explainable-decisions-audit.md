@@ -64,6 +64,18 @@ The basis summary describes observable factors and evidence. It must not contain
 
 The hash chain is **tamper-evident**, not tamper-proof. `verify_audit_chain()` detects record mutation or chain discontinuity in the canonical event sequence.
 
+## Identity and implementation provenance
+
+Governance records keep organizational identity separate from implementation provenance:
+
+- `agent_id` is the durable machine identity.
+- `agent_role` and `actor_role` use the canonical stable organizational role name from the Agent Registry.
+- `skill_agent_version` carries the agent or skill implementation version that produced the recommendation/action.
+- `model_provider` and `model_id_version` carry model provenance independently.
+- repository release metadata identifies the deployed control-plane release.
+
+Do not encode software maturity or version labels into `agent_role`, `actor_role`, or the registry `display_name`. An implementation upgrade must remain attributable without making the same organizational role appear to be a different governance actor. A true role-identity change is a governed registry change and should itself generate an auditable change event.
+
 ## Cross-agent policy
 
 `config/governance-policy.v1.json` is applied to every record returned by the runtime Agent Registry. Every registered agent therefore receives:
@@ -132,7 +144,8 @@ Persist concise rationale summaries, evidence references, source provenance, cri
 5. Reconcile sheet rows to the canonical record using `canonical_record_ref` and IDs.
 6. Retain superseded/reversed decisions and historical audit events. Do not silently overwrite governance history.
 7. AgentOps may use decision outcomes and audit events as evidence, but may not change authority through performance scoring.
+8. Preserve stable role identity while recording implementation/model versions in their dedicated provenance fields.
 
 ## Standards alignment
 
-The design follows the project’s explicit accountability, provenance, least-privilege, approval, and audit principles and is informed by NIST AI Risk Management Framework transparency/accountability practices and NIST SP 800-53 Audit and Accountability controls. Repository policy remains authoritative for Mesh decision rights and operating boundaries.
+The design follows the project's explicit accountability, provenance, least-privilege, approval, and audit principles and is informed by NIST AI Risk Management Framework transparency/accountability practices and NIST SP 800-53 Audit and Accountability controls. Repository policy remains authoritative for Mesh decision rights and operating boundaries.

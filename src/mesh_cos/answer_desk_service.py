@@ -61,6 +61,7 @@ class AnswerDeskService:
         established_policy: bool = False,
         reversible: bool = True,
         requires_judgment: bool = False,
+        approval_required: bool = False,
         ceo_authority: bool = False,
     ) -> AnswerDeskResponse:
         result = self.retriever(question)
@@ -68,10 +69,12 @@ class AnswerDeskService:
             response = AnswerDeskResponse("BLOCKED_BY_ACCESS", reason="Requester lacks source permission")
         elif ceo_authority:
             response = AnswerDeskResponse("ESCALATED", owner="cos", reason="CEO authority required")
-        elif result.found and not requires_judgment:
-            response = AnswerDeskResponse("ANSWERED", answer=result.value, source_ref=result.source_ref, owner=result.owner, reason="Authorized evidence")
+        elif approval_required:
+            response = AnswerDeskResponse("APPROVAL_REQUIRED", answer=result.value if result.found else None, source_ref=result.source_ref, owner="cos", reason="Human approval is required before action")
         elif established_policy and reversible and result.found:
             response = AnswerDeskResponse("ANSWERED", answer=result.value, source_ref=result.source_ref, owner=result.owner, reason="Established policy")
+        elif result.found and not requires_judgment:
+            response = AnswerDeskResponse("ANSWERED", answer=result.value, source_ref=result.source_ref, owner=result.owner, reason="Authorized evidence")
         elif result.found and requires_judgment:
             response = AnswerDeskResponse("RECOMMENDATION_PROVIDED", answer=result.value, source_ref=result.source_ref, owner=result.owner, reason="Bounded judgment")
         elif result.owner:

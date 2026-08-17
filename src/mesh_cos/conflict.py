@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .audit import AuditEvent
+from .governance import GovernanceJournal
 from .ledger import TaskLedger
 from .models import new_id, utcnow
 
@@ -34,6 +35,7 @@ def decision_brief(**values) -> dict:
 class ConflictService:
     def __init__(self, ledger: TaskLedger) -> None:
         self.ledger = ledger
+        self.governance = GovernanceJournal(ledger)
 
     def open(
         self,
@@ -88,7 +90,6 @@ class ConflictService:
             "decided_at": None,
             "summary": summary,
         }
-        # Summary is retained as a convenience record but excluded from the contract view.
         self.ledger.save_record("conflict", conflict_id, record)
         self._audit(task_id, "conflict_opened", decision_owner, conflict_id)
         return record
@@ -107,12 +108,16 @@ class ConflictService:
         rationale: str = "CoS arbitration based on authoritative functional evidence",
         authority_level: int = 3,
         approval_reference: str | None = None,
+        human_approver: str | None = None,
+        risk_level: str = "MEDIUM",
     ) -> dict:
         conflict = self.ledger.get_record("conflict", conflict_id)
         if not conflict:
             raise KeyError(conflict_id)
         if owner != conflict.get("decision_owner"):
             raise PermissionError("Only the assigned decision owner may decide the conflict")
+        if authority_level >= 4 and not (approval_reference and human_approver):
+            raise PermissionError("L4/L5 conflict decisions require explicit human approval evidence")
         conflict["status"] = "DECIDED"
         conflict["disposition"] = disposition
         conflict["cos_recommendation"] = conflict.get("cos_recommendation") or disposition
@@ -120,7 +125,7 @@ class ConflictService:
         conflict["decided_at"] = utcnow()
         self.ledger.save_record("conflict", conflict_id, conflict)
         decision_id = new_id("decision")
-        decision = {
+        legacy_decision = {
             "version": "mesh.cos.decision.v1",
             "decision_id": decision_id,
             "task_id": conflict["task_id"],
@@ -134,9 +139,49 @@ class ConflictService:
             "approval_reference": approval_reference,
             "decided_at": utcnow(),
         }
-        self.ledger.save_record("decision", decision_id, decision)
+        self.ledger.save_record("decision", decision_id, legacy_decision)
+        task = self.ledger.get_task(conflict["task_id"])
+        correlation_id = task.correlation_id if task else new_id("corr")
+        option_labels = [label for label, value in (("option_a", conflict.get("option_a")), ("option_b", conflict.get("option_b"))) if value]
+        option_labels.extend(f"other_option_{index + 1}" for index, _ in enumerate(conflict.get("other_options", [])))
+        source_systems = sorted(set(conflict.get("source_authority", {}).values())) or ["TaskLedger"]
+        self.governance.record_decision(
+            decision_id=decision_id,
+            decision_type="CONFLICT_RESOLUTION",
+            decision_title=f"Resolve conflict {conflict_id}",
+            task_id=conflict["task_id"],
+            correlation_id=correlation_id,
+            agent_id=owner,
+            agent_role="Assigned conflict decision owner",
+            decision_owner=owner,
+            authority_level=authority_level,
+            human_approval_required=authority_level >= 4,
+            approval_reference=approval_reference,
+            human_approver=human_approver,
+            decision=disposition,
+            disposition=disposition,
+            decision_basis_summary=rationale,
+            evidence_references=[f"conflict:{conflict_id}"],
+            source_systems=source_systems,
+            alternatives_considered=option_labels,
+            selection_criteria=["authoritative functional evidence", "business consequence", "reversibility"],
+            confidence=conflict.get("confidence", "MEDIUM"),
+            risk_level=risk_level,
+            affected_entities=list(conflict.get("participants", [])),
+            reversibility=conflict.get("reversibility", "REVERSIBLE"),
+            reversal_condition=reversal_condition,
+            policy_rule_ids=["functional-truth-boundary", "mesh-decision-rights"],
+            model_provider=None,
+            model_id_version=None,
+            prompt_template_version=None,
+            skill_agent_version="conflict-service-v1",
+            data_classification="INTERNAL",
+            outcome_validation=reversal_condition,
+            outcome_status="IN_PROGRESS",
+            retention_class="GOVERNANCE_LONG_TERM",
+        )
         self._audit(conflict["task_id"], "conflict_decided", owner, decision_id)
-        return decision
+        return legacy_decision
 
     def _audit(self, task_id: str, event_type: str, actor: str, result: str) -> None:
         task = self.ledger.get_task(task_id)

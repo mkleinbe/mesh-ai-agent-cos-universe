@@ -38,7 +38,24 @@ python -m compileall -q src
 
 ### Contracts
 
-All nine schemas validate positive fixtures and reject malformed required-field fixtures. Final-closure tests additionally validate real runtime `TaskRecord`, `Delegation`, `AgentRecord`, and `AuditEvent` payloads against canonical schemas.
+The original v1 schemas remain backward-compatible. Governance adds `decision.v2` and `agent-event.v2` as closed schemas with positive fixtures. The v2 contracts reject undeclared fields, including attempts to add private chain-of-thought fields to a decision record.
+
+### Governance journal
+
+`tests/integration/test_governance.py` verifies that:
+
+- explainable `decision.v2` records persist canonically,
+- human-approval-required decisions fail closed without approval reference and approver,
+- v2 audit events are idempotent and durable,
+- consecutive audit events form a SHA-256 hash chain,
+- mutation of an audit event causes `verify_audit_chain()` to fail,
+- every registered agent inherits `governance-journal` and the v2 output contracts,
+- Google Sheets mirror configuration contains the expected non-secret Sheet IDs,
+- `TaskLedger` remains canonical and Sheets remain human-readable operational mirrors.
+
+### Backward compatibility
+
+Existing `mesh.cos.agent-event.v1` producers continue to work. A compatibility bridge dual-writes successful legacy audit events into the v2 governance stream. Existing v1 decision records remain available while material conflict decisions additionally produce `decision.v2` records.
 
 ### State and authority
 
@@ -50,18 +67,11 @@ Stateful tests exercise CoS intake, work decomposition, dependencies, reassignme
 
 ### Source-derived final closure
 
-The final TDD loop added tests for:
+The final Phase 1 TDD loop added tests for AgentRecord timestamps and runtime contract parity, full material-conflict/source-authority records, Slack freshness/replay rejection, AgentOps defect signals, partial-failure replay and human override, exact Phase 1 instrumentation, persistent delegated work, and governed existing-skill binding.
 
-- AgentRecord timestamps and runtime contract parity,
-- `event_version` in the canonical audit envelope,
-- full material-conflict/source-authority records,
-- Answer Desk routing, approval, and correction tracking,
-- Slack freshness/replay rejection and separate Answer Desk Slack interface,
-- AgentOps deadline/rework/error/tool/evidence signals and complete recommendations,
-- partial-failure replay and explicit human override,
-- the exact original Phase 1 instrumentation set,
-- persistent delegated work and bounded portfolio recommendations,
-- binding existing Mesh skills without reimplementation.
+### Governance TDD loop
+
+The explainability/audit increment began with failing acceptance tests before implementation. The first implementation CI loop exposed an over-broad test that incorrectly rejected the policy words `credentials` and `tokens` in the non-secret configuration. The test was corrected to detect actual secret-value keys rather than legitimate prohibition vocabulary, then the implementation loop continued. This preserves the distinction between a real security failure and a false-positive test condition.
 
 ### Original 13 evaluation scenarios
 
@@ -69,8 +79,8 @@ The original scenarios remain in the suite: routine team question, pricing escal
 
 ## Drift gate
 
-`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, all runtime AgentRecords, representative Task/Delegation/AuditEvent payloads, `#mesh-agent-ops` configuration, and key documentation tokens. This prevents documentation from claiming a runtime state the code no longer supports.
+`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, runtime AgentRecords, representative runtime contract payloads, governance-policy injection, v2 decision/audit behavior, configured governance Sheet IDs, Slack configuration, and key documentation tokens. This prevents documentation or human-readable mirrors from becoming a silent competing contract.
 
 ## Test integrity
 
-Tests must not fabricate production credentials, weaken authority or approval policy, turn Slack into canonical state, or claim an external integration is live when an injected adapter/stub is used.
+Tests must not fabricate production credentials, weaken authority or approval policy, turn Slack or Google Sheets into canonical state, persist private reasoning traces, or claim an external integration is live when an injected adapter/stub is used.

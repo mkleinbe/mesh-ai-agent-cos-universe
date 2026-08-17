@@ -23,9 +23,35 @@ def _authority_level(value: Any) -> int:
     raise ValueError(f"Invalid decision authority: {value!r}")
 
 
+def _load_governance_policy(registry_path: Path) -> dict[str, Any]:
+    root = registry_path.parent.parent
+    policy_path = root / "config" / "governance-policy.v1.json"
+    if not policy_path.exists():
+        return {}
+    policy = json.loads(policy_path.read_text())
+    if policy.get("applies_to") != "ALL_REGISTERED_AGENTS":
+        raise ValueError("Governance policy must explicitly target all registered agents")
+    return policy
+
+
+def _apply_governance_policy(record: dict[str, Any], policy: dict[str, Any]) -> None:
+    if not policy:
+        return
+    governance_tool = policy["governance_tool"]
+    tools = record.setdefault("tools", [])
+    if governance_tool not in tools:
+        tools.append(governance_tool)
+    outputs = record.setdefault("output_contracts", [])
+    for contract in policy.get("output_contracts", []):
+        if contract not in outputs:
+            outputs.append(contract)
+    record["governance_policy"] = deepcopy(policy["governance_policy"])
+
+
 def load_registry(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
     path = Path(path) if path else Path(__file__).resolve().parents[2] / "agents" / "registry.json"
     raw = json.loads(path.read_text())
+    policy = _load_governance_policy(path)
     agents = raw.get("agents", [])
     if not isinstance(agents, list):
         raise ValueError("Registry agents must be a list")
@@ -43,6 +69,7 @@ def load_registry(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
         record.setdefault("runtime_health", record["status"])
         record.setdefault("created_at", REGISTRY_MIGRATION_TIMESTAMP)
         record.setdefault("updated_at", REGISTRY_MIGRATION_TIMESTAMP)
+        _apply_governance_policy(record, policy)
         result[agent_id] = record
     for agent_id, record in result.items():
         parent = record.get("parent_agent_id")

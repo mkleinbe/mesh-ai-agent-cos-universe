@@ -103,9 +103,52 @@ class TaskLedger:
                     "INSERT INTO events(event_id,task_id,payload) VALUES(?,?,?)",
                     (event["event_id"], event["task_id"], json.dumps(event, sort_keys=True)),
                 )
-            return True
         except sqlite3.IntegrityError:
             return False
+        if event.get("version") == "mesh.cos.agent-event.v1":
+            self._bridge_legacy_event(event)
+        return True
+
+    def _bridge_legacy_event(self, event: dict) -> None:
+        """Dual-write legacy audit envelopes into the richer v2 canonical governance stream."""
+        from .governance import GovernanceJournal
+
+        actor = str(event.get("actor_agent", "unknown"))
+        actor_type = "SERVICE" if actor.endswith("-service") else "AGENT"
+        evidence = event.get("evidence_references") or []
+        error = event.get("error")
+        GovernanceJournal(self).record_event(
+            event_type=str(event.get("event_type", "legacy.event")),
+            event_category="GOVERNANCE",
+            action=str(event.get("event_type", "legacy.event")).upper(),
+            actor_type=actor_type,
+            actor_id=actor,
+            actor_role=actor,
+            task_id=event.get("task_id"),
+            correlation_id=str(event.get("correlation_id") or f"legacy:{event['event_id']}"),
+            authority_level=int(event.get("authority_level", 0)),
+            policy_rule_ids=["governance-policy-v1", "legacy-agent-event-v1-bridge"],
+            capability_tool=str(event.get("source", "mesh-cos")),
+            target_resource=str(event.get("task_id") or "control-plane"),
+            source_system=str(event.get("source", "mesh-cos")),
+            input_summary="Legacy agent-event v1 envelope bridged to the v2 auditable governance stream.",
+            result_status="FAILURE" if error else "SUCCESS",
+            output_summary=str(event.get("result", "recorded")),
+            before_state_ref="legacy-v1-before-state" if event.get("before_state") is not None else None,
+            after_state_ref="legacy-v1-after-state" if event.get("after_state") is not None else None,
+            evidence_references=list(evidence),
+            approval_reference=event.get("approval_reference"),
+            risk_severity="MEDIUM" if error else "LOW",
+            data_classification="INTERNAL",
+            error_code="LEGACY_EVENT_ERROR" if error else None,
+            error_summary=str(error) if error else None,
+            model_provider=None,
+            model_id_version=None,
+            skill_agent_version="legacy-agent-event-v1",
+            environment="RUNTIME",
+            retention_class="GOVERNANCE_LONG_TERM",
+            idempotency_key=f"bridge:{event['event_id']}",
+        )
 
     def list_events(self) -> list[dict]:
         rows = self.conn.execute("SELECT payload FROM events ORDER BY rowid").fetchall()

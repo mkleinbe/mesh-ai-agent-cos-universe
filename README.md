@@ -8,11 +8,11 @@ Phase 1 operating core for Mesh Digital LLC's AI Chief of Staff. The repository 
 
 ## Phase 1 status
 
-Version `0.1.2` closes the remaining code-level requirement gaps identified by the post-remediation audit. `ChiefOfStaffService` and `ChiefOfStaffWorkforceManager` now manage the durable work graph from intake through decomposition, delegation, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, acceptance verification, closure, and supersession.
+Version `0.1.3` preserves the completed Phase 1 operating core and adds explainable `decision.v2` records and fully auditable `agent-event.v2` records across the registered workforce and governed skill/tool boundary.
 
-AgentOps now supports durable rolling performance evidence, workload and SLA signals, the complete Phase 1 recommendation vocabulary, and governed health-state changes. Slack includes inbound request verification and freshness controls, structured parsing, durable deduplication, one-task/one-thread mapping, and approval notifications. Answer Desk has a separate configurable team-facing interface and complete Phase 1 dispositions.
+`ChiefOfStaffService` and `ChiefOfStaffWorkforceManager` manage the durable work graph from intake through decomposition, delegation, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, acceptance verification, closure, and supersession. AgentOps supports durable rolling performance evidence, workload and SLA signals, complete Phase 1 recommendation vocabulary, and governed health-state changes.
 
-Production activation still requires environment-specific configuration that must not be committed: Slack credentials, the separate Answer Desk channel ID, authoritative source and skill credentials/permissions, production approval owners, and deployment infrastructure.
+Production activation still requires environment-specific configuration that must not be committed: Slack credentials, the separate Answer Desk channel ID, authoritative source and skill credentials/permissions, production approval owners, deployment infrastructure, and authenticated Google Sheets write capability if automatic governance mirroring is enabled.
 
 ## System architecture
 
@@ -30,18 +30,21 @@ flowchart TB
     COO --> CNS[Consultant Network Steward]
     CMO --> VPC[VP Content]
 
-    COS --> LEDGER[(TaskLedger / Canonical SQLite State)]
-    AO --> LEDGER
-    AD --> LEDGER
-    CRO --> LEDGER
-    CFO --> LEDGER
-    COO --> LEDGER
-    CMO --> LEDGER
+    COS --> GOV[GovernanceJournal]
+    AO --> GOV
+    AD --> GOV
+    CRO --> GOV
+    CFO --> GOV
+    COO --> GOV
+    CMO --> GOV
+    GOV --> LEDGER[(TaskLedger / Canonical SQLite State)]
+
+    LEDGER --> DLOG[CoS Decision Log mirror]
+    LEDGER --> ALOG[CoS Audit Log mirror]
 
     SLACK[#mesh-agent-ops\nC0BRL4GCL3A] <--> SC[Slack Coordination Boundary]
     SC <--> COS
     SC --> LEDGER
-
     ADS[Separate Answer Desk Slack] <--> AD
 
     SRC[Approved Mesh sources and existing skills] --> AUTH[Invocation authorization]
@@ -54,11 +57,28 @@ flowchart TB
 
 ### Canonical boundaries
 
-- `agents/registry.json`, normalized by the runtime registry, is authoritative for agent identity, authority, source/tool policy, delegation permissions, health, and prohibited actions.
-- `TaskLedger` is canonical for task state and consequential operating records.
-- Nine versioned JSON schemas define machine-readable contracts and are validated against runtime shapes.
-- Slack is an observable collaboration layer. Task/thread mappings and event idempotency are persisted outside Slack.
+- `agents/registry.json`, normalized by the runtime registry and shared governance policy, is authoritative for agent identity, authority, source/tool policy, delegation permissions, health, and prohibited actions.
+- `TaskLedger` is canonical for task state, explainable decisions, audit events, and consequential operating records.
+- Versioned JSON schemas define machine-readable contracts, including backward-compatible v1 contracts plus `decision.v2` and `agent-event.v2`.
+- Slack and Google Sheets are observable/human-readable surfaces, not canonical state.
 - Functional adapters compose approved Mesh capabilities without duplicating skill logic.
+
+## Explainable AI governance
+
+Every registered agent inherits `config/governance-policy.v1.json` at runtime. This adds the shared `governance-journal` tool and the v2 governance output contracts without expanding any agent's functional authority.
+
+**Explainable decisions.** Any material decision or recommendation is recorded through `mesh.cos.decision.v2`. The record captures the decision owner, authority level, approval evidence where applicable, concise basis, authoritative evidence/source references, alternatives, selection criteria, confidence, risk, affected entities, reversibility/reversal conditions, model/skill provenance, outcome validation, lineage, and integrity hash.
+
+**Fully auditable actions.** Consequential agent, service, and governed skill/tool activity is recorded through `mesh.cos.agent-event.v2`. The event includes actor/action/result provenance, task/correlation/decision links, authority/policy, source/tool/target, concise input/output summaries, evidence/approval, error metadata, model/skill provenance, risk/classification, retention, and a tamper-evident SHA-256 hash chain.
+
+**Privacy boundary.** Explainability does not mean exposing hidden reasoning. Private chain-of-thought, hidden reasoning traces, secrets, credentials, tokens, raw sensitive prompts, and unnecessary personal data are prohibited from governance records.
+
+**Canonical-first mirroring.** `TaskLedger` is written first. The human-readable registers are operational mirrors:
+
+- CoS Decision Log, spreadsheet ID `1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw`
+- CoS Audit Log, spreadsheet ID `1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0`
+
+A mirror failure cannot erase canonical state and is itself recorded for remediation. See [`docs/explainable-decisions-audit.md`](docs/explainable-decisions-audit.md).
 
 ## Agent hierarchy
 
@@ -127,7 +147,7 @@ The team-facing Answer Desk uses a separate configurable Slack channel via `MESH
 
 ## Reliability and auditability
 
-Phase 1 includes idempotent intake, bounded retries, timeout handling, execution leases, failure records, explicit replay, human override, task supersession, stalled-work remediation, durable audit events, and `MESH_COS_KILL_SWITCH` enforcement for automated actions.
+Phase 1 includes idempotent intake, bounded retries, timeout handling, execution leases, failure records, explicit replay, human override, task supersession, stalled-work remediation, decision lineage, durable audit events, mirror-failure records, and `MESH_COS_KILL_SWITCH` enforcement for automated actions.
 
 ## Metrics
 
@@ -148,11 +168,11 @@ bandit -q -r src -lll
 python -m compileall -q src
 ```
 
-GitHub Actions executes the same release gates on pull requests and `main`. Development uses explicit red-green-refactor loops, with source-derived acceptance tests committed before the implementation that satisfies them.
+GitHub Actions executes the same release gates on pull requests and `main`. Development uses explicit red-green-refactor loops, with acceptance tests committed before the implementation that satisfies them.
 
 ## Documentation
 
-Start at [`docs/README.md`](docs/README.md). The final closure record is [`docs/phase-1-final-closure-2026-08-17.md`](docs/phase-1-final-closure-2026-08-17.md). The canonical human-readable operating specification remains [`docs/phase-1-operating-contract.md`](docs/phase-1-operating-contract.md).
+Start at [`docs/README.md`](docs/README.md). The governance standard is [`docs/explainable-decisions-audit.md`](docs/explainable-decisions-audit.md). The canonical human-readable operating specification remains [`docs/phase-1-operating-contract.md`](docs/phase-1-operating-contract.md).
 
 ## Production dependencies
 
@@ -163,6 +183,7 @@ The remaining dependencies are configuration and external connectivity, not fabr
 - approved Mesh source and skill credentials/permissions
 - production approval owners
 - deployment/runtime infrastructure for the chosen production environment
+- authenticated runtime permission to write the two governance Google Sheets if automatic mirroring is enabled
 - explicitly approved future monetary thresholds, if any
 
 SQLite remains the Phase 1 persistence choice. Revisit persistence before multi-instance or high-availability deployment.

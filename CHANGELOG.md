@@ -2,6 +2,51 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 0.2.0 - 2026-08-17 - Phase 1 gap closure
+
+### Remediated
+- Completed the nine Phase 1 JSON contracts and aligned runtime models with contract validation before canonical persistence.
+- Replaced the duplicate hardcoded runtime agent definition with the canonical JSON Agent Registry, including contract validation and durable audited health overrides.
+- Expanded the SQLite control plane to first-class durable records for tasks, events, delegations, approvals, decisions, conflicts, performance events, scorecards, registry changes, acceptance verifications, Slack task/thread mappings, metrics, intake idempotency, and work leases.
+- Added a durable CoS application service for intake, triage, planning, assignment, delegation, progress states, human approvals, remediation, reassignment, outcome verification, and closure.
+- Added executed acceptance-test results so `VERIFIED` requires a persisted pass/fail evaluation rather than the mere presence of evidence.
+- Completed delegation controls for parent-objective integrity, outcome integrity, approval inheritance, authority narrowing, circular prevention, active ownership, measurable acceptance, delegation depth, and CoS-controlled cross-functional routing.
+- Added governed executable functional-agent adapters with invocation-time tool/source authorization and an explicit Message Operations approval gate for consequential external sends.
+- Added a live-capable Slack Web API transport, signed inbound event receiver, durable event dedupe, one-task/one-thread mapping, approval notification, and Answer Desk channel boundary around `#mesh-agent-ops` (`C0BRL4GCL3A`).
+- Added durable conflict/decision governance and a source-aware Answer Desk with all required dispositions and metric events.
+- Added versioned AgentOps policy configuration, durable performance events/scorecards, workload and stalled-work signals, defect taxonomy, and the full portfolio recommendation set.
+- Added bounded retries/timeouts, work leases/check-ins, duplicate-intake prevention, kill-switch enforcement, and audited execution failures.
+- Added deterministic Phase 1 metric aggregation for CEO leverage, first-pass quality, rework, escalation quality, cycle/stalled work, outcomes, failure, approval cycle, conflict, conversation loops, contributors, and cost where telemetry exists.
+- Added stateful end-to-end evaluation coverage for pursuit/proposal, engagement economics, staffing, marketing publication, Answer Desk, AgentOps failure, Slack security, authorization, approval, verification, and recovery paths.
+
+### Engineering quality
+- Added runtime `jsonschema` dependency because contract enforcement is now production behavior.
+- Added Ruff, mypy, pytest coverage, pip-audit, and compileall CI quality gates.
+- Set a 65% minimum coverage gate; the final remediation verification reached 82.67% coverage.
+
+### Verified
+- 9 contract schemas and fixtures validated successfully.
+- 44 tests passed in the final remediation verification run.
+- Ruff passed.
+- mypy passed across the source package.
+- pip-audit reported no known dependency vulnerabilities.
+- Python compileall passed.
+
+### Deployment configuration still required
+These are external environment dependencies rather than unresolved engineering gaps:
+- Slack bot token and signing secret.
+- Team-facing Answer Desk Slack channel ID once selected.
+- Approved real invokers/credentials for Mesh Revenue Intelligence, Engagement P&L, consultant tracking, AuthoredUp, LinkedIn, and existing Mesh skills.
+- Production approval-owner configuration.
+
+### Authority unchanged
+- No autonomous pricing or discounts.
+- No autonomous consequential external sends or public publishing.
+- No enterprise-accounting CFO authority beyond Engagement Finance / FP&A scope.
+- No autonomous legal, regulatory, security, privacy, personnel, or irreversible decision authority.
+- No autonomous agent creation or material authority expansion.
+- L5 remains Michael-exclusive unless explicitly changed later.
+
 ## 0.1.0 - 2026-08-17 - Phase 1 operating core
 
 ### Added
@@ -34,7 +79,7 @@ All notable changes to the Mesh AI Chief of Staff Agent Universe are documented 
 - GitHub Actions pre-merge CI for the Phase 1 implementation completed successfully, including dependency installation, contract validation, pytest, and compileall.
 
 ### Integration boundaries
-The following are deliberately represented as governed adapters or authoritative-source boundaries rather than fabricated live integrations:
+The following were deliberately represented as governed adapters or authoritative-source boundaries rather than fabricated live integrations:
 - Slack network calls
 - Mesh Revenue Intelligence
 - Mesh Proposals - Engagement P&L Tracker

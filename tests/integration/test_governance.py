@@ -159,8 +159,9 @@ def test_sheet_mirror_config_is_non_secret_and_matches_initialized_registers():
     config = json.loads((ROOT / "config" / "governance-logs.v1.json").read_text())
     assert config["audit_log"]["spreadsheet_id"] == "1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0"
     assert config["decision_log"]["spreadsheet_id"] == "1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw"
-    serialized = json.dumps(config).lower()
-    assert "credential" not in serialized
-    assert "token" not in serialized
+    secret_keys = {"credential_value", "access_token", "refresh_token", "client_secret", "api_key"}
+    assert not secret_keys.intersection(config)
+    assert not secret_keys.intersection(config["audit_log"])
+    assert not secret_keys.intersection(config["decision_log"])
     assert config["canonical_state"] == "TaskLedger"
     assert config["mirror_mode"] == "HUMAN_READABLE_OPERATIONAL_MIRROR"

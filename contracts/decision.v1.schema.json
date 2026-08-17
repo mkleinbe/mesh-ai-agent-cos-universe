@@ -1,1 +1,20 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"properties":{"version":{"const":"mesh.cos.decision.v1"},"decision_id":{"type":"string"},"task_id":{"type":"string"},"decision_owner":{"type":"string"},"authority_level":{"type":"integer","minimum":0,"maximum":5},"decision":{"type":"string"},"rationale":{"type":"string"}},"required":["version","decision_id","task_id","decision_owner","authority_level","decision","rationale"]}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": "mesh.cos.decision.v1"},
+    "decision_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "decision_owner": {"type": "string", "minLength": 1},
+    "authority_level": {"type": "integer", "minimum": 0, "maximum": 5},
+    "decision": {"type": "string", "minLength": 1},
+    "rationale": {"type": "string", "minLength": 1},
+    "approval_reference": {"type": ["string", "null"]},
+    "options_considered": {"type": "array", "items": {"type": "string"}},
+    "source_references": {"type": "array", "items": {"type": "string"}},
+    "reversal_condition": {"type": ["string", "null"]},
+    "decided_at": {"type": "string", "minLength": 1}
+  },
+  "required": ["version", "decision_id", "task_id", "decision_owner", "authority_level", "decision", "rationale", "approval_reference", "options_considered", "source_references", "reversal_condition", "decided_at"]
+}

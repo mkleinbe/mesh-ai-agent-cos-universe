@@ -1,0 +1,28 @@
+{
+  "version": "mesh.cos.governance-logs.v1",
+  "canonical_state": "TaskLedger",
+  "mirror_mode": "HUMAN_READABLE_OPERATIONAL_MIRROR",
+  "write_order": "CANONICAL_FIRST",
+  "mirror_failure_policy": "PRESERVE_CANONICAL_AND_RECORD_FAILURE",
+  "decision_log": {
+    "spreadsheet_id": "1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw",
+    "sheet_name": "Decision Log",
+    "schema_sheet_name": "Schema",
+    "reference_sheet_name": "Reference",
+    "contract": "decision.v2",
+    "schema_version": "mesh.cos.decision.v2"
+  },
+  "audit_log": {
+    "spreadsheet_id": "1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0",
+    "sheet_name": "Audit Log",
+    "schema_sheet_name": "Schema",
+    "reference_sheet_name": "Reference",
+    "contract": "agent-event.v2",
+    "schema_version": "mesh.cos.agent-event.v2",
+    "integrity": "SHA256_HASH_CHAIN"
+  },
+  "privacy": {
+    "forbidden_payloads": ["chain_of_thought", "reasoning_trace", "raw_prompt", "credentials", "tokens", "unnecessary_personal_data"],
+    "explainability_rule": "Persist concise decision basis, criteria, evidence, authority, alternatives, confidence, risk, reversibility and outcomes, never private chain-of-thought."
+  }
+}

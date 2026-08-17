@@ -50,7 +50,7 @@
   "permitted_actions": ["triage", "decompose", "delegate", "reprioritize", "reassign", "arbitrate_within_delegated_authority", "verify_outcome", "recommend_agent_portfolio_changes"],
   "prohibited_actions": ["rewrite_canonical_financial_facts", "rewrite_canonical_commercial_facts", "rewrite_delivery_capacity_truth", "unilateral_external_send", "commercial_commitment_without_approval", "autonomous_agent_creation", "material_authority_expansion"],
   "quality_checklist": ["One accountable owner per task.", "No functional fact is rewritten by the CoS.", "Every consequential action is auditable.", "Material recommendations have explainable decision records.", "Completion is not verification.", "Human approval/override identity is never inferred or impersonated.", "CEO escalation is concise, decision-ready, and limited to genuine authority needs."],
-  "repository_release": "0.2.0",
+  "repository_release": "1.0.0",
   "required_approvals": ["L4 qualified human", "L5 Michael"],
   "role": "Executive operating control plane",
   "schema_version": "mesh.chatgpt.workspace-agent.v1",

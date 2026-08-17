@@ -50,6 +50,12 @@ class ChiefOfStaffService:
         return task
 
     def decompose(self, parent_task_id: str, work_packages: list[dict]) -> list[TaskRecord]:
+        """Validate the complete decomposition before writing any child task.
+
+        A malformed later work package must not leave earlier children persisted. This
+        preserves canonical work-graph atomicity for deterministic validation errors.
+        """
+
         assert_runtime_enabled()
         parent = self._require(parent_task_id)
         children: list[TaskRecord] = []
@@ -76,9 +82,11 @@ class ChiefOfStaffService:
             )
             if int(child.authority_level) > int(parent.authority_level):
                 raise PermissionError("Child work package cannot widen parent authority")
+            children.append(child)
+
+        for child in children:
             self.ledger.save_task(child)
             self._audit(child, "task_decomposed", f"parent={parent.task_id}")
-            children.append(child)
         self.ledger.save_record(
             "work_graph",
             parent.task_id,
@@ -213,12 +221,26 @@ class ChiefOfStaffService:
         self.ledger.save_record(
             "reassignment",
             record_id,
-            {"record_id": record_id, "task_id": task_id, "from_agent": before, "to_agent": new_owner, "reason": reason, "timestamp": utcnow()},
+            {
+                "record_id": record_id,
+                "task_id": task_id,
+                "from_agent": before,
+                "to_agent": new_owner,
+                "reason": reason,
+                "timestamp": utcnow(),
+            },
         )
         self._audit(task, "task_reassigned", f"{before}->{new_owner}: {reason}")
         return task
 
-    def record_checkin(self, task_id: str, *, agent_id: str, note: str, evidence: list[str] | None = None) -> dict:
+    def record_checkin(
+        self,
+        task_id: str,
+        *,
+        agent_id: str,
+        note: str,
+        evidence: list[str] | None = None,
+    ) -> dict:
         assert_runtime_enabled()
         task = self._require(task_id)
         record_id = new_id("checkin")
@@ -234,7 +256,13 @@ class ChiefOfStaffService:
         self._audit(task, "task_checkin", note)
         return record
 
-    def remediate_stalled(self, task_id: str, *, new_owner: str | None = None, reason: str = "stalled") -> TaskRecord:
+    def remediate_stalled(
+        self,
+        task_id: str,
+        *,
+        new_owner: str | None = None,
+        reason: str = "stalled",
+    ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         if not stalled(task):
@@ -248,7 +276,13 @@ class ChiefOfStaffService:
             self._audit(task, "task_stalled", reason)
         return task
 
-    def escalate(self, task_id: str, *, reason: str, approval_owner: str | None = None) -> TaskRecord:
+    def escalate(
+        self,
+        task_id: str,
+        *,
+        reason: str,
+        approval_owner: str | None = None,
+    ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         task.escalation_count += 1
@@ -260,7 +294,14 @@ class ChiefOfStaffService:
         self.ledger.save_record(
             "escalation",
             record_id,
-            {"record_id": record_id, "task_id": task_id, "reason": reason, "approval_owner": task.approval_owner, "classification": "correct", "timestamp": utcnow()},
+            {
+                "record_id": record_id,
+                "task_id": task_id,
+                "reason": reason,
+                "approval_owner": task.approval_owner,
+                "classification": "correct",
+                "timestamp": utcnow(),
+            },
         )
         self._audit(task, "task_escalated", reason)
         return task
@@ -299,5 +340,12 @@ class ChiefOfStaffService:
         return task
 
     def _audit(self, task: TaskRecord, event_type: str, result: str) -> None:
-        event = AuditEvent(event_type, "cos", task.task_id, task.correlation_id, int(task.authority_level), result)
+        event = AuditEvent(
+            event_type,
+            "cos",
+            task.task_id,
+            task.correlation_id,
+            int(task.authority_level),
+            result,
+        )
         self.ledger.record_event(event.to_dict())

@@ -9,7 +9,7 @@ Before enabling production routing:
 1. Copy `.env.example` to `.env` and populate only approved runtime configuration.
 2. Confirm no credentials, tokens, personal Slack IDs, or protected source exports are committed to the repository.
 3. Keep the automation kill switch in its safe state until integration credentials, source permissions, Slack channels, and approval owners are validated.
-4. Configure the private agent-operations Slack channel ID and separate team-facing Answer Desk channel ID.
+4. Confirm the private agent-operations Slack channel is `#mesh-agent-ops` with Channel ID `C0BRL4GCL3A`, supplied through `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`. Configure the separate team-facing Answer Desk channel ID when available.
 5. Configure the Slack bot token and signing secret using the approved secret-management mechanism.
 6. Configure authoritative source connectors and requester/source permissions.
 7. Confirm approval owners for L4 actions and confirm that L5 remains Michael-exclusive unless explicitly changed.

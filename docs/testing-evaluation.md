@@ -1,23 +1,25 @@
 # Testing and Evaluation
 
-Phase 1 development uses explicit red-green-refactor loops. Behavioral changes begin with an executable expectation, then the minimum implementation, then refactoring while preserving contracts, governance, security, and documentation alignment.
+Release `v1.0.0` uses explicit red-green-refactor loops and a fail-closed release pipeline. Behavioral changes begin with an executable expectation, then the minimum implementation, then refactoring while preserving contracts, governance, security, Workspace Agent packaging, and documentation alignment.
 
 ## Verification pipeline
 
 ```mermaid
 flowchart LR
-    R[RED: source-derived acceptance test] --> G[GREEN: minimum implementation]
-    G --> SC[Schema + runtime drift]
-    SC --> WP[Workspace Agent package drift]
-    WP --> L[Critical lint]
-    L --> P[Pytest + coverage]
-    P --> S[High-severity security scan]
-    S --> C[Compileall]
-    C --> CI[GitHub Actions]
-    CI -->|failure| FIX[Classify product defect vs test defect]
-    FIX --> R
-    CI -->|success| PRESS[Pressure test]
-    PRESS --> M[Merge]
+    R[RED: Source-Derived Test] --> G[GREEN: Minimum Fix]
+    G --> C[Contracts]
+    C --> D[Runtime + Documentation Drift]
+    D --> W[Workspace Agent Package Drift]
+    W --> L[Strict Source Ruff]
+    L --> T[mypy]
+    T --> P[Pytest + 100% Branch Coverage]
+    P --> S[Bandit High-Severity Scan]
+    S --> X[Compileall]
+    X --> CI[GitHub Actions]
+    CI -->|Failure| F[Classify Product vs Test Defect]
+    F --> R
+    CI -->|Success| PF[Production Preflight]
+    PF --> M[Merge / Release Candidate]
 ```
 
 ## Release commands
@@ -30,73 +32,83 @@ python -m pip check
 python scripts/validate-contracts.py
 python scripts/check-runtime-doc-drift.py
 python scripts/check-chatgpt-packages.py
-ruff check src tests scripts --select E9,F63,F7,F82
-pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=55
+ruff check src
+ruff check tests scripts --select E9,F63,F7,F82
+mypy src --check-untyped-defs
+pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
 python -m compileall -q src
 ```
+
+## v1.0.0 release acceptance
+
+The `mesh_cos` package must remain at 100% branch-aware coverage. The purpose is not cosmetic coverage inflation. The loop removes dead/unreachable code when appropriate and adds behavior-oriented tests for reachable production paths.
+
+The production-hardening loop added or strengthened tests for:
+
+- serialized MCP runtime composition and exact contract/handler parity;
+- deny-by-default agent and human principal authorization;
+- L4 approval evidence and Michael-exclusive L5 authority;
+- human actor spoofing prevention;
+- server-derived agent identity and provenance;
+- server-owned replay executors and rejection of client-supplied executable replay mechanisms;
+- accountable-owner `task.complete` and independent `task.verify` separation;
+- atomic Slack and governance-event idempotency;
+- kill-switch enforcement;
+- retry, timeout, replay, override, and durable failure paths;
+- naive/aware timestamp compatibility;
+- fail-closed empty source allowlists;
+- decomposition atomicity;
+- audit-chain ordering and integrity;
+- registry, Skill, Workspace Agent manifest, MCP allowlist, and release-version consistency;
+- production-preflight success and failure paths.
 
 ## Test layers
 
 ### Contracts and governance
 
-The original v1 schemas remain backward-compatible. Governance adds `decision.v2` and `agent-event.v2` as closed schemas. `tests/integration/test_governance.py` verifies canonical decision persistence, L4/L5 fail-closed behavior, idempotent audit events, SHA-256 hash-chain integrity, shared governance policy injection, Sheet mirror configuration, and the rule that `TaskLedger` remains canonical.
+Versioned schemas preserve backward compatibility. `decision.v2` and `agent-event.v2` remain closed governance contracts. Tests verify canonical decision persistence, L4/L5 fail-closed behavior, idempotent audit events, SHA-256 hash-chain integrity, shared governance policy injection, mirror configuration, and the rule that `TaskLedger` remains canonical.
 
 ### Canonical role-model integrity
 
-`tests/evaluations/test_phase1_role_model_consistency.py` verifies stable organizational display names, independent `MAJOR.MINOR.PATCH` implementation metadata, complete Phase 1 capability surfaces, package/runtime release alignment, and the authority boundaries for CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content.
+Role-model tests verify stable organizational display names, independent `MAJOR.MINOR.PATCH` implementation metadata, complete Phase 1 capability surfaces, repository/runtime release alignment, and authority boundaries for CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, Devil's Advocate, AgentOps, Answer Desk, Message Operations, and Chief of Staff.
 
 ### Workspace Agent package acceptance
 
-`tests/evaluations/test_chatgpt_workspace_agent_packages.py` starts from the canonical registry and verifies:
-
-- all 11 Phase 1 roles have one OpenAI Skill and one Workspace Agent manifest,
-- Skill frontmatter and `agents/openai.yaml` follow the OpenAI Skill layout,
-- display name, parent, implementation version, domain, decision authority, approvals, prohibited actions, and delegation depth match the raw canonical registry,
-- every manifest retains mandatory governance and Workspace write actions default to `ALWAYS_ASK`,
-- per-agent MCP allowlists are least-privilege,
-- only CoS receives task reassignment authority,
-- Message Operations can read approval state but cannot decide approvals,
-- risky app surfaces remain fail-closed,
-- Answer Desk Slack remains disabled until a dedicated channel ID exists,
-- exact Agent Builder configuration is present rather than relying on prompt-only personas,
-- the final Workspace Agent builder handoff prompt contains the required controls and negative tests.
+`tests/evaluations/test_chatgpt_workspace_agent_packages.py` and `scripts/check-chatgpt-packages.py` verify all 11 role Skills/manifests, exact registry authority, release `1.0.0`, production-readiness references, Builder configuration, MCP allowlists, human-only tool separation, connector constraints, Answer Desk Slack gating, and stable role naming.
 
 ### MCP runtime safety
 
-`tests/evaluations/test_workspace_agent_mcp_runtime.py` covers the remote-safe task verification path. A Workspace Agent cannot pass the in-process Python acceptance callback used by the local runtime. `ChiefOfStaffService.record_verification_result()` therefore requires an explicit verifier identity and evidence references. A passing verification with no evidence raises and leaves the task `COMPLETED`; a valid result persists the verifier/source/evidence and transitions to `VERIFIED`.
+`MCPRuntime` is tested as the serialized remote composition boundary. Unknown principals, unknown tools, non-allowlisted tools, quarantined/retired agents, authority claims above the role ceiling, missing L4 approval evidence, non-Michael L5 claims, and agent attempts to call human-only operations fail closed.
 
-`WorkspaceAgentMCPPolicy` is also tested for deny-by-default behavior. Unknown agents, unknown tools, and unlisted tools fail. Declared runtime bindings must resolve before the MCP contract can pass CI.
+Replay tests verify that remote callers cannot inject a Python callable, import path, shell command, or source-text execution mechanism. Only a server-registered executor referenced by canonical failure state can run.
+
+### Completion versus verification
+
+Accountable owners may use `task.complete` to persist outcome/evidence and reach `COMPLETED`. Verification is separate. Passing verification without evidence fails closed. Failed acceptance routes to `REWORK`. An agent cannot self-certify missing evidence into `VERIFIED`.
 
 ### Runtime/documentation drift
 
-`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, runtime AgentRecords, canonical role identities, required role capabilities, release alignment, representative runtime contract payloads, governance-policy injection, v2 decision/audit behavior, configured governance Sheet IDs, Slack/MCP configuration, and required documentation tokens.
+`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, runtime AgentRecords, role identities/capabilities, representative contract payloads, governance-policy injection, decision/audit behavior, Slack/MCP configuration, and required documentation invariants.
 
-### Workspace Agent package drift
+### Production preflight
 
-`scripts/check-chatgpt-packages.py` independently verifies the deployment projection. It compares all 11 Workspace Agent manifests to raw registry authority, checks Skill structure, release version `0.2.0`, `mesh-cos-mcp` runtime bindings and per-agent allowlists, builder-field consistency, Answer Desk Slack gating, risky connector constraints, and the builder handoff prompt. CI fails if Builder configuration becomes broader than the canonical contract.
+`ProductionPreflight` tests kill-switch state, HTTPS MCP URL validation, canonical 11-agent registry/health, MCP contract/runtime binding resolution, serialized runtime composition, optional Slack requirements, optional Answer Desk channel, and optional audit-chain integrity. Failed preflight blocks activation.
 
-## TDD / loop-engineering record for release 0.2.0
+## TDD / loop-engineering record
 
-The Workspace Agent increment began with an acceptance-test-only commit. The first CI run was intentionally RED because none of the 11 Skills, manifests, MCP contract, or builder handoff existed. The loop then surfaced and closed additional requirements gaps:
+The initial Workspace Agent package increment was released as `0.2.0`. The subsequent production-hardening loop intentionally raised the bar rather than merely incrementing documentation. It surfaced and closed split-write idempotency windows, remote replay safety, remote completion semantics, human-principal spoofing, MCP composition ambiguity, authority-claim spoofing, timestamp compatibility faults, source-allowlist widening, partial decomposition persistence, record-ordering drift, and missing production-preflight composition checks.
 
-1. **Missing MCP discovery and approval-read tools.** Added `registry.list_agents` and read-only `approval.get`.
-2. **Builder-only permissions were insufficient.** Added server-side `WorkspaceAgentMCPPolicy` with deny-by-default allowlists and binding validation.
-3. **Remote verification could not pass a Python callable.** Added evidence-backed `record_verification_result()` and tests that fail closed without evidence.
-4. **A test compared human-readable authority to normalized runtime authority.** Classified as a test defect and corrected to compare exact Builder governance against the raw registry contract while retaining normalized-runtime tests elsewhere.
-5. **Release provenance drift.** Advanced package/runtime/Workspace Agent/MCP release to `0.2.0` and added release drift gates.
-6. **App write surfaces required product-specific constraints.** Added per-role Connector Action Constraints and default Workspace **Always ask** behavior.
-
-The loop continues until both repository CI and post-merge `main` CI are green. Product-side creation remains a separate Workspace Agent builder step and requires preview testing before publication.
+The resulting repository release is `1.0.0`. See `production-hardening-2026-08-17.md` and `release-1.0.0-production-readiness.md`.
 
 ## OpenAI Skill validation
 
-Each role Skill is initialized through the OpenAI skill-creator structure, validated with `quick_validate.py`, and packaged with `package_skill.py` into `skill.zip`. Validation covers YAML frontmatter, naming, required `SKILL.md`, required `agents/openai.yaml`, and package structure. Skill packaging does not prove external app connectivity or a deployed MCP endpoint.
+Each role Skill follows the OpenAI Skill package layout and is validated/repackaged after changes. Every role Skill includes `references/production-readiness.md`. Skill packaging does not prove external app connectivity or a deployed MCP endpoint, which remain activation dependencies.
 
 ## Original Phase 1 evaluations
 
-The original 13 scenarios remain in the suite: routine team question, pricing escalation, CRO/CFO conflict, infeasible staffing, stale consultant availability, content approval gate, WATCH after repeated poor work, QUARANTINE after critical defect, Slack duplicate delivery, coordination loop, missing source authority, high-impact/low-confidence escalation, and failed outcome verification returning to REWORK.
+The original 13 representative scenarios remain in the suite: routine team question, pricing escalation, CRO/CFO conflict, infeasible staffing, stale consultant availability, content approval gate, WATCH after repeated poor work, QUARANTINE after critical defect, Slack duplicate delivery, coordination loop, missing source authority, high-impact/low-confidence escalation, and failed outcome verification returning to REWORK.
 
 ## Test integrity
 
-Tests must not fabricate production credentials, weaken authority or approval policy, turn ChatGPT, Slack, or Google Sheets into canonical state, persist private reasoning traces, claim an MCP/app integration is live when only a contract/stub exists, or turn product-side `Always ask` approval into a replacement for Mesh L4/L5 governance.
+Tests must not fabricate production credentials, weaken authority or approval policy, turn ChatGPT, Slack, or Google Sheets into canonical state, persist private reasoning traces, claim an MCP/app integration is live when only a contract exists, or treat Workspace `Always ask` as a replacement for Mesh L4/L5 governance.

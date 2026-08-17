@@ -2,6 +2,51 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 1.0.0 - 2026-08-17 - Production Readiness
+
+### Stable production-readiness milestone
+
+- Established `1.0.0` as the first stable semantic production-readiness release and `v1.0.0` as the release tag.
+- Preserved the completed Phase 1 operating constitution while hardening the runtime, Workspace Agent deployment layer, Skills, MCP boundary, CI, preflight, and release process for production activation.
+- Explicitly separated repository production readiness from environment-specific production activation.
+
+### Release engineering and quality
+
+- Raised branch-aware `mesh_cos` coverage to a required 100% release gate.
+- Added strict source Ruff, mypy, dependency integrity, contract validation, runtime/documentation drift, Workspace Agent package drift, high-severity Bandit scanning, and compileall to the release path.
+- Added `ProductionPreflight` and `scripts/production-preflight.py` to fail closed on kill-switch state, HTTPS MCP configuration, registry health, runtime bindings, serialized runtime composition, optional Slack/Answer Desk requirements, and optional audit-chain integrity.
+- Added Dependabot coverage for Python quality dependencies and GitHub Actions.
+
+### Runtime and MCP hardening
+
+- Added serialized `mesh_cos.mcp_runtime.MCPRuntime` as the production MCP composition boundary with exact tool-surface validation.
+- Split human-only MCP operations from agent operations. `approval.record_decision` and `reliability.human_override` require authenticated human principals.
+- Derive agent identity, role, implementation provenance, and authority server-side from the canonical registry.
+- Enforce L4 approval evidence and Michael-exclusive L5 semantics at the runtime boundary.
+- Added server-owned replay executor registration. Client-supplied callables, module paths, shell commands, and executable source instructions are never replay mechanisms.
+- Added governed `task.complete` for accountable owners while preserving separate `task.verify` acceptance verification.
+- Made Slack event idempotency and governance-event idempotency atomic with canonical persistence.
+- Preserved insertion chronology for consequential records and hardened timestamp compatibility across staffing, AgentOps, leases, Slack, and metrics.
+- Fixed fail-closed source authorization when an explicit allowed-source list is empty, replay/override audit evidence, and atomic decomposition validation.
+
+### Skills and Workspace Agents
+
+- Added a common `references/production-readiness.md` contract to all 11 role Skills and revalidated/repackaged them.
+- Aligned all 11 Workspace Agent manifests and the MCP contract to repository release `1.0.0`.
+- Reconciled per-agent MCP allowlists, including `task.complete` for accountable worker roles and removal of human-only operations from agent allowlists.
+- Hardened the Workspace Agent Builder handoff to require production preflight, 100% release CI, authority/evidence/permission tests, human-spoofing tests, kill-switch tests, replay-safety tests, and completion-versus-verification tests before publication.
+
+### Documentation and release packaging
+
+- Added `docs/release-1.0.0-production-readiness.md` with Mermaid release, execution, and activation diagrams.
+- Updated the root README, documentation index, architecture, production-readiness guide, testing/evaluation guide, operations runbook, security/governance guidance, ChatGPT deployment documentation, MCP documentation, and Workspace Agent Builder handoff for `v1.0.0`.
+- Added `RELEASE.md` as the canonical GitHub release-note source.
+- Added a GitHub Actions release workflow that creates the semantic `v1.0.0` tag and `v1.0.0 Production Readiness` release on the merged `main` commit.
+
+### Activation boundary
+
+The repository does not fabricate live environment configuration. Production activation still requires the approved HTTPS `mesh-cos-mcp` endpoint, `MESH_COS_MCP_SERVER_URL`, Workspace authentication and app permissions, applicable Slack credentials, a dedicated Answer Desk channel, production approval-owner mappings, approved source/Skill credentials, secrets management, and runtime/deployment ownership.
+
 ## 0.2.0 - 2026-08-17 - ChatGPT Workspace Agent packages
 
 ### Workspace Agent deployment layer

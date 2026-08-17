@@ -48,7 +48,7 @@ def parse_frontmatter(text: str) -> dict[str, str]:
 registry_source = json.loads((ROOT / "agents" / "registry.json").read_text())
 registry = {record["agent_id"]: record for record in registry_source["agents"]}
 require(set(registry) == set(EXPECTED), "Workspace Agent roster drifted from canonical registry")
-require(__version__ == "0.2.0", "Workspace Agent release must be 0.2.0")
+require(__version__ == "1.0.0", "Workspace Agent release must be 1.0.0")
 require(f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
 
 contract = json.loads(MCP.read_text())
@@ -60,7 +60,12 @@ contract_allowlists = contract["agent_tool_allowlists"]
 for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     record = registry[agent_id]
     skill_dir = SKILLS / skill_name
-    for relative in ("SKILL.md", "agents/openai.yaml", "references/role-contract.md"):
+    for relative in (
+        "SKILL.md",
+        "agents/openai.yaml",
+        "references/role-contract.md",
+        "references/production-readiness.md",
+    ):
         require((skill_dir / relative).is_file(), f"{agent_id}: missing Skill resource {relative}")
     frontmatter = parse_frontmatter((skill_dir / "SKILL.md").read_text())
     require(frontmatter.get("name") == skill_name, f"{agent_id}: Skill name drifted")
@@ -103,6 +108,9 @@ for agent_id, allowed in contract_allowlists.items():
         require("task.reassign" not in allowed, f"{agent_id}: unauthorized task reassignment")
 require("approval.get" in contract_allowlists["message-ops"], "Message Operations approval read missing")
 require("approval.record_decision" not in contract_allowlists["message-ops"], "Message Operations cannot decide approval")
+require("approval.record_decision" not in contract_allowlists["cos"], "Agent allowlists cannot include human approval decisions")
+require("reliability.human_override" not in contract_allowlists["cos"], "Agent allowlists cannot include human reliability override")
+require(set(contract["human_tool_allowlist"]) == {"approval.record_decision", "reliability.human_override"}, "Human-only MCP allowlist drifted")
 
 answer_desk = json.loads((AGENTS / "answer-desk.json").read_text())
 require(answer_desk["channels"]["slack"]["enabled"] is False, "Answer Desk Slack cannot be enabled without channel ID")
@@ -118,7 +126,18 @@ require(any("research/enrichment only" in rule for rule in cro["connector_action
 require(any("approval" in rule.lower() for rule in message_ops["connector_action_constraints"]), "Message Operations approval constraint missing")
 
 prompt = (CHATGPT / "workspace-agent-builder-prompt.md").read_text()
-for token in ("11 agents", "mesh-cos-mcp", "MESH_COS_MCP_SERVER_URL", "Always ask", "negative authority test", "missing-evidence test"):
+for token in (
+    "11 agents",
+    "v1.0.0",
+    "mesh-cos-mcp",
+    "MESH_COS_MCP_SERVER_URL",
+    "Always ask",
+    "negative authority test",
+    "missing-evidence test",
+    "human-approval spoofing test",
+    "completion-versus-verification test",
+    "replay-safety test",
+):
     require(token in prompt, f"Workspace Agent builder prompt missing {token!r}")
 
 env_text = (ROOT / ".env.example").read_text()

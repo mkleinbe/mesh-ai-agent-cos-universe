@@ -108,6 +108,7 @@ class ReplayManager:
         agent_id: str,
         error: BaseException,
         payload: dict | None = None,
+        replay_key: str | None = None,
     ) -> dict:
         record = {
             "effect_id": effect_id,
@@ -116,6 +117,7 @@ class ReplayManager:
             "error_type": type(error).__name__,
             "error": str(error),
             "payload": dict(payload or {}),
+            "replay_key": replay_key,
             "status": "FAILED",
             "failed_at": utcnow(),
             "replayed_at": None,

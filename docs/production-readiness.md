@@ -1,33 +1,35 @@
 # Production Readiness
 
-## Purpose
+## Release status
 
-Production readiness is a fail-closed operating condition, not a coverage percentage. The release gate combines complete executable branch coverage with static checks, contract/runtime drift controls, serialized MCP authority enforcement, production preflight, least-privilege Workspace Agent configuration, evidence-backed outcome verification, and explicit external dependencies.
+Release **`v1.0.0 Production Readiness`** is the first stable semantic release for which the repository, runtime contracts, 11 Skills, 11 Workspace Agent manifests, MCP control plane, CI gates, production preflight, and operating documentation are treated as production-ready.
+
+Production readiness is a fail-closed operating condition, not a coverage percentage and not a claim that the target environment is already live. Production activation still requires environment-specific dependencies, live smoke tests, and private-preview acceptance tests.
 
 ## Production control path
 
 ```mermaid
 flowchart TD
-    CODE[Code + contracts + Skills + agent manifests] --> CI[Release CI]
-    CI --> COV[100% branch-aware mesh_cos coverage]
+    CODE[Code + Contracts + Skills + Agent Manifests] --> CI[Release CI]
+    CI --> COV[100% Branch-Aware mesh_cos Coverage]
     CI --> TYPE[mypy]
-    CI --> LINT[Strict source Ruff]
-    CI --> SEC[Bandit high-severity scan]
-    CI --> DRIFT[Runtime + docs + Workspace package drift]
-    COV --> READY{All release gates green?}
+    CI --> LINT[Strict Source Ruff]
+    CI --> SEC[Bandit High-Severity Scan]
+    CI --> DRIFT[Runtime + Docs + Workspace Package Drift]
+    COV --> READY{All Release Gates Green?}
     TYPE --> READY
     LINT --> READY
     SEC --> READY
     DRIFT --> READY
-    READY -->|no| FIX[Test first, fix, repeat]
+    READY -->|No| FIX[Test First, Fix, Repeat]
     FIX --> CI
-    READY -->|yes| PREFLIGHT[ProductionPreflight]
-    PREFLIGHT --> ENV{Environment dependencies green?}
-    ENV -->|no| BLOCK[Block activation and report dependency]
-    ENV -->|yes| MCP[Serialized mesh-cos-mcp runtime]
+    READY -->|Yes| PREFLIGHT[ProductionPreflight]
+    PREFLIGHT --> ENV{Environment Dependencies Green?}
+    ENV -->|No| BLOCK[Block Activation and Report Dependency]
+    ENV -->|Yes| MCP[Serialized mesh-cos-mcp Runtime]
     MCP --> AGENTS[Workspace Agents]
-    AGENTS --> LEDGER[(TaskLedger canonical state)]
-    LEDGER --> VERIFY[Independent acceptance verification]
+    AGENTS --> LEDGER[(TaskLedger Canonical State)]
+    LEDGER --> VERIFY[Independent Acceptance Verification]
 ```
 
 ## Release gates
@@ -47,7 +49,7 @@ bandit -q -r src -lll
 python -m compileall -q src
 ```
 
-The 100% threshold applies to branch-aware coverage for `mesh_cos`. It does not claim that tests prove every production condition. Coverage is paired with negative authorization, failure-path, state-machine, contract, security, idempotency, replay, approval, source-authority, and integration tests.
+The 100% threshold applies to branch-aware coverage for `mesh_cos`. Coverage is paired with negative authorization, failure-path, state-machine, contract, security, idempotency, replay, approval, source-authority, and integration tests.
 
 ## Serialized MCP boundary
 
@@ -55,17 +57,16 @@ The 100% threshold applies to branch-aware coverage for `mesh_cos`. It does not 
 
 Production invariants:
 
-- the transport supplies an authenticated principal identity and JSON arguments only;
+- the transport supplies an authenticated principal identity, tool name, and JSON arguments only;
 - agent tool access is deny-by-default and checked server-side;
 - `approval.record_decision` and `reliability.human_override` are human-only and require an authenticated human principal;
-- agent identity, role name, and implementation version in governance records are derived from the canonical Agent Registry, not trusted from client arguments;
+- agent identity, role name, and implementation version in governance records are derived from the canonical Agent Registry;
 - L4/L5 actions require explicit approval evidence and L5 remains Michael-exclusive;
 - replay uses a server-registered replay executor named by canonical failure state, never client-supplied executable code or import paths;
-- task writes require the accountable owner or the Chief of Staff where the specific operation permits CoS control;
+- task writes require the accountable owner or Chief of Staff where the operation permits CoS control;
 - `task.complete` persists the accountable owner's outcome and evidence;
-- `task.verify` remains a separate acceptance action and cannot substitute for missing completion evidence.
-
-The repository does not claim that the remote HTTPS MCP endpoint is deployed. Deployment and workspace authentication remain environment-specific dependencies.
+- `task.verify` remains a separate acceptance action and cannot substitute for missing completion evidence;
+- consequential Slack and governance-event idempotency claims are atomic with canonical persistence.
 
 ## Production preflight
 
@@ -75,7 +76,7 @@ Run before production activation:
 python scripts/production-preflight.py
 ```
 
-Use the stricter flags when those surfaces are in scope:
+Use stricter flags when those surfaces are in scope:
 
 ```bash
 python scripts/production-preflight.py --require-slack --require-answer-desk --require-ledger
@@ -89,17 +90,17 @@ A failed preflight blocks production activation.
 
 ```mermaid
 sequenceDiagram
-    participant O as Accountable owner
+    participant O as Accountable Owner
     participant M as mesh-cos-mcp
     participant L as TaskLedger
-    participant C as Chief of Staff / verifier
+    participant V as Authorized Verifier
 
     O->>M: task.complete(outcome, evidence)
     M->>L: Persist COMPLETED + outcome evidence
-    C->>M: task.verify(acceptance result, evidence)
-    alt acceptance passes
+    V->>M: task.verify(acceptance result, evidence)
+    alt Acceptance Passes
         M->>L: VERIFIED
-    else acceptance fails
+    else Acceptance Fails
         M->>L: REWORK
     end
 ```
@@ -108,21 +109,37 @@ sequenceDiagram
 
 ## Skill and Workspace Agent readiness
 
-Every role Skill contains `references/production-readiness.md`. The Workspace Agent Builder handoff requires the Builder to load that reference together with the role contract and to run negative authority, missing-evidence, human-spoofing, kill-switch, replay-safety, permission-denial, and completion-versus-verification preview tests before publication.
+Every role Skill contains `references/production-readiness.md`. Every Workspace Agent manifest declares repository release `1.0.0` and must exactly match the per-agent MCP allowlist in the release contract. The Builder handoff requires negative authority, missing-evidence, human-spoofing, kill-switch, replay-safety, permission-denial, and completion-versus-verification tests before publication.
 
 Workspace Agents remain private until preview tests and production preflight pass. Connector write actions remain `Always ask` unless a narrower exception is explicitly approved and documented.
+
+## Production readiness versus activation
+
+```mermaid
+flowchart TD
+    A[Repository v1.0.0] --> B[100% Branch-Aware CI]
+    B --> C[Production Preflight]
+    C --> D{External Dependencies Configured?}
+    D -->|No| E[Production-Ready Repository]
+    D -->|Yes| F[Live Integration Smoke Tests]
+    F --> G{All Positive and Negative Tests Pass?}
+    G -->|No| H[Block Activation and Remediate]
+    G -->|Yes| I[Production Activation]
+    E --> J[Configure MCP URL, Workspace Auth, Slack, Answer Desk, Approvers, Source Credentials]
+    J --> F
+```
 
 ## External production dependencies
 
 The following are not fabricated by the repository and must be configured and tested in the target environment:
 
 - deployed HTTPS `mesh-cos-mcp` endpoint and `MESH_COS_MCP_SERVER_URL`;
-- workspace/agent authentication and least-privilege app permissions;
+- Workspace/agent authentication and least-privilege app permissions;
 - Slack bot token and signing secret when Slack is enabled;
-- a dedicated Answer Desk Slack channel before that channel is enabled;
+- dedicated Answer Desk Slack channel before that channel is enabled;
 - production approval-owner mappings;
-- approved source/skill credentials and access controls;
-- authenticated Google Sheets mirroring if the optional governance mirrors are automated;
-- deployment/runtime infrastructure and operational ownership.
+- approved source/Skill credentials and access controls;
+- authenticated Google Sheets mirroring if optional governance mirrors are automated;
+- deployment/runtime infrastructure, secrets management, monitoring, and operational ownership.
 
-Production readiness is not declared until repository gates, environment preflight, Workspace preview tests, and required external dependencies are all green.
+See `release-1.0.0-production-readiness.md` for the semantic release record and `../RELEASE.md` for GitHub release notes.

@@ -2,6 +2,37 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 0.1.3 - 2026-08-17 - Explainable decisions and auditable agent governance
+
+### Governance contracts
+
+- Added closed `mesh.cos.decision.v2` and `mesh.cos.agent-event.v2` JSON contracts while preserving v1 compatibility.
+- Added explainable decision fields for authority, approval, concise decision basis, evidence/source provenance, alternatives, selection criteria, confidence, risk, affected entities, reversibility/reversal conditions, model/skill provenance, outcome validation, lineage, canonical reference, and integrity hash.
+- Added fully auditable event fields for sequence/time, actor/action/result, task/correlation/decision/run links, authority/policy, capability/tool, target/source, summaries, evidence/approval, errors, model/skill provenance, risk/classification, retention, canonical reference, and a SHA-256 hash chain.
+- Explicitly prohibited private chain-of-thought, hidden reasoning traces, secrets, credentials, tokens, and unnecessary personal data from governance records.
+
+### Cross-agent governance
+
+- Added `config/governance-policy.v1.json` and applied it to every registered agent at registry load.
+- Added `governance-journal`, `decision.v2`, and `agent-event.v2` to the shared runtime governance surface without expanding functional authority.
+- Added direct audit emission for governed skill/tool invocations.
+- Added a compatibility bridge that dual-writes existing v1 audit events into the v2 governance stream.
+- Added v2 explainable records for material conflict decisions while retaining the existing v1 decision record during migration.
+
+### Governance registers
+
+- Initialized and began using the CoS Decision Log Google Sheet (`1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw`).
+- Initialized and began using the CoS Audit Log Google Sheet (`1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0`).
+- Added `Schema` and `Reference` tabs, field validation, filtering, frozen headers, governance controls, and bootstrap decision/audit records.
+- Added `config/governance-logs.v1.json` to version non-secret mirror configuration.
+- Preserved `TaskLedger` as canonical state with canonical-first write order and durable mirror-failure recording.
+
+### Testing and documentation
+
+- Added TDD acceptance tests for v2 contract closure, decision explainability, hash-chain integrity/tamper detection, cross-agent policy injection, and Sheet mirror configuration.
+- Extended runtime/documentation drift checks to validate the governance contracts, policy, configured Sheet IDs, and documentation tokens.
+- Added `docs/explainable-decisions-audit.md` and updated architecture, security, observability, decision rights, conflict resolution, testing, operations, repository instructions, and documentation index.
+
 ## 0.1.2 - 2026-08-17 - Final Phase 1 requirement closure
 
 ### Runtime integrity

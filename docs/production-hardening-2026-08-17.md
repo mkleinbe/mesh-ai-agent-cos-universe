@@ -1,4 +1,4 @@
-# Production hardening loop - 2026-08-17
+# Production Hardening Loop - 2026-08-17
 
 ## Objective
 
@@ -8,14 +8,14 @@ Raise the Phase 1 control plane from the prior 79.71% branch-aware release cover
 
 ```mermaid
 flowchart LR
-    A[Audit production behavior] --> R[RED acceptance / failure test]
-    R --> G[GREEN minimal fix]
-    G --> Q[Contracts + Ruff + mypy + 100% branch coverage + Bandit]
-    Q -->|failure| D[Diagnose exact defect]
+    A[Audit Production Behavior] --> R[RED Acceptance / Failure Test]
+    R --> G[GREEN Minimal Fix]
+    G --> Q[Contracts + Ruff + mypy + 100% Branch Coverage + Bandit]
+    Q -->|Failure| D[Diagnose Exact Defect]
     D --> R
-    Q -->|green| P[Production preflight + Skill/package drift]
-    P -->|failure| R
-    P -->|green| M[Merge candidate]
+    Q -->|Green| P[Production Preflight + Skill / Package Drift]
+    P -->|Failure| R
+    P -->|Green| M[Merge Candidate]
 ```
 
 ## Gaps found and remediated
@@ -23,10 +23,10 @@ flowchart LR
 | Priority | Production gap found | Resolution |
 |---|---|---|
 | P0 | Workspace MCP contract described Python method bindings but did not provide a serialized production composition root. | Added `mesh_cos.mcp_runtime.MCPRuntime`, fixed handler dispatch, exact tool-surface validation, deny-by-default agent/human principal paths, and production-preflight composition checks. |
-| P0 | Agent callers could conceptually impersonate human approval/override actors. | `approval.record_decision` and `reliability.human_override` are now human-only MCP tools. Authenticated human principal identity is injected server-side and persisted as `decided_by` / override actor. |
+| P0 | Agent callers could conceptually impersonate human approval/override actors. | `approval.record_decision` and `reliability.human_override` are human-only MCP tools. Authenticated human principal identity is injected server-side and persisted. |
 | P0 | MCP replay could not safely accept a remote callable. | Added server-owned `ReplayExecutorRegistry`; canonical failures may carry a stable `replay_key`; client code/import paths are never executed. |
-| P0 | Remote workers could not persist outcome/evidence and move QA work to `COMPLETED` before CoS verification. | Added governed `task.complete` for accountable owners and preserved separate `task.verify` acceptance verification. |
-| P0 | Governance MCP calls trusted client-provided actor identity and could claim authority beyond the role. | Agent identity/version are derived from the canonical registry; authority is checked server-side; L4 requires approval evidence and L5 requires Michael as approver/decision owner. |
+| P0 | Remote workers could not persist outcome/evidence and move QA work to `COMPLETED` before verification. | Added governed `task.complete` for accountable owners and preserved separate `task.verify` acceptance verification. |
+| P0 | Governance MCP calls trusted client-provided actor identity and could claim authority beyond the role. | Agent identity/version are derived from the canonical registry; authority is checked server-side; L4 requires approval evidence and L5 requires Michael. |
 | P0 | Slack idempotency could be claimed before canonical event persistence, creating a crash window. | Added atomic idempotency-key + record persistence and moved Slack inbound ingestion onto that transaction. |
 | P0 | Governance v2 event idempotency and record persistence had the same split-write risk. | Governance events now atomically claim idempotency and persist the canonical audit record. |
 | P1 | Consequential generic records were listed by semantic/random record ID rather than canonical insertion order. | `TaskLedger.list_records()` now preserves SQLite insertion order, protecting rolling evidence windows and audit-chain predecessor selection. |
@@ -43,14 +43,35 @@ flowchart LR
 
 Coverage is a release gate, not the production-readiness claim by itself. Production readiness also requires the runtime and environment conditions in `docs/production-readiness.md`.
 
-The repository intentionally does **not** claim the following are live until separately configured and exercised:
+The repository intentionally does not claim the following are live until separately configured and exercised:
 
 - a deployed remote HTTPS `mesh-cos-mcp` endpoint;
 - production Workspace app authentication;
 - live Slack bot/signing credentials;
 - the separate Answer Desk Slack channel;
 - production approval-owner mapping;
-- production source/skill credentials;
+- production source/Skill credentials;
 - deployment infrastructure or automated Google Sheets mirroring.
 
 These remain explicit external dependencies and are checked or reported by the production activation process rather than fabricated in code.
+
+## v1.0.0 release closure
+
+The hardening loop is packaged as semantic release **`v1.0.0 Production Readiness`**.
+
+```mermaid
+flowchart LR
+    TDD[TDD + Loop Engineering] --> COV[100% Branch-Aware Coverage]
+    COV --> MCP[Serialized MCPRuntime]
+    MCP --> PRE[ProductionPreflight]
+    PRE --> PKG[11 Skills + 11 Workspace Agent Manifests]
+    PKG --> DOCS[Release Documentation]
+    DOCS --> TAG[v1.0.0]
+    TAG --> REL[GitHub Production-Readiness Release]
+```
+
+The semantic release aligns `pyproject.toml`, `mesh_cos.__version__`, `mesh-cos-mcp.v1.json`, and all 11 Workspace Agent `repository_release` fields to `1.0.0`. The Workspace Agent package drift gate enforces that alignment.
+
+The release documentation includes the root README, changelog, documentation index, architecture, production-readiness guide, testing/evaluation guide, runbook, security/governance guide, ChatGPT package documentation, MCP documentation, Builder handoff, `RELEASE.md`, and `docs/release-1.0.0-production-readiness.md`.
+
+Historical Phase 1 closure/remediation documents remain historical snapshots. They are not rewritten to pretend they were authored against `v1.0.0`.

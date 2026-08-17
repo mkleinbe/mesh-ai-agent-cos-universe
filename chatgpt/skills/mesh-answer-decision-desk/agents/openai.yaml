@@ -1,0 +1,3 @@
+interface:
+  display_name: "Answer & Decision Desk"
+  short_description: "Permission-aware Mesh team question resolution, policy application, routing, and escalation."

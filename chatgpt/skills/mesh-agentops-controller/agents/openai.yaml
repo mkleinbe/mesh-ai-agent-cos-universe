@@ -1,0 +1,3 @@
+interface:
+  display_name: "AgentOps Controller"
+  short_description: "Governed Phase 1 agent workforce observability, performance, routing, and health recommendations."

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Consultant Network Steward"
+  short_description: "Governed consultant identification, matching, freshness, rate, availability, and contracting-readiness workflow."

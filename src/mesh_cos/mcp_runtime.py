@@ -160,6 +160,39 @@ class MCPRuntime:
             raise PermissionError(f"Agent is not routable: {agent_id}")
         return record
 
+    def _authorize_governance_authority(
+        self,
+        agent_id: str,
+        payload: dict[str, Any],
+        *,
+        decision: bool,
+    ) -> dict[str, Any]:
+        record = self._agent_record(agent_id)
+        authority_level = int(payload.get("authority_level", 0))
+        if not 0 <= authority_level <= 5:
+            raise ValueError("authority_level must be between L0 and L5")
+
+        if authority_level >= 4:
+            approval_reference = payload.get("approval_reference")
+            human_approver = str(payload.get("human_approver") or "").strip()
+            if decision and payload.get("human_approval_required") is not True:
+                raise PermissionError("L4/L5 decisions require explicit human approval")
+            if not approval_reference or not human_approver:
+                raise PermissionError("L4/L5 authority requires explicit human approval evidence")
+            if authority_level == 5:
+                if human_approver.lower() != "michael":
+                    raise PermissionError("L5 authority requires Michael as human approver")
+                if decision and str(payload.get("decision_owner") or "").strip().lower() != "michael":
+                    raise PermissionError("L5 authority requires Michael as decision owner")
+            return record
+
+        ceiling = int(record["decision_authority"])
+        if authority_level > ceiling:
+            raise PermissionError(
+                f"Requested authority L{authority_level} exceeds agent authority L{ceiling}"
+            )
+        return record
+
     def _require_task_write_access(self, agent_id: str, task_id: str) -> TaskRecord:
         task = self.ledger.get_task(task_id)
         if task is None:
@@ -290,16 +323,16 @@ class MCPRuntime:
         return self.conflicts.decide(conflict_id, owner=agent_id, **payload)
 
     def _governance_record_decision(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
-        record = self._agent_record(agent_id)
         payload = dict(args)
+        record = self._authorize_governance_authority(agent_id, payload, decision=True)
         payload["agent_id"] = agent_id
         payload["agent_role"] = record["display_name"]
         payload["skill_agent_version"] = str(record["version"])
         return self.governance.record_decision(**payload)
 
     def _governance_record_event(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
-        record = self._agent_record(agent_id)
         payload = dict(args)
+        record = self._authorize_governance_authority(agent_id, payload, decision=False)
         payload["actor_type"] = "AGENT"
         payload["actor_id"] = agent_id
         payload["actor_role"] = record["display_name"]

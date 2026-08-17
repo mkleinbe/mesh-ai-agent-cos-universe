@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from .governance import verify_audit_chain
 from .ledger import TaskLedger
 from .mcp_policy import WorkspaceAgentMCPPolicy
+from .mcp_runtime import MCPRuntime
 from .registry import load_registry
 
 EXPECTED_AGENT_IDS = {
@@ -96,10 +97,9 @@ class ProductionPreflight:
             detail = f"registry validation failed: {type(exc).__name__}"
         checks.append(self._result("agent_registry", registry_ok, detail))
 
+        contract_path = self.root / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
         try:
-            policy = WorkspaceAgentMCPPolicy.from_file(
-                self.root / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
-            )
+            policy = WorkspaceAgentMCPPolicy.from_file(contract_path)
             binding_errors = policy.validate_runtime_bindings()
             mcp_contract_ok = not binding_errors
             mcp_detail = (
@@ -111,6 +111,26 @@ class ProductionPreflight:
             mcp_contract_ok = False
             mcp_detail = f"MCP contract validation failed: {type(exc).__name__}"
         checks.append(self._result("mcp_contract", mcp_contract_ok, mcp_detail))
+
+        try:
+            runtime_policy = WorkspaceAgentMCPPolicy.from_file(contract_path)
+            runtime = MCPRuntime(TaskLedger(), policy=runtime_policy)
+            contract_tools = {
+                str(tool["name"])
+                for tool in runtime_policy.contract.get("tools", [])
+                if isinstance(tool, dict) and tool.get("name")
+            }
+            runtime_tools = runtime.tool_names()
+            runtime_ok = runtime_tools == contract_tools
+            runtime_detail = (
+                "serialized MCP runtime tool surface matches contract"
+                if runtime_ok
+                else "serialized MCP runtime tool surface differs from contract"
+            )
+        except Exception as exc:  # noqa: BLE001 - composition defects must fail preflight, not crash it
+            runtime_ok = False
+            runtime_detail = f"serialized MCP runtime validation failed: {type(exc).__name__}"
+        checks.append(self._result("mcp_runtime", runtime_ok, runtime_detail))
 
         if self.require_slack:
             channel_present = bool(

@@ -1,1 +1,1 @@
-{"version":"mesh.cos.decision.v1","decision_id":"DEC-1","task_id":"COS-1","decision_owner":"Michael","authority_level":4,"decision":"Approve option A","rationale":"Strategic rationale with known margin tradeoff"}
+{"version":"mesh.cos.decision.v1","decision_id":"decision-1","task_id":"T1","conflict_id":null,"decision_owner":"cos","authority_level":3,"decision":"Proceed","rationale":"Evidence supports pursuit","disposition":"PROCEED","reversal_condition":"economics materially worsen","approval_reference":null,"decided_at":"2026-08-17T17:00:00+00:00"}

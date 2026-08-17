@@ -8,21 +8,20 @@ from mesh_cos.slack import SlackCoordinator, SlackInboundService
 
 def test_atomic_idempotent_record_rolls_back_claim_when_record_write_fails() -> None:
     ledger = TaskLedger()
-    original = ledger.conn.execute
+    real_conn = ledger.conn
 
     class FailingConnection:
         def execute(self, sql: str, params=()):
             if "INSERT INTO records" in sql:
                 raise RuntimeError("simulated record failure")
-            return original(sql, params)
+            return real_conn.execute(sql, params)
 
         def commit(self):
-            return ledger.conn.commit()
+            return real_conn.commit()
 
         def rollback(self):
-            return ledger.conn.rollback()
+            return real_conn.rollback()
 
-    real_conn = ledger.conn
     ledger.conn = FailingConnection()  # type: ignore[assignment]
     with pytest.raises(RuntimeError, match="simulated record failure"):
         ledger.save_idempotent_record("slack:E1", "slack_event", "E1", {"event_id": "E1"})

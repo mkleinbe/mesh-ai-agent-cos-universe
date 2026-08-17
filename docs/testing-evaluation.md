@@ -53,6 +53,20 @@ The original v1 schemas remain backward-compatible. Governance adds `decision.v2
 - Google Sheets mirror configuration contains the expected non-secret Sheet IDs,
 - `TaskLedger` remains canonical and Sheets remain human-readable operational mirrors.
 
+### Canonical role-model integrity
+
+`tests/evaluations/test_phase1_role_model_consistency.py` protects the Phase 1 organizational model. It verifies:
+
+- the canonical display names for CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content,
+- implementation versions are separate `MAJOR.MINOR.PATCH` metadata,
+- the runtime loader rejects display names that embed implementation-version labels,
+- package and runtime release versions stay aligned,
+- the repository contains no legacy version-bearing CFO/COO role-name references,
+- each of the six roles exposes the complete permitted-action set required by its Phase 1 accountability,
+- CFO, COO, Consultant Network Steward, CMO, and VP Content retain their human-approval and authority boundaries.
+
+The role-model increment began RED. Its first CI run failed four acceptance checks against the pre-change registry and documentation, including role-name drift, missing executable capability coverage, and CFO accountable-domain drift. The implementation then reconciled runtime policy, role cards, documentation, package versioning, and drift gates before returning the suite to GREEN.
+
 ### Backward compatibility
 
 Existing `mesh.cos.agent-event.v1` producers continue to work. A compatibility bridge dual-writes successful legacy audit events into the v2 governance stream. Existing v1 decision records remain available while material conflict decisions additionally produce `decision.v2` records.
@@ -79,7 +93,7 @@ The original scenarios remain in the suite: routine team question, pricing escal
 
 ## Drift gate
 
-`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, runtime AgentRecords, representative runtime contract payloads, governance-policy injection, v2 decision/audit behavior, configured governance Sheet IDs, Slack configuration, and key documentation tokens. This prevents documentation or human-readable mirrors from becoming a silent competing contract.
+`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, runtime AgentRecords, canonical role identities, required Phase 1 role capabilities, package/runtime release alignment, representative runtime contract payloads, governance-policy injection, v2 decision/audit behavior, configured governance Sheet IDs, Slack configuration, and key documentation tokens. This prevents documentation, role cards, or human-readable mirrors from becoming a silent competing contract.
 
 ## Test integrity
 

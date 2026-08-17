@@ -37,6 +37,18 @@ flowchart TB
 - Decision explainability records concise observable factors, evidence, alternatives, criteria, confidence, risk and reversal conditions, not hidden chain-of-thought.
 - Superseding or reversing a decision does not delete its historical record.
 
+## Role identity, authority, and version provenance
+
+Role identity, decision authority, and implementation version are independent governance dimensions:
+
+- `agent_id` and canonical `display_name` identify who acted.
+- `authority_level`, approval evidence, and registry policy establish what that role was allowed to decide or execute.
+- `skill_agent_version`, model version, and repository release metadata establish which implementation produced the recommendation or action.
+- A change in implementation version does not rename the organizational role or expand its authority.
+- A change in accountable domain or authority must follow normal registry and L4/L5 change control, even if no software version changes.
+
+For the Phase 1 functional executives, the stable names are CRO, CFO, COO, CMO, with Consultant Network Steward and VP Content as their defined specialist roles. Their current scopes are governed by `agents/registry.json`, not by title modifiers.
+
 ## Decision path
 
 ```mermaid
@@ -74,6 +86,6 @@ For a material decision or recommendation, the record must identify:
 
 ## Change control
 
-Any authority change requires corresponding registry, test, documentation, governance-policy, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent.
+Any authority or accountable-domain change requires corresponding registry, test, documentation, governance-policy, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent. Role-name changes are identity changes and must not be used as a shortcut for implementation versioning.
 
 See `explainable-decisions-audit.md` for the canonical v2 fields and Google Sheets mirror controls.

@@ -77,7 +77,11 @@ def event_payload(**overrides):
 def test_agent_cannot_record_unapproved_decision_above_registry_authority() -> None:
     runtime = MCPRuntime(TaskLedger())
     with pytest.raises(PermissionError, match="authority"):
-        runtime.call_agent("message-ops", "governance.record_decision", decision_payload(authority_level=3))
+        runtime.call_agent(
+            "consultant-network-steward",
+            "governance.record_decision",
+            decision_payload(authority_level=3, decision_owner="consultant-network-steward"),
+        )
 
 
 def test_l4_and_l5_decisions_fail_closed_and_l5_requires_michael() -> None:

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from collections.abc import Callable, Mapping
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from time import sleep
-from typing import Callable, Mapping, TypeVar
+from typing import TypeVar, cast
 
 from .audit import AuditEvent
 from .ledger import TaskLedger
@@ -40,15 +42,16 @@ def execute_with_policy(fn: Callable[[], T], policy: ExecutionPolicy) -> T:
     if policy.max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
     retry_exceptions = tuple(set(policy.retry_exceptions + (TimeoutError,)))
-    for attempt in range(1, policy.max_attempts + 1):
+    attempt = 0
+    while True:
+        attempt += 1
         try:
             return _invoke_with_timeout(fn, policy.timeout_seconds)
         except retry_exceptions:
-            if attempt == policy.max_attempts:
+            if attempt >= policy.max_attempts:
                 raise
             if policy.backoff_seconds:
                 sleep(policy.backoff_seconds * attempt)
-    raise RuntimeError("Execution policy exhausted without returning or raising")  # pragma: no cover
 
 
 def assert_runtime_enabled(env: Mapping[str, str] | None = None) -> None:
@@ -65,13 +68,13 @@ class ExecutionLeaseManager:
     def acquire(self, task_id: str, owner: str, *, ttl_seconds: int) -> bool:
         if ttl_seconds < 1:
             raise ValueError("ttl_seconds must be positive")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         current = self.ledger.get_record("execution_lease", task_id)
         if current:
             expires_at = datetime.fromisoformat(current["expires_at"])
             if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=timezone.utc)
-            if expires_at.astimezone(timezone.utc) > now and current["owner"] != owner:
+                expires_at = expires_at.replace(tzinfo=UTC)
+            if expires_at.astimezone(UTC) > now and current["owner"] != owner:
                 return False
         record = {
             "task_id": task_id,
@@ -138,7 +141,7 @@ class ReplayManager:
             existing = self.ledger.get_record("replay_result", effect_id)
             if existing is None:
                 raise RuntimeError("Replay marked complete without a stored result")
-            return existing["result"]  # type: ignore[return-value]
+            return cast(T, existing["result"])
         if record["status"] == "OVERRIDDEN":
             raise RuntimeError("Human override closed this failed effect")
         result = execute_with_policy(fn, policy or ExecutionPolicy())

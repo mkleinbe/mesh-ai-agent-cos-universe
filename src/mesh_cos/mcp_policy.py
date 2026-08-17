@@ -14,8 +14,12 @@ class WorkspaceAgentMCPPolicy:
     contract: dict[str, Any]
 
     @classmethod
-    def from_file(cls, path: str | Path | None = None) -> "WorkspaceAgentMCPPolicy":
-        contract_path = Path(path) if path is not None else Path(__file__).resolve().parents[2] / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
+    def from_file(cls, path: str | Path | None = None) -> WorkspaceAgentMCPPolicy:
+        contract_path = (
+            Path(path)
+            if path is not None
+            else Path(__file__).resolve().parents[2] / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
+        )
         contract = json.loads(contract_path.read_text(encoding="utf-8"))
         policy = cls(contract)
         policy.validate()

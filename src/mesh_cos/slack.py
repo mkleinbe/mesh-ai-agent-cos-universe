@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import json
 from dataclasses import dataclass, field
+from typing import Callable
+from urllib.request import Request, urlopen
 
 from .ledger import TaskLedger
 
@@ -20,6 +23,35 @@ class SlackEventGuard:
 def verify_slack_signature(signing_secret: str, timestamp: str, body: str, signature: str) -> bool:
     expected = "v0=" + hmac.new(signing_secret.encode(), f"v0:{timestamp}:{body}".encode(), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
+
+
+def _default_transport(method: str, payload: dict, token: str) -> dict:
+    request = Request(
+        f"https://slack.com/api/{method}",
+        data=json.dumps(payload).encode(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"},
+        method="POST",
+    )
+    with urlopen(request, timeout=15) as response:
+        result = json.loads(response.read().decode())
+    if not result.get("ok"):
+        raise RuntimeError(f"Slack API error: {result.get('error', 'unknown_error')}")
+    return result
+
+
+class SlackWebClient:
+    def __init__(self, token: str, *, transport: Callable[[str, dict, str], dict] | None = None) -> None:
+        if not token:
+            raise ValueError("Slack bot token is required")
+        self.token = token
+        self.transport = transport or _default_transport
+
+    def post_message(self, channel_id: str, text: str, *, thread_ts: str | None = None) -> dict:
+        payload = {"channel": channel_id, "text": text}
+        if thread_ts:
+            payload["thread_ts"] = thread_ts
+        return self.transport("chat.postMessage", payload, self.token)
+
 
 class SlackCoordinator:
     def __init__(self, ledger: TaskLedger, channel_id: str) -> None:

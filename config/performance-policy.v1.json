@@ -1,0 +1,18 @@
+{
+  "version": "mesh.cos.performance-policy.v1",
+  "weights": {
+    "outcome_achievement": 0.30,
+    "first_pass_quality": 0.20,
+    "escalation_judgment": 0.15,
+    "evidence_governance": 0.10,
+    "execution_reliability": 0.10,
+    "ceo_leverage": 0.10,
+    "efficiency": 0.05
+  },
+  "thresholds": {
+    "restrict_below": 0.30,
+    "watch_below": 0.65,
+    "increase_above": 0.90,
+    "minimum_events_for_increase": 5
+  }
+}

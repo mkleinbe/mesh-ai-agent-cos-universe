@@ -1,8 +1,10 @@
 # Phase 1 Remediation Completion - 2026-08-17
 
-The prioritized code-level remediation plan from `phase-1-gap-assessment-2026-08-17.md` was completed using test-first acceptance criteria and CI feedback loops and merged to `main` in PR #10.
+This document records the remediation merged in PR #10. It is an intermediate historical record, not the final Phase 1 closure statement.
 
-## Closure summary
+A later source-to-runtime audit found additional gaps that were not fully closed by PR #10. Those findings and their final remediation are documented in `phase-1-gap-assessment-2026-08-17.md` and `phase-1-final-closure-2026-08-17.md`.
+
+## PR #10 loop
 
 ```mermaid
 flowchart LR
@@ -12,39 +14,31 @@ flowchart LR
     FIX1 --> CI2[CI feedback]
     CI2 --> FIX2[Advisory authority normalization correction]
     FIX2 --> PASS[Contracts + pytest + compileall PASS]
-    PASS --> MERGE[PR #10 merged to main]
-    MERGE --> DOCS[Documentation reconciled]
+    PASS --> MERGE[PR #10 merged]
+    MERGE --> AUDIT[Source-to-runtime re-audit]
+    AUDIT --> FINAL[Final Phase 1 closure]
 ```
 
-## Closed in the remediation increment
+## What PR #10 established
 
-- Canonical runtime registry loads from `agents/registry.json`; duplicate hardcoded registry state was removed.
-- SQLite persistence supports consequential typed records, task/thread mappings, durable idempotency, Answer Desk dispositions, verification records, and atomic audit/event writes through the ledger boundary.
-- `ChiefOfStaffService` drives intake, lifecycle advancement, completion, explicit acceptance-test execution, verification, rework, and audit events.
-- Delegations are persisted and enforce owner, depth, authority, circularity, measurable acceptance, approval inheritance, and action-boundary rules.
-- Conflicts and decisions are durable first-class records with decision owners and reversal conditions.
-- Slack coordination includes request-signature verification, durable event dedupe, durable one-task/one-thread mapping, structured messages, and a live-capable Web API client boundary for `#mesh-agent-ops` (`C0BRL4GCL3A`).
-- Functional agents use thin governed adapter boundaries so existing Mesh skills and sources can be composed without reimplementation.
-- Invocation-time source/tool/action authorization is enforced from registry policy.
-- AgentOps uses a versioned performance policy and evidence-backed scorecards in addition to stalled-work and coordination-loop detection.
-- Reliability includes bounded retry handling for transient failures.
-- Deterministic operating metrics include verified outcomes, CEO deflection, and methodologically supported CEO time avoided.
-- Stateful remediation tests exercise orchestration, acceptance failure/rework, persistence, delegation, conflicts, Answer Desk, Slack security/idempotency, AgentOps policy, reliability, metrics, and adapter boundaries.
+- Canonical runtime registry loading from `agents/registry.json`.
+- SQLite persistence for typed control-plane records, task/thread mappings, idempotency, Answer Desk dispositions, verification records, and audit events.
+- `ChiefOfStaffService` intake, lifecycle, completion, acceptance execution, verification, and rework.
+- Persistent delegation checks for owner, depth, authority, circularity, measurable acceptance, approval inheritance, and action boundaries.
+- Durable conflict and decision records.
+- Slack request-signature verification, event dedupe, task/thread mapping, structured messages, and a Web API client boundary for `#mesh-agent-ops` (`C0BRL4GCL3A`).
+- Governed functional adapter boundaries.
+- Invocation-time source/tool/action authorization.
+- Versioned AgentOps performance policy and scorecards.
+- Bounded transient retries.
+- Initial operating metrics and stateful remediation tests.
 
-## Documentation closure
+## Why another closure increment was required
 
-All repository documentation was reconciled after the code remediation. Mermaid diagrams now document the system architecture, task lifecycle, delegation flow, conflict/decision flow, Agent Registry control path, AgentOps loop, Slack coordination, Answer Desk, testing flow, and operating runbook.
+The later audit found that the original requirements demanded deeper runtime-contract parity, a broader CoS work-management loop, a complete Slack inbound and Answer Desk boundary, richer AgentOps signal management, partial-failure replay and human override, complete Phase 1 metrics, fuller audit coverage, and stronger CI quality/drift checks.
 
-The historical gap assessment is retained for traceability and now maps each prior gap to its current disposition.
+These items are addressed in `phase-1-final-closure-2026-08-17.md`.
 
-## Remaining production configuration
+## Production configuration remains external
 
-Production execution still requires values that must not be fabricated or committed:
-
-- Slack bot token and signing secret.
-- Separate team-facing Answer Desk Slack channel ID.
-- Credentials/permissions for approved Mesh authoritative sources and skills.
-- Explicit production approval-owner configuration.
-- Deployment infrastructure and any future monetary thresholds explicitly approved by Michael.
-
-These are configuration and integration dependencies, not open Phase 1 operating-control gaps.
+No remediation increment fabricates credentials or live connectivity. Slack secrets, the separate Answer Desk channel ID, authoritative-source credentials, production approval owners, and deployment infrastructure remain environment-specific configuration.

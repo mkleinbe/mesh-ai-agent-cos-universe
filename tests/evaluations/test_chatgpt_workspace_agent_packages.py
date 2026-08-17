@@ -21,11 +21,7 @@ EXPECTED = {
     "cro": ("CRO", "cos", "mesh-cro"),
     "cfo": ("CFO", "cos", "mesh-cfo"),
     "coo": ("COO", "cos", "mesh-coo"),
-    "consultant-network-steward": (
-        "Consultant Network Steward",
-        "coo",
-        "mesh-consultant-network-steward",
-    ),
+    "consultant-network-steward": ("Consultant Network Steward", "coo", "mesh-consultant-network-steward"),
     "cmo": ("CMO", "cos", "mesh-cmo"),
     "vp-content": ("VP Content", "cmo", "mesh-vp-content"),
     "devils-advocate": ("Devil's Advocate", "cos", "mesh-devils-advocate"),
@@ -33,33 +29,12 @@ EXPECTED = {
 }
 
 REQUIRED_MCP_TOOLS = {
-    "registry.get_agent",
-    "registry.list_agents",
-    "task.intake",
-    "task.get",
-    "task.list",
-    "task.decompose",
-    "task.transition",
-    "task.check_in",
-    "task.reassign",
-    "task.remediate_stall",
-    "task.verify",
-    "delegation.create",
-    "approval.request",
-    "approval.get",
-    "approval.record_decision",
-    "conflict.open",
-    "conflict.decide",
-    "governance.record_decision",
-    "governance.record_event",
-    "governance.verify_audit_chain",
-    "agentops.record_event",
-    "agentops.score",
-    "agentops.recommend",
-    "answer_desk.resolve",
-    "skills.invoke_governed",
-    "metrics.snapshot",
-    "reliability.replay",
+    "registry.get_agent", "registry.list_agents", "task.intake", "task.get", "task.list",
+    "task.decompose", "task.transition", "task.check_in", "task.reassign", "task.remediate_stall",
+    "task.verify", "delegation.create", "approval.request", "approval.get", "approval.record_decision",
+    "conflict.open", "conflict.decide", "governance.record_decision", "governance.record_event",
+    "governance.verify_audit_chain", "agentops.record_event", "agentops.score", "agentops.recommend",
+    "answer_desk.resolve", "skills.invoke_governed", "metrics.snapshot", "reliability.replay",
     "reliability.human_override",
 }
 
@@ -75,6 +50,15 @@ def _read_frontmatter(text: str) -> dict[str, str]:
     return values
 
 
+def _config(agent_id: str) -> dict:
+    return json.loads((AGENTS / f"{agent_id}.json").read_text())
+
+
+def _raw_registry() -> dict[str, dict]:
+    source = json.loads((ROOT / "agents" / "registry.json").read_text())
+    return {record["agent_id"]: record for record in source["agents"]}
+
+
 def test_all_phase1_agents_have_chatgpt_skill_and_builder_config() -> None:
     registry = load_registry()
     assert set(EXPECTED) == set(registry)
@@ -84,8 +68,7 @@ def test_all_phase1_agents_have_chatgpt_skill_and_builder_config() -> None:
         assert (skill_dir / "agents" / "openai.yaml").is_file(), agent_id
         assert (skill_dir / "references" / "role-contract.md").is_file(), agent_id
         assert (AGENTS / f"{agent_id}.json").is_file(), agent_id
-
-        config = json.loads((AGENTS / f"{agent_id}.json").read_text())
+        config = _config(agent_id)
         assert config["agent_id"] == agent_id
         assert config["display_name"] == display_name
         assert config["parent_agent_id"] == parent_id
@@ -100,20 +83,17 @@ def test_skill_frontmatter_and_metadata_follow_openai_skill_layout() -> None:
         frontmatter = _read_frontmatter((skill_dir / "SKILL.md").read_text())
         assert frontmatter["name"] == skill_name
         assert len(frontmatter["description"]) >= 80
-        assert agent_id.replace("-", " ") in frontmatter["description"].lower() or display_name.lower() in frontmatter[
-            "description"
-        ].lower()
-
+        assert agent_id.replace("-", " ") in frontmatter["description"].lower() or display_name.lower() in frontmatter["description"].lower()
         metadata = (skill_dir / "agents" / "openai.yaml").read_text()
         assert "interface:" in metadata
         assert f'display_name: "{display_name}"' in metadata
         assert "short_description:" in metadata
 
 
-def test_every_agent_config_preserves_registry_authority_and_governance() -> None:
-    registry = load_registry()
+def test_every_agent_config_preserves_raw_registry_authority_and_governance() -> None:
+    registry = _raw_registry()
     for agent_id in EXPECTED:
-        config = json.loads((AGENTS / f"{agent_id}.json").read_text())
+        config = _config(agent_id)
         record = registry[agent_id]
         assert config["decision_authority"] == record["decision_authority"]
         assert config["required_approvals"] == record["required_approvals"]
@@ -130,8 +110,7 @@ def test_every_agent_config_preserves_registry_authority_and_governance() -> Non
 
 def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
     for agent_id in EXPECTED:
-        config = json.loads((AGENTS / f"{agent_id}.json").read_text())
-        allowlist = config["mcp"]["allowed_tools"]
+        allowlist = _config(agent_id)["mcp"]["allowed_tools"]
         assert allowlist
         assert len(allowlist) == len(set(allowlist))
         assert set(allowlist) <= REQUIRED_MCP_TOOLS
@@ -141,8 +120,7 @@ def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
             assert {"task.decompose", "task.reassign", "conflict.decide", "agentops.recommend"} <= set(allowlist)
         else:
             assert "task.reassign" not in allowlist
-
-    message_ops = json.loads((AGENTS / "message-ops.json").read_text())
+    message_ops = _config("message-ops")
     assert "approval.get" in message_ops["mcp"]["allowed_tools"]
     assert "approval.record_decision" not in message_ops["mcp"]["allowed_tools"]
 
@@ -173,12 +151,7 @@ def test_server_side_mcp_policy_is_deny_by_default_and_resolves_bindings() -> No
     policy = WorkspaceAgentMCPPolicy.from_file(MCP)
     assert policy.authorize("cos", "task.reassign")["name"] == "task.reassign"
     assert policy.authorize("message-ops", "approval.get")["read_only"] is True
-    for denied in (
-        ("cro", "task.reassign"),
-        ("message-ops", "approval.record_decision"),
-        ("unknown-agent", "task.get"),
-        ("cos", "unknown.tool"),
-    ):
+    for denied in (("cro", "task.reassign"), ("message-ops", "approval.record_decision"), ("unknown-agent", "task.get"), ("cos", "unknown.tool")):
         try:
             policy.authorize(*denied)
         except PermissionError:
@@ -190,21 +163,8 @@ def test_server_side_mcp_policy_is_deny_by_default_and_resolves_bindings() -> No
 
 def test_agent_builder_configs_are_complete_and_not_prompt_only_personas() -> None:
     for agent_id in EXPECTED:
-        config = json.loads((AGENTS / f"{agent_id}.json").read_text())
-        for key in (
-            "mission",
-            "workflow",
-            "quality_checklist",
-            "human_in_the_loop",
-            "tools",
-            "apps",
-            "skill",
-            "starter_prompts",
-            "write_action_policy",
-            "connector_action_constraints",
-            "channels",
-            "builder_configuration",
-        ):
+        config = _config(agent_id)
+        for key in ("mission", "workflow", "quality_checklist", "human_in_the_loop", "tools", "apps", "skill", "starter_prompts", "write_action_policy", "connector_action_constraints", "channels", "builder_configuration"):
             assert config[key], (agent_id, key)
         builder = config["builder_configuration"]
         assert builder["name"] == config["display_name"]
@@ -222,41 +182,18 @@ def test_agent_builder_configs_are_complete_and_not_prompt_only_personas() -> No
 
 
 def test_risky_app_boundaries_remain_fail_closed() -> None:
-    cmo = json.loads((AGENTS / "cmo.json").read_text())
-    vp = json.loads((AGENTS / "vp-content.json").read_text())
-    cro = json.loads((AGENTS / "cro.json").read_text())
-    message_ops = json.loads((AGENTS / "message-ops.json").read_text())
-    answer_desk = json.loads((AGENTS / "answer-desk.json").read_text())
-
-    assert any("no autonomous public posting" in rule for rule in cmo["connector_action_constraints"])
-    assert any("public publishing remains human-gated" in rule for rule in vp["connector_action_constraints"])
-    assert any("research/enrichment only" in rule for rule in cro["connector_action_constraints"])
-    assert any("approval" in rule.lower() for rule in message_ops["connector_action_constraints"])
+    assert any("no autonomous public posting" in rule for rule in _config("cmo")["connector_action_constraints"])
+    assert any("public publishing remains human-gated" in rule for rule in _config("vp-content")["connector_action_constraints"])
+    assert any("research/enrichment only" in rule for rule in _config("cro")["connector_action_constraints"])
+    assert any("approval" in rule.lower() for rule in _config("message-ops")["connector_action_constraints"])
+    answer_desk = _config("answer-desk")
     assert answer_desk["channels"]["slack"]["enabled"] is False
     assert answer_desk["channels"]["slack"]["channel_id"] is None
 
 
 def test_workspace_agent_builder_handoff_prompt_is_exact_and_complete() -> None:
     text = BUILDER_PROMPT.read_text()
-    for token in (
-        "Workspace Agent builder",
-        "11 agents",
-        "mesh-cos-mcp",
-        "MESH_COS_MCP_SERVER_URL",
-        "TaskLedger",
-        "L4",
-        "L5",
-        "Always ask",
-        "Connector Action Constraints",
-        "Skills",
-        "Chief of Staff",
-        "AgentOps Controller",
-        "Answer & Decision Desk",
-        "Consultant Network Steward",
-        "Message Operations",
-        "negative authority test",
-        "missing-evidence test",
-    ):
+    for token in ("Workspace Agent builder", "11 agents", "mesh-cos-mcp", "MESH_COS_MCP_SERVER_URL", "TaskLedger", "L4", "L5", "Always ask", "Connector Action Constraints", "Skills", "Chief of Staff", "AgentOps Controller", "Answer & Decision Desk", "Consultant Network Steward", "Message Operations", "negative authority test", "missing-evidence test"):
         assert token in text
 
 

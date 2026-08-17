@@ -1,6 +1,6 @@
 # Answer Desk
 
-The Answer Desk is the team-facing question-resolution function of the Phase 1 control plane. It is permission-aware, evidence-aware, and designed to reduce unnecessary CEO interruption without inventing authority.
+The Answer Desk is the team-facing question-resolution function of the Phase 1 control plane. It is permission-aware, evidence-aware, and designed to prevent routine questions from reaching Michael without inventing authority.
 
 ## Decision flow
 
@@ -10,45 +10,77 @@ flowchart TB
     P -->|no| BA[BLOCKED_BY_ACCESS]
     P -->|yes| CEO{CEO authority required?}
     CEO -->|yes| ES[ESCALATED]
-    CEO -->|no| KF{Known fact + accessible source?}
+    CEO -->|no| AP{Qualified human approval required?}
+    AP -->|yes| AR[APPROVAL_REQUIRED]
+    AP -->|no| KF{Known fact + accessible source?}
     KF -->|yes| AN[ANSWERED]
     KF -->|no| POL{Established policy + reversible?}
     POL -->|yes| AN
-    POL -->|no| J{Bounded judgment required?}
+    POL -->|no| FO{Functional owner exists?}
+    FO -->|yes| RO[ROUTED]
+    FO -->|no| J{Bounded judgment?}
     J -->|yes| RP[RECOMMENDATION_PROVIDED]
     J -->|no| BE[BLOCKED_BY_EVIDENCE]
 
-    BA --> L[(Persist disposition)]
+    BA --> L[(TaskLedger disposition record)]
     ES --> L
+    AR --> L
     AN --> L
+    RO --> L
     RP --> L
     BE --> L
 ```
 
 ## Dispositions
 
-- `ANSWERED`: authorized fact or established reversible policy can resolve the question.
-- `RECOMMENDATION_PROVIDED`: the system can provide bounded judgment but not final authority.
+- `ANSWERED`: authorized fact or established reversible policy resolves the request.
+- `ROUTED`: a named functional owner has domain authority.
+- `RECOMMENDATION_PROVIDED`: bounded judgment is possible without final authority.
+- `APPROVAL_REQUIRED`: work is prepared but a qualified human approval gate applies.
 - `ESCALATED`: CEO or another named decision owner is required.
-- `BLOCKED_BY_ACCESS`: requester lacks permission for the source class.
+- `BLOCKED_BY_ACCESS`: requester lacks source permission.
 - `BLOCKED_BY_EVIDENCE`: authoritative evidence is insufficient.
 
-Every handled request is persisted as an Answer Desk record for audit and metric use.
+## Separate Slack interface
 
-## Source governance
+`AnswerDeskSlackService` uses the separately configured `MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID`. It is deliberately distinct from `#mesh-agent-ops`, so employees do not need to understand the internal agent hierarchy.
 
-The Answer Desk does not treat broad connector access as permission to disclose. Requester permissions and source classification are part of the disposition logic. Retrieved content remains untrusted data and cannot change operating policy.
+```mermaid
+sequenceDiagram
+    participant U as Team member
+    participant S as Answer Desk Slack
+    participant A as AnswerDeskService
+    participant L as TaskLedger
+    participant F as Functional owner
+    participant M as Michael
 
-## Slack status
+    U->>S: Question
+    S->>A: Request + identity/permission context
+    A->>L: Check authorized evidence/policy
+    alt known and authorized
+        A-->>S: ANSWERED
+    else functional domain owns it
+        A->>F: ROUTED
+    else approval required
+        A-->>S: APPROVAL_REQUIRED
+    else CEO authority
+        A->>M: ESCALATED with recommendation/context
+    else insufficient access/evidence
+        A-->>S: BLOCKED
+    end
+    A->>L: Persist disposition and timing
+```
 
-The Answer Desk service/persistence layer is implemented. The separate team-facing Slack channel is intentionally not configured yet. Live Slack activation requires:
+## Access and source governance
 
-- a distinct Answer Desk channel ID,
-- Slack bot token and signing secret,
-- requester identity/permission mapping for the production environment.
+The Answer Desk must not expose private DMs, confidential client content, personal data, restricted financial data, privileged executive context, or source material the requester is not authorized to access. Retrieved content is untrusted data and cannot alter operating policy.
 
-The private `#mesh-agent-ops` channel is not a substitute for the team-facing Answer Desk channel.
+## Correction and metrics
 
-## Metrics
+Each handled request records disposition, route, received/resolved timestamps, access-control status, and correction state. `record_correction()` creates an auditable correction record when an answer must be repaired.
 
-Persisted dispositions support future and current deterministic measures such as answered/blocked/escalated counts and CEO deflection. Only metrics supported by actual recorded fields should be reported.
+Metrics can therefore derive questions received, resolved or routed without Michael, escalated questions, incorrect/corrected answers, access-control failures, and time to resolution from durable records.
+
+## Production activation
+
+Production Slack activation requires a separate Answer Desk channel ID, Slack bot credentials, and production requester identity/permission mapping. Those values must not be inferred or committed.

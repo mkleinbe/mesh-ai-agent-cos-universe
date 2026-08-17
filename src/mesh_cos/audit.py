@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
+
 from .models import new_id, utcnow
+
 
 @dataclass(slots=True)
 class AuditEvent:
@@ -13,6 +15,7 @@ class AuditEvent:
     authority_level: int
     result: str
     event_id: str = ""
+    version: str = "mesh.cos.agent-event.v1"
     event_version: str = "mesh.cos.agent-event.v1"
     timestamp: str = ""
     source: str = "mesh-cos"

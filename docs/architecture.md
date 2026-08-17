@@ -2,136 +2,109 @@
 
 ## Purpose
 
-Phase 1 is a governed executive control plane for a bounded hybrid organization of agents, reusable Mesh capabilities, authoritative data sources, and human decision owners. The architecture is intentionally a Python modular monolith with a narrow persistence boundary rather than a distributed agent swarm.
+Phase 1 is a governed executive control plane for a bounded hybrid organization of agents, reusable Mesh skills, authoritative data sources, and explicit human decision owners. It is a Python modular monolith with SQLite behind a narrow persistence boundary. It deliberately avoids swarms, brokers, and unnecessary microservices.
 
 ## Runtime topology
 
 ```mermaid
 flowchart TB
-    subgraph HumanAuthority[Human authority]
-      CEO[Michael / CEO]
-      APPROVER[Qualified L4 approvers]
-    end
+    CEO[Michael / L5] --> COS[ChiefOfStaffService]
+    APPROVER[Qualified L4 approvers] --> COS
+    COS --> WM[ChiefOfStaffWorkforceManager]
+    COS --> AO[AgentOpsEvaluator]
+    COS --> AD[AnswerDeskService]
+    WM --> CRO[CRO]
+    WM --> CFO[CFO v1]
+    WM --> COO[COO v1]
+    WM --> CMO[CMO]
+    WM --> DA[Devil's Advocate]
+    WM --> MO[Message Operations]
+    COO --> CNS[Consultant Network Steward]
+    CMO --> VPC[VP Content]
 
-    subgraph ControlPlane[Executive control plane]
-      COS[Chief of Staff Service]
-      AO[AgentOps Evaluator]
-      AD[Answer Desk Service]
-      AUTH[Invocation Authorization]
-    end
+    REG[Agent Registry] --> AUTH[Invocation authorization]
+    AUTH --> CRO
+    AUTH --> CFO
+    AUTH --> COO
+    AUTH --> CMO
+    AUTH --> DA
+    AUTH --> MO
 
-    subgraph FunctionalLayer[Functional agents and adapters]
-      CRO[CRO]
-      CFO[CFO v1]
-      COO[COO v1]
-      CNS[Consultant Network Steward]
-      CMO[CMO]
-      VPC[VP Content]
-      DA[Devil's Advocate]
-      MO[Message Operations]
-    end
+    COS --> LEDGER[(TaskLedger)]
+    WM --> LEDGER
+    AO --> LEDGER
+    AD --> LEDGER
 
-    subgraph CanonicalState[Canonical state]
-      REG[agents/registry.json]
-      CONTRACTS[Versioned JSON contracts]
-      LEDGER[(SQLite TaskLedger)]
-      PERF[performance-policy.v1.json]
-    end
-
-    subgraph Collaboration[Collaboration boundary]
-      SC[Slack Coordinator / Web API boundary]
-      OPS[#mesh-agent-ops\nC0BRL4GCL3A]
-    end
-
-    subgraph External[Approved external boundaries]
-      SOURCES[Authoritative Mesh sources]
-      SKILLS[Existing Mesh skills]
-    end
-
-    CEO --> COS
-    APPROVER --> COS
-    COS --> CRO
-    COS --> CFO
-    COS --> COO
-    COO --> CNS
-    COS --> CMO
-    CMO --> VPC
-    COS --> DA
-    COS --> MO
-    COS --> AO
-    COS --> AD
-
-    REG --> AUTH
-    AUTH --> FunctionalLayer
-    CONTRACTS --> ControlPlane
-    ControlPlane --> LEDGER
-    FunctionalLayer --> LEDGER
-    PERF --> AO
-
-    SOURCES --> AUTH
-    SKILLS --> AUTH
-    SC <--> COS
-    SC --> LEDGER
-    OPS <--> SC
+    OPS[#mesh-agent-ops\nC0BRL4GCL3A] <--> SLACK[Slack inbound/outbound boundary]
+    SLACK <--> COS
+    SLACK --> LEDGER
+    ADS[Separate Answer Desk Slack] <--> AD
 ```
 
-## Canonical state
-
-`TaskLedger` is the authoritative runtime persistence boundary. It stores tasks plus durable consequential records through typed record categories, audit events, idempotency claims, and Slack task/thread mappings. Slack messages and agent conversations are views of state, not state itself.
-
-Canonical sources of operating truth:
-
-1. `agents/registry.json` for agent identity, hierarchy, authority, source/tool policy, delegation permissions, prohibited actions, confidentiality, and runtime health.
-2. `contracts/*.schema.json` for versioned data contracts.
-3. `TaskLedger` for task lifecycle and consequential records.
-4. `config/performance-policy.v1.json` for versioned AgentOps weighting and thresholds.
-
-## Chief of Staff execution loop
+## Work-management loop
 
 ```mermaid
 sequenceDiagram
-    participant R as Requester
-    participant C as CoS Service
+    participant M as Michael / requester
+    participant C as CoS
+    participant W as Workforce manager
+    participant F as Functional agent / skill
     participant L as TaskLedger
-    participant F as Functional Agent/Adapter
-    participant H as Human Approver
+    participant H as Human approver
 
-    R->>C: Outcome request
-    C->>L: Persist INTAKE task
-    C->>L: TRIAGED -> PLANNED -> ASSIGNED
-    C->>F: Governed delegation / execution
-    F->>L: Evidence, updates, consequential records
-    alt approval required
-        C->>H: Decision brief / approval request
-        H-->>C: approve / reject
-        C->>L: Persist approval disposition
+    M->>C: Outcome request
+    C->>L: Persist INTAKE
+    C->>W: Decompose work graph
+    W->>L: Persist child tasks and delegation
+    W->>F: Governed work package
+    F->>L: Evidence / check-in / state
+    W->>W: Monitor dependencies, SLA and stalls
+    alt stalled or misdirected
+        W->>L: Remediate or reassign with audit
     end
-    F-->>C: Completed deliverable + evidence
-    C->>L: COMPLETED
+    alt L4/L5 required
+        C->>H: Decision brief / approval
+        H-->>C: Explicit decision
+        C->>L: Persist approval
+    end
+    F-->>C: Completed output + evidence
     C->>C: Execute acceptance test
-    alt acceptance passes
-        C->>L: Persist verification result
+    alt accepted
         C->>L: VERIFIED -> CLOSED
-    else acceptance fails
-        C->>L: Persist failed verification
+    else rejected
         C->>L: REWORK
     end
 ```
 
-## Delegation architecture
+## Canonical source-of-truth map
 
-Delegation is contractual and bounded. A delegated work package cannot widen authority, drop parent approval obligations, create circular ownership, exceed the normal two-level depth below CoS, or define overlapping permitted and prohibited actions. Delegation records are durable.
+| Subject | Canonical authority |
+|---|---|
+| Agent definition and authority | `agents/registry.json`, normalized by `mesh_cos.registry` |
+| Task/work graph and outcomes | `TaskLedger` |
+| Decisions, conflicts, approvals | `TaskLedger` typed records and audit events |
+| Performance | performance-event/scorecard records plus versioned performance policy |
+| Slack state | TaskLedger task/thread and event-idempotency records, not Slack history |
+| Financial calculations | CFO v1 within supported engagement-finance sources |
+| Commercial/account evidence | Revenue Intelligence where available |
+| Delivery/resource feasibility | COO v1 and approved resource sources |
 
-## Slack architecture
+## Structured contracts
 
-`#mesh-agent-ops` is the private agent-operations coordination channel. The Slack boundary implements request-signature verification, durable event idempotency, task/thread mapping, structured message rendering, and a Web API client boundary. Live Slack calls remain configuration-dependent on the bot token and signing secret.
+Nine versioned JSON schemas define AgentRecord, TaskRecord, Delegation, AgentEvent, Decision, Conflict, Approval, PerformanceEvent, and PerformanceScorecard. Contracts reject undeclared fields. Runtime records are validated through `mesh_cos.contracts`, and CI runs a runtime/documentation drift check.
 
-The separate Answer Desk channel is intentionally not inferred. Its channel ID must be supplied before team-facing Slack operation is activated.
+## Functional execution boundary
 
-## Security architecture
+`GovernedAdapterRegistry` maps only registered skills/tools to the agent allowed to invoke them. It composes existing Mesh capabilities instead of reimplementing them. External executors remain configuration-dependent until credentials and connectivity are supplied.
 
-All source, tool, and action calls must pass runtime authorization from registry policy. Retrieved content is treated as untrusted data. L4 actions fail closed pending qualified human approval, and L5 authority remains Michael-exclusive. The kill switch and quarantine controls remain part of the Phase 1 safety model.
+## Slack boundary
+
+The Slack layer verifies request signatures and timestamps, rejects stale replayed requests, deduplicates event IDs durably, parses structured messages, persists one-task/one-thread mappings, and posts approval notifications. `#mesh-agent-ops` remains an observable collaboration surface, never canonical state. The Answer Desk uses a separate configurable Slack boundary.
+
+## Reliability and governance
+
+The runtime includes idempotent intake, bounded retries, timeouts, execution leases, failure records, explicit replay, human override, task supersession, stalled-work remediation, invocation allowlists, prompt-injection boundaries, L4/L5 fail-closed approval, audit events, health restrictions, and the emergency kill switch.
 
 ## Deployment boundary
 
-The repository is implementation-ready for Phase 1 control-plane behavior, but production operation depends on credentials, source permissions, approval-owner mapping, and runtime infrastructure. SQLite is appropriate for Phase 1/local operation and should be revisited before multi-instance deployment.
+Phase 1 operating logic is complete at the repository boundary. Production use still requires Slack credentials, the Answer Desk channel ID, approved source/skill credentials, approval-owner configuration, and deployment infrastructure. SQLite should be revisited before multi-instance or high-availability deployment.

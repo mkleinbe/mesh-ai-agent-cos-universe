@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import IntEnum, StrEnum
 from typing import Any
@@ -100,6 +100,7 @@ class TaskRecord:
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
+        data["version"] = "mesh.cos.task.v1"
         data["status"] = self.status.value
         data["authority_level"] = int(self.authority_level)
         return data
@@ -130,3 +131,9 @@ class Delegation:
     dependencies: list[str] = field(default_factory=list)
     next_check_at: str | None = None
     escalation_condition: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["version"] = "mesh.cos.delegation.v1"
+        data["authority_level"] = int(self.authority_level)
+        return data

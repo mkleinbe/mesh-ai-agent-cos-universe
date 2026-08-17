@@ -2,6 +2,48 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 0.1.2 - 2026-08-17 - Final Phase 1 requirement closure
+
+### Runtime integrity
+
+- Aligned runtime `TaskRecord`, `Delegation`, `AgentRecord`, and `AuditEvent` shapes with canonical versioned JSON contracts.
+- Expanded AgentRecord lifecycle metadata and the audit event envelope, including `event_version`.
+- Expanded material conflict records to preserve source authority, facts, options, positions, confidence, reversibility, CoS recommendation, reversal condition, and decision owner.
+- Added runtime/documentation drift validation across schemas, registry records, runtime objects, Slack configuration, and core documentation.
+
+### Chief of Staff operating loop
+
+- Extended `ChiefOfStaffService` with work decomposition, dependency checks, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, verification, closure, and idempotent intake.
+- Added `ChiefOfStaffWorkforceManager` for durable delegation, management cycles, task supersession, and bounded agent-portfolio recommendations.
+- Added governed binding of existing Mesh skills to registered agents without duplicating skill logic.
+
+### Slack and Answer Desk
+
+- Added Slack request freshness/replay protection, structured message parsing, inbound event handling, top-level task-thread creation, and approval notifications for `#mesh-agent-ops` (`C0BRL4GCL3A`).
+- Added a separate configurable Answer Desk Slack boundary.
+- Added `ROUTED` and `APPROVAL_REQUIRED` dispositions, correction tracking, access-control telemetry, and resolution timing.
+
+### AgentOps, reliability, and metrics
+
+- Added durable rolling performance windows, workload/concurrency observations, missed-deadline and rework signals, rejection reasons, error taxonomy, repeated tool/evidence defect signals, high-cost/low-value signals, and the complete Phase 1 recommendation vocabulary.
+- Added timeout handling, execution leases, durable failure records, explicit replay, human override, supersession, duplicate-intake protection, and kill-switch enforcement.
+- Expanded metrics to the full original Phase 1 instrumentation set without fabricated baselines or targets.
+- Expanded audit coverage across consequential management and governance actions.
+
+### TDD and quality gates
+
+- Added source-derived final-closure acceptance tests before the implementation that satisfies them.
+- Added dependency integrity, runtime/documentation drift checks, critical Ruff linting, coverage enforcement, high-severity Bandit scanning, schema validation, pytest, and compileall to CI.
+- Added `docs/phase-1-final-closure-2026-08-17.md` and reconciled historical remediation records to the final source-to-runtime audit.
+
+### Production dependencies
+
+- Slack bot token and signing secret.
+- Team-facing Answer Desk Slack channel ID.
+- Credentials and permissions for approved Mesh authoritative sources and existing skills.
+- Production approval-owner configuration.
+- Deployment/runtime infrastructure and any explicitly approved future monetary thresholds.
+
 ## 0.1.1 - 2026-08-17 - Phase 1 remediation and documentation alignment
 
 ### Remediated
@@ -28,17 +70,8 @@ The remediation increment was executed with test-first acceptance criteria and C
 
 - Reconciled repository documentation to the post-remediation runtime.
 - Added Mermaid diagrams for system architecture, task lifecycle, delegation, conflict/decision flow, Agent Registry control, AgentOps, Slack coordination, Answer Desk, testing flow, and operations.
-- Reclassified the August 17 gap assessment as historical and mapped each prior code gap to its current disposition.
-- Clarified the remaining production dependencies as configuration and external integration work rather than unresolved Phase 1 control-plane code.
+- Reclassified the August 17 gap assessment as historical and mapped each prior code gap to its then-current disposition.
 - Refreshed all Phase 1 agent role cards to point to the canonical registry and current governance boundaries.
-
-### Remaining production dependencies
-
-- Slack bot token and signing secret.
-- Team-facing Answer Desk Slack channel ID.
-- Credentials and permissions for approved Mesh authoritative sources and skills.
-- Production approval-owner configuration.
-- Deployment/runtime infrastructure and any explicitly approved future monetary thresholds.
 
 ## 0.1.0 - 2026-08-17 - Phase 1 operating core
 

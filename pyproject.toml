@@ -1,14 +1,28 @@
 [project]
 name = "mesh-ai-agent-cos-universe"
-version = "0.1.0"
+version = "0.1.2"
 description = "Phase 1 operating core for Mesh Digital's AI Chief of Staff agent workforce"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "jsonschema>=4.20"]
+dev = [
+  "bandit>=1.7",
+  "jsonschema>=4.20",
+  "pytest>=8",
+  "pytest-cov>=5",
+  "ruff>=0.6",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.coverage.run]
+branch = true
+source = ["mesh_cos"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

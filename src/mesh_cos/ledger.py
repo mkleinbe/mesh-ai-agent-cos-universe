@@ -39,14 +39,20 @@ class TaskLedger:
         )
         self.conn.commit()
 
-    def get_task(self, task_id: str) -> TaskRecord | None:
-        row = self.conn.execute("SELECT payload FROM tasks WHERE task_id=?", (task_id,)).fetchone()
-        if not row:
-            return None
-        data = json.loads(row[0])
+    def _task_from_payload(self, payload: str) -> TaskRecord:
+        data = json.loads(payload)
+        data.pop("version", None)
         data["status"] = TaskStatus(data["status"])
         data["authority_level"] = AuthorityLevel(data["authority_level"])
         return TaskRecord(**data)
+
+    def get_task(self, task_id: str) -> TaskRecord | None:
+        row = self.conn.execute("SELECT payload FROM tasks WHERE task_id=?", (task_id,)).fetchone()
+        return self._task_from_payload(row[0]) if row else None
+
+    def list_tasks(self) -> list[TaskRecord]:
+        rows = self.conn.execute("SELECT payload FROM tasks ORDER BY task_id").fetchall()
+        return [self._task_from_payload(row[0]) for row in rows]
 
     def save_record(self, kind: str, record_id: str, payload: dict) -> None:
         self.conn.execute(
@@ -62,6 +68,10 @@ class TaskLedger:
     def list_records(self, kind: str) -> list[dict]:
         rows = self.conn.execute("SELECT payload FROM records WHERE kind=? ORDER BY record_id", (kind,)).fetchall()
         return [json.loads(row[0]) for row in rows]
+
+    def delete_record(self, kind: str, record_id: str) -> None:
+        self.conn.execute("DELETE FROM records WHERE kind=? AND record_id=?", (kind, record_id))
+        self.conn.commit()
 
     def bind_thread(self, task_id: str, channel_id: str, thread_ts: str) -> dict:
         self.conn.execute(
@@ -96,3 +106,7 @@ class TaskLedger:
             return True
         except sqlite3.IntegrityError:
             return False
+
+    def list_events(self) -> list[dict]:
+        rows = self.conn.execute("SELECT payload FROM events ORDER BY rowid").fetchall()
+        return [json.loads(row[0]) for row in rows]

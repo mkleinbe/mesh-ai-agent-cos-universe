@@ -1,1 +1,12 @@
-{"version":"mesh.cos.performance-event.v1","agent_id":"cro","task_id":"COS-1","category":"first_pass_quality","score":0.9,"severity":"LOW"}
+{
+  "version": "mesh.cos.performance-event.v1",
+  "performance_event_id": "PERF-1",
+  "agent_id": "cro",
+  "task_id": "COS-1",
+  "category": "first_pass_quality",
+  "score": 0.9,
+  "severity": "LOW",
+  "reason": "accepted on first pass",
+  "timestamp": "2026-08-17T12:00:00+00:00",
+  "cost": null
+}

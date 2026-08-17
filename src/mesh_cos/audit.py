@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
+
 from .models import new_id, utcnow
+
 
 @dataclass(slots=True)
 class AuditEvent:
@@ -29,4 +31,6 @@ class AuditEvent:
         self.idempotency_key = self.idempotency_key or self.event_id
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        data["version"] = data.pop("event_version")
+        return data

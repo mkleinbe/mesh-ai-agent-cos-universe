@@ -2,9 +2,11 @@
 
 ## Status
 
-This record closes the remaining requirement-to-runtime gaps identified after the post-remediation audit. Phase 1 now implements the operating-control capabilities required for the Chief of Staff to manage a bounded executive agent organization while preserving explicit human authority and functional source truth.
+This record closes the remaining requirement-to-runtime gaps identified after the post-remediation audit. Phase 1 implements the operating-control capabilities required for the Chief of Staff to manage a bounded executive agent organization while preserving explicit human authority and functional source truth.
 
 External business systems and credentials remain deployment dependencies. Their absence is not represented as a live integration.
+
+A subsequent role-model pressure test on the same date hardened organizational naming and functional capability coverage. Canonical organizational identities are stable and implementation versions are separate registry metadata. The hardening expanded executable capability vocabulary inside already-approved Phase 1 domains and did not expand autonomous authority.
 
 ## TDD and loop-engineering sequence
 
@@ -33,8 +35,8 @@ flowchart TB
     CEO[Michael] --> COS[Chief of Staff]
     COS --> WG[Work graph and TaskLedger]
     COS --> CRO[CRO]
-    COS --> CFO[CFO v1]
-    COS --> COO[COO v1]
+    COS --> CFO[CFO]
+    COS --> COO[COO]
     COS --> CMO[CMO]
     COS --> AO[AgentOps]
     COS --> AD[Answer Desk]
@@ -47,9 +49,20 @@ flowchart TB
     VERIFY -->|fail| REWORK[REWORK]
 ```
 
+### Canonical functional model
+
+- **CRO:** commercial strategy, opportunity qualification, pipeline health, pursuits, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion, and commercial-risk framing within delegated scope.
+- **CFO:** Engagement Finance / FP&A only, including economics, cost-to-serve, contribution economics, margins, supported working-capital implications, forecast-versus-actual, assumptions, scenario comparison, and financial-risk recommendations.
+- **COO:** delivery feasibility/configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations.
+- **Consultant Network Steward:** consultant identification/matching and readiness evidence under COO authority.
+- **CMO:** marketing strategy, audience/ICP, category positioning, campaign/demand architecture, distribution, brand governance, optimization, and marketing-commercial feedback.
+- **VP Content:** editorial planning, evidence assembly, production, adaptation, reuse, inventory, QA, and performance feedback under CMO authority.
+
+Role names do not encode implementation version. Agent implementation versions remain in the registry `version` field. Source authority, approvals, and L0-L5 boundaries remain unchanged.
+
 ### Canonical contracts and state
 
-All nine Phase 1 JSON contracts are versioned and closed to undeclared fields. Runtime TaskRecord, Delegation, AgentRecord, and AuditEvent shapes are validated directly against canonical schemas. AgentRecord includes lifecycle timestamps, and the event envelope includes `event_version` in addition to the schema-facing `version`.
+All Phase 1 JSON contracts are versioned and closed to undeclared fields. Runtime TaskRecord, Delegation, AgentRecord, and AuditEvent shapes are validated directly against canonical schemas. AgentRecord includes lifecycle timestamps, and the event envelope includes `event_version` in addition to the schema-facing `version`.
 
 `TaskLedger` remains canonical for tasks, events, approvals, delegations, conflicts, decisions, verification records, performance records, Slack mappings, execution failures, replays, human overrides, and operational metrics inputs. Slack remains non-canonical.
 
@@ -76,7 +89,7 @@ flowchart LR
 
 ### AgentOps
 
-AgentOps now supports durable performance events, rolling windows, versioned scorecards, stalled work, missed deadlines, workload/concurrency observations, rework, rejection reasons, execution error taxonomy, repeated tool failures, evidence defects, high-cost/low-value signals, governed health changes, and the complete recommendation vocabulary:
+AgentOps supports durable performance events, rolling windows, versioned scorecards, stalled work, missed deadlines, workload/concurrency observations, rework, rejection reasons, execution error taxonomy, repeated tool failures, evidence defects, high-cost/low-value signals, governed health changes, and the complete recommendation vocabulary:
 
 `CONTINUE`, `INCREASE_ROUTING`, `DECREASE_ROUTING`, `WATCH`, `RESTRICT`, `RETRAIN_OR_REVISE`, `QUARANTINE`, `RETIRE`, `BUILD_NEW_SPECIALIST`.
 

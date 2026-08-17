@@ -121,9 +121,9 @@ class MCPRuntime:
         return set(self._handlers)
 
     def call_agent(self, agent_id: str, tool_name: str, arguments: dict[str, Any]) -> Any:
-        self.policy.authorize(agent_id, tool_name)
         if tool_name in HUMAN_ONLY_TOOLS:
             raise PermissionError(f"{tool_name} requires an authenticated human principal")
+        self.policy.authorize(agent_id, tool_name)
         handler = self._handlers.get(tool_name)
         if handler is None:
             raise PermissionError(f"Unknown MCP tool: {tool_name}")
@@ -132,6 +132,7 @@ class MCPRuntime:
     def call_human(self, principal_id: str, tool_name: str, arguments: dict[str, Any]) -> Any:
         if not principal_id.strip():
             raise PermissionError("Authenticated human principal is required")
+        self.policy.authorize_human(tool_name)
         if tool_name == "approval.record_decision":
             args = dict(arguments)
             return self.approvals.decide(

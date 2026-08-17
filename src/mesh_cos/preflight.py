@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
 from urllib.parse import urlparse
 
 from .governance import verify_audit_chain
@@ -91,7 +91,7 @@ class ProductionPreflight:
                 detail = "canonical agent set does not match the Phase 1 organization"
             elif unsafe_health:
                 detail = "non-routable agent health present: " + ", ".join(unsafe_health)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - preflight converts any validation defect to fail-closed status
             registry_ok = False
             detail = f"registry validation failed: {type(exc).__name__}"
         checks.append(self._result("agent_registry", registry_ok, detail))
@@ -107,13 +107,15 @@ class ProductionPreflight:
                 if mcp_contract_ok
                 else f"{len(binding_errors)} runtime binding error(s)"
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - preflight must report MCP defects instead of crashing
             mcp_contract_ok = False
             mcp_detail = f"MCP contract validation failed: {type(exc).__name__}"
         checks.append(self._result("mcp_contract", mcp_contract_ok, mcp_detail))
 
         if self.require_slack:
-            channel_present = bool(str(env.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "")).strip())
+            channel_present = bool(
+                str(env.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "")).strip()
+            )
             checks.append(
                 self._result(
                     "agent_ops_channel",
@@ -121,9 +123,9 @@ class ProductionPreflight:
                     "configured" if channel_present else "missing channel ID",
                 )
             )
-            credentials_present = bool(str(env.get("MESH_COS_SLACK_BOT_TOKEN", "")).strip()) and bool(
-                str(env.get("MESH_COS_SLACK_SIGNING_SECRET", "")).strip()
-            )
+            credentials_present = bool(
+                str(env.get("MESH_COS_SLACK_BOT_TOKEN", "")).strip()
+            ) and bool(str(env.get("MESH_COS_SLACK_SIGNING_SECRET", "")).strip())
             checks.append(
                 self._result(
                     "slack_credentials",

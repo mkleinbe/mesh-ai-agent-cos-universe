@@ -59,10 +59,7 @@ class AgentOpsService:
     def _window_events(self, agent_id: str, window_start: str, window_end: str) -> list[dict]:
         start = datetime.fromisoformat(window_start)
         end = datetime.fromisoformat(window_end)
-        return [
-            e for e in self.ledger.list_performance_events(agent_id)
-            if start <= datetime.fromisoformat(e["timestamp"]) <= end
-        ]
+        return [e for e in self.ledger.list_performance_events(agent_id) if start <= datetime.fromisoformat(e["timestamp"]) <= end]
 
     def scorecard(self, agent_id: str, *, window_start: str, window_end: str) -> dict:
         events = self._window_events(agent_id, window_start, window_end)
@@ -103,6 +100,32 @@ class AgentOpsService:
             return "WATCH"
         if score > thresholds["increase_routing_above"] and len(events) >= int(thresholds["min_events_for_increase"]):
             return "INCREASE_ROUTING"
+        return "CONTINUE"
+
+    def portfolio_recommendation(
+        self,
+        *,
+        agent_id: str,
+        sustained_failure_windows: int = 0,
+        repeated_tool_failures: int = 0,
+        repeated_evidence_defects: int = 0,
+        workload_pressure: bool = False,
+        capability_gap: bool = False,
+        retirement_candidate: bool = False,
+    ) -> str:
+        events = self.ledger.list_performance_events(agent_id)
+        if any(e.get("severity") == "CRITICAL" for e in events):
+            return "QUARANTINE"
+        if retirement_candidate and sustained_failure_windows >= 3:
+            return "RETIRE"
+        if capability_gap:
+            return "BUILD_NEW_SPECIALIST"
+        if repeated_tool_failures >= 3 or repeated_evidence_defects >= 3:
+            return "RETRAIN_OR_REVISE"
+        if sustained_failure_windows >= 2:
+            return "DECREASE_ROUTING"
+        if workload_pressure:
+            return "DECREASE_ROUTING"
         return "CONTINUE"
 
     def stalled_tasks(self) -> list[str]:

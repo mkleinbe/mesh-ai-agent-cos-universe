@@ -6,11 +6,14 @@ Phase 1 separates factual/source authority from cross-functional tradeoff author
 
 Current domain authority mappings include:
 
-- financial calculation -> CFO v1
-- commercial evidence -> approved Mesh Revenue Intelligence source
-- account qualification -> approved Mesh Revenue Intelligence source
-- staffing feasibility -> COO v1
-- marketing strategy -> CMO
+- engagement finance and FP&A calculation -> CFO within supported source scope
+- commercial evidence -> approved Mesh Revenue Intelligence source where designated
+- account qualification evidence -> approved Mesh Revenue Intelligence source where designated
+- commercial interpretation, pursuit strategy, and expansion recommendation -> CRO within delegated scope
+- delivery feasibility, capacity, resource readiness, and staffing recommendation -> COO
+- consultant-network readiness evidence -> Consultant Network Steward under COO
+- marketing strategy and brand/demand architecture -> CMO
+- editorial production -> VP Content under CMO intent
 
 The CoS coordinates these truths but does not replace them.
 
@@ -18,7 +21,7 @@ The CoS coordinates these truths but does not replace them.
 
 ```mermaid
 flowchart TB
-    C[Conflicting evidence, priorities, or recommendations] --> A[Identify authoritative fact owner]
+    C[Conflicting evidence, priorities, or recommendations] --> A[Identify authoritative fact or domain owner]
     A --> F[Resolve factual disagreements where possible]
     F --> T{Material tradeoff remains?}
     T -->|no| CLOSE[Close through functional owner + audit]
@@ -75,6 +78,10 @@ When escalation is required, the CoS should compress the issue into:
 - approval/action requested.
 
 The brief should reduce CEO cognitive load without hiding uncertainty or conflicting functional evidence. The durable `decision.v2` record is the machine-auditable counterpart to the human-readable brief.
+
+## Role identity in conflict records
+
+Conflict and decision records use stable agent IDs and canonical display names. Implementation provenance is carried separately through agent/model/skill version fields. A role name must not be altered to communicate implementation maturity or release state.
 
 ## Reversal and supersession
 

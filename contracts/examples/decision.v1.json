@@ -1,1 +1,14 @@
-{"version":"mesh.cos.decision.v1","decision_id":"DEC-1","task_id":"COS-1","decision_owner":"Michael","authority_level":4,"decision":"Approve option A","rationale":"Strategic rationale with known margin tradeoff"}
+{
+  "version": "mesh.cos.decision.v1",
+  "decision_id": "DEC-1",
+  "task_id": "COS-1",
+  "decision_owner": "Michael",
+  "authority_level": 4,
+  "decision": "Approve option A",
+  "rationale": "Strategic rationale with known margin tradeoff",
+  "approval_reference": "A-1",
+  "options_considered": ["A", "B"],
+  "source_references": ["mesh://economics"],
+  "reversal_condition": "Economics materially worsen",
+  "decided_at": "2026-08-17T12:00:00+00:00"
+}

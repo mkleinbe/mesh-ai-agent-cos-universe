@@ -1,6 +1,6 @@
 # Decision Rights
 
-Phase 1 uses six authority levels, L0 through L5. Authority is explicit, cannot be self-expanded, and is enforced together with registry source/tool/action policy, approval requirements, and explainable-decision logging.
+Phase 1 uses six authority levels, L0 through L5. Authority is explicit, cannot be self-expanded, and is enforced together with registry source/tool/action policy, approval requirements, explainable-decision logging, and Workspace Agent connector controls.
 
 ## Authority ladder
 
@@ -36,6 +36,30 @@ flowchart TB
 - Any agent that decides or makes a material recommendation must create an explainable `mesh.cos.decision.v2` record.
 - Decision explainability records concise observable factors, evidence, alternatives, criteria, confidence, risk and reversal conditions, not hidden chain-of-thought.
 - Superseding or reversing a decision does not delete its historical record.
+
+## Workspace Agent write approvals
+
+ChatGPT Workspace Agent write-action approval is an additional product-level control, not a substitute for Mesh decision rights. The checked-in Workspace Agent manifests default write actions to **Always ask**.
+
+```mermaid
+flowchart LR
+    I[Workspace Agent intent] --> A[MCP + registry authority check]
+    A -->|denied| X[Block + audit]
+    A -->|allowed| L{Mesh authority level}
+    L -->|L0-L3 permitted| W{Workspace write action?}
+    L -->|L4| H[Qualified human Mesh approval]
+    L -->|L5| M[Michael Mesh approval]
+    H --> W
+    M --> W
+    W -->|no| E[Governed execution]
+    W -->|yes| P[ChatGPT Always ask / connector constraint]
+    P -->|approved| E
+    P -->|not approved| X
+```
+
+A Workspace approval click cannot grant authority that the Mesh registry denies, satisfy an L5 decision unless Michael is the authorized decision owner, remove an inherited approval obligation, or convert a prohibited action into a permitted one. Likewise, a recorded Mesh approval does not disable the Workspace Agent **Always ask** control unless a narrowly documented administrative exception is explicitly configured.
+
+Connector Action Constraints in `chatgpt/workspace-agents/*.json` narrow app behavior further. For example, LinkedIn remains non-publishing for CRO/CMO/VP Content, Apollo is research-only for CRO, and Message Operations requires a matching recorded approval before any consequential send.
 
 ## Role identity, authority, and version provenance
 
@@ -86,6 +110,6 @@ For a material decision or recommendation, the record must identify:
 
 ## Change control
 
-Any authority or accountable-domain change requires corresponding registry, test, documentation, governance-policy, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent. Role-name changes are identity changes and must not be used as a shortcut for implementation versioning.
+Any authority or accountable-domain change requires corresponding registry, test, documentation, governance-policy, Workspace Agent manifest/Skill, MCP allowlist, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent. Role-name changes are identity changes and must not be used as a shortcut for implementation versioning.
 
 See `explainable-decisions-audit.md` for the canonical v2 fields and Google Sheets mirror controls.

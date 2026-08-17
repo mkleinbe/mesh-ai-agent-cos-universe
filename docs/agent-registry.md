@@ -1,65 +1,75 @@
 # Agent Registry
 
-`agents/registry.json` is the canonical Phase 1 registry for operating identities. Agents are executive/functional identities. Skills are reusable capabilities and are not interchangeable with agents.
+`agents/registry.json` is the canonical runtime source of truth for Phase 1 agent identity and governance. The remediation removed the duplicate hardcoded registry as an independent authority source.
 
-## AgentRecord contract
+## Control path
 
-The machine-readable record follows `agent-record.v1` and includes:
+```mermaid
+flowchart LR
+    J[agents/registry.json] --> LOAD[Runtime registry loader]
+    LOAD --> N[Normalize authority fields]
+    N --> R[In-memory canonical registry]
+    R --> AUTH[Invocation authorization]
+    R --> ROUTE[Routing and hierarchy]
+    R --> HEALTH[Health and performance policy]
+    AUTH --> EXEC[Functional adapter / service]
+```
 
-- agent ID and display name
-- role and description
-- parent agent ID
-- agent type: executive, controller, specialist, worker, reviewer, or operations
-- status and version
-- accountable domain
-- authoritative and allowed sources
-- skills and tools
-- input and output contracts
-- permitted and prohibited actions
-- decision authority
-- required approvals
-- delegation permissions and maximum delegation depth
-- normal SLA
-- performance policy
-- confidentiality class
-- runtime health
-- created/updated timestamps where persisted
+## Registry content
 
-## Phase 1 identities
+Each agent record defines, as applicable:
 
-| ID | Role | Parent | Core authority |
-|---|---|---|---|
-| `cos` | Chief of Staff | Michael | orchestration, decomposition, cross-functional tradeoffs, escalation, outcome verification |
-| `agentops` | AgentOps Controller | `cos` | workforce health, performance, workload, defects, routing recommendations |
-| `answer-desk` | Answer & Decision Desk | `cos` | permission-aware answers, routing, bounded recommendations |
-| `cro` | Commercial executive | `cos` | pursuit and commercial interpretation within delegated authority |
-| `cfo` | Engagement Finance / FP&A executive | `cos` | engagement economics and financial analysis within source scope |
-| `coo` | Delivery/resource executive | `cos` | feasibility, capacity, staffing readiness |
-| `consultant-network-steward` | specialist | `coo` | consultant fit, freshness, rate, availability confidence, contracting readiness |
-| `cmo` | Marketing executive | `cos` | marketing strategy and execution accountability |
-| `vp-content` | content executive/worker | `cmo` | editorial production execution |
-| `devils-advocate` | independent reviewer | `cos` | challenge, premortem, evidence gaps, reversibility review |
-| `message-ops` | communications operations | `cos` | controlled execution of approved communications |
+- stable agent ID and role,
+- parent and functional domain,
+- source authority and approved sources,
+- skills and tools,
+- permitted and prohibited actions,
+- decision authority,
+- approval obligations,
+- delegation permissions,
+- performance policy,
+- confidentiality class,
+- runtime health.
+
+The human-readable files in `agents/*.md` are role cards. They summarize the canonical registry but do not override it.
+
+## Phase 1 agents
+
+| Agent | Parent | Primary purpose |
+|---|---|---|
+| CoS | Michael | Executive outcome orchestration and arbitration. |
+| AgentOps | CoS | Workforce observability, performance, and health recommendations. |
+| Answer Desk | CoS | Permission-aware team question handling. |
+| CRO | CoS | Commercial and pursuit leadership within delegated scope. |
+| CFO v1 | CoS | Engagement Finance / FP&A. |
+| COO v1 | CoS | Delivery feasibility, capacity, and resource readiness. |
+| Consultant Network Steward | COO | Consultant readiness, fit, freshness, rate, and availability evidence. |
+| CMO | CoS | Marketing strategy and delegated execution. |
+| VP Content | CMO | Editorial production. |
+| Devil's Advocate | CoS | Independent challenge, never final decision owner. |
+| Message Operations | CoS | Controlled execution of approved communications. |
+
+## Runtime normalization
+
+Some registry authority descriptions are human-readable strings rather than bare integers. The loader normalizes known `L0` through `L5` forms and advisory-only authority safely for runtime comparison. Unknown authority representations fail rather than silently granting access.
 
 ## Health states
 
-- `SHADOW`: new/changed agent, limited authority, reviewed output
-- `ACTIVE`: normal production routing
-- `WATCH`: degraded quality or elevated rework
-- `RESTRICTED`: reduced workload or authority
-- `QUARANTINED`: no new production work after severe defect, unauthorized action, provenance/security failure, or equivalent event
-- `RETIRED`: no active routing
+Supported states are:
 
-## Registry governance
+- `SHADOW`
+- `ACTIVE`
+- `WATCH`
+- `RESTRICTED`
+- `QUARANTINED`
+- `RETIRED`
 
-CoS may reallocate workload among registered agents and may recommend new agents or revisions. Phase 1 does not permit CoS or any agent to autonomously create an agent, materially expand agent authority, or bypass required approval.
+Health is not equivalent to authority. An `ACTIVE` agent is still limited by its registry permissions and decision-rights ceiling.
 
-Registry changes that alter material authority, executive decision rights, or CoS authority require Michael approval and an audit event.
+## Invocation authorization
 
-## Source authority
+Before a source, tool, or consequential action is used, runtime authorization checks the registry record. Denied sources or tools raise a permission failure rather than relying on prompt instructions alone.
 
-Registry metadata distinguishes `authoritative_sources` from merely `allowed_sources`. Access does not make a source canonical. An agent must preserve the source-of-truth boundaries in the operating contract.
+## Change control
 
-## Skills
-
-Existing Mesh skills should be composed rather than duplicated where practical. The registry may grant an agent access to a skill, but the skill does not become a separate executive decision owner unless explicitly represented as an agent record.
+Any registry change that alters authority, source/tool access, delegation, prohibited actions, confidentiality, or health policy must update tests and relevant documentation in the same pull request. Material authority expansion must follow the L4/L5 governance model.

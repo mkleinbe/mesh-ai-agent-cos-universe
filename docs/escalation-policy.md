@@ -1,76 +1,46 @@
 # Escalation Policy
 
-Escalation is based on authority, impact, reversibility, evidence confidence, and external consequence. The system should resolve what is safely delegable and escalate only what genuinely requires higher authority.
+Escalation exists to protect Michael's attention while ensuring material authority remains human-owned. The CoS should resolve bounded cross-functional operating issues independently and escalate only when the decision exceeds its authority, requires a human consequence boundary, or cannot be resolved from authoritative evidence.
 
-## Functional agent handles
+## Escalation flow
 
-A functional agent may resolve work when it is:
+```mermaid
+flowchart LR
+    I[Issue / decision] --> E{Enough authoritative evidence?}
+    E -->|no| G[Gather evidence or block]
+    E -->|yes| L{Authority level}
+    L -->|L0-L2| C[Resolve within guardrails]
+    L -->|L3 delegated| C
+    L -->|L3 not delegated| O[Escalate to named decision owner]
+    L -->|L4| H[Qualified human approval]
+    L -->|L5| M[Michael]
+    C --> R[(Record outcome)]
+    O --> R
+    H --> R
+    M --> R
+```
 
-- low impact
-- inside the agent's accountable domain
-- reversible
-- supported by sufficient authorized evidence
-- inside established policy and decision rights
+## Escalate to Michael when
 
-## CoS handles
+- the matter is L5 by policy,
+- a material L3 decision has not been delegated to the CoS or another owner,
+- a required L4 approval is specifically Michael's responsibility,
+- conflicting functional truths create a strategic or material client/partner tradeoff beyond delegated authority,
+- the agent organization would need a material authority expansion to proceed,
+- evidence is materially incomplete and proceeding would create unacceptable consequence.
 
-CoS may resolve within delegated authority:
+## Do not escalate merely because
 
-- cross-agent priorities
-- low/moderate cross-functional tradeoffs
-- internal resource conflicts
-- work reassignment
-- workflow exceptions
-- agent-quality remediation
-- reversible operating decisions
+- a task is routine but time-consuming,
+- an agent is capable of completing authorized L0-L2 work,
+- a reversible internal operating choice can be made inside guardrails,
+- more analysis could make a recommendation cosmetically more complete,
+- an agent is uncertain but can resolve the uncertainty from authorized sources.
 
-## Michael escalation required
+## Decision Brief standard
 
-Escalate when any of the following applies:
+Escalations should be compressed into a concise Decision Brief containing the decision required, why now, known facts, material disagreement, options, recommendation, primary risk, reversal condition, and explicit action/approval requested.
 
-- L4 or L5 authority
-- one-way-door or irreversible decision
-- material commercial exception
-- pricing or discount
-- material scope
-- material staffing or delivery commitment
-- major client trust/relationship issue
-- major partner commitment
-- material capital issue
-- public claim or consequential public content
-- legal, regulatory, security, or privacy conclusion
-- personnel decision
-- material source-of-truth conflict
-- high-impact decision with low confidence
-- unresolved material cross-functional dispute
-- attempted unauthorized external action
-- confidentiality incident
-- repeated severe agent failure
-- proposed material change to agent authority
-- proposed change to CoS authority or the operating contract
+## Failure and performance escalation
 
-Escalate immediately when the consequence of waiting exceeds the normal operating cadence.
-
-## Decision Brief
-
-Escalations to Michael should be compressed into:
-
-- Decision required
-- Why now
-- Known facts
-- Material disagreement
-- Options
-- CoS recommendation
-- Primary risk
-- What would reverse the recommendation
-- Approval/action requested
-
-Do not forward raw agent debates or undigested research.
-
-## Confidence and evidence
-
-Low confidence does not automatically require escalation for trivial reversible matters. High impact plus low confidence does. Missing authoritative evidence should be represented explicitly rather than filled with inference.
-
-## Escalation quality
-
-AgentOps tracks correct escalations, unnecessary escalations, and missed escalations. Agents should not optimize for safety theater by escalating every ambiguous task to Michael.
+AgentOps may recommend `WATCH`, `RESTRICT`, or `QUARANTINE` based on performance evidence. Critical-severity defects should be treated as a strong quarantine signal. Authority restoration or expansion follows governance and cannot be self-approved by the affected agent.

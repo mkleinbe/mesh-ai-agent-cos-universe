@@ -1,85 +1,70 @@
 # Agent Performance and AgentOps
 
-Phase 1 measures agents against verified outcomes, quality, governance, reliability, executive leverage, and efficiency. Volume of output is not a success metric.
+AgentOps converts execution evidence into bounded routing and health recommendations. Performance policy is versioned in `config/performance-policy.v1.json`; weights and thresholds must not be changed silently in code.
 
-## Scorecard categories
+## Current performance policy
 
-Initial configurable weights:
+| Category | Weight |
+|---|---:|
+| Outcome achievement | 0.30 |
+| First-pass quality | 0.20 |
+| Escalation judgment | 0.15 |
+| Evidence governance | 0.10 |
+| Execution reliability | 0.10 |
+| CEO leverage | 0.10 |
+| Efficiency | 0.05 |
 
-| Category | Weight | Core question |
-|---|---:|---|
-| Outcome Achievement | 30% | Did the assigned business outcome actually occur? |
-| First-Pass Quality | 20% | Was the work accepted without material correction? |
-| Escalation Judgment | 15% | Did the agent escalate material matters and avoid trivial escalation? |
-| Evidence & Governance | 10% | Were provenance, factual accuracy, source authority, approvals, and data handling correct? |
-| Execution Reliability | 10% | Were deadlines, blockers, dependencies, and completion handled reliably? |
-| CEO Leverage | 10% | Did the work reduce Michael's required involvement while preserving decision quality? |
-| Efficiency | 5% | Where telemetry exists, was cost/tool/cycle usage proportionate to verified value? |
+Current thresholds:
 
-Weights are versioned configuration, not permanent policy.
+- below `0.30`: `RESTRICT`
+- below `0.65`: `WATCH`
+- above `0.90` with at least five qualifying events: `INCREASE_ROUTING`
+- any critical-severity defect: `QUARANTINE`
+- otherwise: `CONTINUE`
 
-## Escalation judgment
+## Evaluation flow
 
-Track at minimum:
+```mermaid
+flowchart LR
+    E[Performance events] --> F[Filter by agent]
+    F --> W[Apply versioned weights]
+    W --> S[Weighted score]
+    E --> C{Any CRITICAL event?}
+    C -->|yes| Q[QUARANTINE]
+    C -->|no| T{Threshold evaluation}
+    S --> T
+    T -->|score < restrict| R[RESTRICT]
+    T -->|score < watch| WA[WATCH]
+    T -->|score > increase and min events met| I[INCREASE_ROUTING]
+    T -->|otherwise| CO[CONTINUE]
+```
 
-- correct escalations
-- unnecessary escalations
-- missed escalations
+## What AgentOps observes
 
-An agent should not be rewarded for simply escalating uncertainty to Michael. It should resolve what is inside its authority and escalate only when authority, consequence, confidence, reversibility, or policy requires it.
+Phase 1 AgentOps includes:
 
-## CEO leverage
+- versioned scorecard evaluation,
+- stalled-task detection based on `next_check_at`,
+- coordination-loop detection when repeated cross-agent messages produce no state change or evidence,
+- critical defect handling,
+- recommendation output for routing/health governance.
 
-Track:
+The performance layer must use evidence from actual work rather than subjective conversational impressions.
 
-- CEO touches
-- CEO decisions required
-- CEO interventions
-- tasks resolved without CEO
-- estimated CEO time avoided only where an explicit methodology supports the estimate
+## Health states
 
-Do not fabricate time savings.
+`SHADOW`, `ACTIVE`, `WATCH`, `RESTRICTED`, `QUARANTINED`, and `RETIRED` are supported operating states. Health recommendations do not automatically grant new authority. Authority remains governed by the Agent Registry and decision-rights policy.
 
-## Defects
+## Metrics and CEO leverage
 
-Severity levels:
+The runtime includes deterministic metrics for verified outcomes, CEO deflection, and CEO-time-avoided estimates when the methodology is explicitly supported. Estimates without a defined methodology must not be presented as measured fact.
 
-- `CRITICAL`
-- `HIGH`
-- `MEDIUM`
-- `LOW`
+## Change control
 
-Critical examples include unauthorized external action, fabricated material evidence, confidentiality breach, prohibited-source exposure, bypassed human approval, irreversible unauthorized action, and false claim of human approval.
+Changing weights, thresholds, recommendation semantics, or critical-defect behavior requires:
 
-A critical defect triggers immediate AgentOps review and normally a `QUARANTINE` recommendation.
-
-## Health states and routing
-
-- `SHADOW`: limited authority, outputs reviewed
-- `ACTIVE`: normal routing
-- `WATCH`: elevated rework or performance degradation
-- `RESTRICTED`: reduced authority/workload
-- `QUARANTINED`: no new production work
-- `RETIRED`: no active routing
-
-## AgentOps recommendation set
-
-AgentOps may recommend:
-
-- `CONTINUE`
-- `INCREASE_ROUTING`
-- `DECREASE_ROUTING`
-- `WATCH`
-- `RESTRICT`
-- `RETRAIN_OR_REVISE`
-- `QUARANTINE`
-- `RETIRE`
-- `BUILD_NEW_SPECIALIST`
-
-Recommendations are advisory to CoS. CoS may make bounded workload changes. Material authority changes require Michael approval.
-
-## Rolling management signals
-
-AgentOps should monitor task success/failure, rework, stalled tasks, missed deadlines, escalation quality, rejection reasons, error taxonomy, workload balance, repeated tool failure, repeated evidence defects, and high-cost/low-value loops.
-
-Performance changes must be evidence-based. A single strong output does not justify expanded authority, and one low-severity defect does not automatically justify quarantine.
+1. a versioned policy change,
+2. test updates,
+3. documentation updates,
+4. review of downstream health/routing implications,
+5. CI success before merge.

@@ -1,103 +1,77 @@
 # Testing and Evaluation
 
-Phase 1 is verified at the contract, state-machine, authority, security, reliability, performance, and scenario levels. Tests are designed to reject unsafe or invalid behavior, not merely confirm happy paths.
+Phase 1 development uses test-driven development with short red-green-refactor loops. Behavioral changes should begin with an executable failing expectation, then add the minimum implementation, then refactor while preserving the contract.
 
-## Local pre-merge verification
+## Verification pipeline
 
-Recorded for the Phase 1 release candidate:
+```mermaid
+flowchart LR
+    R[Write failing behavioral test] --> G[Implement minimum change]
+    G --> C[Run contract validation]
+    C --> P[Run pytest]
+    P --> A[Run compileall]
+    A --> CI[Open PR / GitHub Actions]
+    CI -->|failure| D[Diagnose exact defect]
+    D --> R
+    CI -->|success| M[Merge]
+    M --> DOC[Confirm docs/diagrams match main]
+```
 
-- 9 JSON schemas plus positive examples validated successfully
-- 40 `pytest` tests passed
-- Python `compileall` passed for `src/`
-- 13 required Phase 1 evaluation scenarios are represented
+## Local commands
 
-Two implementation defects found during pressure testing were corrected before the release candidate was finalized. Remote GitHub Actions results must be treated separately from local verification. If no remote run is surfaced, that is not equivalent to a passing remote CI run.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+python scripts/validate-contracts.py
+pytest
+python -m compileall -q src
+```
 
-## Contract tests
+## Test layers
 
-Each schema validates positive fixtures and rejects invalid structures where covered. Contracts include:
+### Contract validation
 
-- agent-record.v1
-- task.v1
-- delegation.v1
-- agent-event.v1
-- decision.v1
-- conflict.v1
-- approval.v1
-- performance-event.v1
-- performance-scorecard.v1
+All versioned JSON schemas and positive fixtures must validate. Contract changes require explicit compatibility review and corresponding runtime/test updates.
 
-Backward-compatibility policy is documented in `contracts/BACKWARD_COMPATIBILITY.md`.
+### Unit tests
 
-## State-machine tests
+Unit tests cover deterministic policy logic such as lifecycle transitions, authority classification, source permissions, prompt-injection boundaries, staffing freshness, performance scoring, and idempotency helpers.
 
-The task lifecycle rejects invalid transitions and preserves the distinction between `COMPLETED`, `VERIFIED`, and `CLOSED`. Failed acceptance/verification can return work to `REWORK` or execution rather than silently closing the task.
+### Stateful remediation tests
 
-## Authority and escalation tests
+The Phase 1 remediation added stateful tests for:
 
-Tests verify that:
+- canonical runtime registry loading/normalization,
+- durable consequential record persistence,
+- CoS intake through explicit verification,
+- failed acceptance routing to rework,
+- delegation persistence and governance rules,
+- conflict and decision persistence,
+- Answer Desk disposition persistence,
+- Slack signature verification, durable dedupe, and task/thread mapping,
+- AgentOps versioned policy behavior,
+- invocation-time registry authorization,
+- governed functional adapter boundaries,
+- bounded retry behavior,
+- deterministic operating metrics.
 
-- agents cannot widen authority through delegation
-- approval obligations cannot be delegated away
-- L4/L5 work fails closed without required approval
-- material pricing/commercial questions escalate
-- high-impact, low-confidence recommendations escalate
-- cross-functional tradeoffs route through CoS while preserving functional truth
+### Required scenario coverage
 
-## Security tests
+The original Phase 1 evaluation scenarios remain part of the suite. New integration behavior should extend the scenario harness rather than replacing it with manual demonstrations.
 
-Coverage includes:
+## Red/green evidence from remediation
 
-- source permission rejection
-- prompt-injection resistance, with retrieved content treated as untrusted data
-- confidentiality and prohibited-source boundaries
-- unauthorized external-action handling
-- quarantine behavior after critical defects
+The prioritized remediation tests were committed before the implementation. CI then surfaced registry normalization defects. The code was corrected through successive loops until contract validation, the complete pytest suite, and compileall passed on the final PR head.
 
-## Reliability tests
+## Merge gate
 
-Coverage includes:
+Do not merge a behavior-changing PR while CI is failing. Documentation-only changes should still run the existing CI to detect accidental repository damage.
 
-- duplicate Slack/event delivery idempotency
-- no duplicate work creation from repeated events
-- stalled-work detection
-- coordination-loop detection
-- explicit kill-switch behavior
+## What tests must not do
 
-## Performance tests
-
-AgentOps score calculation is deterministic against versioned weights. Tests cover health/routing implications such as WATCH behavior and critical-defect quarantine.
-
-## Required Phase 1 evaluation scenarios
-
-1. Routine team question is resolved without Michael.
-2. Pricing question is escalated.
-3. CRO/CFO disagreement is resolved through CoS framing while preserving functional authority.
-4. COO blocks infeasible staffing.
-5. Stale consultant availability is identified instead of treated as confirmed.
-6. CMO/VP Content produces a draft while publication remains approval-gated.
-7. Repeated QA failure drives an AgentOps WATCH recommendation.
-8. Critical unauthorized-action attempt causes quarantine behavior.
-9. Duplicate Slack event is safely ignored.
-10. Repetitive agent conversation without state/evidence progress is flagged as a coordination loop.
-11. Missing source authority prevents false certainty.
-12. High-impact, low-confidence recommendation escalates.
-13. A completed artifact that fails outcome verification returns to rework.
-
-## Metrics posture
-
-The implementation is designed to support measurement of CEO deflection, CEO touches, first-pass quality, rework, escalation quality, cycle time, stalled work, verified outcomes, agent failures, approval cycle time, cross-agent conflicts, coordination loops, contributors per task, and cost per verified outcome where telemetry exists.
-
-No baseline or target values are invented. Evidence must be collected before thresholds, scorecard weights, or autonomy are changed.
-
-## CI
-
-`.github/workflows/ci.yml` runs on pull requests and pushes to `main` and `phase1/**` and executes:
-
-1. Python 3.12 setup
-2. editable install with development dependencies
-3. contract validation
-4. `pytest`
-5. Python `compileall`
-
-A merge decision must distinguish local verification from remotely observed CI status.
+- They must not fabricate production credentials.
+- They must not expand agent authority to make a test pass.
+- They must not weaken approval requirements to avoid failure paths.
+- They must not treat Slack or conversation text as canonical state.
+- They must not claim an external source integration is live when the test uses a stub or adapter boundary.

@@ -1,127 +1,85 @@
-# Task and Outcome Lifecycle
+# Task Lifecycle
 
-The Phase 1 state machine is enforced in code. Tasks are managed to verified business outcome, not artifact production.
+The task lifecycle is the canonical state model for Phase 1 work. State changes are controlled by the runtime service and persisted to the Task Ledger. Slack messages do not create canonical state by themselves.
 
-## Required task framing
+## State model
 
-Before execution, a task should identify:
+```mermaid
+stateDiagram-v2
+    [*] --> INTAKE
+    INTAKE --> TRIAGED
+    TRIAGED --> PLANNED
+    PLANNED --> ASSIGNED
+    ASSIGNED --> IN_PROGRESS
 
-- objective
-- expected business outcome
-- accountable owner
-- contributors
-- decision owner
-- deadline/decision date when applicable
-- deliverable contract
-- success measures
-- evidence requirements
-- dependencies
-- authority boundary
-- approval requirements
-- verification method / acceptance test
+    IN_PROGRESS --> BLOCKED
+    IN_PROGRESS --> AWAITING_INPUT
+    IN_PROGRESS --> AWAITING_APPROVAL
+    IN_PROGRESS --> QA
 
-## Primary progression
+    BLOCKED --> IN_PROGRESS
+    AWAITING_INPUT --> IN_PROGRESS
+    AWAITING_APPROVAL --> IN_PROGRESS
 
-```text
-INTAKE
-  -> TRIAGED
-  -> PLANNED
-  -> ASSIGNED
-  -> IN_PROGRESS
+    QA --> COMPLETED
+    COMPLETED --> VERIFIED: acceptance test passes
+    COMPLETED --> REWORK: acceptance test fails
+    REWORK --> IN_PROGRESS
+    VERIFIED --> CLOSED
+
+    INTAKE --> CANCELLED
+    TRIAGED --> CANCELLED
+    PLANNED --> CANCELLED
+    ASSIGNED --> CANCELLED
+    IN_PROGRESS --> CANCELLED
 ```
 
-From `IN_PROGRESS`, a task may move to:
+## State semantics
 
-- `BLOCKED`
-- `AWAITING_INPUT`
-- `AWAITING_APPROVAL`
-- `QA`
-- `CANCELLED`
+| State | Meaning |
+|---|---|
+| `INTAKE` | Outcome request exists and has been durably recorded. |
+| `TRIAGED` | Scope, authority, urgency, and likely owner have been evaluated. |
+| `PLANNED` | Expected outcome, work packages, dependencies, and acceptance criteria are defined. |
+| `ASSIGNED` | One accountable owner has accepted or been assigned responsibility. |
+| `IN_PROGRESS` | Work is actively being executed. |
+| `BLOCKED` | Progress is prevented by a material dependency or constraint. |
+| `AWAITING_INPUT` | Required evidence or input is missing. |
+| `AWAITING_APPROVAL` | Required human approval has not yet been resolved. |
+| `QA` | Deliverable is undergoing quality/evidence checks before completion. |
+| `REWORK` | Completion failed the acceptance test and must be remediated. |
+| `READY_FOR_DECISION` | A decision package exists where a decision, not execution, is the next step. |
+| `READY_FOR_ACTION` | Approved execution is ready where action, not analysis, is the next step. |
+| `COMPLETED` | Deliverable and evidence were produced. This is not verified outcome completion. |
+| `VERIFIED` | The explicit acceptance test passed and a verification record exists. |
+| `CLOSED` | Verified work is administratively closed. |
+| `CANCELLED` | Work was intentionally terminated and must not continue execution. |
 
-From `QA`, a task may move to:
+## Verification contract
 
-- `REWORK`
-- `READY_FOR_DECISION`
-- `READY_FOR_ACTION`
-- `COMPLETED`
+`COMPLETED != VERIFIED` is a constitutional rule.
 
-Final progression:
+The Chief of Staff service records the completion outcome and evidence, then executes the task's acceptance check. The verification record includes the pass/fail result and evidence reference. A failed check routes the task to `REWORK` rather than allowing a false positive completion.
 
-```text
-COMPLETED -> VERIFIED -> CLOSED
+```mermaid
+flowchart LR
+    C[COMPLETED] --> A[Execute acceptance test]
+    A -->|pass| V[Persist verification PASS]
+    V --> VER[VERIFIED]
+    VER --> CL[CLOSED]
+    A -->|fail| F[Persist verification FAIL]
+    F --> R[REWORK]
+    R --> I[IN_PROGRESS]
 ```
 
-A failed completion/verification attempt returns the task to `REWORK` or `IN_PROGRESS` as appropriate.
+## Audit requirement
 
-## State definitions
+Consequential state changes must be attributable to the acting service/agent and captured in durable audit/event state. A task must be reloadable from the ledger without depending on conversation history.
 
-### INTAKE
-Request received but not classified.
+## Operational rules
 
-### TRIAGED
-Objective, urgency, authority, and primary owner identified.
-
-### PLANNED
-Dependencies, work packages, success criteria, approval gates, and acceptance conditions identified.
-
-### ASSIGNED
-The accountable agent has accepted responsibility.
-
-### IN_PROGRESS
-Execution is underway.
-
-### BLOCKED
-Progress cannot continue because of a named dependency or blocker.
-
-### AWAITING_INPUT
-Required evidence or information is missing.
-
-### AWAITING_APPROVAL
-The work is prepared but cannot proceed without required human approval.
-
-### QA
-The output/action is being checked against evidence, governance, and acceptance criteria.
-
-### REWORK
-Acceptance criteria failed and remediation is required.
-
-### READY_FOR_DECISION
-Preparation is complete and the decision owner must choose.
-
-### READY_FOR_ACTION
-The required decision/approval is complete and the action is prepared for execution.
-
-### COMPLETED
-The executing agent believes its assigned work is finished. This is not outcome verification.
-
-### VERIFIED
-The defined acceptance test confirms the intended outcome or accepted completion condition.
-
-### CLOSED
-Administrative closure after verification and outcome recording.
-
-### CANCELLED
-The work was explicitly stopped with a recorded reason and appropriate authority.
-
-## Completion versus verification
-
-A generated proposal, spreadsheet, message, analysis, or code artifact does not automatically move a task to `VERIFIED`. The acceptance test must confirm the intended outcome.
-
-Examples:
-
-- Draft produced, but required approval missing: `AWAITING_APPROVAL`, not `COMPLETED`.
-- Content draft approved internally but not yet published where publication is the outcome: `READY_FOR_ACTION`, not `VERIFIED`.
-- Consultant identified but availability is stale: `AWAITING_INPUT`/refresh required, not staffing-ready.
-- Agent claims work complete but QA rejects material errors: `REWORK`.
-
-## Blockers and next checks
-
-Blocked and awaiting-input tasks require named blockers/evidence gaps and a `next_check_at` or equivalent follow-up condition. Delegation is never fire-and-forget.
-
-## Cancellation and supersession
-
-Cancellation requires explicit reason and authority. Superseded work should preserve audit history and linkage rather than disappearing from the ledger.
-
-## Auditability
-
-Every consequential transition records actor, task/correlation identity, before/after state, authority, approval/evidence references where applicable, result/error, and idempotency information.
+- Every task has exactly one accountable owner.
+- Delegation cannot create a second active owner for the same scope.
+- Approval requirements remain in force through rework and reassignment.
+- A retry cannot silently repeat a consequential action.
+- A Slack thread reflects task state but cannot override it.

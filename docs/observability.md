@@ -1,84 +1,59 @@
-# Observability and Auditability
+# Observability
 
-Phase 1 treats observability as an operating control. The system must make delegated work, authority, evidence, approvals, defects, performance, and outcomes inspectable without reconstructing state from Slack conversations.
+Phase 1 observability is based on durable operating records rather than reconstructing behavior from conversation history. The goal is to make consequential work explainable, replayable at the state level, and measurable without turning Slack into the ledger.
 
-## Canonical event envelope
+## Observability model
 
-Consequential actions use an event structure containing:
+```mermaid
+flowchart LR
+    ACT[Task or agent action] --> EVT[Audit / event record]
+    ACT --> REC[Typed consequential record]
+    ACT --> TASK[Task state update]
+    EVT --> LEDGER[(TaskLedger)]
+    REC --> LEDGER
+    TASK --> LEDGER
+    LEDGER --> OPS[AgentOps]
+    LEDGER --> MET[Operating metrics]
+    LEDGER --> SLACK[Slack status view]
+```
 
-- `event_id`
-- `event_type`
-- `event_version`
-- timestamp
-- actor agent
-- task ID
-- correlation ID
-- source
-- before state where applicable
-- after state where applicable
-- authority level
-- approval reference
-- evidence references
-- result
-- error
-- idempotency key
+## Durable evidence
 
-Do not log secrets.
+The ledger supports:
 
-## Events that must be auditable
+- task state and outcome evidence,
+- consequential typed records,
+- audit/event records,
+- delegation records,
+- conflict and decision records,
+- approval records,
+- verification results,
+- Answer Desk dispositions,
+- registry-change and performance records where emitted,
+- scorecards,
+- Slack task/thread mappings,
+- durable idempotency claims.
 
-At minimum:
+## Required audit questions
 
-- delegation
-- reassignment
-- task state transition
-- conflict creation/disposition
-- approval request
-- approval/rejection
-- consequential external-action attempt
-- completion
-- verification
-- agent restriction
-- agent quarantine
-- registry change
+For a consequential action, the system should be able to answer:
+
+1. What task/outcome was being pursued?
+2. Who or what acted?
+3. What authority and registry policy applied?
+4. What evidence or source reference was used?
+5. What decision, approval, or exception occurred?
+6. What state changed?
+7. What outcome and acceptance result followed?
+
+## Metrics
+
+Current deterministic metric support includes verified outcomes, CEO deflection, and CEO-time-avoided estimates when a methodology is explicitly present. Metrics must be derived from recorded state rather than guessed from narrative text.
 
 ## AgentOps signals
 
-Operational monitoring should expose:
+AgentOps also observes stalled work and coordination loops. A coordination loop is indicated when repeated cross-agent interactions produce neither state change nor evidence. These signals should lead to remediation or routing decisions rather than more status chatter.
 
-- task success and failure
-- stalled tasks and missed deadlines
-- rework
-- escalation quality
-- rejection reasons and error taxonomy
-- workload and concurrency
-- repeated tool failure
-- evidence/provenance defects
-- high-cost/low-value loops
-- coordination-loop rate
-- agent health state
+## Slack
 
-## Executive leverage signals
-
-Where methodologically supportable, track:
-
-- tasks resolved without Michael
-- questions deflected from Michael
-- CEO touches per task
-- CEO decisions required
-- CEO interventions
-- estimated CEO time avoided with explicit methodology
-
-No fabricated baselines, targets, or time savings.
-
-## Idempotency and replay
-
-Duplicate external events, especially Slack deliveries, must not create duplicate tasks or duplicate consequential actions. Events should be replayable where practical without violating idempotency.
-
-## Slack relationship
-
-Slack is observable collaboration only. Slack timestamps/channel/thread IDs may be stored as task metadata, but Slack message history is not authoritative task state.
-
-## Incident evidence
-
-On critical defects or suspected unauthorized actions, preserve the task, event, approval, source, and error chain needed for root-cause analysis. Do not destroy audit evidence as part of remediation.
+Slack is an observable collaboration layer. The user can inspect task coordination in `#mesh-agent-ops`, while the canonical task/thread relation and duplicate-event state remain in the ledger.

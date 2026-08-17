@@ -8,7 +8,7 @@ Phase 1 operating core for Mesh Digital LLC's AI Chief of Staff. The repository 
 
 ## Phase 1 status
 
-Version `0.1.2` closed the original Phase 1 code-level requirement gaps. The governance layer now adds explainable `decision.v2` records and fully auditable `agent-event.v2` records across the registered workforce and governed skill/tool boundary.
+Version `0.1.3` preserves the completed Phase 1 operating core and adds explainable `decision.v2` records and fully auditable `agent-event.v2` records across the registered workforce and governed skill/tool boundary.
 
 `ChiefOfStaffService` and `ChiefOfStaffWorkforceManager` manage the durable work graph from intake through decomposition, delegation, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, acceptance verification, closure, and supersession. AgentOps supports durable rolling performance evidence, workload and SLA signals, complete Phase 1 recommendation vocabulary, and governed health-state changes.
 

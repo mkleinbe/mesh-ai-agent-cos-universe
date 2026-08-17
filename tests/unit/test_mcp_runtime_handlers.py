@@ -5,6 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from mesh_cos.governance import GovernanceJournal
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.mcp_policy import WorkspaceAgentMCPPolicy
 from mesh_cos.mcp_runtime import MCPRuntime, ReplayExecutorRegistry
@@ -58,7 +59,11 @@ def test_human_dispatch_requires_identity_and_only_human_tools(monkeypatch: pyte
     with pytest.raises(PermissionError, match="human-authorized"):
         runtime.call_human("michael", "task.get", {"task_id": "T"})
 
-    monkeypatch.setattr(runtime.policy, "authorize_human", lambda _: {"name": "unexpected"})
+    monkeypatch.setattr(
+        WorkspaceAgentMCPPolicy,
+        "authorize_human",
+        lambda self, _: {"name": "unexpected"},
+    )
     with pytest.raises(PermissionError, match="not authorized"):
         runtime.call_human("michael", "unexpected", {})
 
@@ -184,16 +189,16 @@ def test_governance_handlers_override_spoofed_agent_identity(monkeypatch: pytest
     captured_decision = {}
     captured_event = {}
 
-    def decision(**kwargs):
+    def decision(self, **kwargs):
         captured_decision.update(kwargs)
         return kwargs
 
-    def event(**kwargs):
+    def event(self, **kwargs):
         captured_event.update(kwargs)
         return kwargs
 
-    monkeypatch.setattr(runtime.governance, "record_decision", decision)
-    monkeypatch.setattr(runtime.governance, "record_event", event)
+    monkeypatch.setattr(GovernanceJournal, "record_decision", decision)
+    monkeypatch.setattr(GovernanceJournal, "record_event", event)
     runtime._governance_record_decision("cro", {"agent_id": "michael", "agent_role": "CEO", "skill_agent_version": "fake"})
     assert captured_decision["agent_id"] == "cro"
     assert captured_decision["agent_role"] == "CRO"

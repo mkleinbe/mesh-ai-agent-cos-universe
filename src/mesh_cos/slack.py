@@ -1,14 +1,75 @@
-from dataclasses import dataclass,field
-MESSAGE_TYPES={"ASSIGN","ACK","UPDATE","REQUEST","EVIDENCE","RISK","BLOCKED","CONFLICT","RECOMMEND","DECISION","APPROVAL","COMPLETE","VERIFY"}
+from __future__ import annotations
+
+import hashlib
+import hmac
+import json
+from dataclasses import dataclass, field
+from typing import Callable
+from urllib.request import Request, urlopen
+
+from .ledger import TaskLedger
+
+MESSAGE_TYPES = {"ASSIGN", "ACK", "UPDATE", "REQUEST", "EVIDENCE", "RISK", "BLOCKED", "CONFLICT", "RECOMMEND", "DECISION", "APPROVAL", "COMPLETE", "VERIFY"}
+
 @dataclass(slots=True)
 class SlackEventGuard:
-    seen_event_ids:set[str]=field(default_factory=set)
-    def accept(self,event_id:str)->bool:
-        if event_id in self.seen_event_ids:return False
-        self.seen_event_ids.add(event_id);return True
-def render_message(kind:str,task_id:str,agent_id:str,action:str,evidence_reference:str|None=None,requested_next_action:str|None=None)->str:
-    if kind not in MESSAGE_TYPES:raise ValueError("Unknown structured Slack message type")
-    lines=[f"[{kind}] {task_id}",f"Agent: {agent_id}",f"Action: {action}"]
-    if evidence_reference:lines.append(f"Evidence: {evidence_reference}")
-    if requested_next_action:lines.append(f"Next: {requested_next_action}")
+    seen_event_ids: set[str] = field(default_factory=set)
+    def accept(self, event_id: str) -> bool:
+        if event_id in self.seen_event_ids:
+            return False
+        self.seen_event_ids.add(event_id)
+        return True
+
+def verify_slack_signature(signing_secret: str, timestamp: str, body: str, signature: str) -> bool:
+    expected = "v0=" + hmac.new(signing_secret.encode(), f"v0:{timestamp}:{body}".encode(), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+
+def _default_transport(method: str, payload: dict, token: str) -> dict:
+    request = Request(
+        f"https://slack.com/api/{method}",
+        data=json.dumps(payload).encode(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"},
+        method="POST",
+    )
+    with urlopen(request, timeout=15) as response:
+        result = json.loads(response.read().decode())
+    if not result.get("ok"):
+        raise RuntimeError(f"Slack API error: {result.get('error', 'unknown_error')}")
+    return result
+
+
+class SlackWebClient:
+    def __init__(self, token: str, *, transport: Callable[[str, dict, str], dict] | None = None) -> None:
+        if not token:
+            raise ValueError("Slack bot token is required")
+        self.token = token
+        self.transport = transport or _default_transport
+
+    def post_message(self, channel_id: str, text: str, *, thread_ts: str | None = None) -> dict:
+        payload = {"channel": channel_id, "text": text}
+        if thread_ts:
+            payload["thread_ts"] = thread_ts
+        return self.transport("chat.postMessage", payload, self.token)
+
+
+class SlackCoordinator:
+    def __init__(self, ledger: TaskLedger, channel_id: str) -> None:
+        self.ledger = ledger
+        self.channel_id = channel_id
+    def bind_thread(self, task_id: str, thread_ts: str) -> dict:
+        return self.ledger.bind_thread(task_id, self.channel_id, thread_ts)
+    def thread_for(self, task_id: str) -> dict | None:
+        return self.ledger.get_thread(task_id)
+    def accept_event(self, event_id: str) -> bool:
+        return self.ledger.claim_idempotency_key(f"slack:{event_id}")
+
+def render_message(kind: str, task_id: str, agent_id: str, action: str, evidence_reference: str | None = None, requested_next_action: str | None = None) -> str:
+    if kind not in MESSAGE_TYPES:
+        raise ValueError("Unknown structured Slack message type")
+    lines = [f"[{kind}] {task_id}", f"Agent: {agent_id}", f"Action: {action}"]
+    if evidence_reference:
+        lines.append(f"Evidence: {evidence_reference}")
+    if requested_next_action:
+        lines.append(f"Next: {requested_next_action}")
     return "\n".join(lines)

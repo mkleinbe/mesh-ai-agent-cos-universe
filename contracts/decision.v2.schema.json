@@ -25,7 +25,7 @@
     "source_systems": {"type": "array", "minItems": 1, "items": {"type": "string"}},
     "alternatives_considered": {"type": "array", "items": {"type": "string"}},
     "selection_criteria": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "confidence": {"oneOf": [{"type": "number", "minimum": 0, "maximum": 1}, {"enum": ["HIGH", "MEDIUM", "LOW", "UNKNOWN"]}]},
     "risk_level": {"enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]},
     "affected_entities": {"type": "array", "items": {"type": "string"}},
     "reversibility": {"enum": ["REVERSIBLE", "PARTIALLY_REVERSIBLE", "IRREVERSIBLE"]},

@@ -12,7 +12,7 @@ from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
 from mesh_cos.registry import load_registry
 from mesh_cos.security import assert_agent_invocation_allowed
-from mesh_cos.slack import SlackCoordinator, verify_slack_signature
+from mesh_cos.slack import SlackCoordinator, SlackWebClient, verify_slack_signature
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -84,6 +84,17 @@ def test_slack_signature_thread_mapping_and_durable_dedupe():
     body = '{"type":"event_callback"}'
     digest = hmac.new(secret.encode(), f"v0:{timestamp}:{body}".encode(), hashlib.sha256).hexdigest()
     assert verify_slack_signature(secret, timestamp, body, f"v0={digest}")
+
+
+def test_slack_web_client_posts_to_configured_channel_via_injected_transport():
+    calls = []
+    def transport(method, payload, token):
+        calls.append((method, payload, token))
+        return {"ok": True, "ts": "171234.567"}
+    client = SlackWebClient("xoxb-test", transport=transport)
+    result = client.post_message("C0BRL4GCL3A", "hello", thread_ts="171234.000")
+    assert result["ok"] is True
+    assert calls == [("chat.postMessage", {"channel": "C0BRL4GCL3A", "text": "hello", "thread_ts": "171234.000"}, "xoxb-test")]
 
 
 def test_agentops_uses_versioned_policy_and_full_recommendation_set(tmp_path):

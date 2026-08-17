@@ -1,1 +1,26 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"properties":{"version":{"const":"mesh.cos.conflict.v1"},"conflict_id":{"type":"string"},"task_id":{"type":"string"},"participants":{"type":"array","minItems":2,"items":{"type":"string"}},"business_consequence":{"type":"string"},"decision_owner":{"type":"string"},"disposition":{"type":"string"}},"required":["version","conflict_id","task_id","participants","business_consequence","decision_owner","disposition"]}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": "mesh.cos.conflict.v1"},
+    "conflict_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "created_by": {"type": "string", "minLength": 1},
+    "uncontested_facts": {"type": "array", "items": {"type": "string"}},
+    "disputed_facts": {"type": "array", "items": {"type": "string"}},
+    "source_authority": {"type": "object", "additionalProperties": {"type": "string"}},
+    "options": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "positions": {"type": "object", "additionalProperties": {"type": "string"}},
+    "confidence": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "reversibility": {"type": "string"},
+    "decision_owner": {"type": "string", "minLength": 1},
+    "consequences": {"type": "array", "items": {"type": "string"}},
+    "devils_advocate_review": {"type": ["string", "null"]},
+    "cos_recommendation": {"type": ["string", "null"]},
+    "reversal_condition": {"type": ["string", "null"]},
+    "disposition": {"type": "string"},
+    "created_at": {"type": "string", "minLength": 1}
+  },
+  "required": ["version", "conflict_id", "task_id", "created_by", "uncontested_facts", "disputed_facts", "source_authority", "options", "positions", "confidence", "reversibility", "decision_owner", "consequences", "devils_advocate_review", "cos_recommendation", "reversal_condition", "disposition", "created_at"]
+}

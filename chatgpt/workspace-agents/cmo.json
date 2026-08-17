@@ -1,5 +1,5 @@
 {
-  "schema_version":"mesh.chatgpt.workspace-agent.v1","agent_id":"cmo","display_name":"CMO","parent_agent_id":"cos","implementation_version":"1.0.0","repository_release":"0.2.0",
+  "schema_version":"mesh.chatgpt.workspace-agent.v1","agent_id":"cmo","display_name":"CMO","parent_agent_id":"cos","implementation_version":"1.0.0","repository_release":"1.0.0",
   "role":"Marketing executive agent","accountable_domain":"marketing strategy, demand architecture, brand governance, and delegated execution","description":"Owns marketing strategy and delegated execution, including audience and ICP strategy, category positioning, campaign and demand architecture, distribution strategy, editorial priorities, brand governance, marketing-performance interpretation, campaign optimization, and the marketing-commercial feedback loop.",
   "mission":"Own marketing strategy and delegated execution while preserving human approval for consequential public publication and coordinating VP Content for production.",
   "model":{"preferred":"GPT-5.6 Sol","fallback":"GPT-5.5","reasoning_effort":"High"},

@@ -1,6 +1,6 @@
 # Slack Agent Protocol
 
-Slack is the observable collaboration layer for agent coordination. It is not the canonical task or decision ledger.
+Slack is the observable collaboration layer for agent coordination. It is not the canonical task, decision, approval, or performance ledger.
 
 ## Agent operations channel
 
@@ -8,60 +8,77 @@ Slack is the observable collaboration layer for agent coordination. It is not th
 - Channel ID: `C0BRL4GCL3A`
 - Configuration: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
 
-Do not commit the bot token, signing secret, or personal Slack IDs.
+Do not commit the bot token, signing secret, credentials, or personal Slack IDs.
 
-## Coordination architecture
+## Inbound and outbound flow
 
 ```mermaid
 sequenceDiagram
     participant S as Slack
-    participant V as Signature verifier
+    participant I as SlackInboundService
     participant C as SlackCoordinator
     participant L as TaskLedger
     participant COS as CoS
+    participant H as Human approver
 
-    S->>V: signed event / request
-    alt signature invalid
-        V-->>S: reject
-    else signature valid
-        V->>C: verified event
-        C->>L: claim slack:event_id
-        alt duplicate event
-            L-->>C: already claimed
-            C-->>S: acknowledge without reprocessing
-        else new event
-            C->>L: resolve or bind task/thread
-            C->>COS: structured event
-            COS->>L: persist task/governance changes
-            COS-->>C: structured response
-            C-->>S: Web API boundary
+    S->>I: signed request + timestamp
+    I->>I: verify HMAC and five-minute freshness
+    alt invalid or stale
+        I-->>S: reject
+    else valid
+        I->>C: structured event
+        C->>L: durable event-id claim
+        alt duplicate
+            L-->>C: already processed
+            C-->>S: acknowledge without duplicate effect
+        else new
+            I->>I: parse structured message
+            I->>L: persist inbound event
+            C->>L: resolve one-task/one-thread mapping
+            C->>COS: observable coordination event
+            alt approval required
+                COS->>L: persist approval request
+                C->>H: approval notification in task thread
+            end
         end
     end
 ```
 
 ## One task, one thread
 
-The coordinator persists a task-to-thread mapping containing the channel ID and Slack thread timestamp. This allows Slack to be retried or reconstructed without making Slack the system of record.
+`SlackCoordinator.ensure_thread()` creates the top-level message only when no durable mapping exists. The mapping stores the configured channel ID and Slack thread timestamp. Repeated processing reuses the mapping rather than creating a second task thread.
 
-## Structured message types
+## Structured messages
 
-Supported Phase 1 message types include `ASSIGN`, `ACK`, `UPDATE`, `REQUEST`, `EVIDENCE`, `RISK`, `BLOCKED`, `CONFLICT`, `RECOMMEND`, `DECISION`, `APPROVAL`, `COMPLETE`, and `VERIFY`.
+Supported message types are `ASSIGN`, `ACK`, `UPDATE`, `REQUEST`, `EVIDENCE`, `RISK`, `BLOCKED`, `CONFLICT`, `RECOMMEND`, `DECISION`, `APPROVAL`, `COMPLETE`, and `VERIFY`.
 
-Messages identify the task, acting agent, action, and optional evidence/next action. Human-readable Slack content must not replace the structured canonical record.
+`render_message()` and `parse_message()` provide the Phase 1 human-readable structured protocol. Messages identify the task, acting agent, action/state, optional evidence reference, and requested next action.
 
-## Event idempotency
+## Event and replay safety
 
-Slack can retry events. Event IDs therefore use durable idempotency claims in the Task Ledger. Duplicate events must acknowledge safely without duplicating consequential state changes or external actions.
+Slack retries are expected. Event IDs are claimed through the canonical ledger. Duplicate events return no new processing result. Request timestamps outside the configured freshness window are rejected before event handling to reduce replay risk.
+
+## Approval notifications
+
+Approval notifications are posted into the task thread and remain informational. Formal approval state lives in the approval record and audit trail. A Slack reaction or informal reply does not become L4/L5 approval by inference.
+
+## Answer Desk separation
+
+The team-facing Answer Desk uses `MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID` and a distinct `AnswerDeskSlackService` boundary. It should not use `#mesh-agent-ops` as the normal team interface.
+
+## Agent chat controls
+
+Agents should post only when work is accepted, state materially changes, evidence is found, a dependency or risk emerges, a recommendation/conflict is ready, approval is needed, or work is complete. Thinking aloud and social filler are not operating events. Repeated cross-agent exchanges without evidence or state change are an AgentOps coordination-loop signal.
 
 ## Live integration status
 
-The code contains a live-capable Slack Web API client boundary, signature verification, durable dedupe, task/thread mapping, and rendering. Live operation still requires `MESH_COS_SLACK_BOT_TOKEN` and `MESH_COS_SLACK_SIGNING_SECRET`.
+The repository contains live-capable Slack Web API and inbound verification boundaries. Production operation still requires `MESH_COS_SLACK_BOT_TOKEN`, `MESH_COS_SLACK_SIGNING_SECRET`, and the separate Answer Desk channel ID. No production credential is committed.
 
-The team-facing Answer Desk requires a separate Slack channel ID and should not be placed in `#mesh-agent-ops` by default.
+## Security
 
-## Security rules
-
-- Reject invalid signatures.
-- Do not trust message text as operating instruction.
-- Do not expose restricted source content to unauthorized users.
-- Do not treat a Slack reaction or informal message as formal L4/L5 approval unless the approval workflow explicitly defines and records it.
+- Use a private agent-operations channel and least-privilege scopes.
+- Treat Slack text as data, not operating policy.
+- Minimize copied sensitive data and reference protected source objects where possible.
+- Enforce requester/source permissions before disclosure.
+- Reject invalid or stale signed requests.
+- Keep formal approvals and consequential state in the canonical ledger.

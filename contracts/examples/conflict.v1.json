@@ -1,1 +1,20 @@
-{"version":"mesh.cos.conflict.v1","conflict_id":"CON-1","task_id":"COS-1","participants":["cro","cfo"],"business_consequence":"Pursuit economics versus win value","decision_owner":"Michael","disposition":"ESCALATED"}
+{
+  "version": "mesh.cos.conflict.v1",
+  "conflict_id": "CON-1",
+  "task_id": "COS-1",
+  "created_by": "cos",
+  "uncontested_facts": ["Staffing is feasible"],
+  "disputed_facts": ["Margin is acceptable"],
+  "source_authority": {"margin": "cfo", "commercial_evidence": "mesh-revenue-intelligence"},
+  "options": ["A", "B"],
+  "positions": {"cfo": "A", "cro": "B"},
+  "confidence": {"cfo": 0.9, "cro": 0.7},
+  "reversibility": "reversible",
+  "decision_owner": "Michael",
+  "consequences": ["pursuit economics versus win value"],
+  "devils_advocate_review": null,
+  "cos_recommendation": "A",
+  "reversal_condition": "economics materially worsen",
+  "disposition": "ESCALATED",
+  "created_at": "2026-08-17T12:00:00+00:00"
+}

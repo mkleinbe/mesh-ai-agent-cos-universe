@@ -5,15 +5,17 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Iterable
 
+from .contracts_runtime import ContractValidator
 from .models import AuthorityLevel, TaskRecord, TaskStatus, utcnow
 
 
 class TaskLedger:
     """Canonical Phase 1 persistence boundary."""
 
-    def __init__(self, path: str | Path = ":memory:") -> None:
+    def __init__(self, path: str | Path = ":memory:", *, validator: ContractValidator | None = None) -> None:
         self.conn = sqlite3.connect(str(path))
         self.conn.row_factory = sqlite3.Row
+        self.validator = validator or ContractValidator.default()
         self._migrate()
 
     def _migrate(self) -> None:
@@ -42,11 +44,17 @@ class TaskLedger:
     def _json(payload: dict[str, Any]) -> str:
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
+    def _validate(self, payload: dict[str, Any]) -> None:
+        if payload.get("version"):
+            self.validator.validate_versioned(payload)
+
     def save_task(self, task: TaskRecord) -> None:
+        payload = task.to_dict()
+        self._validate(payload)
         with self.conn:
             self.conn.execute(
                 "INSERT INTO tasks(task_id,payload) VALUES(?,?) ON CONFLICT(task_id) DO UPDATE SET payload=excluded.payload",
-                (task.task_id, self._json(task.to_dict())),
+                (task.task_id, self._json(payload)),
             )
 
     def get_task(self, task_id: str) -> TaskRecord | None:
@@ -88,6 +96,7 @@ class TaskLedger:
         return str(row[0]) if row and row[0] is not None else None
 
     def record_event(self, event: dict[str, Any]) -> bool:
+        self._validate(event)
         key = event["idempotency_key"]
         if not self.claim_idempotency(key, event.get("event_id")):
             return False
@@ -109,6 +118,7 @@ class TaskLedger:
         return [json.loads(r[0]) for r in rows]
 
     def _save_record(self, table: str, id_column: str, record_id: str, payload: dict[str, Any], *, columns: dict[str, Any]) -> None:
+        self._validate(payload)
         names = [id_column, *columns.keys(), "payload"]
         values = [record_id, *columns.values(), self._json(payload)]
         placeholders = ",".join("?" for _ in names)
@@ -184,6 +194,9 @@ class TaskLedger:
 
     def save_registry_change(self, payload: dict[str, Any]) -> None:
         self._save_record("registry_changes", "change_id", payload["change_id"], payload, columns={"agent_id": payload["agent_id"], "timestamp": payload.get("timestamp", utcnow())})
+
+    def list_registry_changes(self, agent_id: str | None = None) -> list[dict[str, Any]]:
+        return self._list_records("registry_changes", "agent_id=?" if agent_id else "", (agent_id,) if agent_id else ())
 
     def save_verification(self, payload: dict[str, Any]) -> None:
         self._save_record("verifications", "verification_id", payload["verification_id"], payload, columns={"task_id": payload["task_id"], "passed": 1 if payload["passed"] else 0, "timestamp": payload.get("timestamp", utcnow())})

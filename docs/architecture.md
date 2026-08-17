@@ -14,8 +14,8 @@ flowchart TB
     COS --> AO[AgentOpsEvaluator]
     COS --> AD[AnswerDeskService]
     WM --> CRO[CRO]
-    WM --> CFO[CFO v1]
-    WM --> COO[COO v1]
+    WM --> CFO[CFO]
+    WM --> COO[COO]
     WM --> CMO[CMO]
     WM --> DA[Devil's Advocate]
     WM --> MO[Message Operations]
@@ -52,6 +52,33 @@ flowchart TB
     SLACK --> LEDGER
     ADS[Separate Answer Desk Slack] <--> AD
 ```
+
+## Stable role identity model
+
+Organizational role identity and software version are separate concerns. `display_name` is a stable organizational identity. The registry `version` field carries the agent implementation version using `MAJOR.MINOR.PATCH`; repository releases carry the control-plane release version. Accountable domain, source authority, permitted/prohibited actions, approval rules, and delegation rules express scope. Runtime registry validation rejects display names that embed a version token.
+
+Canonical Phase 1 organizational names are `CRO`, `CFO`, `COO`, `Consultant Network Steward`, `CMO`, and `VP Content`.
+
+## Functional accountability boundaries
+
+```mermaid
+flowchart LR
+    CRO[CRO\nCommercial strategy and pursuits] -->|requests economics| CFO[CFO\nEngagement Finance / FP&A]
+    CRO -->|requests feasibility| COO[COO\nDelivery feasibility and capacity]
+    COO --> CNS[Consultant Network Steward\nNetwork readiness]
+    CMO[CMO\nMarketing strategy and demand] --> VPC[VP Content\nEditorial production]
+    CRO --> COS[CoS\nCross-functional orchestration]
+    CFO --> COS
+    COO --> COS
+    CMO --> COS
+```
+
+- **CRO:** opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion, and commercial-risk framing. Revenue Intelligence remains authoritative for designated commercial/account facts.
+- **CFO:** Engagement Finance / FP&A only, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margins, supported working-capital implications, forecast-versus-actual, margin leakage, assumption management, scenario comparison, and financial-risk recommendations. It is not enterprise accounting, treasury, tax, audit, or unrestricted financial authority.
+- **COO:** delivery feasibility, delivery configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations. The CoS retains enterprise work-graph orchestration.
+- **Consultant Network Steward:** consultant identification/matching, fit, freshness, validation timestamp, rate, availability, readiness-gap, refresh, and contracting-readiness evidence under COO authority.
+- **CMO:** marketing strategy, audience/ICP strategy, category positioning, campaign/demand architecture, distribution, brand governance, campaign optimization, editorial priorities, and marketing-commercial feedback.
+- **VP Content:** editorial planning/calendar, source/evidence assembly, drafting, channel adaptation, derivatives, repurposing, Mesh IP reuse, content inventory, editorial QA, and performance feedback under CMO authority.
 
 ## Work-management loop
 
@@ -105,9 +132,12 @@ sequenceDiagram
 | Conflicts and approvals | `TaskLedger` typed records linked to decision/audit records |
 | Performance | performance-event/scorecard records plus versioned performance policy |
 | Slack state | TaskLedger task/thread and event-idempotency records, not Slack history |
-| Financial calculations | CFO v1 within supported engagement-finance sources |
+| Financial calculations | CFO within supported Engagement Finance / FP&A sources |
 | Commercial/account evidence | Revenue Intelligence where available |
-| Delivery/resource feasibility | COO v1 and approved resource sources |
+| Delivery/resource feasibility | COO and approved resource sources |
+| Consultant readiness | Consultant Network Steward under COO using approved network data |
+| Marketing strategy | CMO within approved brand/marketing sources |
+| Editorial production | VP Content under CMO intent and approved Mesh IP |
 
 ## Structured contracts
 
@@ -132,7 +162,7 @@ Writes are canonical-first. Mirror failures are persisted, not silently ignored.
 
 ## Functional execution boundary
 
-`GovernedAdapterRegistry` maps only registered skills/tools to the agent allowed to invoke them. It composes existing Mesh capabilities instead of reimplementing them. External executors remain configuration-dependent until credentials and connectivity are supplied.
+`GovernedAdapterRegistry` maps only registered skills/tools to the agent allowed to invoke them. It composes existing Mesh capabilities instead of reimplementing them. External executors remain configuration-dependent until credentials and connectivity are supplied. Adding a permitted action does not fabricate a new external skill: native typed tools and existing approved Mesh skills remain distinct implementation mechanisms.
 
 ## Slack boundary
 

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 from .models import AuthorityLevel, TaskRecord, TaskStatus
 
@@ -68,6 +68,26 @@ class TaskLedger:
             (kind, record_id, json.dumps(payload, sort_keys=True)),
         )
         self.conn.commit()
+
+    def save_idempotent_record(
+        self,
+        idempotency_key: str,
+        kind: str,
+        record_id: str,
+        payload: dict,
+    ) -> bool:
+        """Atomically claim an idempotency key and persist its canonical record."""
+
+        try:
+            with self.transaction() as conn:
+                conn.execute("INSERT INTO idempotency(key) VALUES(?)", (idempotency_key,))
+                conn.execute(
+                    "INSERT INTO records(kind,record_id,payload) VALUES(?,?,?)",
+                    (kind, record_id, json.dumps(payload, sort_keys=True)),
+                )
+        except sqlite3.IntegrityError:
+            return False
+        return True
 
     def get_record(self, kind: str, record_id: str) -> dict | None:
         row = self.conn.execute(

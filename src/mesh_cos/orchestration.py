@@ -119,13 +119,69 @@ class ChiefOfStaffService:
         assert_runtime_enabled()
         task = self._require(task_id)
         passed, reason = acceptance(task)
+        return self._persist_verification(
+            task,
+            passed=bool(passed),
+            reason=reason,
+            verifier_id="runtime-acceptance-callback",
+            evidence=list(task.outcome_evidence),
+            verification_source="RUNTIME_CALLBACK",
+        )
+
+    def record_verification_result(
+        self,
+        task_id: str,
+        *,
+        passed: bool,
+        reason: str,
+        verifier_id: str,
+        evidence_references: list[str],
+    ) -> TaskRecord:
+        """Persist a serializable Workspace Agent/MCP verification result.
+
+        This is the remote-safe counterpart to ``verify``. The verifier evaluates the
+        configured acceptance test outside the Python process and must provide an
+        explicit identity plus evidence references. A passing result without evidence
+        fails closed and does not mutate task state.
+        """
+
+        assert_runtime_enabled()
+        task = self._require(task_id)
+        evidence = list(dict.fromkeys(evidence_references))
+        if not verifier_id.strip():
+            raise ValueError("verifier_id is required")
+        if not reason.strip():
+            raise ValueError("verification reason is required")
+        if passed and not evidence:
+            raise ValueError("passing verification requires evidence")
+        return self._persist_verification(
+            task,
+            passed=bool(passed),
+            reason=reason,
+            verifier_id=verifier_id,
+            evidence=evidence,
+            verification_source="WORKSPACE_AGENT_MCP",
+        )
+
+    def _persist_verification(
+        self,
+        task: TaskRecord,
+        *,
+        passed: bool,
+        reason: str,
+        verifier_id: str,
+        evidence: list[str],
+        verification_source: str,
+    ) -> TaskRecord:
         record = {
             "version": "mesh.cos.verification.v1",
             "task_id": task.task_id,
             "acceptance_test": task.acceptance_test,
-            "passed": bool(passed),
+            "passed": passed,
             "reason": reason,
-            "evidence": list(task.outcome_evidence),
+            "evidence": list(evidence),
+            "verifier_id": verifier_id,
+            "verification_source": verification_source,
             "attempt": task.rework_count + 1,
             "verified_at": utcnow(),
         }

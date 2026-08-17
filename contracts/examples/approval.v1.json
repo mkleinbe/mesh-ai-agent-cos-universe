@@ -1,1 +1,13 @@
-{"version":"mesh.cos.approval.v1","approval_id":"A-1","task_id":"COS-1","requested_by":"cos","approval_owner":"Michael","authority_level":4,"action":"pricing","status":"PENDING"}
+{
+  "version": "mesh.cos.approval.v1",
+  "approval_id": "A-1",
+  "task_id": "COS-1",
+  "requested_by": "cos",
+  "approval_owner": "Michael",
+  "authority_level": 4,
+  "action": "pricing",
+  "status": "PENDING",
+  "requested_at": "2026-08-17T12:00:00+00:00",
+  "decided_at": null,
+  "decision_reason": null
+}

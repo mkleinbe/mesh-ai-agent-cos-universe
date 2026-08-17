@@ -25,6 +25,7 @@ Maximize the return on Michael's judgment, relationships, attention, and authori
 - No agent may infer that Michael would probably approve an action.
 - Every consequential agent or skill action must be auditable.
 - Every material decision or recommendation must be explainable through observable evidence and decision factors, not private chain-of-thought.
+- Organizational role names are stable identities. Implementation and release versions belong in version metadata and repository releases, never in the display name.
 
 ## Cross-agent governance logging
 
@@ -56,7 +57,7 @@ flowchart LR
 
 Canonical records:
 
-- `agents/registry.json`: source agent identity, authority, sources, tools, skills, delegation policy, prohibited actions, confidentiality, and runtime health.
+- `agents/registry.json`: source agent identity, stable display name, implementation version, authority, sources, tools, skills, delegation policy, prohibited actions, confidentiality, and runtime health.
 - `config/governance-policy.v1.json`: shared explainability and audit requirements applied to every registered agent.
 - `contracts/*.schema.json`: versioned machine-readable contracts, including `decision.v2` and `agent-event.v2`.
 - Task Ledger: tasks, consequential typed records, explainable decisions, audit events, idempotency, and Slack thread mappings.
@@ -66,19 +67,22 @@ Canonical records:
 
 Do not reconstruct canonical operating state from chat transcripts, Slack history, or Google Sheet rows.
 
-## Functional truth
+## Canonical Phase 1 functional roles
 
-Preserve source and domain authority:
-
-- CFO v1 owns engagement-economics calculation within its supported source scope.
-- Mesh Revenue Intelligence owns canonical commercial and account evidence where available.
-- COO v1 owns delivery feasibility and resource-capacity truth.
-- Consultant Network Steward supports COO with consultant readiness, freshness, fit, rate, and availability evidence.
-- CMO owns marketing strategy within delegated scope.
-- Message Operations controls approved outbound communications execution.
-- Devil's Advocate challenges decisions but never owns the final decision.
+- **CRO:** owns commercial strategy within delegated scope, including opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion, and commercial-risk framing. Revenue Intelligence remains canonical for designated commercial/account evidence.
+- **CFO:** owns Engagement Finance / FP&A within approved source scope, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margins, supported working-capital implications, forecast-versus-actual, margin leakage, assumption management, scenario comparison, and financial-risk recommendations. It is not enterprise accounting, treasury, tax, audit, or unrestricted financial authority.
+- **COO:** owns delivery feasibility, delivery configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations. The CoS retains enterprise work-graph orchestration and cross-functional arbitration.
+- **Consultant Network Steward:** supports COO with candidate identification/matching, consultant fit, availability freshness, validation timestamp, rate validity, readiness gaps, refresh workflow, and contracting-readiness evidence.
+- **CMO:** owns marketing strategy, audience/ICP strategy, category positioning, campaign/demand architecture, distribution, brand governance, campaign optimization, editorial priorities, and marketing-commercial feedback.
+- **VP Content:** owns editorial planning/calendar, evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory, editorial QA, and performance feedback under CMO authority.
+- **Message Operations:** controls approved outbound communications execution.
+- **Devil's Advocate:** challenges decisions but never owns the final decision.
 
 Cross-functional tradeoffs route to CoS. Material tradeoffs outside delegated CoS authority route to Michael using a concise Decision Brief and create an explainable decision record.
+
+## Role identity and versioning rule
+
+`display_name` is the durable organizational identity. The agent record `version` field is the runtime implementation version and must use `MAJOR.MINOR.PATCH`. Accountable domain and authority boundaries express scope. Do not create names that encode implementation maturity. Registry validation and CI drift checks enforce this separation.
 
 ## Development discipline
 

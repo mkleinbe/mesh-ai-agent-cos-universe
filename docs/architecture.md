@@ -4,6 +4,8 @@
 
 Release `v1.0.0` is the production-ready repository architecture for the Mesh AI Chief of Staff. It is a governed executive control plane for a bounded hybrid organization of agents, reusable Mesh Skills, authoritative sources, and explicit human decision owners. The runtime remains a Python modular monolith with SQLite behind the `TaskLedger` persistence boundary. ChatGPT Workspace Agents are a governed deployment and interaction layer, not a replacement for the control plane.
 
+Material recommendations use the closed `decision.v2` explainability contract, and consequential actions use `agent-event.v2` audit records.
+
 ## End-to-end topology
 
 ```mermaid
@@ -164,8 +166,8 @@ Consequential record listing preserves insertion chronology so audit-chain prede
 | MCP permissions and human-only tools | `chatgpt/mcp/mesh-cos-mcp.v1.json` + `WorkspaceAgentMCPPolicy` |
 | Serialized remote execution | `mesh_cos.mcp_runtime.MCPRuntime` |
 | Task/work graph and outcomes | `TaskLedger` |
-| Explainable decisions | `TaskLedger` `decision_v2`; CoS Decision Log is a mirror |
-| Consequential events | `TaskLedger` `audit_event_v2`; CoS Audit Log is a mirror |
+| Explainable decisions | `decision.v2` records in `TaskLedger`; CoS Decision Log is a mirror |
+| Consequential events | `agent-event.v2` records in `TaskLedger`; CoS Audit Log is a mirror |
 | Conflicts and approvals | `TaskLedger` typed records |
 | Performance | performance events/scorecards plus versioned policy |
 | Slack state | TaskLedger mappings/idempotency, not Slack history |

@@ -7,19 +7,18 @@ from pathlib import Path
 from typing import Any
 
 VALID_STATES = {"SHADOW", "ACTIVE", "WATCH", "RESTRICTED", "QUARANTINED", "RETIRED"}
+REGISTRY_MIGRATION_TIMESTAMP = "2026-08-17T00:00:00+00:00"
 
 
 def _authority_level(value: Any) -> int:
     if isinstance(value, int):
         return value
     if isinstance(value, str):
-        levels = [int(x) for x in re.findall(r"L([0-5])", value)]
+        levels = [int(item) for item in re.findall(r"L([0-5])", value)]
         if levels:
             return max(levels)
         lowered = value.lower()
-        if "advisory" in lowered:
-            return 1
-        if "execution" in lowered:
+        if "advisory" in lowered or "execution" in lowered:
             return 1
     raise ValueError(f"Invalid decision authority: {value!r}")
 
@@ -41,6 +40,9 @@ def load_registry(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
         original_authority = record.get("decision_authority")
         record["decision_authority_description"] = original_authority
         record["decision_authority"] = _authority_level(original_authority)
+        record.setdefault("runtime_health", record["status"])
+        record.setdefault("created_at", REGISTRY_MIGRATION_TIMESTAMP)
+        record.setdefault("updated_at", REGISTRY_MIGRATION_TIMESTAMP)
         result[agent_id] = record
     for agent_id, record in result.items():
         parent = record.get("parent_agent_id")

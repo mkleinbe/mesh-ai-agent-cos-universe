@@ -4,6 +4,9 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+
+from mesh_cos import __version__
 from mesh_cos.registry import load_registry
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,6 +27,23 @@ def test_canonical_role_names_are_stable_and_version_is_metadata() -> None:
         record = registry[agent_id]
         assert re.fullmatch(r"\d+\.\d+\.\d+", record["version"])
         assert not re.search(r"\bv\d+(?:\.\d+)*\b", record["display_name"], re.IGNORECASE)
+
+
+def test_runtime_rejects_role_names_that_embed_implementation_version(tmp_path: Path) -> None:
+    raw = json.loads((ROOT / "agents" / "registry.json").read_text())
+    raw["agents"][0]["display_name"] = "Chief of Staff" + " v9"
+    path = tmp_path / "agents" / "registry.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps(raw))
+
+    with pytest.raises(ValueError, match="display_name must not embed implementation version"):
+        load_registry(path)
+
+
+def test_runtime_and_package_release_versions_are_aligned() -> None:
+    pyproject = (ROOT / "pyproject.toml").read_text()
+    assert __version__ == "0.1.4"
+    assert f'version = "{__version__}"' in pyproject
 
 
 def test_legacy_role_names_are_removed_repo_wide() -> None:

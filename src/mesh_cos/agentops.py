@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .audit import AuditEvent
@@ -26,17 +26,17 @@ SUPPORTED_RECOMMENDATIONS = {
 def _as_utc(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def stalled(task: TaskRecord, now: datetime | None = None) -> bool:
     if not task.next_check_at or task.status in {TaskStatus.CLOSED, TaskStatus.CANCELLED, TaskStatus.VERIFIED}:
         return False
-    current = now or datetime.now(timezone.utc)
+    current = now or datetime.now(UTC)
     if current.tzinfo is None:
-        current = current.replace(tzinfo=timezone.utc)
-    return _as_utc(task.next_check_at) < current.astimezone(timezone.utc)
+        current = current.replace(tzinfo=UTC)
+    return _as_utc(task.next_check_at) < current.astimezone(UTC)
 
 
 def detect_coordination_loop(messages: list[dict], threshold: int = 4) -> bool:
@@ -69,7 +69,7 @@ class AgentOpsEvaluator:
         *,
         ledger: TaskLedger | None = None,
         window_size: int = 20,
-    ) -> "AgentOpsEvaluator":
+    ) -> AgentOpsEvaluator:
         return cls(json.loads(Path(path).read_text()), ledger=ledger, window_size=window_size)
 
     def record(
@@ -176,10 +176,10 @@ class AgentOpsEvaluator:
         }
 
     def analyze_signals(self, tasks: list[TaskRecord], *, now: datetime | None = None) -> dict:
-        current = now or datetime.now(timezone.utc)
+        current = now or datetime.now(UTC)
         if current.tzinfo is None:
-            current = current.replace(tzinfo=timezone.utc)
-        current = current.astimezone(timezone.utc)
+            current = current.replace(tzinfo=UTC)
+        current = current.astimezone(UTC)
         terminal_states = {TaskStatus.CLOSED, TaskStatus.CANCELLED, TaskStatus.VERIFIED}
         missed_deadlines = [
             task.task_id

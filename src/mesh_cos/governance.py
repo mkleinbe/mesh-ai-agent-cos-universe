@@ -10,13 +10,8 @@ from .models import new_id, utcnow
 
 GENESIS_HASH = "GENESIS"
 FORBIDDEN_REASONING_FIELDS = {
-    "chain_of_thought",
-    "reasoning_trace",
-    "hidden_reasoning",
-    "raw_prompt",
-    "raw_secret",
-    "credential",
-    "token",
+    "chain_of_thought", "reasoning_trace", "hidden_reasoning", "raw_prompt",
+    "raw_secret", "credential", "token",
 }
 
 
@@ -33,8 +28,10 @@ def _sha256(payload: dict[str, Any], *, exclude: set[str] | None = None) -> str:
 def _assert_safe_fields(payload: dict[str, Any]) -> None:
     forbidden = FORBIDDEN_REASONING_FIELDS.intersection(payload)
     if forbidden:
-        names = ", ".join(sorted(forbidden))
-        raise ValueError(f"Private reasoning or secret-bearing fields cannot be persisted: {names}")
+        raise ValueError(
+            "Private reasoning or secret-bearing fields cannot be persisted: "
+            + ", ".join(sorted(forbidden))
+        )
 
 
 class GovernanceMirror:
@@ -71,7 +68,7 @@ class GovernanceJournal:
         source_systems: list[str],
         alternatives_considered: list[str],
         selection_criteria: list[str],
-        confidence: float,
+        confidence: float | str,
         risk_level: str,
         affected_entities: list[str],
         reversibility: str,
@@ -98,16 +95,18 @@ class GovernanceJournal:
             raise ValueError("authority_level must be between L0 and L5")
         if human_approval_required and not (approval_reference and human_approver):
             raise PermissionError("Human-approval-required decisions need approval reference and approver")
-        if not decision_basis_summary.strip():
-            raise ValueError("Explainable decision basis is required")
-        if not evidence_references:
-            raise ValueError("Evidence references are required")
+        if not decision_basis_summary.strip() or not evidence_references:
+            raise ValueError("Explainable decision basis and evidence references are required")
+        if isinstance(confidence, str) and confidence not in {"HIGH", "MEDIUM", "LOW", "UNKNOWN"}:
+            raise ValueError("Unsupported qualitative confidence")
+        if isinstance(confidence, (int, float)) and not 0 <= float(confidence) <= 1:
+            raise ValueError("Numeric confidence must be between 0 and 1")
+
         decision_id = decision_id or new_id("decision")
-        decided_at_utc = decided_at_utc or utcnow()
         record: dict[str, Any] = {
             "version": "mesh.cos.decision.v2",
             "decision_id": decision_id,
-            "decided_at_utc": decided_at_utc,
+            "decided_at_utc": decided_at_utc or utcnow(),
             "decision_status": decision_status,
             "decision_type": decision_type,
             "decision_title": decision_title,
@@ -127,7 +126,7 @@ class GovernanceJournal:
             "source_systems": list(source_systems),
             "alternatives_considered": list(alternatives_considered),
             "selection_criteria": list(selection_criteria),
-            "confidence": float(confidence),
+            "confidence": confidence,
             "risk_level": risk_level,
             "affected_entities": list(affected_entities),
             "reversibility": reversibility,
@@ -196,16 +195,17 @@ class GovernanceJournal:
     ) -> dict[str, Any]:
         if not 0 <= authority_level <= 5:
             raise ValueError("authority_level must be between L0 and L5")
-        existing = self.ledger.list_records("audit_event_v2")
-        ordered = sorted(existing, key=lambda item: item["event_sequence"])
-        previous_hash = ordered[-1]["event_hash"] if ordered else GENESIS_HASH
+        existing = sorted(
+            self.ledger.list_records("audit_event_v2"),
+            key=lambda item: item["event_sequence"],
+        )
+        previous_hash = existing[-1]["event_hash"] if existing else GENESIS_HASH
         event_id = event_id or new_id("event")
-        event_timestamp_utc = event_timestamp_utc or utcnow()
         record: dict[str, Any] = {
             "version": "mesh.cos.agent-event.v2",
             "event_id": event_id,
-            "event_sequence": len(ordered) + 1,
-            "event_timestamp_utc": event_timestamp_utc,
+            "event_sequence": len(existing) + 1,
+            "event_timestamp_utc": event_timestamp_utc or utcnow(),
             "event_type": event_type,
             "event_category": event_category,
             "action": action,
@@ -247,14 +247,14 @@ class GovernanceJournal:
         }
         _assert_safe_fields(record)
         record["event_hash"] = _sha256(record, exclude={"event_hash"})
-        if not self.ledger.claim_idempotency_key(f"governance:{record['idempotency_key']}"):
+        governance_key = f"governance:{record['idempotency_key']}"
+        if not self.ledger.claim_idempotency_key(governance_key):
             current = self.ledger.get_record("audit_event_v2", event_id)
             if current is not None:
                 return current
             raise ValueError("Duplicate governance idempotency key")
         self.ledger.save_record("audit_event_v2", event_id, record)
         if task_id is not None:
-            # Preserve the canonical task event stream used by existing metrics and observability.
             self.ledger.conn.execute(
                 "INSERT OR IGNORE INTO events(event_id,task_id,payload) VALUES(?,?,?)",
                 (event_id, task_id, json.dumps(record, sort_keys=True)),

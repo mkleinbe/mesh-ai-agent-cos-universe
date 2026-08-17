@@ -10,35 +10,38 @@ This objective governs architecture, authority, delegation, escalation, performa
 
 ## Phase 1 status
 
-Version `0.1.0` implements the control foundation, management layer, Phase 1 functional-agent definitions, Slack coordination protocol, and evaluation harness. External business-system integrations remain governed boundaries until credentials, source permissions, and production configuration are supplied.
+Version `0.2.0` closes the prioritized Phase 1 engineering gaps identified on 2026-08-17. The repository now contains an executable, contract-validated operating core with durable orchestration, canonical persistence, governed functional adapters, secure Slack coordination, outcome verification, AgentOps, Answer Desk workflows, reliability controls, success-metric aggregation, and stateful end-to-end evaluations.
+
+External business systems and Mesh skills remain injected integration dependencies. The runtime does not fabricate connectivity when credentials or source adapters are absent.
 
 ## Architecture
 
-Phase 1 uses a Python 3.11+ modular monolith. SQLite is the initial canonical task/event ledger behind a narrow persistence boundary. The implementation includes:
+Phase 1 uses a Python 3.11+ modular monolith. SQLite is the Phase 1 canonical ledger behind a narrow persistence boundary. The implementation includes:
 
-- versioned JSON contracts
-- canonical Agent Registry
-- Task and Outcome Ledger
-- explicit task state machine
-- L0-L5 decision-rights engine
-- delegation and approval controls
-- audit/event model with idempotency
-- cross-functional conflict arbitration
-- CoS orchestration and escalation
-- AgentOps performance management
-- Answer Desk routing
-- consultant-network freshness controls
-- Slack thread/task mapping and duplicate-event protection
-- prompt-injection and source-permission boundaries
-- emergency kill switch
+- nine versioned JSON contracts with runtime validation
+- canonical JSON-backed Agent Registry with audited runtime-health overrides
+- durable tasks, events, delegations, approvals, decisions, conflicts, performance events, scorecards, verifications, metrics, Slack thread mappings, idempotency keys, and work leases
+- CoS application service for intake, triage, planning, assignment, delegation, progress states, approval, remediation, outcome verification, reassignment, and closure
+- explicit task state machine separating `COMPLETED` from `VERIFIED`
+- L0-L5 decision-rights and human-approval controls
+- complete delegation invariants, including objective integrity, bounded authority, approval inheritance, one active owner, no circular delegation, and CoS-controlled cross-functional routing
+- cross-functional conflict and decision records preserving functional source authority
+- governed functional agent adapters with invocation-time tool/source authorization
+- Message Operations human-approval enforcement for consequential external sends
+- durable AgentOps events, rolling scorecards, workload/stall signals, defect taxonomy, and portfolio recommendations
+- source-aware Answer Desk dispositions and metrics
+- Slack Web API transport, request-signature verification, durable event dedupe, one-task/one-thread mapping, approval notification boundary, and optional Answer Desk channel boundary
+- bounded retry/timeout execution policy, work leases/check-ins, kill switch, duplicate-intake prevention, and auditable execution failures
+- deterministic Phase 1 operating metrics without fabricated baselines or cost savings
+- stateful evaluation coverage for pursuit/proposal, engagement economics, staffing, marketing publication, Answer Desk, AgentOps failure, Slack security, authorization, and recovery paths
 
-Slack is an observable collaboration layer. It is not the system of record.
+Slack is an observable collaboration layer. It is never the system of record.
 
 ## Agent hierarchy
 
 - **CoS**: executive control plane, outcome accountability, decomposition, delegation, arbitration, reallocation, escalation
 - **AgentOps**: workforce observability, performance management, health, workload, stalled-work and defect detection
-- **Answer Desk**: permission-aware team question resolution, routing, recommendation, and escalation
+- **Answer Desk**: permission-aware team question resolution, routing, recommendation, approval routing, and escalation
 - **CRO**: commercial executive
 - **CFO v1**: Engagement Finance / FP&A only
 - **COO v1**: delivery feasibility, capacity, resource readiness
@@ -48,7 +51,7 @@ Slack is an observable collaboration layer. It is not the system of record.
 - **Devil's Advocate**: independent challenge, never final decision owner
 - **Message Operations**: controlled execution boundary for approved communications
 
-Agents are operating identities. Skills are reusable capabilities. Existing Mesh skills are referenced by the registry rather than reimplemented.
+Agents are operating identities. Skills are reusable capabilities. Existing Mesh skills are injected through governed adapters rather than reimplemented.
 
 ## Decision rights
 
@@ -63,9 +66,9 @@ No monetary thresholds are invented. Until explicitly configured, threshold-sens
 
 ## Outcome model
 
-A produced file or message is not completion. Tasks progress through explicit states and only reach `VERIFIED` when the defined acceptance test confirms the intended outcome. Verification failure returns work to remediation.
+A produced file, model, or message is not completion. `COMPLETED` means execution is asserted complete. `VERIFIED` requires the configured acceptance evaluator to run, persist a pass/fail verification record, and supply evidence. Failed verification returns work to `REWORK`.
 
-Every task has exactly one accountable owner, with contributors as needed. Normal delegation depth is limited to CoS -> functional executive -> specialist/worker.
+Every task has exactly one accountable owner, with contributors as needed. Normal delegation depth remains CoS -> functional executive -> specialist/worker.
 
 ## Quickstart
 
@@ -74,7 +77,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 python scripts/validate-contracts.py
+ruff check src tests scripts
+mypy src
 pytest
+python -m pip_audit
 python -m compileall -q src
 ```
 
@@ -84,36 +90,39 @@ Copy `.env.example` to `.env` and set runtime values. Do not commit secrets or p
 
 Current Slack coordination configuration:
 
-- agent-operations channel: `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`, configured by `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
-- team-facing Answer Desk channel ID: not yet configured
+- agent-operations channel: `#mesh-agent-ops`
+- Channel ID: `C0BRL4GCL3A`
+- configuration: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A`
 
-Remaining production configuration includes:
+Production activation still requires environment-specific configuration rather than code changes:
 
 - Slack bot token and signing secret
-- authoritative source connector credentials/permissions
-- approval-owner configuration
+- team-facing Answer Desk Slack channel ID when selected
+- approved authoritative Mesh source/skill invokers and their credentials/permissions
+- approval-owner configuration for the production environment
 - any later monetary thresholds explicitly approved by Michael
 
 Keep the automation kill switch available during rollout.
 
-## Testing
+## Testing and CI
 
-The Phase 1 suite covers contract validation, lifecycle transitions, authority, escalation, source permissions, prompt injection, idempotency, deterministic AgentOps scoring, staffing freshness, publication gating, QA failure, quarantine, coordination loops, and missing-source authority.
+The TDD remediation branch was driven through red-green-refactor loops and stateful acceptance tests. The final pre-merge GitHub Actions run validates:
 
-Pre-merge local verification recorded for `0.1.0`:
+- all nine contracts and fixtures
+- Ruff critical correctness checks
+- mypy across the source package
+- pytest with a 65% minimum coverage gate
+- dependency vulnerability audit
+- Python compileall
 
-- 9 JSON schemas and positive examples validated
-- 40 `pytest` tests passed
-- Python `compileall` passed
-- 13 required Phase 1 evaluation scenarios are represented
-
-GitHub Actions is configured in `.github/workflows/ci.yml`. Do not treat the absence of a surfaced remote workflow result as a passing remote CI run.
+The latest green remediation run executed **44 tests with 82.67% total coverage** and reported **no known dependency vulnerabilities**.
 
 ## Documentation
 
 Start with:
 
 - `docs/phase-1-operating-contract.md` for the canonical human-readable operating specification
+- `docs/phase-1-gap-assessment-2026-08-17.md` for the original gap audit and remediation closure
 - `docs/architecture.md` for system diagrams and source-of-truth boundaries
 - `docs/decision-rights.md` for L0-L5 authority
 - `docs/delegation-model.md` for work-contract rules
@@ -127,20 +136,13 @@ Start with:
 - `docs/runbook.md` for operational procedures
 - `docs/adr/` for architectural decisions
 
-## Current limitations
+## Remaining deployment boundaries
 
-The following are governed integration boundaries, not fabricated live integrations:
+These are environment/configuration dependencies, not unresolved Phase 1 engineering gaps:
 
-- Slack network calls
-- Mesh Revenue Intelligence
-- Mesh Proposals - Engagement P&L Tracker
-- Capabilities Partner & Consultant Tracker
-- AuthoredUp
-- LinkedIn
-- existing Mesh skills and Message Operations execution
+- live Slack execution requires the bot token and signing secret
+- the Answer Desk Slack interface requires its channel ID
+- Mesh Revenue Intelligence, Engagement P&L, consultant tracker, AuthoredUp, LinkedIn, and existing Mesh skills require approved real invokers/credentials
+- SQLite remains the Phase 1 persistence choice and should be revisited before multi-instance or horizontally scaled deployment
 
-SQLite is suitable for Phase 1/local operation and should be revisited before multi-instance production deployment.
-
-## Roadmap
-
-Next increments should connect approved authoritative sources and Slack, add runtime agent adapters and deployment telemetry, then gather evidence before changing autonomy, thresholds, scorecard weights, or persistence. Phase 2 practice-specific and industry-specific agents remain out of scope for this release.
+No broader autonomy, pricing authority, public publishing authority, material commercial commitment authority, or L5 authority was added by the remediation.

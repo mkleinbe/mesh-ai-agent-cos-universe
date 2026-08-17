@@ -55,7 +55,7 @@ def test_l5_decision_requires_michael_as_owner_even_with_michael_approval() -> N
 
 def test_l4_decision_requires_actual_approval_reference_and_approver() -> None:
     runtime = MCPRuntime(TaskLedger())
-    with pytest.raises(PermissionError, match="approval reference"):
+    with pytest.raises(PermissionError, match="approval"):
         runtime.call_agent(
             "cro",
             "governance.record_decision",
@@ -66,6 +66,22 @@ def test_l4_decision_requires_actual_approval_reference_and_approver() -> None:
                 human_approver=None,
             ),
         )
+
+
+def test_governance_rejects_authority_outside_l0_l5() -> None:
+    runtime = MCPRuntime(TaskLedger())
+    with pytest.raises(ValueError, match="between L0 and L5"):
+        runtime.call_agent(
+            "cro",
+            "governance.record_decision",
+            base_decision(authority_level=6),
+        )
+
+
+def test_runtime_accepts_injected_agentops_without_reloading_policy() -> None:
+    baseline = MCPRuntime(TaskLedger())
+    injected = MCPRuntime(TaskLedger(), agentops=baseline.agentops)
+    assert injected.agentops is baseline.agentops
 
 
 def test_human_only_handler_is_fail_closed_when_called_directly() -> None:

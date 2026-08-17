@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+from mesh_cos.mcp_policy import WorkspaceAgentMCPPolicy
 from mesh_cos.registry import load_registry
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -33,6 +34,7 @@ EXPECTED = {
 
 REQUIRED_MCP_TOOLS = {
     "registry.get_agent",
+    "registry.list_agents",
     "task.intake",
     "task.get",
     "task.list",
@@ -44,6 +46,7 @@ REQUIRED_MCP_TOOLS = {
     "task.verify",
     "delegation.create",
     "approval.request",
+    "approval.get",
     "approval.record_decision",
     "conflict.open",
     "conflict.decide",
@@ -139,6 +142,10 @@ def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
         else:
             assert "task.reassign" not in allowlist
 
+    message_ops = json.loads((AGENTS / "message-ops.json").read_text())
+    assert "approval.get" in message_ops["mcp"]["allowed_tools"]
+    assert "approval.record_decision" not in message_ops["mcp"]["allowed_tools"]
+
 
 def test_mcp_contract_covers_runtime_control_plane_and_fail_closed_rules() -> None:
     contract = json.loads(MCP.read_text())
@@ -157,8 +164,28 @@ def test_mcp_contract_covers_runtime_control_plane_and_fail_closed_rules() -> No
     for name, tool in tools.items():
         assert tool["read_only"] in {True, False}, name
         assert tool["authority_enforced"] is True, name
+        assert tool["runtime_binding"], name
         if not tool["read_only"]:
             assert tool["audit_required"] is True, name
+
+
+def test_server_side_mcp_policy_is_deny_by_default_and_resolves_bindings() -> None:
+    policy = WorkspaceAgentMCPPolicy.from_file(MCP)
+    assert policy.authorize("cos", "task.reassign")["name"] == "task.reassign"
+    assert policy.authorize("message-ops", "approval.get")["read_only"] is True
+    for denied in (
+        ("cro", "task.reassign"),
+        ("message-ops", "approval.record_decision"),
+        ("unknown-agent", "task.get"),
+        ("cos", "unknown.tool"),
+    ):
+        try:
+            policy.authorize(*denied)
+        except PermissionError:
+            pass
+        else:
+            raise AssertionError(f"Expected deny-by-default for {denied}")
+    assert policy.validate_runtime_bindings() == []
 
 
 def test_agent_builder_configs_are_complete_and_not_prompt_only_personas() -> None:
@@ -176,11 +203,37 @@ def test_agent_builder_configs_are_complete_and_not_prompt_only_personas() -> No
             "write_action_policy",
             "connector_action_constraints",
             "channels",
+            "builder_configuration",
         ):
             assert config[key], (agent_id, key)
+        builder = config["builder_configuration"]
+        assert builder["name"] == config["display_name"]
+        assert builder["description"] == config["description"]
+        assert builder["model_preference"] == config["model"]["preferred"]
+        assert builder["fallback_model"] == config["model"]["fallback"]
+        assert builder["reasoning_effort"] == config["model"]["reasoning_effort"]
+        assert builder["skill"] == config["skill"]
+        assert builder["custom_mcp"] == "mesh-cos-mcp"
+        assert builder["write_action_approval"] == "Always ask"
+        assert builder["connector_action_constraints"] == config["connector_action_constraints"]
         assert config["channels"]["chatgpt"]["enabled"] is True
         assert config["channels"]["slack"]["enabled"] in {True, False}
         assert config["channels"]["api"]["enabled"] is True
+
+
+def test_risky_app_boundaries_remain_fail_closed() -> None:
+    cmo = json.loads((AGENTS / "cmo.json").read_text())
+    vp = json.loads((AGENTS / "vp-content.json").read_text())
+    cro = json.loads((AGENTS / "cro.json").read_text())
+    message_ops = json.loads((AGENTS / "message-ops.json").read_text())
+    answer_desk = json.loads((AGENTS / "answer-desk.json").read_text())
+
+    assert any("no autonomous public posting" in rule for rule in cmo["connector_action_constraints"])
+    assert any("public publishing remains human-gated" in rule for rule in vp["connector_action_constraints"])
+    assert any("research/enrichment only" in rule for rule in cro["connector_action_constraints"])
+    assert any("approval" in rule.lower() for rule in message_ops["connector_action_constraints"])
+    assert answer_desk["channels"]["slack"]["enabled"] is False
+    assert answer_desk["channels"]["slack"]["channel_id"] is None
 
 
 def test_workspace_agent_builder_handoff_prompt_is_exact_and_complete() -> None:
@@ -201,6 +254,8 @@ def test_workspace_agent_builder_handoff_prompt_is_exact_and_complete() -> None:
         "Answer & Decision Desk",
         "Consultant Network Steward",
         "Message Operations",
+        "negative authority test",
+        "missing-evidence test",
     ):
         assert token in text
 

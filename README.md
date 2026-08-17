@@ -1,73 +1,122 @@
 # Mesh AI Chief of Staff Agent Universe
 
-Phase 1 operating core for Mesh Digital LLC's AI Chief of Staff. This is an executive operating control plane for a bounded agent workforce, not a chatbot.
+Phase 1 operating core for Mesh Digital LLC's AI Chief of Staff. The repository implements a governed executive operating control plane for a bounded agent workforce. It is not a general chatbot and Slack is not the system of record.
 
 ## Operating objective
 
 **Maximize the return on Michael's judgment, relationships, attention, and authority by independently resolving everything that does not require the CEO, and materially improving everything that does.**
 
-This objective governs architecture, authority, delegation, escalation, performance management, and future autonomy decisions.
+## Current status
 
-## Phase 1 status
+Phase 1 code-level remediation is complete on `main`. The runtime now includes canonical registry loading, durable control-plane records, Chief of Staff orchestration through explicit acceptance verification, governed delegation, conflict and decision records, Answer Desk disposition persistence, Slack coordination controls, invocation-time authorization, AgentOps evaluation, bounded retries, operating metrics, and thin functional adapter boundaries.
 
-Version `0.1.0` implements the control foundation, management layer, Phase 1 functional-agent definitions, Slack coordination protocol, and evaluation harness. External business-system integrations remain governed boundaries until credentials, source permissions, and production configuration are supplied.
+Production activation still requires environment-specific configuration that must not be committed: Slack credentials, the separate Answer Desk channel ID, authoritative source credentials and permissions, and production approval-owner configuration.
 
-## Architecture
+## System architecture
 
-Phase 1 uses a Python 3.11+ modular monolith. SQLite is the initial canonical task/event ledger behind a narrow persistence boundary. The implementation includes:
+```mermaid
+flowchart TB
+    CEO[Michael / CEO] -->|L5 decisions and L4 approvals| COS[AI Chief of Staff]
+    COS --> AO[AgentOps]
+    COS --> AD[Answer Desk]
+    COS --> CRO[CRO]
+    COS --> CFO[CFO v1]
+    COS --> COO[COO v1]
+    COS --> CMO[CMO]
+    COS --> DA[Devil's Advocate]
+    COS --> MO[Message Operations]
+    COO --> CNS[Consultant Network Steward]
+    CMO --> VPC[VP Content]
 
-- versioned JSON contracts
-- canonical Agent Registry
-- Task and Outcome Ledger
-- explicit task state machine
-- L0-L5 decision-rights engine
-- delegation and approval controls
-- audit/event model with idempotency
-- cross-functional conflict arbitration
-- CoS orchestration and escalation
-- AgentOps performance management
-- Answer Desk routing
-- consultant-network freshness controls
-- Slack thread/task mapping and duplicate-event protection
-- prompt-injection and source-permission boundaries
-- emergency kill switch
+    COS --> LEDGER[(Canonical SQLite Ledger)]
+    AO --> LEDGER
+    AD --> LEDGER
+    CRO --> LEDGER
+    CFO --> LEDGER
+    COO --> LEDGER
+    CMO --> LEDGER
 
-Slack is an observable collaboration layer. It is not the system of record.
+    SLACK[#mesh-agent-ops\nC0BRL4GCL3A] <--> SC[Slack Coordination Boundary]
+    SC <--> COS
+    SC --> LEDGER
+
+    SRC[Approved Mesh sources and skills] --> AUTH[Invocation authorization]
+    AUTH --> CRO
+    AUTH --> CFO
+    AUTH --> COO
+    AUTH --> CMO
+    AUTH --> AD
+```
+
+### Canonical boundaries
+
+- `agents/registry.json` is the runtime source of truth for agent identity, authority, source/tool policy, delegation permissions, health, and prohibited actions.
+- `TaskLedger` is canonical for task state and consequential operating records.
+- Versioned JSON schemas define machine-readable contracts.
+- Slack is an observable collaboration layer. Task/thread mappings and event idempotency are persisted in the ledger.
+- Functional adapters compose approved Mesh capabilities without duplicating the underlying skill logic.
 
 ## Agent hierarchy
 
-- **CoS**: executive control plane, outcome accountability, decomposition, delegation, arbitration, reallocation, escalation
-- **AgentOps**: workforce observability, performance management, health, workload, stalled-work and defect detection
-- **Answer Desk**: permission-aware team question resolution, routing, recommendation, and escalation
-- **CRO**: commercial executive
-- **CFO v1**: Engagement Finance / FP&A only
-- **COO v1**: delivery feasibility, capacity, resource readiness
-  - **Consultant Network Steward**: consultant fit, freshness, rate, availability confidence, contracting readiness
-- **CMO**: marketing executive
-  - **VP Content**: editorial production pipeline
-- **Devil's Advocate**: independent challenge, never final decision owner
-- **Message Operations**: controlled execution boundary for approved communications
-
-Agents are operating identities. Skills are reusable capabilities. Existing Mesh skills are referenced by the registry rather than reimplemented.
+- **CoS**: outcome intake, planning, assignment, lifecycle control, arbitration, escalation, verification, and executive compression.
+- **AgentOps**: performance evaluation, health recommendations, stalled-work detection, coordination-loop detection, and workforce observability.
+- **Answer Desk**: permission-aware question handling with durable disposition records.
+- **CRO**: commercial executive and pursuit ownership within delegated scope.
+- **CFO v1**: Engagement Finance / FP&A only.
+- **COO v1**: delivery feasibility, capacity, and resource readiness.
+  - **Consultant Network Steward**: consultant fit, freshness, rate, availability confidence, and contracting readiness.
+- **CMO**: marketing strategy and delegated execution.
+  - **VP Content**: editorial production workflow.
+- **Devil's Advocate**: independent challenge, never final decision owner.
+- **Message Operations**: controlled execution boundary for approved communications.
 
 ## Decision rights
 
-- **L0 Information**: authorized retrieval and factual synthesis may execute automatically.
-- **L1 Established policy / precedent**: approved rules may execute automatically and are logged.
-- **L2 Reversible operating judgment**: bounded internal decisions may execute within explicit guardrails.
-- **L3 Material internal judgment**: agents recommend; CoS resolves only where explicitly delegated, otherwise Michael decides.
-- **L4 Human approval required**: consequential commercial, external, public, legal, regulatory, security, privacy, personnel, destructive, sensitive system, and irreversible actions fail closed.
-- **L5 Michael exclusive**: firm strategy, major pivots/capital decisions, material client/partner exceptions, senior personnel decisions, CoS authority, decision-rights policy, and material agent-authority expansion.
+- **L0 Information**: authorized retrieval and factual synthesis.
+- **L1 Established policy / precedent**: execution of approved rules with logging.
+- **L2 Reversible operating judgment**: bounded internal decisions within explicit guardrails.
+- **L3 Material internal judgment**: agents recommend; CoS resolves only when explicitly delegated, otherwise Michael decides.
+- **L4 Human approval required**: consequential commercial, external, public, legal, regulatory, security, privacy, personnel, destructive, sensitive-system, and irreversible actions fail closed.
+- **L5 Michael exclusive**: firm strategy, major pivots and capital decisions, material client or partner exceptions, senior personnel decisions, CoS authority, decision-rights policy, and material agent-authority expansion.
 
-No monetary thresholds are invented. Until explicitly configured, threshold-sensitive actions remain approval-required.
+No monetary thresholds are inferred. Threshold-sensitive actions remain approval-required until explicitly configured.
 
-## Outcome model
+## Outcome lifecycle
 
-A produced file or message is not completion. Tasks progress through explicit states and only reach `VERIFIED` when the defined acceptance test confirms the intended outcome. Verification failure returns work to remediation.
+```mermaid
+stateDiagram-v2
+    [*] --> INTAKE
+    INTAKE --> TRIAGED
+    TRIAGED --> PLANNED
+    PLANNED --> ASSIGNED
+    ASSIGNED --> IN_PROGRESS
+    IN_PROGRESS --> QA
+    IN_PROGRESS --> BLOCKED
+    IN_PROGRESS --> AWAITING_INPUT
+    IN_PROGRESS --> AWAITING_APPROVAL
+    BLOCKED --> IN_PROGRESS
+    AWAITING_INPUT --> IN_PROGRESS
+    AWAITING_APPROVAL --> IN_PROGRESS
+    QA --> COMPLETED
+    COMPLETED --> VERIFIED: acceptance test passes
+    COMPLETED --> REWORK: acceptance test fails
+    REWORK --> IN_PROGRESS
+    VERIFIED --> CLOSED
+```
 
-Every task has exactly one accountable owner, with contributors as needed. Normal delegation depth is limited to CoS -> functional executive -> specialist/worker.
+A produced artifact is not completion. `VERIFIED` requires explicit acceptance-test execution with evidence. Failed verification routes to rework.
 
-## Quickstart
+## Slack coordination
+
+Current agent-operations channel:
+
+- Name: `#mesh-agent-ops`
+- Channel ID: `C0BRL4GCL3A`
+- Environment variable: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
+
+Implemented controls include request-signature verification, durable event deduplication, one-task/one-thread mapping, structured message rendering, and a live-capable Web API client boundary. Live operation still requires a bot token and signing secret. The separate team-facing Answer Desk channel is not yet configured.
+
+## Development and verification
 
 ```bash
 python3 -m venv .venv
@@ -78,69 +127,21 @@ pytest
 python -m compileall -q src
 ```
 
-## Configuration
-
-Copy `.env.example` to `.env` and set runtime values. Do not commit secrets or personal Slack IDs.
-
-Current Slack coordination configuration:
-
-- agent-operations channel: `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`, configured by `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
-- team-facing Answer Desk channel ID: not yet configured
-
-Remaining production configuration includes:
-
-- Slack bot token and signing secret
-- authoritative source connector credentials/permissions
-- approval-owner configuration
-- any later monetary thresholds explicitly approved by Michael
-
-Keep the automation kill switch available during rollout.
-
-## Testing
-
-The Phase 1 suite covers contract validation, lifecycle transitions, authority, escalation, source permissions, prompt injection, idempotency, deterministic AgentOps scoring, staffing freshness, publication gating, QA failure, quarantine, coordination loops, and missing-source authority.
-
-Pre-merge local verification recorded for `0.1.0`:
-
-- 9 JSON schemas and positive examples validated
-- 40 `pytest` tests passed
-- Python `compileall` passed
-- 13 required Phase 1 evaluation scenarios are represented
-
-GitHub Actions is configured in `.github/workflows/ci.yml`. Do not treat the absence of a surfaced remote workflow result as a passing remote CI run.
+The remediation increment was developed with red-green-refactor loops. CI exposed registry normalization defects during the loop, which were corrected before merge. The final remediation PR passed contract validation, the complete pytest suite, and compileall.
 
 ## Documentation
 
-Start with:
+Start at [`docs/README.md`](docs/README.md). Key documents include the canonical operating contract, architecture, decision rights, delegation, lifecycle, Agent Registry, AgentOps, Slack protocol, Answer Desk, security/governance, observability, testing, runbook, and remediation closure record.
 
-- `docs/phase-1-operating-contract.md` for the canonical human-readable operating specification
-- `docs/architecture.md` for system diagrams and source-of-truth boundaries
-- `docs/decision-rights.md` for L0-L5 authority
-- `docs/delegation-model.md` for work-contract rules
-- `docs/task-lifecycle.md` for state transitions
-- `docs/agent-registry.md` for workforce definitions
-- `docs/agent-performance.md` for AgentOps scorecards and health states
-- `docs/conflict-resolution.md` and `docs/escalation-policy.md` for arbitration and CEO routing
-- `docs/slack-agent-protocol.md` and `docs/answer-desk.md` for Slack behavior
-- `docs/security-governance.md` for security controls
-- `docs/testing-evaluation.md` for verification coverage
-- `docs/runbook.md` for operational procedures
-- `docs/adr/` for architectural decisions
+## Production dependencies
 
-## Current limitations
+The remaining gaps are configuration and external integration dependencies, not missing Phase 1 control-plane code:
 
-The following are governed integration boundaries, not fabricated live integrations:
+- Slack bot token and signing secret
+- team-facing Answer Desk Slack channel ID
+- approved Mesh source and skill credentials/permissions
+- production approval owners
+- explicitly approved future monetary thresholds, if any
+- deployment/runtime infrastructure for the chosen production environment
 
-- Slack network calls
-- Mesh Revenue Intelligence
-- Mesh Proposals - Engagement P&L Tracker
-- Capabilities Partner & Consultant Tracker
-- AuthoredUp
-- LinkedIn
-- existing Mesh skills and Message Operations execution
-
-SQLite is suitable for Phase 1/local operation and should be revisited before multi-instance production deployment.
-
-## Roadmap
-
-Next increments should connect approved authoritative sources and Slack, add runtime agent adapters and deployment telemetry, then gather evidence before changing autonomy, thresholds, scorecard weights, or persistence. Phase 2 practice-specific and industry-specific agents remain out of scope for this release.
+SQLite remains the Phase 1 persistence choice. Revisit persistence before multi-instance or high-availability deployment.

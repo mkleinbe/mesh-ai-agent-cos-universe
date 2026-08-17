@@ -1,79 +1,76 @@
-# Cross-Functional Conflict Resolution
+# Conflict Resolution
 
-Agents are expected to disagree. Phase 1 resolves disagreement through source authority, evidence, business consequence, confidence, and reversibility rather than agent voting.
+Phase 1 separates factual/source authority from cross-functional tradeoff authority. A conflict is a durable governance object, not a debate that disappears in chat history.
 
-## 1. Fact authority precedes opinion
+## Functional truth
 
-Examples:
+Current domain authority mappings include:
 
-- CFO owns financial calculations within its valid source scope.
-- Revenue Intelligence owns canonical account qualification and commercial evidence where available.
-- COO owns staffing/capacity feasibility.
-- CMO owns marketing strategy and execution within delegated authority.
-- Legal, regulatory, security, and privacy conclusions remain outside autonomous Phase 1 authority.
+- financial calculation -> CFO v1
+- commercial evidence -> approved Mesh Revenue Intelligence source
+- account qualification -> approved Mesh Revenue Intelligence source
+- staffing feasibility -> COO v1
+- marketing strategy -> CMO
 
-A cross-functional agent may challenge a fact or its interpretation, but cannot silently overwrite the authoritative source.
+The CoS coordinates these truths but does not replace them.
 
-## 2. Domain ownership is not enterprise decision ownership
+## Conflict and decision flow
 
-A functional agent may own a fact or recommendation without owning the enterprise tradeoff. Example:
+```mermaid
+flowchart TB
+    C[Conflicting evidence, priorities, or recommendations] --> A[Identify authoritative fact owner]
+    A --> F[Resolve factual disagreements where possible]
+    F --> T{Material tradeoff remains?}
+    T -->|no| CLOSE[Close through functional owner]
+    T -->|yes| CR[Persist conflict record]
+    CR --> B[Create concise Decision Brief]
+    B --> DA[Optional Devil's Advocate challenge]
+    DA --> AUTH{Within delegated CoS authority?}
+    AUTH -->|yes| CD[CoS / named owner decides]
+    AUTH -->|no| M[Escalate to Michael]
+    CD --> DR[Persist decision + reversal condition]
+    M --> DR
+    DR --> RES[Mark conflict DECIDED]
+```
 
-- CFO: Option B has stronger economics.
-- CRO: Option A has stronger strategic/win rationale.
-- COO: Only A and C are deliverable.
+## Durable records
 
-CoS frames and resolves the cross-functional tradeoff only within delegated authority. Otherwise the Decision Brief goes to Michael.
+A conflict record captures:
 
-## 3. No majority voting
+- conflict ID,
+- task ID,
+- summary,
+- disputed points,
+- status,
+- creation time.
 
-Three agreeing agents do not automatically outweigh one authoritative source. Arbitration considers:
+A decision record captures:
 
-- authoritative source ownership
-- quality and freshness of evidence
-- business consequence
-- confidence
-- reversibility
-- decision rights
+- decision ID,
+- task ID and conflict link,
+- decision owner,
+- disposition,
+- reversal condition,
+- decision time.
 
-## 4. Conflict record
+Reversal conditions are mandatory for material decisions so the organization can distinguish a durable decision from an assumption that should be revisited when evidence changes.
 
-Material disagreements create a `conflict.v1` record containing:
+## Decision Brief
 
-- conflict/task identifiers
-- participants
-- uncontested facts
-- disputed facts
-- disputed recommendations
-- source authority
-- business consequence
-- options
-- agent positions
-- confidence
-- reversibility
-- Devil's Advocate review when required
-- CoS recommendation
-- reversal condition
-- decision owner
-- disposition
+When escalation is required, the CoS should compress the issue into:
 
-## 5. Devil's Advocate
+- decision required,
+- why now,
+- known facts,
+- material disagreement,
+- options,
+- CoS recommendation,
+- primary risk,
+- what would reverse the recommendation,
+- approval/action requested.
 
-Use Devil's Advocate for important or high-consequence recommendations when independent challenge would improve the decision. It tests assumptions, evidence gaps, second-order consequences, premortem failure modes, and reversibility. It remains advisory and cannot become the decision owner.
+The brief should reduce CEO cognitive load without hiding uncertainty or conflicting functional evidence.
 
-## 6. Escalation format
+## Devil's Advocate
 
-Never escalate a raw agent argument to Michael. Use a concise Decision Brief:
-
-- Decision required
-- Why now
-- Known facts
-- Material disagreement
-- Options
-- CoS recommendation
-- Primary risk
-- What would reverse the recommendation
-- Approval/action requested
-
-## 7. Source-of-truth conflict
-
-If two purported authoritative sources conflict on a material decision and precedence cannot be established safely, the conflict itself is material evidence. Do not guess which source is correct. Escalate according to consequence and authority, preserving both source references.
+The Devil's Advocate is an independent challenge function. It may test assumptions, evidence quality, downside cases, and reversal conditions. It never becomes the final decision owner merely because it raised the challenge.

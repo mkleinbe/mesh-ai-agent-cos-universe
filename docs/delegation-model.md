@@ -1,63 +1,81 @@
 # Delegation Model
 
-Phase 1 delegates work through structured contracts, not informal agent chat. Every work package remains accountable to the parent objective and visible until verified, cancelled, or explicitly superseded.
+Delegation is a durable work contract, not an informal chat handoff. The Phase 1 runtime validates delegation rules before persisting a delegated work package.
 
-## Contract
+## Normal hierarchy
 
-Delegations follow `mesh.cos.delegation.v1` / `delegation.v1` and include:
+```mermaid
+flowchart TB
+    COS[Chief of Staff]
+    FE[Functional Executive]
+    SW[Specialist / Worker]
+    COS --> FE --> SW
+```
 
-- delegation ID
-- task ID and optional parent task ID
-- delegating agent
-- exactly one accountable agent
-- contributing agents
-- business objective
-- expected outcome
-- deliverable
-- success criteria
-- deadline
-- priority
-- evidence supplied
-- unresolved evidence
-- constraints
-- authority level
-- permitted actions
-- prohibited actions
-- approval gates
-- dependencies
-- next check time
-- escalation condition
-- acceptance test
+Normal depth is limited to two levels below CoS. Deeper recursive agent trees and swarms are outside the Phase 1 operating model.
 
-## Rules
+## Required contract content
 
-1. Every delegation has exactly one accountable agent.
-2. Normal depth is CoS -> functional executive -> specialist/worker.
-3. Cross-functional reassignment goes through CoS.
-4. A child worker cannot redefine the parent objective.
-5. Delegation cannot widen authority beyond the delegator's permitted boundary.
-6. Required approval cannot be delegated away.
-7. Circular delegation is prohibited.
-8. Duplicate active accountable ownership is prohibited.
-9. Every delegated work package requires a measurable acceptance condition.
-10. Failed acceptance returns the work for remediation or escalation.
+A delegation must specify:
 
-## Accountability versus contribution
+- delegation ID and task ID,
+- delegating agent,
+- exactly one accountable agent,
+- business objective and expected outcome,
+- deliverable,
+- measurable success criteria,
+- priority,
+- authority level,
+- acceptance test,
+- parent task where applicable,
+- contributors,
+- deadline and next check where applicable,
+- evidence supplied and unresolved evidence,
+- constraints,
+- permitted actions,
+- prohibited actions,
+- approval gates,
+- dependencies,
+- escalation condition.
 
-Accountability is singular. Contribution is plural. A CFO, COO, and Devil's Advocate may all contribute to a CRO-owned pursuit task, but the task still has one accountable owner.
+## Enforcement rules
 
-## Check-ins
+```mermaid
+flowchart LR
+    D[Proposed delegation] --> O{Exactly one owner?}
+    O -->|no| REJ[Reject]
+    O -->|yes| DEP{Depth allowed?}
+    DEP -->|no| REJ
+    DEP -->|yes| AUTH{Authority <= parent?}
+    AUTH -->|no| REJ
+    AUTH -->|yes| CIRC{Circular?}
+    CIRC -->|yes| REJ
+    CIRC -->|no| GATE{Parent approvals inherited?}
+    GATE -->|no| REJ
+    GATE -->|yes| ACT{Permitted/prohibited conflict?}
+    ACT -->|yes| REJ
+    ACT -->|no| ACC{Acceptance measurable?}
+    ACC -->|no| REJ
+    ACC -->|yes| SAVE[Persist delegation]
+```
 
-Delegation is not fire-and-forget. The contract carries `next_check_at` and escalation conditions so CoS/AgentOps can detect stalls, unresolved dependencies, repeated rework, or abandonment without requiring Michael to supervise agents.
+The service enforces the following constitutional rules:
 
-## Reassignment
+1. An accountable agent is mandatory.
+2. The accountable agent cannot also be listed as a contributor to the same delegation.
+3. Delegation depth cannot exceed the Phase 1 limit.
+4. Child authority cannot exceed parent authority.
+5. Circular delegation is rejected.
+6. Active ownership cannot be silently replaced when the validation context specifies the current owner.
+7. Measurable success criteria and an acceptance test are required.
+8. Parent approval obligations must be inherited.
+9. The same action cannot be both permitted and prohibited.
+10. The delegation record is persisted to canonical state after validation.
 
-CoS may reallocate work among registered agents within its authority. Reassignment must preserve task history, evidence, prior decisions, and audit events. A reassignment does not erase defects or restart performance history.
+## Reassignment and remediation
 
-## Approval boundary
+Reassignment is not a deletion of history. Existing delegation and audit state must remain reconstructable. If verification fails, the work routes to `REWORK`; a new or revised delegation may be created with the same parent objective and preserved approval obligations.
 
-An agent may delegate preparation for an L4/L5 action but not the approval obligation itself. Example: CRO may delegate proposal analysis, CFO may model economics, and COO may validate feasibility, but final pricing or material commitment remains human-gated.
+## Authority and evidence
 
-## Parent objective integrity
-
-A specialist may identify that the requested approach is infeasible or unsafe. It should raise evidence, risk, blocker, or recommendation rather than silently substituting a different business objective.
+Delegation transfers responsibility for a bounded work package, not source authority. A functional worker may gather or analyze evidence, but the authoritative owner of a fact remains the source/domain owner defined by policy.

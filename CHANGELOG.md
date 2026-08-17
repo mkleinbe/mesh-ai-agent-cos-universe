@@ -2,48 +2,59 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 0.1.1 - 2026-08-17 - Phase 1 remediation and documentation alignment
+
+### Remediated
+
+- Replaced the duplicate hardcoded runtime registry with canonical loading from `agents/registry.json`.
+- Extended SQLite persistence to durable consequential records, including delegations, decisions, conflicts, approvals, registry changes, performance events, scorecards, Answer Desk dispositions, verification records, Slack thread mappings, and idempotency claims.
+- Added a Chief of Staff application service for intake, controlled lifecycle advancement, completion, acceptance-test execution, verification, rework, and audit events.
+- Strengthened delegation enforcement for ownership, depth, authority, circularity, measurable acceptance, approval inheritance, and action-boundary conflicts.
+- Added durable conflict and decision services with reversal conditions.
+- Added durable Answer Desk service dispositions.
+- Added Slack request-signature verification, durable event dedupe, durable task/thread mapping, structured messages, and a live-capable Web API client boundary for `#mesh-agent-ops` (`C0BRL4GCL3A`).
+- Added thin functional adapter boundaries so governed Mesh skills and authoritative sources can be composed without reimplementation.
+- Added invocation-time source, tool, and action authorization from registry policy.
+- Added versioned AgentOps performance policy and evaluator behavior.
+- Added bounded retry handling for transient failures.
+- Added deterministic operating metrics for verified outcomes, CEO deflection, and methodologically supported CEO time avoided.
+- Expanded stateful remediation tests across orchestration, persistence, verification/rework, delegation, conflicts, Answer Desk, Slack security/idempotency, AgentOps, reliability, metrics, and adapter governance.
+
+### TDD evidence
+
+The remediation increment was executed with test-first acceptance criteria and CI feedback loops. CI surfaced registry-normalization defects during the red/green cycle. They were corrected before merge. The final remediation PR passed contract validation, the complete pytest suite, and Python compileall.
+
+### Documentation
+
+- Reconciled repository documentation to the post-remediation runtime.
+- Added Mermaid diagrams for system architecture, task lifecycle, delegation, conflict/decision flow, Agent Registry control, AgentOps, Slack coordination, Answer Desk, testing flow, and operations.
+- Reclassified the August 17 gap assessment as historical and mapped each prior code gap to its current disposition.
+- Clarified the remaining production dependencies as configuration and external integration work rather than unresolved Phase 1 control-plane code.
+- Refreshed all Phase 1 agent role cards to point to the canonical registry and current governance boundaries.
+
+### Remaining production dependencies
+
+- Slack bot token and signing secret.
+- Team-facing Answer Desk Slack channel ID.
+- Credentials and permissions for approved Mesh authoritative sources and skills.
+- Production approval-owner configuration.
+- Deployment/runtime infrastructure and any explicitly approved future monetary thresholds.
+
 ## 0.1.0 - 2026-08-17 - Phase 1 operating core
 
 ### Added
+
 - Python 3.11+ modular-monolith control plane with SQLite-backed canonical task and event ledger.
 - Versioned JSON contracts for agent records, tasks, delegations, agent events, decisions, conflicts, approvals, performance events, and performance scorecards.
 - Canonical Phase 1 agent registry covering CoS, AgentOps, Answer Desk, CRO, CFO v1, COO v1, Consultant Network Steward, CMO, VP Content, Devil's Advocate, and Message Operations.
 - Explicit L0-L5 decision-rights model with fail-closed human approval at L4 and Michael-exclusive authority at L5 unless explicitly delegated later.
 - Task state machine separating artifact completion from verified business outcome.
-- Delegation controls enforcing one accountable owner, bounded delegation depth, no circular delegation, no authority widening, and no delegated-away approval obligations.
-- Audit/event envelope with idempotency support and consequential-action logging.
-- Conflict arbitration preserving functional source authority while assigning cross-functional tradeoffs to CoS.
-- AgentOps performance scorecard, health states, stalled-work detection, rework tracking, escalation-quality controls, and coordination-loop detection.
-- Permission-aware Answer Desk routing and disposition model.
-- Consultant staffing freshness and readiness controls, including `REQUIRES_REFRESH` behavior for stale availability.
-- Slack structured-message protocol, one-task-per-thread mapping, duplicate-event protection, and explicit acting-agent labels.
-- Prompt-injection boundary treating retrieved documents and messages as untrusted data rather than operating instructions.
-- Emergency kill switch and quarantine controls for severe defects or unauthorized actions.
+- Delegation, approval, audit, conflict, AgentOps, Answer Desk, staffing-freshness, security, Slack-protocol, and kill-switch controls.
 - Five architecture decision records covering runtime, ledger, structured messaging, Slack identity, and approval/external-action design.
-- Contract, lifecycle, authority, security, idempotency, performance, and 13 required Phase 1 evaluation scenarios.
+- Contract, lifecycle, authority, security, idempotency, performance, and required Phase 1 evaluation scenarios.
 
-### Documentation finalization
-- Expanded the canonical Phase 1 operating contract, repository guide, documentation index, AgentOps performance policy, agent-registry policy, Answer Desk protocol, delegation model, conflict/escalation policies, observability, security/governance, Slack protocol, task lifecycle, testing/evaluation guide, and operations runbook.
-- Expanded `AGENTS.md` into repository-wide operating instructions for agent behavior and authority.
-- Expanded `agents/registry.json` from an ID index into a machine-readable Phase 1 registry containing role, parent, domain, source authority, skills/tools, contracts, permitted/prohibited actions, decision authority, approvals, delegation permissions, performance policy, confidentiality class, and runtime health for every Phase 1 agent.
+### Phase 1 boundaries
 
-### Verified
-- JSON Schema validation completed successfully for all 9 Phase 1 schemas and positive fixtures.
-- Local `pytest` verification completed with 40 passing tests after two pressure-test defects were corrected.
-- Local Python `compileall` verification completed successfully.
-- GitHub Actions pre-merge CI for the Phase 1 implementation completed successfully, including dependency installation, contract validation, pytest, and compileall.
-
-### Integration boundaries
-The following are deliberately represented as governed adapters or authoritative-source boundaries rather than fabricated live integrations:
-- Slack network calls
-- Mesh Revenue Intelligence
-- Mesh Proposals - Engagement P&L Tracker
-- Capabilities Partner & Consultant Tracker
-- AuthoredUp
-- LinkedIn
-- Existing Mesh agent skills and Message Operations execution
-
-### Phase 1 limitations
 - No autonomous pricing or discounts.
 - No autonomous consequential external sends or public publishing.
 - No enterprise-accounting CFO authority beyond Engagement Finance / FP&A scope.

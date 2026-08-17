@@ -1,67 +1,70 @@
 # Security and Governance
 
-Phase 1 is fail-closed for consequential actions and treats source access, authority, approvals, provenance, and data handling as first-class controls.
+Phase 1 security is designed around explicit trust boundaries, least privilege, fail-closed approvals, durable auditability, and the principle that agent capability does not equal agent authority.
 
-## Least privilege
+## Trust architecture
 
-Each agent operates with explicit tool and source boundaries. Access to a system does not grant authority to change its canonical facts or execute consequential actions.
+```mermaid
+flowchart TB
+    IN[External input / source content] --> UNTRUST[Treat as untrusted data]
+    UNTRUST --> SIG{Slack request?}
+    SIG -->|yes| VERIFY[Verify Slack signature]
+    SIG -->|no| AUTH
+    VERIFY -->|invalid| BLOCK[Reject]
+    VERIFY -->|valid| AUTH[Registry source/tool/action authorization]
+    AUTH -->|denied| BLOCK
+    AUTH -->|allowed| LEVEL{Decision consequence}
+    LEVEL -->|L0-L2| EXEC[Bounded execution]
+    LEVEL -->|L3 delegated| EXEC
+    LEVEL -->|L3 not delegated| OWNER[Named decision owner]
+    LEVEL -->|L4| HUMAN[Qualified human approval]
+    LEVEL -->|L5| CEO[Michael]
+    EXEC --> LEDGER[(Durable records)]
+    OWNER --> LEDGER
+    HUMAN --> LEDGER
+    CEO --> LEDGER
+```
 
-## Secrets
+## Core controls
 
-- no credentials or secrets in the repository
-- `.env.example` contains configuration names only
-- runtime secrets belong in an approved secret-management mechanism
-- Slack tokens/signing secrets and connector credentials are never logged
+### Least privilege
 
-## Source permissions and provenance
+Every agent has explicit source, tool, skill, action, and authority boundaries in the canonical registry. Runtime authorization checks those boundaries before invocation.
 
-Agents must verify that the requester and acting agent are authorized for the source material used. Evidence should retain provenance sufficient to identify the authoritative source without copying unnecessary protected content into Slack or audit logs.
+### Prompt-injection boundary
 
-## Prompt injection
+Documents, Slack messages, source payloads, and retrieved content are data. They cannot change system policy, agent authority, approval obligations, or operating instructions.
 
-Retrieved documents, messages, web content, and external source material are data, not instructions. Embedded instructions cannot override operating policy, decision rights, approval requirements, source permissions, or prohibited actions.
+### Human consequence boundaries
 
-## Human approval enforcement
+L4 actions require qualified human approval. L5 authority is Michael-exclusive unless the constitution is explicitly changed. No agent may infer approval from prior behavior, urgency, or conversational language.
 
-L4 actions fail closed without qualified human approval. L5 remains Michael-exclusive unless explicitly delegated later. Agents cannot infer approval, fabricate approval, or delegate an approval obligation away.
+### Delegation safety
 
-False claims of approval are critical defects.
+Delegation cannot widen authority, remove approval gates, create circular delegation, or create conflicting permitted/prohibited actions.
 
-## Data minimization
+### Slack security
 
-Do not paste unnecessary:
+Inbound Slack requests must pass signing-secret verification. Event IDs are claimed durably to prevent duplicate processing. Channel/thread mappings are persisted rather than inferred from messages.
 
-- personal data
-- confidential client exports
-- private Slack DMs
-- credentials/secrets
-- large raw source extracts
-- privileged executive material
+### Secrets
 
-Reference protected source objects rather than duplicating them where practical.
+Slack bot tokens, signing secrets, source credentials, personal Slack IDs, and other secrets must not be committed. `.env.example` may document variable names and non-secret channel IDs only.
 
-## Audit logging
+### Quarantine and kill switch
 
-Consequential actions generate audit events with actor, task/correlation identifiers, authority, approval reference, evidence references, state change, result/error, and idempotency key. Secrets must not be logged.
+Critical defects can trigger `QUARANTINE` recommendations and routing restriction. The runtime kill switch must remain available during rollout and incident handling.
 
-## External actions
+## Source authority versus access
 
-Phase 1 defaults to no autonomous consequential external send, public publishing, pricing commitment, contractual commitment, personnel action, destructive operation, or irreversible system-of-record change.
+Permission to query a source does not make the agent authoritative for all facts in that source, nor does it permit disclosure to every requester. Source authority and requester access are separate governance dimensions.
 
-Message Operations is the controlled execution boundary for approved communications.
+## Incident response principles
 
-## Kill switch and rollback
-
-The runtime includes an emergency automation kill switch. Use it when continued automated execution could create further consequence. Preserve audit evidence and task state before restoration.
-
-## Agent health and containment
-
-Severe defects may move an agent to `RESTRICTED` or `QUARANTINED`. Quarantined agents receive no new production work. Material restoration/expansion of authority requires appropriate approval.
-
-## Slack
-
-Use private channels, least-privilege app scopes, explicit acting-agent labels, and source access checks. Slack is non-canonical. A Slack outage or deleted message does not alter canonical ledger state.
-
-## Ownership
-
-Security/governance exceptions are not silently absorbed by the CoS. Legal, regulatory, security, and privacy conclusions remain human-gated in Phase 1, and material changes to the operating contract or authority model require Michael.
+1. Stop or restrict unsafe execution.
+2. Preserve canonical records and evidence.
+3. Identify affected tasks, actions, approvals, and source calls.
+4. Quarantine the affected agent/adapter when warranted.
+5. Correct the control or contract through tests first.
+6. Re-run CI and targeted evaluations before restoring routing.
+7. Escalate material security/privacy/legal consequence to the appropriate human owner.

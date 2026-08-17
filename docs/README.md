@@ -1,51 +1,57 @@
 # Documentation Index
 
-This directory documents the Phase 1 Mesh AI Chief of Staff operating core.
+Post-remediation Phase 1 documentation for the Mesh AI Chief of Staff operating core.
 
-## Canonical specification
+```mermaid
+flowchart LR
+    C[Operating contract] --> A[Architecture]
+    A --> G[Governance]
+    A --> W[Work lifecycle]
+    A --> S[Slack + Answer Desk]
+    A --> O[AgentOps + observability]
+    G --> T[Testing]
+    W --> T
+    S --> T
+    O --> T
+    T --> R[Runbook]
+```
 
-- `phase-1-operating-contract.md`: canonical human-readable Phase 1 operating contract
+## Canonical
 
-## Architecture and decision records
+- `phase-1-operating-contract.md`: operating constitution.
+- `../agents/registry.json`: runtime agent source of truth.
+- `../contracts/`: versioned machine contracts.
+- `../config/performance-policy.v1.json`: AgentOps policy.
 
-- `architecture.md`: architecture, agent hierarchy, lifecycle, escalation, Slack/ledger relationship, and pursuit example
-- `adr/ADR-001-runtime.md`: runtime and implementation language
-- `adr/ADR-002-task-ledger.md`: canonical ledger and persistence
-- `adr/ADR-003-agent-communication.md`: structured agent-to-agent communication
-- `adr/ADR-004-slack-identity.md`: Slack identity strategy
-- `adr/ADR-005-approval-model.md`: approval and consequential external-action model
+## Architecture and governance
 
-## Governance and operating controls
+- `architecture.md`
+- `decision-rights.md`
+- `delegation-model.md`
+- `task-lifecycle.md`
+- `agent-registry.md`
+- `agent-performance.md`
+- `conflict-resolution.md`
+- `escalation-policy.md`
+- `security-governance.md`
+- `observability.md`
 
-- `decision-rights.md`: L0-L5 authority model
-- `delegation-model.md`: delegation contracts and depth rules
-- `task-lifecycle.md`: task states and valid outcome lifecycle
-- `agent-registry.md`: canonical agent definitions and health states
-- `agent-performance.md`: performance scorecard and AgentOps recommendations
-- `conflict-resolution.md`: functional truth and cross-functional arbitration
-- `escalation-policy.md`: CoS versus Michael escalation rules
-- `security-governance.md`: least privilege, provenance, prompt-injection, approvals, and kill-switch controls
-- `observability.md`: auditability and operational telemetry
+## Collaboration
 
-## Collaboration interfaces
-
-- `slack-agent-protocol.md`: private agent-operations Slack protocol
-- `answer-desk.md`: team-facing Answer Desk behavior and access controls
+- `slack-agent-protocol.md`
+- `answer-desk.md`
 
 ## Verification and operations
 
-- `testing-evaluation.md`: test layers, local release verification, and 13 required evaluation scenarios
-- `runbook.md`: startup, validation, incident response, quarantine, restoration, and controlled shutdown
-- `pressure-test.md`: pre-PR independent challenge and corrected defects
+- `testing-evaluation.md`
+- `runbook.md`
+- `pressure-test.md`
+- `phase-1-gap-assessment-2026-08-17.md` (historical, with closure mapping)
+- `phase-1-remediation-completion-2026-08-17.md`
+- `adr/` architecture decisions
 
-## Supporting repository material
+## Current production dependencies
 
-- `../contracts/`: versioned machine-readable schemas, examples, and compatibility policy
-- `../agents/`: human-readable agent role definitions and canonical registry
-- `../src/mesh_cos/`: Phase 1 implementation
-- `../tests/`: contract, unit, integration, and evaluation tests
-- `../CHANGELOG.md`: release history
+Slack credentials, a separate Answer Desk channel ID, approved source/skill credentials and permissions, production approval-owner mapping, deployment infrastructure, and any future thresholds explicitly approved by Michael.
 
-## Documentation rule
-
-Architecture, authority, agent scope, or operating-policy changes must update the corresponding documentation in the same change. Documentation is part of the deliverable, not post-release cleanup.
+Documentation must describe current runtime behavior. Update affected Mermaid diagrams, tests, registry/policy, and docs in the same PR when operating semantics change.

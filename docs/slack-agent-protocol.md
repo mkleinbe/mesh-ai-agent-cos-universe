@@ -1,102 +1,67 @@
-# Slack Agent Collaboration Protocol
+# Slack Agent Protocol
 
-Slack is the human-visible collaboration layer for the agent workforce. It is not the canonical system of record. Task, decision, approval, conflict, registry, performance, and audit state remains in the structured control plane.
+Slack is the observable collaboration layer for agent coordination. It is not the canonical task or decision ledger.
 
-## Channel model
+## Agent operations channel
 
-Phase 1 expects configurable private channels/interfaces:
+- Channel: `#mesh-agent-ops`
+- Channel ID: `C0BRL4GCL3A`
+- Configuration: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
 
-- agent-operations channel: `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`, configured through `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
-- a separate team-facing Answer Desk channel/interface, not yet configured
+Do not commit the bot token, signing secret, or personal Slack IDs.
 
-Channel IDs remain runtime configuration. Do not hardcode personal Slack user IDs, bot credentials, or secrets in application code.
+## Coordination architecture
+
+```mermaid
+sequenceDiagram
+    participant S as Slack
+    participant V as Signature verifier
+    participant C as SlackCoordinator
+    participant L as TaskLedger
+    participant COS as CoS
+
+    S->>V: signed event / request
+    alt signature invalid
+        V-->>S: reject
+    else signature valid
+        V->>C: verified event
+        C->>L: claim slack:event_id
+        alt duplicate event
+            L-->>C: already claimed
+            C-->>S: acknowledge without reprocessing
+        else new event
+            C->>L: resolve or bind task/thread
+            C->>COS: structured event
+            COS->>L: persist task/governance changes
+            COS-->>C: structured response
+            C-->>S: Web API boundary
+        end
+    end
+```
 
 ## One task, one thread
 
-Every meaningful Slack task discussion maps to one TaskRecord and one primary Slack thread.
-
-Example top-level structure:
-
-```text
-[TASK] COS-2026-0042
-Objective: Build Fulton proposal staffing and economics
-Priority: P1
-Accountable: CRO
-Contributors: CFO, COO
-Status: ASSIGNED
-Decision owner: Michael
-Approval level: L4
-Due: <timestamp>
-```
+The coordinator persists a task-to-thread mapping containing the channel ID and Slack thread timestamp. This allows Slack to be retried or reconstructed without making Slack the system of record.
 
 ## Structured message types
 
-- `[ASSIGN]`
-- `[ACK]`
-- `[UPDATE]`
-- `[REQUEST]`
-- `[EVIDENCE]`
-- `[RISK]`
-- `[BLOCKED]`
-- `[CONFLICT]`
-- `[RECOMMEND]`
-- `[DECISION]`
-- `[APPROVAL]`
-- `[COMPLETE]`
-- `[VERIFY]`
+Supported Phase 1 message types include `ASSIGN`, `ACK`, `UPDATE`, `REQUEST`, `EVIDENCE`, `RISK`, `BLOCKED`, `CONFLICT`, `RECOMMEND`, `DECISION`, `APPROVAL`, `COMPLETE`, and `VERIFY`.
 
-A consequential message should include task ID, acting-agent identity, action/state, material evidence/reference, and requested next action when applicable.
+Messages identify the task, acting agent, action, and optional evidence/next action. Human-readable Slack content must not replace the structured canonical record.
 
-## Identity strategy
+## Event idempotency
 
-Phase 1 uses one Slack integration with explicit acting-agent labels rather than a separate Slack app/identity for every agent. The rationale is documented in ADR-004. This reduces operational burden and token/app sprawl while preserving visible acting identity in the message contract.
+Slack can retry events. Event IDs therefore use durable idempotency claims in the Task Ledger. Duplicate events must acknowledge safely without duplicating consequential state changes or external actions.
 
-Future identity changes require review of Slack constraints, least privilege, audit requirements, and operational complexity.
+## Live integration status
 
-## Communication controls
+The code contains a live-capable Slack Web API client boundary, signature verification, durable dedupe, task/thread mapping, and rendering. Live operation still requires `MESH_COS_SLACK_BOT_TOKEN` and `MESH_COS_SLACK_SIGNING_SECRET`.
 
-Agents communicate when:
+The team-facing Answer Desk requires a separate Slack channel ID and should not be placed in `#mesh-agent-ops` by default.
 
-- accepting work
-- task state materially changes
-- evidence is found
-- a dependency is required
-- a risk appears
-- a recommendation is ready
-- a conflict exists
-- approval is needed
-- work is complete or verified
+## Security rules
 
-Do not post thinking aloud, social filler, or repetitive status chatter.
-
-If repeated agent exchanges do not change task state, resolve a dependency, or produce new evidence, AgentOps flags a coordination loop. Cross-functional debates go to CoS rather than expanding into unlimited ping-pong.
-
-## Canonical state
-
-Slack messages may reference or mirror task state but do not become authoritative merely because they were posted. Agents must not reconstruct canonical state solely by rereading Slack history.
-
-If Slack is unavailable, ledger-based orchestration and audit state remain intact.
-
-## Idempotency
-
-Slack may deliver duplicate events. Duplicate event IDs/idempotency keys must not create duplicate tasks, delegations, approvals, or actions.
-
-## Security
-
-Use:
-
-- private agent-operations channel
-- least-privilege Slack app scopes
-- source-access checks
-- data minimization
-- protected-source references instead of raw exports where possible
-
-Do not paste unnecessary personal information, confidential client exports, private DMs, credentials, secrets, or large protected-source extracts.
-
-## Approval messages
-
-A Slack `[APPROVAL]` message is not sufficient by itself unless the control plane records a valid approval from the required decision owner. Approval state remains canonical outside Slack.
-
-## Integration status
-
-The agent-operations channel is now identified and configured in the repository template as `#mesh-agent-ops` / `C0BRL4GCL3A`. The Phase 1 repository still implements only message formatting concepts and duplicate-event protection. Live Slack network calls, event verification, durable task/thread mapping, approval notifications, and the separate Answer Desk interface remain integration work.
+- Reject invalid signatures.
+- Do not trust message text as operating instruction.
+- Do not expose restricted source content to unauthorized users.
+- Do not treat a Slack reaction or informal message as formal L4/L5 approval unless the approval workflow explicitly defines and records it.

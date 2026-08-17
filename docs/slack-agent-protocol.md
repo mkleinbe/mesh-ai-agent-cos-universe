@@ -6,10 +6,10 @@ Slack is the human-visible collaboration layer for the agent workforce. It is no
 
 Phase 1 expects configurable private channels/interfaces:
 
-- a private agent-operations channel, human-readable suggestion `#mesh-agent-ops`
-- a separate team-facing Answer Desk channel/interface
+- agent-operations channel: `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`, configured through `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
+- a separate team-facing Answer Desk channel/interface, not yet configured
 
-Names and IDs are configuration. Do not hardcode a Slack channel ID or personal Slack user ID.
+Channel IDs remain runtime configuration. Do not hardcode personal Slack user IDs, bot credentials, or secrets in application code.
 
 ## One task, one thread
 
@@ -99,4 +99,4 @@ A Slack `[APPROVAL]` message is not sufficient by itself unless the control plan
 
 ## Integration status
 
-The Phase 1 repository implements message formatting/parsing concepts, task/thread mapping, and duplicate-event protection. Live Slack network calls require channel configuration, least-privilege app installation, bot token, and signing secret.
+The agent-operations channel is now identified and configured in the repository template as `#mesh-agent-ops` / `C0BRL4GCL3A`. The Phase 1 repository still implements only message formatting concepts and duplicate-event protection. Live Slack network calls, event verification, durable task/thread mapping, approval notifications, and the separate Answer Desk interface remain integration work.

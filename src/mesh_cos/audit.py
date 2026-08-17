@@ -16,6 +16,7 @@ class AuditEvent:
     result: str
     event_id: str = ""
     version: str = "mesh.cos.agent-event.v1"
+    event_version: str = "mesh.cos.agent-event.v1"
     timestamp: str = ""
     source: str = "mesh-cos"
     before_state: dict[str, Any] | None = None

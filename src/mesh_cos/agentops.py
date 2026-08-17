@@ -11,15 +11,8 @@ from .models import TaskRecord, TaskStatus, new_id, utcnow
 from .performance import PerformanceEvent, recommendation, score
 
 SUPPORTED_RECOMMENDATIONS = {
-    "CONTINUE",
-    "INCREASE_ROUTING",
-    "DECREASE_ROUTING",
-    "WATCH",
-    "RESTRICT",
-    "RETRAIN_OR_REVISE",
-    "QUARANTINE",
-    "RETIRE",
-    "BUILD_NEW_SPECIALIST",
+    "CONTINUE", "INCREASE_ROUTING", "DECREASE_ROUTING", "WATCH", "RESTRICT",
+    "RETRAIN_OR_REVISE", "QUARANTINE", "RETIRE", "BUILD_NEW_SPECIALIST",
 }
 
 
@@ -55,6 +48,8 @@ class AgentOpsEvaluator:
         return cls(json.loads(Path(path).read_text()), ledger=ledger, window_size=window_size)
 
     def record(self, agent_id: str, task_id: str, category: str, value: float, severity: str = "LOW", reason: str = "") -> None:
+        if not 0 <= value <= 1:
+            raise ValueError("Performance score must be between 0 and 1")
         event = PerformanceEvent(agent_id, task_id, category, value, severity, reason)
         self.events.append(event)
         if self.ledger is not None:
@@ -63,7 +58,7 @@ class AgentOpsEvaluator:
     def _window(self, agent_id: str) -> list[PerformanceEvent]:
         local = [event for event in self.events if event.agent_id == agent_id]
         if self.ledger is not None:
-            persisted = []
+            persisted: list[PerformanceEvent] = []
             for raw in self.ledger.list_records("performance_event"):
                 if raw.get("agent_id") != agent_id:
                     continue
@@ -120,17 +115,57 @@ class AgentOpsEvaluator:
         overloaded = sorted(agent_id for agent_id, count in counts.items() if count > limits.get(agent_id, 10**9))
         return {"stalled_task_ids": stalled_ids, "active_by_agent": dict(counts), "overloaded_agents": overloaded}
 
+    def analyze_signals(self, tasks: list[TaskRecord], *, now: datetime | None = None) -> dict:
+        now = now or datetime.now(timezone.utc)
+        missed_deadlines = [task.task_id for task in tasks if task.due_at and task.status not in {TaskStatus.CLOSED, TaskStatus.CANCELLED, TaskStatus.VERIFIED} and datetime.fromisoformat(task.due_at) < now]
+        rework_tasks = [task.task_id for task in tasks if task.rework_count > 0]
+        failures = self.ledger.list_records("execution_failure") if self.ledger else []
+        tool_failures = self.ledger.list_records("tool_failure") if self.ledger else []
+        verifications = self.ledger.list_records("verification") if self.ledger else []
+        rejection_reasons = Counter(record.get("reason", "unspecified") for record in verifications if record.get("passed") is False)
+        error_taxonomy = Counter(record.get("error_type", "unspecified") for record in failures)
+        repeated_tool_failure_agents = Counter(record.get("agent_id", "unknown") for record in tool_failures)
+        evidence_defects = Counter(
+            record.get("agent_id", "unknown")
+            for record in (self.ledger.list_records("performance_event") if self.ledger else [])
+            if record.get("category") == "evidence_governance" and float(record.get("score", 1)) < 0.5
+        )
+        high_cost_low_value = [record for record in (self.ledger.list_records("cost") if self.ledger else []) if record.get("verified_outcome") is False]
+        return {
+            "missed_deadline_task_ids": missed_deadlines,
+            "rework_task_ids": rework_tasks,
+            "task_failures": len(failures),
+            "rejection_reasons": dict(rejection_reasons),
+            "error_taxonomy": dict(error_taxonomy),
+            "repeated_tool_failure_agents": dict(repeated_tool_failure_agents),
+            "evidence_defects_by_agent": dict(evidence_defects),
+            "high_cost_low_value_count": len(high_cost_low_value),
+        }
+
+    def recommend_for_signals(
+        self,
+        agent_id: str,
+        *,
+        repeated_tool_failures: int = 0,
+        evidence_defects: int = 0,
+        workload_gap: bool = False,
+        retirement_candidate: bool = False,
+    ) -> str:
+        if retirement_candidate:
+            return "RETIRE"
+        if workload_gap:
+            return "BUILD_NEW_SPECIALIST"
+        if repeated_tool_failures >= 3 or evidence_defects >= 3:
+            return "RETRAIN_OR_REVISE"
+        scorecard = self.scorecard(agent_id)
+        if scorecard["recommendation"] == "WATCH" and (repeated_tool_failures or evidence_defects):
+            return "DECREASE_ROUTING"
+        return scorecard["recommendation"]
+
     def record_health_change(self, agent_id: str, from_state: str, to_state: str, reason: str, *, approved_by: str) -> dict:
         if self.ledger is None:
             raise RuntimeError("A ledger is required for durable health changes")
-        record = {
-            "agent_id": agent_id,
-            "from_state": from_state,
-            "to_state": to_state,
-            "reason": reason,
-            "approved_by": approved_by,
-            "timestamp": utcnow(),
-        }
+        record = {"agent_id": agent_id, "from_state": from_state, "to_state": to_state, "reason": reason, "approved_by": approved_by, "timestamp": utcnow()}
         self.ledger.save_record("registry_change", agent_id, record)
         event = AuditEvent("agent_health_change", "agentops", agent_id, new_id("corr"), 2, f"{from_state}->{to_state}: {reason}")
         self.ledger.record_event(event.to_dict())

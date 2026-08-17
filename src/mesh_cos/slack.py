@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Callable
 from urllib.request import Request, urlopen
 
+from .answer_desk import AnswerDeskService
 from .ledger import TaskLedger
 from .models import utcnow
 
@@ -109,14 +110,7 @@ class SlackCoordinator:
         return client.post_message(self.channel_id, text, thread_ts=mapping["thread_ts"])
 
 
-def render_message(
-    kind: str,
-    task_id: str,
-    agent_id: str,
-    action: str,
-    evidence_reference: str | None = None,
-    requested_next_action: str | None = None,
-) -> str:
+def render_message(kind: str, task_id: str, agent_id: str, action: str, evidence_reference: str | None = None, requested_next_action: str | None = None) -> str:
     if kind not in MESSAGE_TYPES:
         raise ValueError("Unknown structured Slack message type")
     lines = [f"[{kind}] {task_id}", f"Agent: {agent_id}", f"Action: {action}"]
@@ -135,19 +129,21 @@ def parse_message(text: str) -> dict:
     if kind not in MESSAGE_TYPES:
         raise ValueError("Unknown structured Slack message type")
     fields = {"kind": kind, "task_id": task_id}
+    aliases = {"Agent": "agent_id", "Action": "action", "Evidence": "evidence_reference", "Next": "requested_next_action"}
     for line in lines[1:]:
         if ": " not in line:
             continue
         key, value = line.split(": ", 1)
-        fields[{"Agent": "agent_id", "Action": "action", "Evidence": "evidence_reference", "Next": "requested_next_action"}.get(key, key.lower())] = value
+        fields[aliases.get(key, key.lower())] = value
     if "agent_id" not in fields or "action" not in fields:
         raise ValueError("Structured Slack message requires Agent and Action")
     return fields
 
 
 class SlackInboundService:
-    def __init__(self, coordinator: SlackCoordinator) -> None:
+    def __init__(self, coordinator: SlackCoordinator, *, signing_secret: str | None = None) -> None:
         self.coordinator = coordinator
+        self.signing_secret = signing_secret
 
     def handle(self, event_id: str, text: str) -> dict | None:
         if not self.coordinator.accept_event(event_id):
@@ -159,3 +155,29 @@ class SlackInboundService:
             {"event_id": event_id, "channel_id": self.coordinator.channel_id, "received_at": utcnow(), **parsed},
         )
         return parsed
+
+    def handle_request(self, event_id: str, text: str, *, timestamp: str, body: str, signature: str, now: datetime | None = None) -> dict | None:
+        if not self.signing_secret:
+            raise RuntimeError("Slack signing secret is required for inbound request handling")
+        if not verify_slack_request(self.signing_secret, timestamp, body, signature, now=now):
+            raise PermissionError("Invalid or stale Slack request")
+        return self.handle(event_id, text)
+
+
+class AnswerDeskSlackService:
+    """Separate configurable team-facing Slack boundary for Answer Desk."""
+
+    def __init__(self, channel_id: str, answer_desk: AnswerDeskService, client: SlackWebClient) -> None:
+        if not channel_id:
+            raise ValueError("Answer Desk Slack channel ID is required")
+        self.channel_id = channel_id
+        self.answer_desk = answer_desk
+        self.client = client
+
+    def handle_question(self, request_id: str, question: str, **decision_context) -> dict:
+        disposition = self.answer_desk.handle(request_id=request_id, **decision_context)
+        text = f"[{disposition.disposition}] {request_id}\nQuestion: {question}\nReason: {disposition.reason}"
+        if disposition.routed_to:
+            text += f"\nRouted to: {disposition.routed_to}"
+        result = self.client.post_message(self.channel_id, text)
+        return {"disposition": disposition.disposition, "routed_to": disposition.routed_to, "slack": result}

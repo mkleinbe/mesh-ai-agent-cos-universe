@@ -1,4 +1,4 @@
-# Workspace Agent Builder Handoff Prompt
+# Workspace Agent builder Handoff Prompt
 
 Use this prompt to configure the **`v1.0.0 Production Readiness`** Mesh Digital executive-agent workforce after the repository release, validated Skills, approved remote MCP endpoint, and required Workspace apps are available.
 

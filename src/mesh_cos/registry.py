@@ -1,28 +1,118 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import json
+import os
+from pathlib import Path
+import re
 from typing import Any
 
-AGENTS: dict[str, dict[str, Any]] = {
-    "cos": {"display_name":"Chief of Staff","parent_agent_id":None,"agent_type":"executive","accountable_domain":"executive orchestration","status":"ACTIVE","decision_authority":3,"skills":["mesh-ppmd-bot"],"prohibited_actions":["canonical_finance","external_send","commercial_commitment"],"max_delegation_depth":2},
-    "agentops": {"display_name":"AgentOps Controller","parent_agent_id":"cos","agent_type":"controller","accountable_domain":"agent operations and observability","status":"ACTIVE","decision_authority":2,"skills":[],"prohibited_actions":["business_strategy"],"max_delegation_depth":0},
-    "answer-desk": {"display_name":"Answer & Decision Desk","parent_agent_id":"cos","agent_type":"operations","accountable_domain":"authorized team questions and routing","status":"ACTIVE","decision_authority":2,"skills":["mesh-firm-360"],"prohibited_actions":["private_dm_exposure","confidential_client_exposure","financial_exposure","privileged_context_exposure"],"max_delegation_depth":0},
-    "cro": {"display_name":"CRO","parent_agent_id":"cos","agent_type":"executive","accountable_domain":"commercial interpretation and pursuit strategy","status":"ACTIVE","decision_authority":3,"skills":["mesh-revenue-intelligence","mesh-firm-360","mesh-competitive-displacement-engine","mesh-gtm-orchestrator","mesh-buyer-psychology","mesh-sales-messaging"],"prohibited_actions":["pricing_approval","discount_approval","contract_commitment","final_scope"],"max_delegation_depth":1},
-    "cfo": {"display_name":"CFO v1, Engagement Finance / FP&A","parent_agent_id":"cos","agent_type":"executive","accountable_domain":"engagement economics","status":"ACTIVE","decision_authority":3,"authoritative_sources":["Mesh Proposals - Engagement P&L Tracker"],"skills":[],"prohibited_actions":["enterprise_gl_claim","bank_balance_claim","tax_position_claim","audited_financial_claim"],"max_delegation_depth":1},
-    "coo": {"display_name":"COO v1","parent_agent_id":"cos","agent_type":"executive","accountable_domain":"delivery feasibility and resource readiness","status":"ACTIVE","decision_authority":3,"authoritative_sources":["Capabilities Partner & Consultant Tracker"],"skills":[],"prohibited_actions":["treat_stale_availability_as_confirmed"],"max_delegation_depth":1},
-    "consultant-network-steward": {"display_name":"Consultant Network Steward","parent_agent_id":"coo","agent_type":"specialist","accountable_domain":"consultant readiness verification","status":"ACTIVE","decision_authority":2,"skills":[],"prohibited_actions":["confirm_stale_availability"],"max_delegation_depth":0},
-    "cmo": {"display_name":"CMO","parent_agent_id":"cos","agent_type":"executive","accountable_domain":"marketing strategy and execution","status":"ACTIVE","decision_authority":3,"skills":["mesh-marketing-messaging","mesh-messaging-orchestrator","mesh-executive-communications"],"prohibited_actions":["public_publish_without_approval"],"max_delegation_depth":1},
-    "vp-content": {"display_name":"VP Content","parent_agent_id":"cmo","agent_type":"specialist","accountable_domain":"content production execution","status":"ACTIVE","decision_authority":2,"skills":["mesh-marketing-messaging"],"prohibited_actions":["public_publish"],"max_delegation_depth":0},
-    "devils-advocate": {"display_name":"Devil's Advocate","parent_agent_id":"cos","agent_type":"reviewer","accountable_domain":"independent challenge","status":"ACTIVE","decision_authority":1,"skills":["mesh-devils-advocate"],"prohibited_actions":["final_decision"],"max_delegation_depth":0},
-    "message-ops": {"display_name":"Message Operations","parent_agent_id":"cos","agent_type":"operations","accountable_domain":"controlled approved communication execution","status":"ACTIVE","decision_authority":1,"skills":["mesh-message-operations"],"prohibited_actions":["consequential_external_send_without_approval"],"max_delegation_depth":0},
-}
+
+HEALTH_STATES = {"SHADOW", "ACTIVE", "WATCH", "RESTRICTED", "QUARANTINED", "RETIRED"}
+
+
+def _authority_level(value: Any) -> tuple[int, str]:
+    if isinstance(value, int):
+        return value, f"L{value}"
+    policy = str(value or "L0")
+    match = re.search(r"L([0-5])", policy)
+    return (int(match.group(1)) if match else 0), policy
+
+
+def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
+    item = deepcopy(raw)
+    agent_version = str(item.pop("version", "1.0.0"))
+    level, policy = _authority_level(item.get("decision_authority"))
+    item["version"] = "mesh.cos.agent-record.v1"
+    item["agent_version"] = agent_version
+    item["decision_authority"] = level
+    item["decision_authority_policy"] = policy
+    item.setdefault("role", item.get("display_name", item.get("agent_id", "agent")))
+    item.setdefault("description", item.get("accountable_domain", ""))
+    item.setdefault("parent_agent_id", None)
+    item.setdefault("authoritative_sources", [])
+    item.setdefault("allowed_sources", [])
+    item.setdefault("skills", [])
+    item.setdefault("tools", [])
+    item.setdefault("input_contracts", [])
+    item.setdefault("output_contracts", [])
+    item.setdefault("permitted_actions", [])
+    item.setdefault("prohibited_actions", [])
+    item.setdefault("required_approvals", [])
+    item.setdefault("delegation_permissions", [])
+    item.setdefault("normal_SLA", "configurable")
+    item.setdefault("performance_policy", "phase1-scorecard-v1")
+    item.setdefault("confidentiality_class", "internal-confidential")
+    item.setdefault("runtime_health", item.get("status", "SHADOW"))
+    return item
+
+
+class AgentRegistry:
+    def __init__(self, records: dict[str, dict[str, Any]], *, source_path: str | None = None) -> None:
+        self._records = records
+        self.source_path = source_path
+        self.validate()
+
+    @classmethod
+    def from_file(cls, path: str | Path) -> "AgentRegistry":
+        p = Path(path)
+        data = json.loads(p.read_text())
+        records = {_normalize(item)["agent_id"]: _normalize(item) for item in data["agents"]}
+        return cls(records, source_path=str(p))
+
+    @classmethod
+    def default(cls) -> "AgentRegistry":
+        configured = os.getenv("MESH_COS_AGENT_REGISTRY_PATH")
+        if configured:
+            return cls.from_file(configured)
+        repo_path = Path(__file__).resolve().parents[2] / "agents" / "registry.json"
+        if repo_path.exists():
+            return cls.from_file(repo_path)
+        return cls.from_file(Path("agents") / "registry.json")
+
+    def ids(self) -> list[str]:
+        return sorted(self._records)
+
+    def get(self, agent_id: str) -> dict[str, Any]:
+        if agent_id not in self._records:
+            raise KeyError(agent_id)
+        return deepcopy(self._records[agent_id])
+
+    def validate(self) -> None:
+        for agent_id, record in self._records.items():
+            parent = record.get("parent_agent_id")
+            if parent and parent not in self._records:
+                raise ValueError(f"Unknown parent for {agent_id}: {parent}")
+            if record.get("status") not in HEALTH_STATES:
+                raise ValueError(f"Invalid health state for {agent_id}")
+            if record.get("runtime_health") not in HEALTH_STATES:
+                raise ValueError(f"Invalid runtime health for {agent_id}")
+            if not 0 <= int(record.get("decision_authority", -1)) <= 5:
+                raise ValueError(f"Invalid decision authority for {agent_id}")
+            if not 0 <= int(record.get("max_delegation_depth", -1)) <= 2:
+                raise ValueError(f"Invalid delegation depth for {agent_id}")
+
+    def with_runtime_health(self, agent_id: str, health: str) -> dict[str, Any]:
+        if health not in HEALTH_STATES:
+            raise ValueError(f"Invalid runtime health: {health}")
+        self._records[agent_id]["runtime_health"] = health
+        self._records[agent_id]["status"] = health
+        return self.get(agent_id)
+
+
+_DEFAULT: AgentRegistry | None = None
+
+
+def _default() -> AgentRegistry:
+    global _DEFAULT
+    if _DEFAULT is None:
+        _DEFAULT = AgentRegistry.default()
+    return _DEFAULT
+
 
 def get_agent(agent_id: str) -> dict[str, Any]:
-    if agent_id not in AGENTS: raise KeyError(agent_id)
-    return deepcopy(AGENTS[agent_id])
+    return _default().get(agent_id)
+
 
 def validate_registry() -> None:
-    for agent_id, record in AGENTS.items():
-        parent = record.get("parent_agent_id")
-        if parent and parent not in AGENTS: raise ValueError(f"Unknown parent for {agent_id}: {parent}")
-        if record.get("status") not in {"SHADOW","ACTIVE","WATCH","RESTRICTED","QUARANTINED","RETIRED"}: raise ValueError(f"Invalid health state for {agent_id}")
+    _default().validate()

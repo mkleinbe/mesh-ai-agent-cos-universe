@@ -48,7 +48,7 @@ def parse_frontmatter(text: str) -> dict[str, str]:
 registry_source = json.loads((ROOT / "agents" / "registry.json").read_text())
 registry = {record["agent_id"]: record for record in registry_source["agents"]}
 require(set(registry) == set(EXPECTED), "Workspace Agent roster drifted from canonical registry")
-require(__version__ == "0.2.0", "Workspace Agent release must be 0.2.0")
+require(__version__ == "1.0.0", "Workspace Agent release must be 1.0.0")
 require(f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
 
 contract = json.loads(MCP.read_text())

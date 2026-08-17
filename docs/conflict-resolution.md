@@ -21,39 +21,44 @@ flowchart TB
     C[Conflicting evidence, priorities, or recommendations] --> A[Identify authoritative fact owner]
     A --> F[Resolve factual disagreements where possible]
     F --> T{Material tradeoff remains?}
-    T -->|no| CLOSE[Close through functional owner]
+    T -->|no| CLOSE[Close through functional owner + audit]
     T -->|yes| CR[Persist conflict record]
     CR --> B[Create concise Decision Brief]
     B --> DA[Optional Devil's Advocate challenge]
-    DA --> AUTH{Within delegated CoS authority?}
+    DA --> AUTH{Within delegated authority?}
     AUTH -->|yes| CD[CoS / named owner decides]
-    AUTH -->|no| M[Escalate to Michael]
-    CD --> DR[Persist decision + reversal condition]
+    AUTH -->|L4| H[Qualified human approval]
+    AUTH -->|L5| M[Michael decides]
+    CD --> DR[Persist legacy decision + decision.v2]
+    H --> DR
     M --> DR
-    DR --> RES[Mark conflict DECIDED]
+    DR --> EVT[Persist audit-event.v2]
+    EVT --> RES[Mark conflict DECIDED]
 ```
 
-## Durable records
+## Durable conflict record
 
-A conflict record captures:
+A conflict record captures participants, uncontested and disputed facts, disputed recommendations, source authority, business consequence, options, agent positions, confidence, reversibility, Devil's Advocate review, CoS recommendation, reversal condition, decision owner, status and timestamps.
 
-- conflict ID,
-- task ID,
-- summary,
-- disputed points,
-- status,
-- creation time.
+## Explainable decision record
 
-A decision record captures:
+During the compatibility period, `ConflictService.decide()` retains the existing `decision.v1` record and also writes the same decision ID as `mesh.cos.decision.v2`. The v2 record adds:
 
-- decision ID,
-- task ID and conflict link,
-- decision owner,
-- disposition,
-- reversal condition,
-- decision time.
+- task/correlation linkage,
+- accountable decision owner and authority level,
+- explicit human approval reference and approver for L4/L5,
+- concise rationale as `decision_basis_summary`,
+- conflict/evidence references and authoritative source systems,
+- alternatives considered and selection criteria,
+- confidence and risk,
+- affected participants,
+- reversibility and reversal condition,
+- policy identifiers,
+- model/skill provenance where applicable,
+- outcome validation/status,
+- canonical reference and integrity hash.
 
-Reversal conditions are mandatory for material decisions so the organization can distinguish a durable decision from an assumption that should be revisited when evidence changes.
+L4/L5 conflict decisions fail closed before conflict mutation if required approval evidence is absent.
 
 ## Decision Brief
 
@@ -69,8 +74,12 @@ When escalation is required, the CoS should compress the issue into:
 - what would reverse the recommendation,
 - approval/action requested.
 
-The brief should reduce CEO cognitive load without hiding uncertainty or conflicting functional evidence.
+The brief should reduce CEO cognitive load without hiding uncertainty or conflicting functional evidence. The durable `decision.v2` record is the machine-auditable counterpart to the human-readable brief.
+
+## Reversal and supersession
+
+Reversal conditions are mandatory for material decisions. Reversal or supersession does not delete the original governance record. Decision lineage remains available for audit and outcome learning.
 
 ## Devil's Advocate
 
-The Devil's Advocate is an independent challenge function. It may test assumptions, evidence quality, downside cases, and reversal conditions. It never becomes the final decision owner merely because it raised the challenge.
+The Devil's Advocate is an independent challenge function. It may test assumptions, evidence quality, downside cases, and reversal conditions. It never becomes the final decision owner merely because it raised the challenge. Its material recommendation should itself be auditable and linked to the resulting decision record.

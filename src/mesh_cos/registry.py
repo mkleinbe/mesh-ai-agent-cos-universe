@@ -72,7 +72,7 @@ def load_registry(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
     policy = _load_governance_policy(path)
     agents = raw.get("agents", [])
     if not isinstance(agents, list):
-        raise TypeError("Registry agents must be a list")
+        raise ValueError("Registry agents must be a list")  # noqa: TRY004 - stable public validation contract
     result: dict[str, dict[str, Any]] = {}
     for source_record in agents:
         record = deepcopy(source_record)

@@ -16,10 +16,11 @@ def _authority_level(value: Any) -> int:
     if isinstance(value, int):
         return value
     if isinstance(value, str):
-        levels = [int(item) for item in re.findall(r"L([0-5])", value)]
+        primary_clause = value.split(";", 1)[0]
+        levels = [int(item) for item in re.findall(r"L([0-5])", primary_clause)]
         if levels:
             return max(levels)
-        lowered = value.lower()
+        lowered = primary_clause.lower()
         if "advisory" in lowered or "execution" in lowered:
             return 1
     raise ValueError(f"Invalid decision authority: {value!r}")

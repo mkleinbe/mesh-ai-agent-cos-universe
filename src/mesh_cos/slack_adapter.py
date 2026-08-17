@@ -3,8 +3,10 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import os
 import time
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
+from urllib.request import Request, urlopen
 
 from .ledger import TaskLedger
 from .slack import MESSAGE_TYPES, render_message
@@ -12,6 +14,32 @@ from .slack import MESSAGE_TYPES, render_message
 
 class SlackTransport(Protocol):
     def post_message(self, *, channel: str, text: str, thread_ts: str | None = None) -> dict[str, Any]: ...
+
+
+class SlackWebApiTransport:
+    """Minimal Slack Web API transport using only the standard library."""
+
+    def __init__(self, bot_token: str, *, api_url: str = "https://slack.com/api/chat.postMessage") -> None:
+        if not bot_token:
+            raise ValueError("Slack bot token is required")
+        self.bot_token = bot_token
+        self.api_url = api_url
+
+    def post_message(self, *, channel: str, text: str, thread_ts: str | None = None) -> dict[str, Any]:
+        payload: dict[str, Any] = {"channel": channel, "text": text}
+        if thread_ts:
+            payload["thread_ts"] = thread_ts
+        request = Request(
+            self.api_url,
+            data=json.dumps(payload).encode(),
+            headers={"Authorization": f"Bearer {self.bot_token}", "Content-Type": "application/json; charset=utf-8"},
+            method="POST",
+        )
+        with urlopen(request, timeout=15) as response:  # nosec B310 - fixed Slack API endpoint/configured test endpoint
+            result = json.loads(response.read().decode())
+        if not result.get("ok"):
+            raise RuntimeError(f"Slack API error: {result.get('error', 'unknown')}")
+        return result
 
 
 def verify_request_signature(
@@ -45,6 +73,14 @@ class SlackAdapter:
         self.transport = transport
         self.agent_ops_channel_id = agent_ops_channel_id
         self.answer_desk_channel_id = answer_desk_channel_id
+
+    @classmethod
+    def from_env(cls, *, ledger: TaskLedger, transport: SlackTransport | None = None) -> "SlackAdapter":
+        channel = os.getenv("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "")
+        answer = os.getenv("MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID") or None
+        if transport is None:
+            transport = SlackWebApiTransport(os.getenv("MESH_COS_SLACK_BOT_TOKEN", ""))
+        return cls(ledger=ledger, transport=transport, agent_ops_channel_id=channel, answer_desk_channel_id=answer)
 
     @staticmethod
     def signature_for_test(signing_secret: str, timestamp: str, body: str) -> str:
@@ -117,3 +153,24 @@ class SlackAdapter:
         if not self.accept_event(event_id):
             return None
         return {"event_id": event_id, "accepted": True, "event": json.loads(json.dumps(event))}
+
+
+class SlackEventReceiver:
+    def __init__(self, *, signing_secret: str, adapter: SlackAdapter) -> None:
+        if not signing_secret:
+            raise ValueError("Slack signing secret is required")
+        self.signing_secret = signing_secret
+        self.adapter = adapter
+
+    def process(self, headers: Mapping[str, str], body: str) -> dict[str, Any] | None:
+        timestamp = headers.get("X-Slack-Request-Timestamp", "")
+        signature = headers.get("X-Slack-Signature", "")
+        if not verify_request_signature(self.signing_secret, timestamp, body, signature):
+            raise PermissionError("Invalid Slack request signature")
+        payload = json.loads(body)
+        if payload.get("type") == "url_verification":
+            return {"challenge": payload.get("challenge")}
+        event_id = payload.get("event_id")
+        if not event_id:
+            raise ValueError("Slack event is missing event_id")
+        return self.adapter.handle_event(event_id=str(event_id), event=dict(payload.get("event") or {}))

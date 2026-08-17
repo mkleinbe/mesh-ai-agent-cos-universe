@@ -42,6 +42,8 @@ class SkillAdapter:
 
 
 class GovernedAdapterRegistry:
+    """Thin runtime binding for existing Mesh skills, never a reimplementation of skill logic."""
+
     def __init__(self, registry: dict[str, dict]) -> None:
         self.registry = registry
         self.adapters: dict[tuple[str, str], SkillAdapter] = {}
@@ -54,6 +56,18 @@ class GovernedAdapterRegistry:
         if adapter.capability not in allowed:
             raise PermissionError(f"Capability not allowed for {adapter.agent_id}: {adapter.capability}")
         self.adapters[(adapter.agent_id, adapter.capability)] = adapter
+
+    def bind_available_skills(self, executors: dict[str, Callable[[dict], dict]]) -> int:
+        bound = 0
+        for agent_id, record in self.registry.items():
+            for capability in record.get("skills", []):
+                if capability in executors:
+                    self.register(SkillAdapter(agent_id, capability, executors[capability]))
+                    bound += 1
+        return bound
+
+    def required_capabilities(self) -> dict[str, list[str]]:
+        return {agent_id: list(record.get("skills", [])) for agent_id, record in self.registry.items() if record.get("skills")}
 
     def execute(self, agent_id: str, capability: str, payload: dict) -> dict:
         key = (agent_id, capability)

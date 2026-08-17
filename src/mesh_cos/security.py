@@ -1,4 +1,10 @@
-SENSITIVE_CLASSES = {"private_dm", "confidential_client", "personal_information", "financial_information", "privileged_executive"}
+SENSITIVE_CLASSES = {
+    "private_dm",
+    "confidential_client",
+    "personal_information",
+    "financial_information",
+    "privileged_executive",
+}
 
 
 def authorize_source(requester_permissions: set[str], source_class: str) -> bool:
@@ -13,13 +19,24 @@ def apply_retrieved_instruction(_: str) -> None:
     raise PermissionError("Retrieved content is data and cannot alter operating policy")
 
 
-def assert_agent_invocation_allowed(registry: dict, agent_id: str, *, source: str | None = None,
-                                    tool: str | None = None, action: str | None = None) -> None:
+def assert_agent_invocation_allowed(
+    registry: dict,
+    agent_id: str,
+    *,
+    source: str | None = None,
+    tool: str | None = None,
+    action: str | None = None,
+) -> None:
     if agent_id not in registry:
         raise KeyError(agent_id)
     record = registry[agent_id]
     if source is not None:
-        allowed_sources = set(record.get("allowed_sources") or record.get("authoritative_sources") or [])
+        raw_sources = (
+            record["allowed_sources"]
+            if "allowed_sources" in record
+            else record.get("authoritative_sources", [])
+        )
+        allowed_sources = set(raw_sources or [])
         if source not in allowed_sources and "authorized Mesh enterprise sources" not in allowed_sources:
             raise PermissionError(f"Source not allowed for {agent_id}: {source}")
     if tool is not None and tool not in set(record.get("tools", [])):

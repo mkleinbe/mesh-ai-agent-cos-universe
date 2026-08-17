@@ -10,8 +10,13 @@ from .models import new_id, utcnow
 
 GENESIS_HASH = "GENESIS"
 FORBIDDEN_REASONING_FIELDS = {
-    "chain_of_thought", "reasoning_trace", "hidden_reasoning", "raw_prompt",
-    "raw_secret", "credential", "token",
+    "chain_of_thought",
+    "reasoning_trace",
+    "hidden_reasoning",
+    "raw_prompt",
+    "raw_secret",
+    "credential",
+    "token",
 }
 
 
@@ -248,12 +253,17 @@ class GovernanceJournal:
         _assert_safe_fields(record)
         record["event_hash"] = _sha256(record, exclude={"event_hash"})
         governance_key = f"governance:{record['idempotency_key']}"
-        if not self.ledger.claim_idempotency_key(governance_key):
+        persisted = self.ledger.save_idempotent_record(
+            governance_key,
+            "audit_event_v2",
+            event_id,
+            record,
+        )
+        if not persisted:
             current = self.ledger.get_record("audit_event_v2", event_id)
             if current is not None:
                 return current
             raise ValueError("Duplicate governance idempotency key")
-        self.ledger.save_record("audit_event_v2", event_id, record)
         if task_id is not None:
             self.ledger.conn.execute(
                 "INSERT OR IGNORE INTO events(event_id,task_id,payload) VALUES(?,?,?)",
@@ -321,7 +331,7 @@ class GovernanceJournal:
                 self.mirror.mirror_decision(dict(record))
             else:
                 self.mirror.mirror_event(dict(record))
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - mirror failure must never roll back canonical state
             failure_id = new_id("mirror-failure")
             self.ledger.save_record(
                 "governance_mirror_failure",

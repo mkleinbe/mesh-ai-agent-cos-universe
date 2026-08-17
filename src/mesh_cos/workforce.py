@@ -47,7 +47,11 @@ class ChiefOfStaffWorkforceManager:
     ) -> dict:
         tasks = self.ledger.list_tasks()
         if self.agentops is not None:
-            observation = self.agentops.observe_tasks(tasks, max_concurrency=max_concurrency)
+            observation = self.agentops.observe_tasks(
+                tasks,
+                max_concurrency=max_concurrency,
+                now=now,
+            )
         else:
             from .agentops import stalled
 
@@ -66,7 +70,14 @@ class ChiefOfStaffWorkforceManager:
         self.ledger.save_record("management_cycle", new_id("cycle"), report)
         return report
 
-    def supersede(self, task_id: str, replacement_task_id: str, *, actor: str = "cos", reason: str) -> dict:
+    def supersede(
+        self,
+        task_id: str,
+        replacement_task_id: str,
+        *,
+        actor: str = "cos",
+        reason: str,
+    ) -> dict:
         task = self.ledger.get_task(task_id)
         replacement = self.ledger.get_task(replacement_task_id)
         if task is None or replacement is None:
@@ -84,7 +95,14 @@ class ChiefOfStaffWorkforceManager:
         }
         self.ledger.save_record("supersession", task_id, record)
         self.ledger.record_event(
-            AuditEvent("task_superseded", actor, task_id, task.correlation_id, int(task.authority_level), replacement_task_id).to_dict()
+            AuditEvent(
+                "task_superseded",
+                actor,
+                task_id,
+                task.correlation_id,
+                int(task.authority_level),
+                replacement_task_id,
+            ).to_dict()
         )
         return record
 

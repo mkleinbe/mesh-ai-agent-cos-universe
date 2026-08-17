@@ -31,10 +31,14 @@ def _validate_role_identity(record: dict[str, Any]) -> None:
     if not isinstance(display_name, str) or not display_name.strip():
         raise ValueError(f"Agent {agent_id} must have a stable display_name")
     if DISPLAY_VERSION_PATTERN.search(display_name):
-        raise ValueError(f"Agent {agent_id} display_name must not embed implementation version: {display_name!r}")
+        raise ValueError(
+            f"Agent {agent_id} display_name must not embed implementation version: {display_name!r}"
+        )
     version = record.get("version")
     if not isinstance(version, str) or not IMPLEMENTATION_VERSION_PATTERN.fullmatch(version):
-        raise ValueError(f"Agent {agent_id} must carry implementation version as MAJOR.MINOR.PATCH metadata")
+        raise ValueError(
+            f"Agent {agent_id} must carry implementation version as MAJOR.MINOR.PATCH metadata"
+        )
 
 
 def _load_governance_policy(registry_path: Path) -> dict[str, Any]:
@@ -68,7 +72,7 @@ def load_registry(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
     policy = _load_governance_policy(path)
     agents = raw.get("agents", [])
     if not isinstance(agents, list):
-        raise ValueError("Registry agents must be a list")
+        raise ValueError("Registry agents must be a list")  # noqa: TRY004 - stable public validation contract
     result: dict[str, dict[str, Any]] = {}
     for source_record in agents:
         record = deepcopy(source_record)

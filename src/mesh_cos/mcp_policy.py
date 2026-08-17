@@ -14,8 +14,12 @@ class WorkspaceAgentMCPPolicy:
     contract: dict[str, Any]
 
     @classmethod
-    def from_file(cls, path: str | Path | None = None) -> "WorkspaceAgentMCPPolicy":
-        contract_path = Path(path) if path is not None else Path(__file__).resolve().parents[2] / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
+    def from_file(cls, path: str | Path | None = None) -> WorkspaceAgentMCPPolicy:
+        contract_path = (
+            Path(path)
+            if path is not None
+            else Path(__file__).resolve().parents[2] / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
+        )
         contract = json.loads(contract_path.read_text(encoding="utf-8"))
         policy = cls(contract)
         policy.validate()
@@ -26,11 +30,20 @@ class WorkspaceAgentMCPPolicy:
             raise ValueError("Unexpected MCP contract name")
         if self.contract.get("canonical_state") != "TaskLedger":
             raise ValueError("TaskLedger must remain canonical")
+        strict_contract = self.contract.get("schema_version") == "mesh.cos.mcp-contract.v1"
+        if strict_contract and self.contract.get("serialized_runtime") != "mesh_cos.mcp_runtime.MCPRuntime":
+            raise ValueError("MCP contract must use the serialized MCPRuntime boundary")
         security = self.contract.get("security", {})
         if security.get("deny_by_default") is not True:
             raise ValueError("MCP policy must deny by default")
         if security.get("approval_fail_closed") is not True:
             raise ValueError("MCP approval policy must fail closed")
+        if strict_contract and security.get("server_derived_agent_identity") is not True:
+            raise ValueError("MCP agent identity must be derived server-side")
+        if strict_contract and security.get("human_principal_required_for_human_tools") is not True:
+            raise ValueError("Human-only MCP tools require an authenticated human principal")
+        if strict_contract and security.get("client_supplied_code_execution") is not False:
+            raise ValueError("Client-supplied code execution must remain disabled")
 
         tools = self._tools()
         if not tools:
@@ -53,6 +66,24 @@ class WorkspaceAgentMCPPolicy:
         if unknown:
             raise ValueError(f"Agent allowlists reference unknown MCP tools: {sorted(unknown)}")
 
+        if strict_contract:
+            human_tools = set(self.contract.get("human_tool_allowlist", []))
+            unknown_human = human_tools - set(tools)
+            if unknown_human:
+                raise ValueError(f"Human allowlist references unknown MCP tools: {sorted(unknown_human)}")
+            if not human_tools:
+                raise ValueError("Human-only MCP tools must be explicitly allowlisted")
+            agent_tools = {tool_name for allowed in allowlists.values() for tool_name in allowed}
+            overlap = human_tools & agent_tools
+            if overlap:
+                raise ValueError(f"Human-only MCP tools cannot appear in agent allowlists: {sorted(overlap)}")
+            for tool_name in human_tools:
+                if tools[tool_name].get("runtime_binding") != "mesh_cos.mcp_runtime.MCPRuntime.call_human":
+                    raise ValueError(f"Human-only MCP tool must bind to call_human: {tool_name}")
+            for tool_name in agent_tools:
+                if tools[tool_name].get("runtime_binding") != "mesh_cos.mcp_runtime.MCPRuntime.call_agent":
+                    raise ValueError(f"Agent MCP tool must bind to call_agent: {tool_name}")
+
     def authorize(self, agent_id: str, tool_name: str) -> dict[str, Any]:
         """Return the tool contract only when the agent is explicitly allowlisted."""
 
@@ -64,6 +95,14 @@ class WorkspaceAgentMCPPolicy:
             raise PermissionError(f"Unknown MCP tool: {tool_name}")
         if tool_name not in set(allowlists[agent_id]):
             raise PermissionError(f"MCP tool not allowed for {agent_id}: {tool_name}")
+        return dict(tools[tool_name])
+
+    def authorize_human(self, tool_name: str) -> dict[str, Any]:
+        tools = self._tools()
+        if tool_name not in tools:
+            raise PermissionError(f"Unknown MCP tool: {tool_name}")
+        if tool_name not in set(self.contract.get("human_tool_allowlist", [])):
+            raise PermissionError(f"MCP tool is not human-authorized: {tool_name}")
         return dict(tools[tool_name])
 
     def allowed_tools(self, agent_id: str) -> tuple[str, ...]:

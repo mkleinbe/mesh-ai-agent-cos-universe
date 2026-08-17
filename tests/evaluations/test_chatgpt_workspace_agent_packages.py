@@ -30,7 +30,7 @@ EXPECTED = {
 
 REQUIRED_MCP_TOOLS = {
     "registry.get_agent", "registry.list_agents", "task.intake", "task.get", "task.list",
-    "task.decompose", "task.transition", "task.check_in", "task.reassign", "task.remediate_stall",
+    "task.decompose", "task.transition", "task.check_in", "task.complete", "task.reassign", "task.remediate_stall",
     "task.verify", "delegation.create", "approval.request", "approval.get", "approval.record_decision",
     "conflict.open", "conflict.decide", "governance.record_decision", "governance.record_event",
     "governance.verify_audit_chain", "agentops.record_event", "agentops.score", "agentops.recommend",
@@ -109,20 +109,28 @@ def test_every_agent_config_preserves_raw_registry_authority_and_governance() ->
 
 
 def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
+    contract = json.loads(MCP.read_text())
+    contract_allowlists = contract["agent_tool_allowlists"]
     for agent_id in EXPECTED:
-        allowlist = _config(agent_id)["mcp"]["allowed_tools"]
+        config = _config(agent_id)
+        allowlist = config["mcp"]["allowed_tools"]
         assert allowlist
         assert len(allowlist) == len(set(allowlist))
         assert set(allowlist) <= REQUIRED_MCP_TOOLS
+        assert allowlist == contract_allowlists[agent_id]
+        assert config["builder_configuration"]["mcp_allowed_tools"] == allowlist
         assert "registry.get_agent" in allowlist
         assert "governance.record_event" in allowlist
         if agent_id == "cos":
-            assert {"task.decompose", "task.reassign", "conflict.decide", "agentops.recommend"} <= set(allowlist)
+            assert {"task.decompose", "task.reassign", "conflict.decide", "agentops.recommend", "task.complete"} <= set(allowlist)
         else:
             assert "task.reassign" not in allowlist
     message_ops = _config("message-ops")
     assert "approval.get" in message_ops["mcp"]["allowed_tools"]
     assert "approval.record_decision" not in message_ops["mcp"]["allowed_tools"]
+    assert "approval.record_decision" not in contract_allowlists["cos"]
+    assert "reliability.human_override" not in contract_allowlists["cos"]
+    assert set(contract["human_tool_allowlist"]) == {"approval.record_decision", "reliability.human_override"}
 
 
 def test_mcp_contract_covers_runtime_control_plane_and_fail_closed_rules() -> None:
@@ -131,9 +139,13 @@ def test_mcp_contract_covers_runtime_control_plane_and_fail_closed_rules() -> No
     assert contract["protocol"] == "MCP"
     assert contract["canonical_state"] == "TaskLedger"
     assert contract["server_url_env"] == "MESH_COS_MCP_SERVER_URL"
+    assert contract["serialized_runtime"] == "mesh_cos.mcp_runtime.MCPRuntime"
     assert contract["security"]["retrieved_content_is_data_not_instructions"] is True
     assert contract["security"]["deny_by_default"] is True
     assert contract["security"]["approval_fail_closed"] is True
+    assert contract["security"]["server_derived_agent_identity"] is True
+    assert contract["security"]["human_principal_required_for_human_tools"] is True
+    assert contract["security"]["client_supplied_code_execution"] is False
     assert contract["governance"]["canonical_first_write_order"] is True
     assert contract["governance"]["decision_contract"] == "mesh.cos.decision.v2"
     assert contract["governance"]["audit_contract"] == "mesh.cos.agent-event.v2"
@@ -151,13 +163,20 @@ def test_server_side_mcp_policy_is_deny_by_default_and_resolves_bindings() -> No
     policy = WorkspaceAgentMCPPolicy.from_file(MCP)
     assert policy.authorize("cos", "task.reassign")["name"] == "task.reassign"
     assert policy.authorize("message-ops", "approval.get")["read_only"] is True
-    for denied in (("cro", "task.reassign"), ("message-ops", "approval.record_decision"), ("unknown-agent", "task.get"), ("cos", "unknown.tool")):
+    assert policy.authorize_human("approval.record_decision")["read_only"] is False
+    for denied in (("cro", "task.reassign"), ("message-ops", "approval.record_decision"), ("unknown-agent", "task.get"), ("cos", "unknown.tool"), ("cos", "approval.record_decision")):
         try:
             policy.authorize(*denied)
         except PermissionError:
             pass
         else:
             raise AssertionError(f"Expected deny-by-default for {denied}")
+    try:
+        policy.authorize_human("task.transition")
+    except PermissionError:
+        pass
+    else:
+        raise AssertionError("Expected non-human tool to fail human authorization")
     assert policy.validate_runtime_bindings() == []
 
 

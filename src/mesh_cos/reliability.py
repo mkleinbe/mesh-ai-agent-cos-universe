@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import os
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from collections.abc import Callable, Mapping
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from time import sleep
-from typing import Callable, Mapping, TypeVar
+from typing import TypeVar, cast
 
 from .audit import AuditEvent
 from .ledger import TaskLedger
@@ -39,19 +41,17 @@ def _invoke_with_timeout(fn: Callable[[], T], timeout_seconds: float | None) -> 
 def execute_with_policy(fn: Callable[[], T], policy: ExecutionPolicy) -> T:
     if policy.max_attempts < 1:
         raise ValueError("max_attempts must be at least 1")
-    last_error: BaseException | None = None
     retry_exceptions = tuple(set(policy.retry_exceptions + (TimeoutError,)))
-    for attempt in range(1, policy.max_attempts + 1):
+    attempt = 0
+    while True:
+        attempt += 1
         try:
             return _invoke_with_timeout(fn, policy.timeout_seconds)
-        except retry_exceptions as exc:
-            last_error = exc
-            if attempt == policy.max_attempts:
+        except retry_exceptions:
+            if attempt >= policy.max_attempts:
                 raise
             if policy.backoff_seconds:
                 sleep(policy.backoff_seconds * attempt)
-    assert last_error is not None
-    raise last_error
 
 
 def assert_runtime_enabled(env: Mapping[str, str] | None = None) -> None:
@@ -68,13 +68,20 @@ class ExecutionLeaseManager:
     def acquire(self, task_id: str, owner: str, *, ttl_seconds: int) -> bool:
         if ttl_seconds < 1:
             raise ValueError("ttl_seconds must be positive")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         current = self.ledger.get_record("execution_lease", task_id)
         if current:
             expires_at = datetime.fromisoformat(current["expires_at"])
-            if expires_at > now and current["owner"] != owner:
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=UTC)
+            if expires_at.astimezone(UTC) > now and current["owner"] != owner:
                 return False
-        record = {"task_id": task_id, "owner": owner, "acquired_at": now.isoformat(), "expires_at": (now + timedelta(seconds=ttl_seconds)).isoformat()}
+        record = {
+            "task_id": task_id,
+            "owner": owner,
+            "acquired_at": now.isoformat(),
+            "expires_at": (now + timedelta(seconds=ttl_seconds)).isoformat(),
+        }
         self.ledger.save_record("execution_lease", task_id, record)
         return True
 
@@ -93,7 +100,15 @@ class ReplayManager:
     def __init__(self, ledger: TaskLedger) -> None:
         self.ledger = ledger
 
-    def record_failure(self, effect_id: str, task_id: str, *, agent_id: str, error: BaseException, payload: dict | None = None) -> dict:
+    def record_failure(
+        self,
+        effect_id: str,
+        task_id: str,
+        *,
+        agent_id: str,
+        error: BaseException,
+        payload: dict | None = None,
+    ) -> dict:
         record = {
             "effect_id": effect_id,
             "task_id": task_id,
@@ -107,13 +122,17 @@ class ReplayManager:
             "overridden_at": None,
         }
         self.ledger.save_record("execution_failure", effect_id, record)
-        task = self.ledger.get_task(task_id)
-        correlation_id = task.correlation_id if task else new_id("corr")
-        authority = int(task.authority_level) if task else 0
-        self.ledger.record_event(AuditEvent("execution_failed", agent_id, task_id, correlation_id, authority, str(error), error=str(error)).to_dict())
+        self._audit(record, "execution_failed", agent_id, str(error), error=str(error))
         return record
 
-    def replay(self, effect_id: str, fn: Callable[[], T], *, actor: str, policy: ExecutionPolicy | None = None) -> T:
+    def replay(
+        self,
+        effect_id: str,
+        fn: Callable[[], T],
+        *,
+        actor: str,
+        policy: ExecutionPolicy | None = None,
+    ) -> T:
         assert_runtime_enabled()
         record = self.ledger.get_record("execution_failure", effect_id)
         if record is None:
@@ -122,7 +141,7 @@ class ReplayManager:
             existing = self.ledger.get_record("replay_result", effect_id)
             if existing is None:
                 raise RuntimeError("Replay marked complete without a stored result")
-            return existing["result"]  # type: ignore[return-value]
+            return cast(T, existing["result"])
         if record["status"] == "OVERRIDDEN":
             raise RuntimeError("Human override closed this failed effect")
         result = execute_with_policy(fn, policy or ExecutionPolicy())
@@ -131,17 +150,57 @@ class ReplayManager:
         record["replayed_by"] = actor
         self.ledger.save_record("execution_failure", effect_id, record)
         self.ledger.save_record("replay_result", effect_id, {"effect_id": effect_id, "result": result})
+        self._audit(record, "execution_replayed", actor, effect_id)
         return result
 
     def override(self, effect_id: str, *, actor: str, disposition: str, reason: str) -> dict:
         record = self.ledger.get_record("execution_failure", effect_id)
         if record is None:
             raise KeyError(effect_id)
+        if record["status"] == "REPLAYED":
+            raise RuntimeError("Cannot override an effect that has already been replayed")
+        if record["status"] == "OVERRIDDEN":
+            raise RuntimeError("Effect has already been overridden")
         record["status"] = "OVERRIDDEN"
         record["overridden_at"] = utcnow()
         record["overridden_by"] = actor
         record["override_disposition"] = disposition
         record["override_reason"] = reason
         self.ledger.save_record("execution_failure", effect_id, record)
-        self.ledger.save_record("human_override", effect_id, {"effect_id": effect_id, "actor": actor, "disposition": disposition, "reason": reason, "timestamp": utcnow()})
+        self.ledger.save_record(
+            "human_override",
+            effect_id,
+            {
+                "effect_id": effect_id,
+                "actor": actor,
+                "disposition": disposition,
+                "reason": reason,
+                "timestamp": utcnow(),
+            },
+        )
+        self._audit(record, "execution_overridden", actor, f"{disposition}: {reason}")
         return record
+
+    def _audit(
+        self,
+        failure_record: dict,
+        event_type: str,
+        actor: str,
+        result: str,
+        *,
+        error: str | None = None,
+    ) -> None:
+        task_id = str(failure_record["task_id"])
+        task = self.ledger.get_task(task_id)
+        correlation_id = task.correlation_id if task else new_id("corr")
+        authority = int(task.authority_level) if task else 0
+        event = AuditEvent(
+            event_type,
+            actor,
+            task_id,
+            correlation_id,
+            authority,
+            result,
+            error=error,
+        )
+        self.ledger.record_event(event.to_dict())

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable
 
 from .governance import GovernanceJournal
 from .security import assert_agent_invocation_allowed

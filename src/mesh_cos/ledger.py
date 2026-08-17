@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
 
 from .models import AuthorityLevel, TaskRecord, TaskStatus
 
@@ -15,11 +15,19 @@ class TaskLedger:
     def __init__(self, path: str | Path = ":memory:") -> None:
         self.conn = sqlite3.connect(str(path))
         self.conn.execute("PRAGMA foreign_keys=ON")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS tasks (task_id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS events (event_id TEXT PRIMARY KEY, task_id TEXT NOT NULL, payload TEXT NOT NULL)")
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS tasks (task_id TEXT PRIMARY KEY, payload TEXT NOT NULL)"
+        )
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS events (event_id TEXT PRIMARY KEY, task_id TEXT NOT NULL, payload TEXT NOT NULL)"
+        )
         self.conn.execute("CREATE TABLE IF NOT EXISTS idempotency (key TEXT PRIMARY KEY)")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, record_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(kind, record_id))")
-        self.conn.execute("CREATE TABLE IF NOT EXISTS task_threads (task_id TEXT PRIMARY KEY, channel_id TEXT NOT NULL, thread_ts TEXT NOT NULL)")
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS records (kind TEXT NOT NULL, record_id TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(kind, record_id))"
+        )
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS task_threads (task_id TEXT PRIMARY KEY, channel_id TEXT NOT NULL, thread_ts TEXT NOT NULL)"
+        )
         self.conn.commit()
 
     @contextmanager
@@ -61,12 +69,42 @@ class TaskLedger:
         )
         self.conn.commit()
 
+    def save_idempotent_record(
+        self,
+        idempotency_key: str,
+        kind: str,
+        record_id: str,
+        payload: dict,
+    ) -> bool:
+        """Atomically claim an idempotency key and persist its canonical record."""
+
+        try:
+            with self.transaction() as conn:
+                conn.execute("INSERT INTO idempotency(key) VALUES(?)", (idempotency_key,))
+                conn.execute(
+                    "INSERT INTO records(kind,record_id,payload) VALUES(?,?,?)",
+                    (kind, record_id, json.dumps(payload, sort_keys=True)),
+                )
+        except sqlite3.IntegrityError:
+            return False
+        return True
+
     def get_record(self, kind: str, record_id: str) -> dict | None:
-        row = self.conn.execute("SELECT payload FROM records WHERE kind=? AND record_id=?", (kind, record_id)).fetchone()
+        row = self.conn.execute(
+            "SELECT payload FROM records WHERE kind=? AND record_id=?",
+            (kind, record_id),
+        ).fetchone()
         return json.loads(row[0]) if row else None
 
     def list_records(self, kind: str) -> list[dict]:
-        rows = self.conn.execute("SELECT payload FROM records WHERE kind=? ORDER BY record_id", (kind,)).fetchall()
+        # Consequential records are append-ordered evidence. Sorting random/semantic
+        # record IDs can scramble chronology, corrupt rolling windows, and select the
+        # wrong predecessor for the governance hash chain. SQLite rowid preserves the
+        # canonical insertion order while an UPSERT retains the existing row position.
+        rows = self.conn.execute(
+            "SELECT payload FROM records WHERE kind=? ORDER BY rowid",
+            (kind,),
+        ).fetchall()
         return [json.loads(row[0]) for row in rows]
 
     def delete_record(self, kind: str, record_id: str) -> None:
@@ -82,7 +120,10 @@ class TaskLedger:
         return {"task_id": task_id, "channel_id": channel_id, "thread_ts": thread_ts}
 
     def get_thread(self, task_id: str) -> dict | None:
-        row = self.conn.execute("SELECT channel_id,thread_ts FROM task_threads WHERE task_id=?", (task_id,)).fetchone()
+        row = self.conn.execute(
+            "SELECT channel_id,thread_ts FROM task_threads WHERE task_id=?",
+            (task_id,),
+        ).fetchone()
         return {"task_id": task_id, "channel_id": row[0], "thread_ts": row[1]} if row else None
 
     def claim_idempotency_key(self, key: str) -> bool:

@@ -20,6 +20,7 @@ class Approval:
     requested_at: str = ""
     decided_at: str | None = None
     decision_reason: str | None = None
+    decided_by: str | None = None
 
     def to_dict(self) -> dict:
         data = asdict(self)
@@ -28,10 +29,24 @@ class Approval:
         return data
 
 
-def request_approval(task_id: str, requested_by: str, approval_owner: str, authority_level: AuthorityLevel, action: str) -> Approval:
+def request_approval(
+    task_id: str,
+    requested_by: str,
+    approval_owner: str,
+    authority_level: AuthorityLevel,
+    action: str,
+) -> Approval:
     if authority_level < AuthorityLevel.L4:
         raise ValueError("Approval records are reserved for L4/L5 actions")
-    return Approval(new_id("approval"), task_id, requested_by, approval_owner, authority_level, action, requested_at=utcnow())
+    return Approval(
+        new_id("approval"),
+        task_id,
+        requested_by,
+        approval_owner,
+        authority_level,
+        action,
+        requested_at=utcnow(),
+    )
 
 
 def decide(approval: Approval, *, actor: str, approved: bool, reason: str) -> Approval:
@@ -42,6 +57,7 @@ def decide(approval: Approval, *, actor: str, approved: bool, reason: str) -> Ap
     approval.status = "APPROVED" if approved else "REJECTED"
     approval.decided_at = utcnow()
     approval.decision_reason = reason
+    approval.decided_by = actor
     return approval
 
 
@@ -49,7 +65,14 @@ class ApprovalService:
     def __init__(self, ledger: TaskLedger) -> None:
         self.ledger = ledger
 
-    def request(self, task_id: str, requested_by: str, approval_owner: str, authority_level: AuthorityLevel, action: str) -> Approval:
+    def request(
+        self,
+        task_id: str,
+        requested_by: str,
+        approval_owner: str,
+        authority_level: AuthorityLevel,
+        action: str,
+    ) -> Approval:
         task = self._require_task(task_id)
         approval = request_approval(task_id, requested_by, approval_owner, authority_level, action)
         self.ledger.save_record("approval", approval.approval_id, approval.to_dict())
@@ -85,5 +108,13 @@ class ApprovalService:
         return task
 
     def _audit(self, task, event_type: str, result: str, approval_reference: str) -> None:
-        event = AuditEvent(event_type, "approval-service", task.task_id, task.correlation_id, int(task.authority_level), result, approval_reference=approval_reference)
+        event = AuditEvent(
+            event_type,
+            "approval-service",
+            task.task_id,
+            task.correlation_id,
+            int(task.authority_level),
+            result,
+            approval_reference=approval_reference,
+        )
         self.ledger.record_event(event.to_dict())

@@ -1,5 +1,5 @@
 {
-  "schema_version":"mesh.chatgpt.workspace-agent.v1","agent_id":"cro","display_name":"CRO","parent_agent_id":"cos","implementation_version":"1.0.0","repository_release":"0.2.0",
+  "schema_version":"mesh.chatgpt.workspace-agent.v1","agent_id":"cro","display_name":"CRO","parent_agent_id":"cos","implementation_version":"1.0.0","repository_release":"1.0.0",
   "role":"Commercial executive agent","accountable_domain":"commercial strategy, pursuits, opportunity quality, buyer dynamics, and expansion","description":"Owns commercial strategy within delegated scope, including opportunity qualification, pipeline quality, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion motion, and commercial-risk framing. Revenue Intelligence remains authoritative for canonical commercial and account evidence where designated.",
   "mission":"Own commercial interpretation and pursuit strategy inside delegated authority while preserving Revenue Intelligence as canonical commercial evidence and coordinating CFO, COO, and challenge inputs.",
   "model":{"preferred":"GPT-5.6 Sol","fallback":"GPT-5.5","reasoning_effort":"High"},

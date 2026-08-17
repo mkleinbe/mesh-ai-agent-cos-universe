@@ -1,0 +1,19 @@
+{
+  "version": "mesh.cos.governance-policy.v1",
+  "applies_to": "ALL_REGISTERED_AGENTS",
+  "governance_tool": "governance-journal",
+  "output_contracts": ["agent-event.v2", "decision.v2"],
+  "governance_policy": {
+    "audit_logging": "REQUIRED",
+    "decision_logging": "REQUIRED_WHEN_DECIDING_OR_RECOMMENDING",
+    "canonical_state": "TaskLedger",
+    "sheet_mirrors": ["CoS Audit Log", "CoS Decision Log"],
+    "explainability": "CONCISE_BASIS_EVIDENCE_CRITERIA_ALTERNATIVES_CONFIDENCE_RISK_REVERSIBILITY",
+    "private_chain_of_thought": "PROHIBITED",
+    "approval_linkage": "REQUIRED_WHEN_APPLICABLE",
+    "source_provenance": "REQUIRED",
+    "model_skill_provenance": "REQUIRED_FOR_AI_ACTIONS",
+    "outcome_review": "REQUIRED_FOR_MATERIAL_DECISIONS",
+    "tamper_evidence": "SHA256_HASH_CHAIN_FOR_AUDIT_EVENTS"
+  }
+}

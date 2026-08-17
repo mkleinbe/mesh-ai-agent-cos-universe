@@ -82,10 +82,13 @@ python -m compileall -q src
 
 Copy `.env.example` to `.env` and set runtime values. Do not commit secrets or personal Slack IDs.
 
-Required production configuration includes:
+Current Slack coordination configuration:
 
-- private agent-operations Slack channel ID
-- team-facing Answer Desk channel ID
+- agent-operations channel: `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`, configured by `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
+- team-facing Answer Desk channel ID: not yet configured
+
+Remaining production configuration includes:
+
 - Slack bot token and signing secret
 - authoritative source connector credentials/permissions
 - approval-owner configuration

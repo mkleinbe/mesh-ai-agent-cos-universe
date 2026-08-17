@@ -90,6 +90,7 @@ class MCPRuntime:
             "task.decompose": self._task_decompose,
             "task.transition": self._task_transition,
             "task.check_in": self._task_check_in,
+            "task.complete": self._task_complete,
             "task.reassign": self._task_reassign,
             "task.remediate_stall": self._task_remediate_stall,
             "task.verify": self._task_verify,
@@ -207,6 +208,15 @@ class MCPRuntime:
             note=str(args["note"]),
             evidence=list(args.get("evidence", [])),
         )
+
+    def _task_complete(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        task_id = str(args["task_id"])
+        self._require_task_write_access(agent_id, task_id)
+        return self.cos.complete(
+            task_id,
+            outcome=str(args["outcome"]),
+            evidence=list(args.get("evidence", [])),
+        ).to_dict()
 
     def _task_reassign(self, _: str, args: dict[str, Any]) -> dict[str, Any]:
         return self.cos.reassign(

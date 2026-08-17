@@ -1,0 +1,1 @@
+{"version":"mesh.cos.agent-event.v1","event_id":"E-1","event_type":"delegated","timestamp":"2026-08-17T12:00:00Z","actor_agent":"cos","task_id":"COS-1","correlation_id":"C-1","authority_level":3,"result":"ok","idempotency_key":"idem-1"}

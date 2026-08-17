@@ -13,7 +13,10 @@ flowchart LR
     R --> AUTH[Invocation authorization]
     R --> ROUTE[Routing and hierarchy]
     R --> HEALTH[Health and performance policy]
+    R --> WA[ChatGPT Workspace Agent manifests]
+    WA --> MCP[mesh-cos-mcp allowlists]
     AUTH --> EXEC[Functional adapter / service]
+    MCP --> EXEC
 ```
 
 ## Role identity policy
@@ -26,7 +29,7 @@ Role identity and software version are deliberately separate:
 - repository release versions describe the control-plane release.
 - accountable domain, sources, permitted/prohibited actions, approvals, and delegation express scope and maturity boundaries.
 
-The registry loader rejects display names that embed version labels. The top-level `role_identity_policy` documents the same rule so runtime behavior, tests, and human-readable governance stay aligned.
+The registry loader rejects display names that embed version labels. The top-level `role_identity_policy` documents the same rule so runtime behavior, tests, human-readable governance, and Workspace Agent configuration stay aligned.
 
 ## Registry content
 
@@ -69,9 +72,24 @@ The registry's `permitted_actions` is the executable Phase 1 capability surface.
 
 This separation prevents capability theater and preserves the rule that source/tool access never expands decision authority.
 
+## ChatGPT Workspace Agent projection
+
+Release `0.2.0` adds a deployment projection under `chatgpt/` without creating a second source of truth. Each canonical registry record maps to exactly one Workspace Agent manifest and one role Skill:
+
+```text
+agents/registry.json
+  -> chatgpt/workspace-agents/<agent_id>.json
+  -> chatgpt/skills/<role-skill>/SKILL.md
+  -> mesh-cos-mcp per-agent tool allowlist
+```
+
+The projection must preserve the raw registry values for stable display name, parent, implementation version, accountable domain, decision authority, required approvals, prohibited actions, and maximum delegation depth. Builder-only fields such as preferred model, Workspace apps, channel enablement, starter prompts, and connector action constraints may add deployment controls but may not widen the registry authority surface.
+
+`mesh_cos.mcp_policy.WorkspaceAgentMCPPolicy` enforces the checked-in per-agent MCP allowlists server-side with deny-by-default behavior. Builder configuration is defense in depth, not the enforcement boundary. `scripts/check-chatgpt-packages.py` prevents registry, Skill, manifest, MCP, release, or permission drift in CI.
+
 ## Runtime normalization
 
-Some registry authority descriptions are human-readable strings rather than bare integers. The loader normalizes known `L0` through `L5` forms and advisory-only authority safely for runtime comparison. Unknown authority representations fail rather than silently granting access.
+Some registry authority descriptions are human-readable strings rather than bare integers. The loader normalizes known `L0` through `L5` forms and advisory-only authority safely for runtime comparison. Unknown authority representations fail rather than silently granting access. Workspace Agent manifests preserve the original human-readable authority wording for exact governance review.
 
 ## Health states
 
@@ -88,8 +106,8 @@ Health is not equivalent to authority. An `ACTIVE` agent is still limited by its
 
 ## Invocation authorization
 
-Before a source, tool, or consequential action is used, runtime authorization checks the registry record. Denied sources or tools raise a permission failure rather than relying on prompt instructions alone.
+Before a source, tool, or consequential action is used, runtime authorization checks the registry record. For Workspace Agent traffic, the MCP boundary first applies the agent-specific MCP allowlist, then the existing registry source/tool/action and authority controls. Denied sources or tools fail closed rather than relying on prompt instructions alone.
 
 ## Change control
 
-Any registry change that alters identity, accountable domain, authority, source/tool access, skills, permitted/prohibited actions, delegation, confidentiality, or health policy must update tests and relevant documentation in the same pull request. Material authority expansion must follow the L4/L5 governance model.
+Any registry change that alters identity, accountable domain, authority, source/tool access, skills, permitted/prohibited actions, delegation, confidentiality, or health policy must update tests, role cards, relevant documentation, the matching Workspace Agent manifest/Skill, and MCP allowlist in the same pull request. Material authority expansion must follow the L4/L5 governance model.

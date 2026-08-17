@@ -1,59 +1,63 @@
 # Observability
 
-Phase 1 observability is based on durable operating records rather than reconstructing behavior from conversation history. The goal is to make consequential work explainable, replayable at the state level, and measurable without turning Slack into the ledger.
+Phase 1 observability is based on durable operating records, not conversation reconstruction. Consequential work must be explainable, auditable, replay-safe, and measurable while Slack remains non-canonical.
 
 ## Observability model
 
 ```mermaid
 flowchart LR
-    ACT[Task or agent action] --> EVT[Audit / event record]
-    ACT --> REC[Typed consequential record]
-    ACT --> TASK[Task state update]
+    ACT[Task / governance action] --> EVT[Audit event]
+    ACT --> REC[Typed record]
+    ACT --> TASK[Task state]
     EVT --> LEDGER[(TaskLedger)]
     REC --> LEDGER
     TASK --> LEDGER
     LEDGER --> OPS[AgentOps]
-    LEDGER --> MET[Operating metrics]
-    LEDGER --> SLACK[Slack status view]
+    LEDGER --> MET[MetricsService]
+    LEDGER --> REPLAY[Replay / human override]
+    LEDGER --> SLACK[Slack observable view]
 ```
 
 ## Durable evidence
 
-The ledger supports:
+The canonical ledger contains task state, work graphs, delegations, check-ins, reassignments, supersessions, conflicts, decisions, approvals, verification results, Answer Desk records, performance events, scorecards, registry/health changes, Slack mappings/events, execution failures, replays, human overrides, cost inputs, and audit events.
 
-- task state and outcome evidence,
-- consequential typed records,
-- audit/event records,
-- delegation records,
-- conflict and decision records,
-- approval records,
-- verification results,
-- Answer Desk dispositions,
-- registry-change and performance records where emitted,
-- scorecards,
-- Slack task/thread mappings,
-- durable idempotency claims.
+## Audit envelope
 
-## Required audit questions
+Consequential actions use the versioned `mesh.cos.agent-event.v1` envelope with event ID/type/version, timestamp, actor, task/correlation IDs, source, authority level, optional before/after state, approval/evidence references, result/error, and idempotency key.
 
-For a consequential action, the system should be able to answer:
+Audit coverage includes delegation, reassignment, state transitions, conflicts, approval requests/decisions/rejections, completion, verification, functional invocation, Answer Desk dispositions/corrections, agent health changes, supersession, and execution failure.
 
-1. What task/outcome was being pursued?
-2. Who or what acted?
-3. What authority and registry policy applied?
-4. What evidence or source reference was used?
-5. What decision, approval, or exception occurred?
-6. What state changed?
-7. What outcome and acceptance result followed?
+## Phase 1 metrics
 
-## Metrics
+`MetricsService` derives the original Phase 1 measurement set from durable records:
 
-Current deterministic metric support includes verified outcomes, CEO deflection, and CEO-time-avoided estimates when a methodology is explicitly present. Metrics must be derived from recorded state rather than guessed from narrative text.
+- percentage of work resolved without Michael,
+- questions deflected from Michael,
+- CEO touches per completed task,
+- first-pass acceptance and rework,
+- correct, false, and missed escalation rates,
+- task cycle time and stalled-task rate,
+- verified outcome rate,
+- agent failure rate,
+- approval cycle time,
+- cross-agent conflict rate,
+- agent conversation-loop rate,
+- average contributors per task,
+- cost per verified outcome when cost telemetry exists.
+
+Answer Desk telemetry additionally tracks incorrect/corrected answers, access-control failures, and resolution time.
+
+No baseline or target value is fabricated. CEO-time-avoided estimates require explicit methodology.
 
 ## AgentOps signals
 
-AgentOps also observes stalled work and coordination loops. A coordination loop is indicated when repeated cross-agent interactions produce neither state change nor evidence. These signals should lead to remediation or routing decisions rather than more status chatter.
+AgentOps observes rolling performance evidence, workload/concurrency, stalls, missed deadlines, rework, rejection reasons, execution error taxonomy, repeated tool failures, evidence defects, and high-cost/low-value signals where telemetry exists.
+
+## Failure, replay, and override
+
+`ReplayManager` stores failed effects before replay. Replays are explicit and idempotent at the effect record. A human override can close a failed effect with named actor, disposition, reason, and timestamp. These records preserve the difference between automated retry and authorized manual intervention.
 
 ## Slack
 
-Slack is an observable collaboration layer. The user can inspect task coordination in `#mesh-agent-ops`, while the canonical task/thread relation and duplicate-event state remain in the ledger.
+`#mesh-agent-ops` is inspectable coordination. The canonical task/thread relation, event dedupe, approval state, and business records remain in `TaskLedger`. The Answer Desk uses a separate configurable Slack surface.

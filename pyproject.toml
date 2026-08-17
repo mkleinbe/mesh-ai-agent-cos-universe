@@ -1,14 +1,35 @@
 [project]
 name = "mesh-ai-agent-cos-universe"
-version = "0.1.0"
+version = "0.2.0"
 description = "Phase 1 operating core for Mesh Digital's AI Chief of Staff agent workforce"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["jsonschema>=4.20"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "jsonschema>=4.20"]
+dev = [
+  "pytest>=8",
+  "pytest-cov>=5",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "pip-audit>=2.7",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --cov=mesh_cos --cov-report=term-missing --cov-fail-under=65"
+
+[tool.ruff]
+line-length = 160
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["mesh_cos"]
+check_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = true
+ignore_missing_imports = true

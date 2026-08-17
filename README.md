@@ -8,7 +8,7 @@ Phase 1 operating core for Mesh Digital LLC's AI Chief of Staff. The repository 
 
 ## Phase 1 status
 
-Version `0.1.1` closes the remaining code-level requirement gaps identified by the post-remediation audit. `ChiefOfStaffService` and `ChiefOfStaffWorkforceManager` now manage the durable work graph from intake through decomposition, delegation, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, acceptance verification, closure, and supersession.
+Version `0.1.2` closes the remaining code-level requirement gaps identified by the post-remediation audit. `ChiefOfStaffService` and `ChiefOfStaffWorkforceManager` now manage the durable work graph from intake through decomposition, delegation, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, acceptance verification, closure, and supersession.
 
 AgentOps now supports durable rolling performance evidence, workload and SLA signals, the complete Phase 1 recommendation vocabulary, and governed health-state changes. Slack includes inbound request verification and freshness controls, structured parsing, durable deduplication, one-task/one-thread mapping, and approval notifications. Answer Desk has a separate configurable team-facing interface and complete Phase 1 dispositions.
 

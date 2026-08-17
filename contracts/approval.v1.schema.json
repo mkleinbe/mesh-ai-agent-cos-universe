@@ -1,1 +1,19 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"properties":{"version":{"const":"mesh.cos.approval.v1"},"approval_id":{"type":"string"},"task_id":{"type":"string"},"requested_by":{"type":"string"},"approval_owner":{"type":"string"},"authority_level":{"type":"integer","minimum":4,"maximum":5},"action":{"type":"string"},"status":{"enum":["PENDING","APPROVED","REJECTED"]}},"required":["version","approval_id","task_id","requested_by","approval_owner","authority_level","action","status"]}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": "mesh.cos.approval.v1"},
+    "approval_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "requested_by": {"type": "string", "minLength": 1},
+    "approval_owner": {"type": "string", "minLength": 1},
+    "authority_level": {"type": "integer", "minimum": 4, "maximum": 5},
+    "action": {"type": "string", "minLength": 1},
+    "status": {"enum": ["PENDING", "APPROVED", "REJECTED"]},
+    "requested_at": {"type": "string", "minLength": 1},
+    "decided_at": {"type": ["string", "null"]},
+    "decision_reason": {"type": ["string", "null"]}
+  },
+  "required": ["version", "approval_id", "task_id", "requested_by", "approval_owner", "authority_level", "action", "status", "requested_at", "decided_at", "decision_reason"]
+}

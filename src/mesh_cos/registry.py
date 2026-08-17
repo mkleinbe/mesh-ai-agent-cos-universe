@@ -7,6 +7,8 @@ from pathlib import Path
 import re
 from typing import Any
 
+from .contracts_runtime import ContractValidator
+
 
 HEALTH_STATES = {"SHADOW", "ACTIVE", "WATCH", "RESTRICTED", "QUARANTINED", "RETIRED"}
 
@@ -48,16 +50,18 @@ def _normalize(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 class AgentRegistry:
-    def __init__(self, records: dict[str, dict[str, Any]], *, source_path: str | None = None) -> None:
+    def __init__(self, records: dict[str, dict[str, Any]], *, source_path: str | None = None, validator: ContractValidator | None = None) -> None:
         self._records = records
         self.source_path = source_path
+        self.validator = validator or ContractValidator.default()
         self.validate()
 
     @classmethod
     def from_file(cls, path: str | Path) -> "AgentRegistry":
         p = Path(path)
         data = json.loads(p.read_text())
-        records = {_normalize(item)["agent_id"]: _normalize(item) for item in data["agents"]}
+        normalized = [_normalize(item) for item in data["agents"]]
+        records = {item["agent_id"]: item for item in normalized}
         return cls(records, source_path=str(p))
 
     @classmethod
@@ -91,12 +95,14 @@ class AgentRegistry:
                 raise ValueError(f"Invalid decision authority for {agent_id}")
             if not 0 <= int(record.get("max_delegation_depth", -1)) <= 2:
                 raise ValueError(f"Invalid delegation depth for {agent_id}")
+            self.validator.validate("agent-record.v1", record)
 
     def with_runtime_health(self, agent_id: str, health: str) -> dict[str, Any]:
         if health not in HEALTH_STATES:
             raise ValueError(f"Invalid runtime health: {health}")
         self._records[agent_id]["runtime_health"] = health
         self._records[agent_id]["status"] = health
+        self.validator.validate("agent-record.v1", self._records[agent_id])
         return self.get(agent_id)
 
 

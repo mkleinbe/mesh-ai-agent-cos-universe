@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def _as_utc(value: str) -> datetime:
     parsed = datetime.fromisoformat(value)
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
 
 
 def readiness(
@@ -26,7 +26,7 @@ def readiness(
     if not availability_checked_at:
         return "REQUIRES_REFRESH"
     checked_at = _as_utc(availability_checked_at)
-    if (datetime.now(timezone.utc) - checked_at).days > max_age_days or not availability_confirmed:
+    if (datetime.now(UTC) - checked_at).days > max_age_days or not availability_confirmed:
         return "REQUIRES_REFRESH"
     if not rate_valid or not contracting_ready:
         return "NOT_READY"

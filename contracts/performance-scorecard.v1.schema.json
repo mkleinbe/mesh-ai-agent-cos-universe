@@ -1,1 +1,18 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"properties":{"version":{"const":"mesh.cos.performance-scorecard.v1"},"agent_id":{"type":"string"},"window_start":{"type":"string"},"window_end":{"type":"string"},"weighted_score":{"type":"number","minimum":0,"maximum":1},"weights_version":{"type":"string"},"recommendation":{"enum":["CONTINUE","INCREASE_ROUTING","DECREASE_ROUTING","WATCH","RESTRICT","RETRAIN_OR_REVISE","QUARANTINE","RETIRE","BUILD_NEW_SPECIALIST"]}},"required":["version","agent_id","window_start","window_end","weighted_score","weights_version","recommendation"]}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": "mesh.cos.performance-scorecard.v1"},
+    "scorecard_id": {"type": "string", "minLength": 1},
+    "agent_id": {"type": "string", "minLength": 1},
+    "window_start": {"type": "string", "minLength": 1},
+    "window_end": {"type": "string", "minLength": 1},
+    "weighted_score": {"type": "number", "minimum": 0, "maximum": 1},
+    "weights_version": {"type": "string", "minLength": 1},
+    "recommendation": {"enum": ["CONTINUE", "INCREASE_ROUTING", "DECREASE_ROUTING", "WATCH", "RESTRICT", "RETRAIN_OR_REVISE", "QUARANTINE", "RETIRE", "BUILD_NEW_SPECIALIST"]},
+    "event_count": {"type": "integer", "minimum": 0},
+    "category_scores": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}}
+  },
+  "required": ["version", "scorecard_id", "agent_id", "window_start", "window_end", "weighted_score", "weights_version", "recommendation", "event_count", "category_scores"]
+}

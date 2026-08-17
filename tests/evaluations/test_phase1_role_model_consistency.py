@@ -42,7 +42,7 @@ def test_runtime_rejects_role_names_that_embed_implementation_version(tmp_path: 
 
 def test_runtime_and_package_release_versions_are_aligned() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text()
-    assert __version__ == "0.1.4"
+    assert __version__ == "0.2.0"
     assert f'version = "{__version__}"' in pyproject
 
 

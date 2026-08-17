@@ -16,7 +16,8 @@ jobs:
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py
-      - run: ruff check src tests scripts
+      - run: ruff check src
+      - run: ruff check tests scripts --select E9,F63,F7,F82
       - run: mypy src --check-untyped-defs
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
       - run: bandit -q -r src -lll

@@ -1,0 +1,14 @@
+[project]
+name = "mesh-ai-agent-cos-universe"
+version = "0.1.0"
+description = "Phase 1 operating core for Mesh Digital's AI Chief of Staff agent workforce"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "jsonschema>=4.20"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

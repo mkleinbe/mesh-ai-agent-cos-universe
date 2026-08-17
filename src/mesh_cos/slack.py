@@ -3,9 +3,9 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Callable
+from datetime import UTC, datetime
 from urllib.request import Request, urlopen
 
 from .answer_desk import AnswerDeskService
@@ -59,13 +59,13 @@ def verify_slack_request(
     max_age_seconds: int = 300,
 ) -> bool:
     try:
-        request_time = datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+        request_time = datetime.fromtimestamp(int(timestamp), tz=UTC)
     except (TypeError, ValueError, OSError):
         return False
-    current = now or datetime.now(timezone.utc)
+    current = now or datetime.now(UTC)
     if current.tzinfo is None:
-        current = current.replace(tzinfo=timezone.utc)
-    if abs((current.astimezone(timezone.utc) - request_time).total_seconds()) > max_age_seconds:
+        current = current.replace(tzinfo=UTC)
+    if abs((current.astimezone(UTC) - request_time).total_seconds()) > max_age_seconds:
         return False
     return verify_slack_signature(signing_secret, timestamp, body, signature)
 
@@ -208,22 +208,20 @@ class SlackInboundService:
         self.signing_secret = signing_secret
 
     def handle(self, event_id: str, text: str) -> dict | None:
-        # Parse first so malformed input cannot poison the durable dedupe key and
-        # prevent a corrected Slack retry from being processed.
         parsed = parse_message(text)
-        if not self.coordinator.accept_event(event_id):
-            return None
-        self.coordinator.ledger.save_record(
+        record = {
+            "event_id": event_id,
+            "channel_id": self.coordinator.channel_id,
+            "received_at": utcnow(),
+            **parsed,
+        }
+        persisted = self.coordinator.ledger.save_idempotent_record(
+            f"slack:{event_id}",
             "slack_event",
             event_id,
-            {
-                "event_id": event_id,
-                "channel_id": self.coordinator.channel_id,
-                "received_at": utcnow(),
-                **parsed,
-            },
+            record,
         )
-        return parsed
+        return parsed if persisted else None
 
     def handle_request(
         self,

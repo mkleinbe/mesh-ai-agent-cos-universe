@@ -2,178 +2,182 @@
 
 ## Purpose
 
-Phase 1 is a governed executive control plane for a bounded hybrid organization of agents, reusable Mesh skills, authoritative data sources, and explicit human decision owners. It is a Python modular monolith with SQLite behind a narrow persistence boundary. It deliberately avoids swarms, brokers, and unnecessary microservices.
+Phase 1 is a governed executive control plane for a bounded hybrid organization of agents, reusable Mesh skills, authoritative data sources, and explicit human decision owners. The core runtime remains a Python modular monolith with SQLite behind the `TaskLedger` persistence boundary. ChatGPT Workspace Agents are a deployment and interaction layer on top of that control plane, not a replacement for it.
 
-## Runtime topology
+## End-to-end topology
 
 ```mermaid
 flowchart TB
-    CEO[Michael / L5] --> COS[ChiefOfStaffService]
-    APPROVER[Qualified L4 approvers] --> COS
-    COS --> WM[ChiefOfStaffWorkforceManager]
-    COS --> AO[AgentOpsEvaluator]
-    COS --> AD[AnswerDeskService]
-    WM --> CRO[CRO]
-    WM --> CFO[CFO]
-    WM --> COO[COO]
-    WM --> CMO[CMO]
-    WM --> DA[Devil's Advocate]
-    WM --> MO[Message Operations]
-    COO --> CNS[Consultant Network Steward]
-    CMO --> VPC[VP Content]
+    CEO[Michael / L5] --> WA[ChatGPT Workspace Agents]
+    H[Qualified L4 approvers] --> WA
 
-    REG[Agent Registry + shared governance policy] --> AUTH[Invocation authorization]
-    AUTH --> CRO
-    AUTH --> CFO
-    AUTH --> COO
-    AUTH --> CMO
-    AUTH --> DA
-    AUTH --> MO
+    subgraph CHATGPT[ChatGPT deployment layer]
+      COSWA[Chief of Staff Workspace Agent]
+      FWA[10 functional/controller/specialist Workspace Agents]
+      SK[Role Skills]
+      APPS[Approved Workspace Apps]
+      COSWA --> SK
+      FWA --> SK
+      COSWA --> APPS
+      FWA --> APPS
+    end
 
-    COS --> GOV[GovernanceJournal]
-    WM --> GOV
-    AO --> GOV
-    AD --> GOV
-    AUTH --> GOV
-    GOV --> DEC[decision.v2]
-    GOV --> EVT[agent-event.v2]
-    DEC --> LEDGER[(TaskLedger)]
-    EVT --> LEDGER
-    COS --> LEDGER
-    WM --> LEDGER
-    AO --> LEDGER
-    AD --> LEDGER
+    WA --> COSWA
+    WA --> FWA
+    COSWA --> MCP[mesh-cos-mcp]
+    FWA --> MCP
+
+    subgraph RUNTIME[Existing Mesh CoS control plane]
+      MCP --> MCPPOL[WorkspaceAgentMCPPolicy\ndeny by default]
+      MCPPOL --> REG[Agent Registry + governance policy]
+      REG --> AUTH[Source / tool / action / authority checks]
+      AUTH --> COS[ChiefOfStaffService]
+      AUTH --> WM[ChiefOfStaffWorkforceManager]
+      AUTH --> AO[AgentOpsEvaluator]
+      AUTH --> AD[AnswerDeskService]
+      AUTH --> GOV[GovernanceJournal]
+      AUTH --> FA[Governed functional adapters]
+      COS --> LEDGER[(TaskLedger)]
+      WM --> LEDGER
+      AO --> LEDGER
+      AD --> LEDGER
+      GOV --> LEDGER
+      FA --> LEDGER
+    end
 
     LEDGER --> DLOG[CoS Decision Log mirror]
     LEDGER --> ALOG[CoS Audit Log mirror]
-
-    OPS[#mesh-agent-ops\nC0BRL4GCL3A] <--> SLACK[Slack inbound/outbound boundary]
-    SLACK <--> COS
-    SLACK --> LEDGER
-    ADS[Separate Answer Desk Slack] <--> AD
+    OPS[#mesh-agent-ops\nC0BRL4GCL3A] <--> COSWA
 ```
+
+The trust direction is deliberate. Workspace Agent instructions and app configuration can narrow behavior but cannot expand the canonical registry. `mesh-cos-mcp` applies per-agent allowlists before invoking existing runtime services, then the runtime applies registry authority, approval, source, tool, and action controls.
 
 ## Stable role identity model
 
 Organizational role identity and software version are separate concerns. `display_name` is a stable organizational identity. The registry `version` field carries the agent implementation version using `MAJOR.MINOR.PATCH`; repository releases carry the control-plane release version. Accountable domain, source authority, permitted/prohibited actions, approval rules, and delegation rules express scope. Runtime registry validation rejects display names that embed a version token.
 
-Canonical Phase 1 organizational names are `CRO`, `CFO`, `COO`, `Consultant Network Steward`, `CMO`, and `VP Content`.
+Canonical Phase 1 organizational names are `Chief of Staff`, `AgentOps Controller`, `Answer & Decision Desk`, `CRO`, `CFO`, `COO`, `Consultant Network Steward`, `CMO`, `VP Content`, `Devil's Advocate`, and `Message Operations`.
 
-## Functional accountability boundaries
+## ChatGPT Workspace Agent packaging model
+
+Release `0.2.0` maps every canonical agent into three coordinated artifacts:
+
+1. `chatgpt/skills/<skill>/SKILL.md` contains the reusable role workflow and non-obvious operating rules.
+2. `chatgpt/workspace-agents/<agent_id>.json` contains exact Workspace Agent builder configuration, model preference/fallback, knowledge files, apps, channels, write approvals, connector constraints, starter prompts, and MCP allowlist.
+3. `chatgpt/mcp/mesh-cos-mcp.v1.json` maps approved Workspace Agent tool calls onto existing Python runtime bindings.
+
+The Skill is not the system of record and the Workspace Agent is not a prompt-only persona. The Skill drives repeatable role behavior, the manifest configures the product surface, and the MCP boundary supplies controlled canonical execution.
 
 ```mermaid
 flowchart LR
-    CRO[CRO\nCommercial strategy and pursuits] -->|requests economics| CFO[CFO\nEngagement Finance / FP&A]
-    CRO -->|requests feasibility| COO[COO\nDelivery feasibility and capacity]
-    COO --> CNS[Consultant Network Steward\nNetwork readiness]
-    CMO[CMO\nMarketing strategy and demand] --> VPC[VP Content\nEditorial production]
-    CRO --> COS[CoS\nCross-functional orchestration]
-    CFO --> COS
-    COO --> COS
-    CMO --> COS
+    R[agents/registry.json] --> M[Workspace Agent manifest]
+    R --> S[Role Skill]
+    M --> B[Workspace Agent builder]
+    S --> B
+    C[mesh-cos-mcp.v1.json] --> B
+    C --> P[WorkspaceAgentMCPPolicy]
+    P --> RT[Existing runtime binding]
+    RT --> L[(TaskLedger)]
 ```
 
-- **CRO:** opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion, and commercial-risk framing. Revenue Intelligence remains authoritative for designated commercial/account facts.
-- **CFO:** Engagement Finance / FP&A only, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margins, supported working-capital implications, forecast-versus-actual, margin leakage, assumption management, scenario comparison, and financial-risk recommendations. It is not enterprise accounting, treasury, tax, audit, or unrestricted financial authority.
+## Functional accountability boundaries
+
+- **CRO:** commercial strategy, opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best action, expansion, and commercial-risk framing. Revenue Intelligence remains authoritative where designated.
+- **CFO:** Engagement Finance / FP&A only, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margins, supported working-capital implications, forecast-versus-actual, margin leakage, assumption management, scenario comparison, and financial-risk recommendations. No enterprise-accounting, treasury, tax, audit, or unrestricted finance authority is implied.
 - **COO:** delivery feasibility, delivery configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations. The CoS retains enterprise work-graph orchestration.
-- **Consultant Network Steward:** consultant identification/matching, fit, freshness, validation timestamp, rate, availability, readiness-gap, refresh, and contracting-readiness evidence under COO authority.
-- **CMO:** marketing strategy, audience/ICP strategy, category positioning, campaign/demand architecture, distribution, brand governance, campaign optimization, editorial priorities, and marketing-commercial feedback.
-- **VP Content:** editorial planning/calendar, source/evidence assembly, drafting, channel adaptation, derivatives, repurposing, Mesh IP reuse, content inventory, editorial QA, and performance feedback under CMO authority.
+- **Consultant Network Steward:** consultant identification/matching, fit, freshness, validation timestamp, rate, availability, readiness gaps, refresh, and contracting-readiness evidence under COO authority.
+- **CMO:** marketing strategy, audience/ICP, category positioning, campaign/demand architecture, distribution, brand governance, campaign optimization, editorial priorities, and marketing-commercial feedback.
+- **VP Content:** editorial planning/calendar, evidence assembly, drafting, channel adaptation, derivatives, repurposing, Mesh IP reuse, inventory, editorial QA, and performance feedback under CMO authority.
+- **Devil's Advocate:** independent challenge only, never final decision ownership.
+- **Message Operations:** controlled execution of approved communications only.
 
 ## Work-management loop
 
 ```mermaid
 sequenceDiagram
-    participant M as Michael / requester
-    participant C as CoS
-    participant W as Workforce manager
-    participant F as Functional agent / skill
+    participant U as User / trigger
+    participant W as Workspace Agent
+    participant M as mesh-cos-mcp
+    participant C as CoS runtime
+    participant F as Functional runtime / Skill adapter
     participant G as GovernanceJournal
     participant L as TaskLedger
     participant H as Human approver
 
-    M->>C: Outcome request
-    C->>L: Persist INTAKE
-    C->>W: Decompose work graph
-    W->>L: Persist child tasks and delegation
-    W->>F: Governed work package
-    F->>G: Audit consequential skill/tool action
-    G->>L: Persist agent-event.v2
-    F->>L: Evidence / check-in / state
-    W->>W: Monitor dependencies, SLA and stalls
-    alt material recommendation or decision
-        W->>G: Persist decision.v2 basis/evidence/criteria/risk
+    U->>W: Outcome request
+    W->>M: task.intake / task.get
+    M->>C: authorized runtime call
+    C->>L: Persist canonical task
+    W->>M: decompose / delegate / invoke
+    M->>C: enforce allowlist + registry authority
+    C->>F: governed functional work
+    F->>G: consequential event / material decision
+    G->>L: decision.v2 + agent-event.v2
+    alt L4/L5
+      W->>H: explicit approval / decision
+      H-->>W: approval evidence
+      W->>M: approval-bound call
     end
-    alt stalled or misdirected
-        W->>L: Remediate or reassign with audit
-    end
-    alt L4/L5 required
-        C->>H: Decision brief / approval
-        H-->>C: Explicit decision
-        C->>G: Persist approval-linked decision.v2
-    end
-    F-->>C: Completed output + evidence
-    C->>C: Execute acceptance test
+    W->>M: task.verify with verifier + evidence
+    M->>C: record_verification_result
     alt accepted
-        C->>L: VERIFIED -> CLOSED
+      C->>L: VERIFIED
     else rejected
-        C->>L: REWORK
+      C->>L: REWORK
     end
 ```
+
+Remote Workspace Agents cannot pass Python callbacks. `ChiefOfStaffService.record_verification_result()` is the MCP-safe verification path. A passing result requires a named verifier and explicit evidence references; otherwise verification fails closed without mutating the task to `VERIFIED`.
+
+## MCP security and authorization
+
+`mesh_cos.mcp_policy.WorkspaceAgentMCPPolicy` validates the checked-in MCP contract and enforces per-agent allowlists server-side. Unknown agents, unknown tools, and tools absent from an agent allowlist are denied. Every declared runtime binding is checked for resolvability. Consequential tools must be auditable.
+
+MCP authorization is layered:
+
+1. authenticate the Workspace Agent or approved service identity,
+2. resolve canonical `agent_id`,
+3. enforce the checked-in MCP tool allowlist,
+4. enforce registry source/tool/action permissions and L0-L5 authority,
+5. fail closed on required human approval,
+6. invoke the existing runtime service,
+7. persist canonical state first,
+8. emit explainable decision/audit records as required.
+
+Builder allowlists and Connector Action Constraints are defense in depth. They are not the sole security boundary.
+
+## Workspace apps and channel boundaries
+
+Apps are least-privilege and role-specific. Read access does not create functional authority. Key Phase 1 constraints include:
+
+- CoS and AgentOps Slack writes are limited to internal `#mesh-agent-ops` coordination.
+- Answer Desk Slack remains disabled until a dedicated channel ID is configured.
+- CRO Apollo access is research/enrichment only; Gmail and LinkedIn are non-outbound.
+- CMO and VP Content LinkedIn access is non-publishing; AuthoredUp is analytics/draft preparation only.
+- CFO, COO, and Consultant Network Steward use approved evidence sources read-only.
+- Message Operations is the only outbound execution role and requires a matching recorded approval plus Workspace **Always ask** before consequential sends.
 
 ## Canonical source-of-truth map
 
 | Subject | Canonical authority |
 |---|---|
-| Agent definition and authority | `agents/registry.json`, normalized by `mesh_cos.registry` plus `config/governance-policy.v1.json` |
+| Agent identity, domain and authority | `agents/registry.json` plus shared governance policy |
+| Workspace Agent deployment settings | `chatgpt/workspace-agents/*.json`, subordinate to the registry |
+| Workspace Agent role workflow | `chatgpt/skills/*/SKILL.md`, subordinate to the registry |
+| Workspace MCP permissions | `chatgpt/mcp/mesh-cos-mcp.v1.json` + `WorkspaceAgentMCPPolicy` |
 | Task/work graph and outcomes | `TaskLedger` |
-| Explainable decisions | `TaskLedger` `decision_v2` records; CoS Decision Log is a mirror |
-| Auditable consequential events | `TaskLedger` `audit_event_v2` records; CoS Audit Log is a mirror |
+| Explainable decisions | `TaskLedger` `decision_v2`; CoS Decision Log is a mirror |
+| Auditable consequential events | `TaskLedger` `audit_event_v2`; CoS Audit Log is a mirror |
 | Conflicts and approvals | `TaskLedger` typed records linked to decision/audit records |
-| Performance | performance-event/scorecard records plus versioned performance policy |
-| Slack state | TaskLedger task/thread and event-idempotency records, not Slack history |
-| Financial calculations | CFO within supported Engagement Finance / FP&A sources |
-| Commercial/account evidence | Revenue Intelligence where available |
-| Delivery/resource feasibility | COO and approved resource sources |
-| Consultant readiness | Consultant Network Steward under COO using approved network data |
-| Marketing strategy | CMO within approved brand/marketing sources |
-| Editorial production | VP Content under CMO intent and approved Mesh IP |
+| Performance | performance events/scorecards plus versioned performance policy |
+| Slack state | TaskLedger mappings and idempotency records, not Slack history |
 
-## Structured contracts
+## Governance and reliability
 
-The repository retains the original v1 contract set for compatibility and adds richer `mesh.cos.decision.v2` and `mesh.cos.agent-event.v2` governance contracts. Contracts reject undeclared fields. Runtime records are validated through `mesh_cos.contracts`, and CI runs a runtime/documentation drift check.
+`GovernanceJournal` persists `decision.v2` and `agent-event.v2`. The audit stream is tamper-evident through its SHA-256 hash chain. Private chain-of-thought, hidden reasoning traces, credentials, tokens, and unnecessary personal data are prohibited from governance records.
 
-`decision.v2` captures explainable basis, evidence, alternatives, criteria, confidence, risk, authority, approval, reversibility, provenance, lineage, and outcome validation. `agent-event.v2` captures fully auditable actor/action/result/provenance metadata plus a tamper-evident SHA-256 hash chain.
-
-## Cross-agent governance policy
-
-`config/governance-policy.v1.json` applies at registry load to every registered agent. It adds the shared `governance-journal` tool and v2 governance output contracts without changing functional authority. Audit logging is required for consequential actions. Decision logging is required when an agent decides or recommends.
-
-`TaskLedger.record_event()` bridges existing v1 `AuditEvent` producers into the v2 governance stream during migration. `GovernedAdapterRegistry` can emit v2 events directly for skill/tool invocations.
-
-## Google Sheets mirror boundary
-
-`config/governance-logs.v1.json` identifies the two non-secret human-readable operational mirrors:
-
-- CoS Decision Log: `1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw`
-- CoS Audit Log: `1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0`
-
-Writes are canonical-first. Mirror failures are persisted, not silently ignored. Sheets do not become decision authority or system of record.
-
-## Functional execution boundary
-
-`GovernedAdapterRegistry` maps only registered skills/tools to the agent allowed to invoke them. It composes existing Mesh capabilities instead of reimplementing them. External executors remain configuration-dependent until credentials and connectivity are supplied. Adding a permitted action does not fabricate a new external skill: native typed tools and existing approved Mesh skills remain distinct implementation mechanisms.
-
-## Slack boundary
-
-The Slack layer verifies request signatures and timestamps, rejects stale replayed requests, deduplicates event IDs durably, parses structured messages, persists one-task/one-thread mappings, and posts approval notifications. `#mesh-agent-ops` remains an observable collaboration surface, never canonical state. The Answer Desk uses a separate configurable Slack boundary.
-
-## Reliability and governance
-
-The runtime includes idempotent intake, bounded retries, timeouts, execution leases, failure records, explicit replay, human override, task supersession, stalled-work remediation, invocation allowlists, prompt-injection boundaries, L4/L5 fail-closed approval, explainable decisions, tamper-evident audit events, health restrictions, and the emergency kill switch.
-
-Private chain-of-thought, hidden reasoning traces, credentials, tokens, and unnecessary personal data are prohibited from governance records. Evidence should be referenced rather than copied when a protected pointer is sufficient.
+Runtime reliability includes idempotent intake, bounded retries, timeouts, execution leases, failure records, explicit replay, human override, supersession, stalled-work remediation, the emergency kill switch, and acceptance verification. Workspace Agent deployment does not bypass any of these controls.
 
 ## Deployment boundary
 
-Phase 1 operating logic is complete at the repository boundary. Production use still requires Slack credentials, the Answer Desk channel ID, approved source/skill credentials, approval-owner configuration, deployment infrastructure, and a runtime adapter with authenticated Google Sheets write capability if automatic mirroring is enabled. SQLite should be revisited before multi-instance or high-availability deployment.
+The repository contains Workspace Agent-ready Skills, exact manifests, MCP contract, tests, and builder handoff instructions. It does not fabricate a live MCP endpoint or workspace credentials. Production still requires an approved HTTPS MCP deployment, `MESH_COS_MCP_SERVER_URL`, workspace app authentication, a dedicated Answer Desk Slack channel ID, production approval-owner mapping, and preview testing in the target ChatGPT workspace. SQLite should be revisited before multi-instance or high-availability runtime deployment.

@@ -57,103 +57,48 @@ canonical_role_names = {
 }
 required_role_actions = {
     "cro": {
-        "commercial_analysis",
-        "opportunity_qualification",
-        "pipeline_health_analysis",
-        "pursuit_prioritization",
-        "proposal_strategy",
-        "next_best_commercial_action",
-        "expansion_strategy",
-        "commercial_risk_framing",
-        "request_cfo_economics",
-        "request_coo_feasibility",
-        "request_devils_advocate_review",
+        "commercial_analysis", "opportunity_qualification", "pipeline_health_analysis", "pursuit_prioritization",
+        "proposal_strategy", "next_best_commercial_action", "expansion_strategy", "commercial_risk_framing",
+        "request_cfo_economics", "request_coo_feasibility", "request_devils_advocate_review",
     },
     "cfo": {
-        "engagement_economics",
-        "pricing_scenarios",
-        "cost_to_serve_analysis",
-        "contribution_economics",
-        "margin_analysis",
-        "margin_leakage_detection",
-        "working_capital_implications",
-        "economic_scenario_comparison",
-        "assumption_management",
-        "financial_risk_analysis",
-        "forecast_vs_actual",
+        "engagement_economics", "pricing_scenarios", "cost_to_serve_analysis", "contribution_economics",
+        "margin_analysis", "margin_leakage_detection", "working_capital_implications", "economic_scenario_comparison",
+        "assumption_management", "financial_risk_analysis", "forecast_vs_actual",
     },
     "coo": {
-        "delivery_feasibility",
-        "delivery_configuration",
-        "capacity_analysis",
-        "pod_resource_composition",
-        "dependency_readiness_analysis",
-        "delivery_risk_sensing",
-        "partner_capacity_analysis",
-        "operational_constraint_management",
-        "staffing_recommendation",
-        "delegate_network_steward",
+        "delivery_feasibility", "delivery_configuration", "capacity_analysis", "pod_resource_composition",
+        "dependency_readiness_analysis", "delivery_risk_sensing", "partner_capacity_analysis",
+        "operational_constraint_management", "staffing_recommendation", "delegate_network_steward",
     },
     "consultant-network-steward": {
-        "candidate_identification",
-        "candidate_matching",
-        "candidate_fit_check",
-        "availability_freshness_check",
-        "validation_timestamp_check",
-        "rate_validity_check",
-        "contracting_readiness_check",
-        "readiness_gap_analysis",
-        "refresh_workflow",
-        "mark_requires_refresh",
-        "establish_staffing_ready_status",
+        "candidate_identification", "candidate_matching", "candidate_fit_check", "availability_freshness_check",
+        "validation_timestamp_check", "rate_validity_check", "contracting_readiness_check", "readiness_gap_analysis",
+        "refresh_workflow", "mark_requires_refresh", "establish_staffing_ready_status",
     },
     "cmo": {
-        "marketing_strategy",
-        "audience_icp_strategy",
-        "category_positioning",
-        "campaign_strategy",
-        "demand_campaign_architecture",
-        "distribution_strategy",
-        "campaign_performance_optimization",
-        "marketing_commercial_feedback",
-        "brand_governance",
-        "editorial_priority",
-        "content_review",
-        "delegate_vp_content",
+        "marketing_strategy", "audience_icp_strategy", "category_positioning", "campaign_strategy",
+        "demand_campaign_architecture", "distribution_strategy", "campaign_performance_optimization",
+        "marketing_commercial_feedback", "brand_governance", "editorial_priority", "content_review", "delegate_vp_content",
     },
     "vp-content": {
-        "editorial_planning",
-        "editorial_calendar_management",
-        "source_evidence_assembly",
-        "draft_content",
-        "channel_adaptation",
-        "derivative_content_production",
-        "repurpose_content",
-        "ip_reuse",
-        "content_inventory_management",
-        "editorial_qa",
-        "performance_feedback",
-        "prepare_for_cmo_review",
+        "editorial_planning", "editorial_calendar_management", "source_evidence_assembly", "draft_content",
+        "channel_adaptation", "derivative_content_production", "repurpose_content", "ip_reuse",
+        "content_inventory_management", "editorial_qa", "performance_feedback", "prepare_for_cmo_review",
     },
 }
 for agent_id, display_name in canonical_role_names.items():
     record = registry[agent_id]
     require(record["display_name"] == display_name, f"{agent_id}: canonical role name drifted")
-    require(
-        required_role_actions[agent_id] <= set(record.get("permitted_actions", [])),
-        f"{agent_id}: canonical Phase 1 capability surface drifted",
-    )
+    require(required_role_actions[agent_id] <= set(record.get("permitted_actions", [])), f"{agent_id}: capability surface drifted")
 
 require(registry["cfo"]["accountable_domain"] == "engagement finance and FP&A", "CFO domain drifted")
-require(
-    registry["coo"]["accountable_domain"] == "delivery feasibility, capacity, and resource readiness",
-    "COO domain drifted",
-)
+require(registry["coo"]["accountable_domain"] == "delivery feasibility, capacity, and resource readiness", "COO domain drifted")
 require(registry["consultant-network-steward"]["parent_agent_id"] == "coo", "Network Steward hierarchy drifted")
 
 pyproject_text = (ROOT / "pyproject.toml").read_text()
 require(f'version = "{__version__}"' in pyproject_text, "Package and runtime release versions drifted")
-require(__version__ == "0.1.4", "Expected canonical-role release version 0.1.4")
+require(__version__ == "0.2.0", "Expected Workspace Agent release version 0.2.0")
 
 task = TaskRecord("T-drift", "objective", "outcome", "michael", "michael", "cro", "michael", acceptance_test="accepted")
 validate_runtime_contract("task", task.to_dict(), CONTRACTS)
@@ -179,8 +124,8 @@ decision = governance.record_decision(
     human_approval_required=False,
     decision="Preserve governed runtime contract",
     disposition="APPROVED",
-    decision_basis_summary="The runtime governance contract must remain aligned with documented policy and configured mirrors.",
-    evidence_references=["config:governance-policy.v1", "config:governance-logs.v1"],
+    decision_basis_summary="Runtime governance must remain aligned with documented policy and deployment packages.",
+    evidence_references=["config:governance-policy.v1", "config:governance-logs.v1", "chatgpt:mcp-contract"],
     source_systems=["repository"],
     alternatives_considered=["allow drift", "fail CI on drift"],
     selection_criteria=["auditability", "contract integrity"],
@@ -195,7 +140,7 @@ decision = governance.record_decision(
     prompt_template_version=None,
     skill_agent_version="drift-check-v1",
     data_classification="INTERNAL",
-    outcome_validation="CI validates contracts, policy, configuration and documentation tokens.",
+    outcome_validation="CI validates contracts, policy, deployment packages and documentation tokens.",
     outcome_status="VALIDATED",
     retention_class="GOVERNANCE_LONG_TERM",
 )
@@ -216,7 +161,7 @@ event = governance.record_event(
     capability_tool="check-runtime-doc-drift.py",
     target_resource="repository governance contracts",
     source_system="repository",
-    input_summary="Validate runtime governance policy against contracts, configuration and documentation.",
+    input_summary="Validate runtime governance policy against contracts, configuration, Workspace Agent packages and documentation.",
     result_status="SUCCESS",
     output_summary="Governance runtime and documentation agree.",
     evidence_references=[decision["canonical_record_ref"]],
@@ -234,27 +179,26 @@ require(verify_audit_chain(ledger.list_records("audit_event_v2")), "Governance a
 governance_logs = json.loads((ROOT / "config" / "governance-logs.v1.json").read_text())
 require(governance_logs.get("canonical_state") == "TaskLedger", "Governance canonical state drifted")
 require(governance_logs.get("write_order") == "CANONICAL_FIRST", "Governance write order drifted")
-require(
-    governance_logs["audit_log"]["spreadsheet_id"] == "1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0",
-    "CoS Audit Log ID drifted",
-)
-require(
-    governance_logs["decision_log"]["spreadsheet_id"] == "1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw",
-    "CoS Decision Log ID drifted",
-)
+require(governance_logs["audit_log"]["spreadsheet_id"] == "1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0", "CoS Audit Log ID drifted")
+require(governance_logs["decision_log"]["spreadsheet_id"] == "1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw", "CoS Decision Log ID drifted")
 
 env_text = (ROOT / ".env.example").read_text()
 require("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A" in env_text, "Agent Ops Slack channel drifted")
+require("MESH_COS_MCP_SERVER_URL=" in env_text, "Workspace Agent MCP endpoint placeholder missing")
 
 required_docs = {
-    "README.md": ["#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "ChiefOfStaffService", "Role identity and implementation versioning"],
-    "docs/agent-registry.md": ["Role identity policy", "CFO", "COO", "permitted_actions"],
-    "docs/architecture.md": ["GovernanceJournal", "decision.v2", "agent-event.v2", "TaskLedger", "Stable role identity model"],
-    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought", "Role identity, authority, and version provenance"],
-    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident", "agent_role", "skill_agent_version"],
+    "README.md": ["#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "ChiefOfStaffService", "Role identity and implementation versioning", "Workspace Agent"],
+    "docs/agent-registry.md": ["Role identity policy", "CFO", "COO", "permitted_actions", "Workspace Agent"],
+    "docs/architecture.md": ["GovernanceJournal", "decision.v2", "agent-event.v2", "TaskLedger", "Stable role identity model", "mesh-cos-mcp"],
+    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought", "Role identity, authority, and version provenance", "Always ask"],
+    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident", "agent_role", "skill_agent_version", "Workspace Agent"],
     "docs/observability.md": ["decision.v2", "agent-event.v2", "verify_audit_chain"],
     "docs/phase-1-operating-contract.md": ["L4", "L5", "VERIFIED", "Stable role identity"],
-    "docs/testing-evaluation.md": ["test_governance.py", "decision.v2", "agent-event.v2"],
+    "docs/security-governance.md": ["mesh-cos-mcp", "deny-by-default", "Workspace Agent"],
+    "docs/testing-evaluation.md": ["test_governance.py", "decision.v2", "agent-event.v2", "check-chatgpt-packages.py"],
+    "docs/runbook.md": ["MESH_COS_MCP_SERVER_URL", "Workspace Agent", "preview"],
+    "chatgpt/README.md": ["Workspace Agent", "TaskLedger", "mesh-cos-mcp"],
+    "chatgpt/workspace-agent-builder-prompt.md": ["11 agents", "Always ask", "negative authority test"],
 }
 for relative, tokens in required_docs.items():
     text = (ROOT / relative).read_text()

@@ -2,7 +2,7 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main, 'phase1/**', 'remediation/**']
+    branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**']
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -15,6 +15,7 @@ jobs:
       - run: python -m pip check
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
       - run: ruff check src tests scripts --select E9,F63,F7,F82
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=55
       - run: bandit -q -r src -lll

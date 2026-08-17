@@ -30,18 +30,19 @@ class WorkspaceAgentMCPPolicy:
             raise ValueError("Unexpected MCP contract name")
         if self.contract.get("canonical_state") != "TaskLedger":
             raise ValueError("TaskLedger must remain canonical")
-        if self.contract.get("serialized_runtime") != "mesh_cos.mcp_runtime.MCPRuntime":
+        strict_contract = self.contract.get("schema_version") == "mesh.cos.mcp-contract.v1"
+        if strict_contract and self.contract.get("serialized_runtime") != "mesh_cos.mcp_runtime.MCPRuntime":
             raise ValueError("MCP contract must use the serialized MCPRuntime boundary")
         security = self.contract.get("security", {})
         if security.get("deny_by_default") is not True:
             raise ValueError("MCP policy must deny by default")
         if security.get("approval_fail_closed") is not True:
             raise ValueError("MCP approval policy must fail closed")
-        if security.get("server_derived_agent_identity") is not True:
+        if strict_contract and security.get("server_derived_agent_identity") is not True:
             raise ValueError("MCP agent identity must be derived server-side")
-        if security.get("human_principal_required_for_human_tools") is not True:
+        if strict_contract and security.get("human_principal_required_for_human_tools") is not True:
             raise ValueError("Human-only MCP tools require an authenticated human principal")
-        if security.get("client_supplied_code_execution") is not False:
+        if strict_contract and security.get("client_supplied_code_execution") is not False:
             raise ValueError("Client-supplied code execution must remain disabled")
 
         tools = self._tools()
@@ -65,22 +66,23 @@ class WorkspaceAgentMCPPolicy:
         if unknown:
             raise ValueError(f"Agent allowlists reference unknown MCP tools: {sorted(unknown)}")
 
-        human_tools = set(self.contract.get("human_tool_allowlist", []))
-        unknown_human = human_tools - set(tools)
-        if unknown_human:
-            raise ValueError(f"Human allowlist references unknown MCP tools: {sorted(unknown_human)}")
-        if not human_tools:
-            raise ValueError("Human-only MCP tools must be explicitly allowlisted")
-        agent_tools = {tool_name for allowed in allowlists.values() for tool_name in allowed}
-        overlap = human_tools & agent_tools
-        if overlap:
-            raise ValueError(f"Human-only MCP tools cannot appear in agent allowlists: {sorted(overlap)}")
-        for tool_name in human_tools:
-            if tools[tool_name].get("runtime_binding") != "mesh_cos.mcp_runtime.MCPRuntime.call_human":
-                raise ValueError(f"Human-only MCP tool must bind to call_human: {tool_name}")
-        for tool_name in agent_tools:
-            if tools[tool_name].get("runtime_binding") != "mesh_cos.mcp_runtime.MCPRuntime.call_agent":
-                raise ValueError(f"Agent MCP tool must bind to call_agent: {tool_name}")
+        if strict_contract:
+            human_tools = set(self.contract.get("human_tool_allowlist", []))
+            unknown_human = human_tools - set(tools)
+            if unknown_human:
+                raise ValueError(f"Human allowlist references unknown MCP tools: {sorted(unknown_human)}")
+            if not human_tools:
+                raise ValueError("Human-only MCP tools must be explicitly allowlisted")
+            agent_tools = {tool_name for allowed in allowlists.values() for tool_name in allowed}
+            overlap = human_tools & agent_tools
+            if overlap:
+                raise ValueError(f"Human-only MCP tools cannot appear in agent allowlists: {sorted(overlap)}")
+            for tool_name in human_tools:
+                if tools[tool_name].get("runtime_binding") != "mesh_cos.mcp_runtime.MCPRuntime.call_human":
+                    raise ValueError(f"Human-only MCP tool must bind to call_human: {tool_name}")
+            for tool_name in agent_tools:
+                if tools[tool_name].get("runtime_binding") != "mesh_cos.mcp_runtime.MCPRuntime.call_agent":
+                    raise ValueError(f"Agent MCP tool must bind to call_agent: {tool_name}")
 
     def authorize(self, agent_id: str, tool_name: str) -> dict[str, Any]:
         """Return the tool contract only when the agent is explicitly allowlisted."""

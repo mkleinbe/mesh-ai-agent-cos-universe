@@ -130,7 +130,7 @@ def test_governance_actor_identity_is_server_derived() -> None:
         },
     )
     assert event["actor_id"] == "cro"
-    assert event["actor_role"] == "Commercial executive agent"
+    assert event["actor_role"] == "CRO"
     assert event["skill_agent_version"] == "1.0.0"
 
 

@@ -1,0 +1,2 @@
+# Escalation Policy
+Escalation is based on impact, authority, reversibility, confidence, and external consequence. Michael receives concise decision briefs, never raw agent arguments. L4/L5, one-way-door, material commercial/client/partner/capital/public/legal/security/privacy/personnel issues, high-impact low-confidence judgments, source-of-truth conflicts, and severe unauthorized actions escalate.

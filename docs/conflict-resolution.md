@@ -1,0 +1,2 @@
+# Conflict Resolution
+Fact authority precedes opinion. CFO owns financial calculations; Revenue Intelligence owns canonical account qualification where available; COO owns staffing feasibility; CMO owns marketing strategy. Domain authority does not equal enterprise decision authority. CoS arbitrates cross-functional tradeoffs using evidence, authority, consequence, confidence, and reversibility. No majority voting.

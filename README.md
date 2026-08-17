@@ -8,7 +8,7 @@ Phase 1 operating core for Mesh Digital LLC's AI Chief of Staff. The repository 
 
 ## Phase 1 status
 
-Version `0.1.3` preserves the completed Phase 1 operating core and adds explainable `decision.v2` records and fully auditable `agent-event.v2` records across the registered workforce and governed skill/tool boundary.
+Version `0.1.4` preserves the completed Phase 1 operating core, explainable `decision.v2` records, fully auditable `agent-event.v2` records, and a reconciled canonical role model with stable organizational names and separate implementation-version metadata.
 
 `ChiefOfStaffService` and `ChiefOfStaffWorkforceManager` manage the durable work graph from intake through decomposition, delegation, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, acceptance verification, closure, and supersession. AgentOps supports durable rolling performance evidence, workload and SLA signals, complete Phase 1 recommendation vocabulary, and governed health-state changes.
 
@@ -22,8 +22,8 @@ flowchart TB
     COS --> AO[AgentOps]
     COS --> AD[Answer Desk]
     COS --> CRO[CRO]
-    COS --> CFO[CFO v1]
-    COS --> COO[COO v1]
+    COS --> CFO[CFO]
+    COS --> COO[COO]
     COS --> CMO[CMO]
     COS --> DA[Devil's Advocate]
     COS --> MO[Message Operations]
@@ -63,6 +63,10 @@ flowchart TB
 - Slack and Google Sheets are observable/human-readable surfaces, not canonical state.
 - Functional adapters compose approved Mesh capabilities without duplicating skill logic.
 
+## Role identity and implementation versioning
+
+Organizational role identity is stable. Canonical Phase 1 display names do not encode software maturity or release labels. Agent implementation versions live in each registry record's `version` field using `MAJOR.MINOR.PATCH`, while repository releases carry the operating-core release version. Scope limitations are expressed through accountable domain, source authority, permitted/prohibited actions, approvals, and delegation rules, not through names such as a role plus a version suffix.
+
 ## Explainable AI governance
 
 Every registered agent inherits `config/governance-policy.v1.json` at runtime. This adds the shared `governance-journal` tool and the v2 governance output contracts without expanding any agent's functional authority.
@@ -85,12 +89,12 @@ A mirror failure cannot erase canonical state and is itself recorded for remedia
 - **CoS**: outcome intake, work decomposition, prioritization, delegation, dependency coordination, arbitration, reallocation, escalation, verification, and portfolio recommendations.
 - **AgentOps**: rolling performance evaluation, workload and SLA monitoring, health recommendations, stalled-work detection, defect signals, and coordination-loop detection.
 - **Answer Desk**: permission-aware team question handling, routing, recommendations, approvals, escalation, and correction tracking.
-- **CRO**: commercial executive and pursuit ownership within delegated scope.
-- **CFO v1**: Engagement Finance / FP&A only.
-- **COO v1**: delivery feasibility, capacity, and resource readiness.
-  - **Consultant Network Steward**: consultant fit, freshness, rate, availability confidence, and contracting readiness.
-- **CMO**: marketing strategy and delegated execution.
-  - **VP Content**: editorial production workflow.
+- **CRO**: commercial strategy, opportunity qualification, pipeline health, pursuits, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion, and commercial-risk framing within delegated scope.
+- **CFO**: Engagement Finance / FP&A, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margins, supported working-capital implications, forecast-versus-actual, margin leakage, assumption management, scenario comparison, and financial-risk recommendations. It is not unrestricted enterprise-finance authority.
+- **COO**: delivery feasibility, delivery configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations.
+  - **Consultant Network Steward**: candidate identification/matching, consultant fit, freshness, validation timestamps, rate, availability confidence, readiness gaps, refresh workflow, and contracting readiness.
+- **CMO**: marketing strategy, audience/ICP strategy, category positioning, demand/campaign architecture, distribution, brand governance, campaign optimization, editorial priorities, and marketing-commercial feedback.
+  - **VP Content**: editorial planning/calendar, source and evidence assembly, content production, channel adaptation, derivative content, repurposing, Mesh IP reuse, inventory, editorial QA, and performance feedback.
 - **Devil's Advocate**: independent challenge, never final decision owner.
 - **Message Operations**: controlled execution boundary for approved communications.
 

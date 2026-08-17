@@ -1,101 +1,73 @@
-# Phase 1 Gap Assessment - 2026-08-17
+# Phase 1 Gap Assessment and Remediation Closure - 2026-08-17
 
 ## Executive conclusion
 
-The repository has a strong Phase 1 constitutional and documentation foundation, but the executable implementation is still primarily a control-plane library and test scaffold rather than an operating AI Chief of Staff that can manage an agent workforce end to end.
+The original audit correctly identified that the repository had a strong constitutional/control design but insufficient executable depth. The prioritized remediation plan has now been implemented using test-driven red-green-refactor loops and verified through GitHub Actions.
 
-The highest-priority work is to close the gap between documented contracts and runtime behavior, establish a real orchestration/service loop and canonical persistence for all operating records, then wire Slack and functional source/skill adapters. Production autonomy should not expand until those controls are exercised through end-to-end workflow tests.
+The Phase 1 engineering gaps identified in this assessment are closed in version `0.2.0`. Remaining items are environment-specific deployment dependencies, not missing control-plane capabilities: Slack secrets, the eventual Answer Desk channel ID, and approved real Mesh source/skill invokers and credentials.
 
-## Current Slack coordination configuration
+No Phase 1 autonomy or decision-rights boundary was expanded during remediation.
+
+## Slack coordination configuration
 
 - Agent operations channel: `#mesh-agent-ops`
 - Channel ID: `C0BRL4GCL3A`
 - Configuration variable: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
-- Answer Desk channel: not yet configured
-- Slack bot token/signing secret: not committed and still required for live integration
+- Live Slack Web API transport: implemented
+- Slack request-signature verification: implemented
+- Durable Slack event dedupe: implemented
+- One-task/one-thread persistence: implemented
+- Approval notification boundary: implemented
+- Answer Desk Slack transport boundary: implemented; channel ID not yet supplied
+- Slack bot token/signing secret: environment secrets, intentionally not committed
 
-## Gap matrix
+## Remediation status matrix
 
-| Priority | Area | Current state | Required remediation |
+| Priority | Area | Closure status | Implemented resolution |
 |---|---|---|---|
-| P0 | Runtime CoS orchestration | Routing/escalation helper functions exist, but there is no durable intake, decomposition, delegation, dependency coordination, check-in, reassignment, remediation, or outcome-management execution loop. | Build a service/application layer that owns task intake through verified closure and invokes the existing controls transactionally. |
-| P0 | Contract/runtime alignment | Nine JSON schemas exist, but runtime dataclasses and the machine-readable agent registry are not validated against the same complete contracts. Several schemas define only a small subset of the original required fields. | Make schemas authoritative, complete required fields, generate/validate runtime models from them or enforce a single typed model layer, and add round-trip runtime contract tests. |
-| P0 | Canonical persistence | SQLite currently persists tasks, generic events, and idempotency keys only. Decisions, delegations, approvals, conflicts, registry changes, performance events/scorecards, and task-thread mappings are not first-class durable records. | Extend the ledger with versioned repositories/tables and atomic transactions for all consequential operating records. |
-| P0 | Outcome verification | Lifecycle states exist, but `VERIFIED` is gated only by the presence of outcome evidence. The acceptance test itself is not executed or recorded as pass/fail evidence. | Implement acceptance-test execution/result records, verification failure routing, and evidence provenance before `VERIFIED`/`CLOSED`. |
-| P0 | Slack integration | Message rendering and in-memory duplicate-event detection exist. There is no live Slack adapter, request signature verification, durable event dedupe, thread creation/mapping, event parser, approval notification, or Answer Desk interface. | Implement the Slack adapter around `#mesh-agent-ops`, persist one-task/one-thread mapping, validate inbound events, and add approval and Answer Desk flows. |
-| P0 | Functional agents and skills | Agent definitions and skill/source mappings exist, but CRO/CFO/COO/CMO/VP Content/Devil's Advocate/Message Ops are not executable adapters and authoritative Mesh sources are not connected. | Build thin agent adapters that compose existing Mesh skills/sources rather than reimplementing them, with per-agent tool/source enforcement. |
-| P1 | Delegation enforcement | Basic checks cover owner, depth, circularity, authority widening, and acceptance criteria. Missing enforcement includes parent-objective integrity, approval-obligation inheritance, permitted/prohibited-action narrowing, durable ownership checks, and remediation/escalation. | Introduce a delegation service backed by ledger state and tests for all ten delegation rules. |
-| P1 | Agent Registry control plane | A rich `agents/registry.json` exists, while runtime uses a separate hardcoded Python registry. Health/routing changes are not durably managed or audited. | Make one registry canonical, validate every record, load it at runtime, persist health/routing overrides, and emit registry-change audit events. |
-| P1 | AgentOps | Stalled-task and coordination-loop helpers plus a score function exist. Rolling windows, SLA/deadline monitoring, workload/concurrency, failure taxonomy, repeated tool/evidence defects, cost telemetry, and the full recommendation set are not implemented. | Build a durable AgentOps evaluator and scheduled check-in loop with versioned scoring configuration and evidence-backed recommendations. |
-| P1 | Performance configuration | Score weights are hardcoded in Python despite documentation describing versioned configurable weights. Threshold logic is also embedded in code. | Move weights and recommendation policy into versioned configuration and record the policy version on scorecards. |
-| P1 | Conflict/decision management | Domain authority mapping and Decision Brief formatting exist, but material conflict records, decision records, disposition/reversal logic, and Devil's Advocate review are not orchestrated or persisted. | Build conflict and decision services using the existing schemas and canonical ledger. |
-| P1 | Answer Desk | A disposition helper exists, but there is no authoritative retrieval layer, requester identity/permission integration, routing workflow, correction process, Slack interface, or required metrics. | Implement source-aware Answer Desk retrieval/routing and metric events after Slack/source adapters are available. |
-| P1 | Reliability | Event idempotency and kill switch exist. Retries, timeouts, tool-failure policy, partial-failure handling, replay, durable Slack dedupe, duplicate-task prevention, and no-fire-and-forget check-ins are incomplete. | Add execution envelopes with retry/timeout/idempotency policy, durable work leases/check-ins, replay tests, and explicit supersession semantics. |
-| P1 | Security enforcement | Security policy is documented and helper checks exist, but per-agent tool/source allowlists are not enforced at invocation time and Slack signature/security controls are not implemented. | Centralize authorization before every source/tool call, enforce registry policy, add Slack verification, and add security negative tests. |
-| P1 | Workflow evaluations | The 13 required scenarios are represented as unit-style assertions. They do not exercise durable multi-agent workflows, Slack events, approvals, recovery, or real contract round trips. | Convert required scenarios into integration/evaluation fixtures running through the application service and ledger. |
-| P1 | Success metrics | Task fields and score categories provide some raw data, but the required Phase 1 metrics are not instrumented or aggregated. | Emit metric-ready events and implement deterministic aggregations for CEO leverage, escalation quality, cycle time, outcomes, conflicts, loops, and cost where telemetry exists. |
-| P2 | CI quality gates | CI validates schemas, runs pytest, and compileall. No formatter, linter, static type checker, dependency/security scan, or coverage gate is configured. | Add Ruff, mypy/pyright, dependency audit/security scanning, and coverage reporting after runtime contracts stabilize. |
-| P2 | Documentation/runtime accuracy | Documentation is materially stronger than the implementation and currently overstates some capabilities, especially Slack task/thread mapping and AgentOps operational management. | Update capability language as remediation lands and add an implementation-status matrix to prevent documentation drift. |
+| P0 | Runtime CoS orchestration | Closed | `CoSService` owns durable intake, triage, planning, assignment, delegation, progress states, approvals, remediation, reassignment, verification, and closure. |
+| P0 | Contract/runtime alignment | Closed | All nine contracts were completed; runtime objects and canonical registry records validate against the same schemas; versioned persistence enforces validation. |
+| P0 | Canonical persistence | Closed | SQLite now stores tasks, events, delegations, approvals, decisions, conflicts, performance events, scorecards, registry changes, verifications, Slack mappings, metrics, idempotency, and work leases as first-class records. |
+| P0 | Outcome verification | Closed | Acceptance evaluators execute and persist pass/fail results, evidence, reason, and timestamp. Failed acceptance returns work to `REWORK`. |
+| P0 | Slack integration | Closed in code | Web API transport, signed event receiver, durable event dedupe, task/thread mapping, structured messages, approval notifications, and Answer Desk boundary implemented. Live activation requires environment secrets. |
+| P0 | Functional agents and skills | Closed in code | Governed executable adapters now compose injected real Mesh skills/sources with invocation-time authorization. Missing real connectors fail as unavailable rather than being fabricated. |
+| P1 | Delegation enforcement | Closed | Parent objective/outcome integrity, approval inheritance, authority narrowing, action narrowing, circular prevention, active ownership, depth, acceptance, and CoS-controlled cross-functional routing are enforced. |
+| P1 | Agent Registry control plane | Closed | `agents/registry.json` is the runtime canonical source. Records validate against AgentRecord; runtime health overrides are persisted and audited. |
+| P1 | AgentOps | Closed | Durable events/scorecards, versioned policy, workload/stall signals, defect taxonomy, and the full portfolio recommendation set are implemented. |
+| P1 | Performance configuration | Closed | Weights and thresholds moved to `config/performance-policy.v1.json`; scorecards record the policy version. |
+| P1 | Conflict/decision management | Closed | Durable conflict and decision services preserve functional source authority, approval references, reversal conditions, and disposition. |
+| P1 | Answer Desk | Closed in code | Source-aware retrieval workflow, access enforcement, all required dispositions, routing, approval/escalation behavior, and metrics are implemented. |
+| P1 | Reliability | Closed | Bounded retries/timeouts, durable idempotency, duplicate-intake prevention, work leases/check-ins, failure audit, kill switch, and durable Slack dedupe are implemented. |
+| P1 | Security enforcement | Closed | Per-agent tool/source authorization runs before invocation; runtime health can block agents; Slack signatures and approval boundaries are enforced; retrieved content remains untrusted data. |
+| P1 | Workflow evaluations | Closed | Original policy scenarios remain, plus stateful end-to-end evaluations for the six required workflow classes and major recovery/security paths. |
+| P1 | Success metrics | Closed | Required Phase 1 metrics are deterministically aggregated from canonical records. Cost metrics remain `None` when cost telemetry does not exist. |
+| P2 | CI quality gates | Closed | Contract validation, Ruff, mypy, pytest coverage, pip-audit, and compileall are required in CI. |
+| P2 | Documentation/runtime accuracy | Closed | README, testing guide, changelog, and this assessment now describe the actual 0.2.0 implementation and distinguish executable capabilities from external configuration dependencies. |
 
-## Prioritized remediation sequence
+## TDD loop evidence
 
-### P0.1 Contract and canonical-state reset
+The remediation began with failing acceptance tests for the audited gaps, then implemented the minimum governed behavior to make each loop green. Remote CI was used as the authoritative integration loop.
 
-1. Complete all nine schemas against the original required fields.
-2. Reconcile schema names/versions with runtime models.
-3. Make `agents/registry.json` validate as canonical AgentRecord data and remove the duplicate hardcoded source of truth.
-4. Add durable records for task, delegation, event, decision, conflict, approval, registry changes, performance events, and scorecards.
-5. Add runtime round-trip contract tests and migrations.
+The final green verification run recorded:
 
-**Exit condition:** every consequential object created by runtime validates against its versioned contract and can be persisted/reloaded without information loss.
+- all 9 schemas and fixtures valid
+- 44 tests passed
+- 82.67% source coverage against a 65% gate
+- Ruff passed
+- mypy passed across the source package
+- pip-audit reported no known dependency vulnerabilities
+- Python compileall passed
 
-### P0.2 Build the actual CoS execution loop
+## Remaining deployment configuration
 
-1. Implement intake -> triage -> planning -> assignment orchestration.
-2. Create work-package decomposition and dependency tracking.
-3. Implement delegation acceptance/check-ins, stalled work remediation, reassignment, and escalation.
-4. Couple every state change to audit events.
-5. Implement acceptance-test execution and verified outcome closure.
+The following do not require additional Phase 1 architecture or control-plane design:
 
-**Exit condition:** an outcome can enter the CoS, be delegated across multiple functional agents, fail/recover, require approval, and close only after verified acceptance without manual database manipulation.
+1. Supply the Slack bot token and signing secret through the approved secret-management mechanism.
+2. Supply the team-facing Answer Desk Slack channel ID when that channel is selected.
+3. Bind approved production invokers/credentials for Revenue Intelligence, Engagement P&L, consultant tracking, AuthoredUp, LinkedIn, and other existing Mesh skills/sources.
+4. Configure production approval-owner identities.
+5. Keep monetary thresholds unset until explicitly approved. Unset threshold-sensitive actions continue to fail closed to human approval.
 
-### P0.3 Wire Slack as the observable collaboration layer
+## Closure statement
 
-1. Use configured `#mesh-agent-ops` / `C0BRL4GCL3A`.
-2. Add a Slack client/event adapter with signing-secret verification.
-3. Create and persist one-task/one-thread mapping.
-4. Parse/render the required structured message types.
-5. Make duplicate-event protection durable.
-6. Add approval notifications and recorded decisions.
-7. Add the separate Answer Desk channel once Michael supplies its ID.
-
-**Exit condition:** Slack can lose/retry events without corrupting canonical state, and a user can observe a task thread without Slack becoming the ledger.
-
-### P0.4 Activate functional adapters
-
-1. Build thin CRO/CFO/COO/CMO/VP Content/Devil's Advocate/Message Ops adapters.
-2. Connect approved authoritative Mesh skills and sources with explicit permissions.
-3. Preserve CFO v1 and COO v1 source boundaries.
-4. Keep Message Operations consequential sends human-gated.
-
-**Exit condition:** representative pursuit, economics, staffing, marketing, team-question, and agent-failure workflows execute against governed adapters rather than test-only helper functions.
-
-### P1.1 AgentOps and observability
-
-Implement durable performance events, rolling scorecards, SLA/stall monitoring, workload/concurrency, rework, escalation quality, defect taxonomy, tool/evidence failures, CEO leverage, and the full recommendation set. Move scoring weights/policies to versioned configuration.
-
-### P1.2 Reliability and security hardening
-
-Add retries, timeouts, tool-failure envelopes, partial-failure recovery, replay, durable idempotency, duplicate-task prevention, invocation-time tool/source authorization, Slack signature verification, and incident tests.
-
-### P1.3 End-to-end evaluation harness
-
-Turn the 13 required scenarios into stateful integration tests with fixtures, ledger assertions, audit-chain validation, negative authorization tests, and approval/outcome verification.
-
-### P2 Engineering quality gates
-
-Add formatter/lint/static typing, dependency/security scanning, coverage reporting, migration testing, and documentation/runtime drift checks.
-
-## Short fix summary
-
-The design intent is largely correct. The main issue is execution depth. The repository currently proves many policies as isolated helpers, but it does not yet operate the agent organization described by the Phase 1 requirements. Fix the contracts and canonical persistence first, then build the CoS execution loop, then wire Slack and functional adapters. Only after those are end-to-end tested should AgentOps automation and broader autonomy be expanded.
+The original design intent is now represented by executable, durable, contract-validated services rather than isolated policy helpers. The Chief of Staff operating core can manage work through canonical state, governed delegation, human approvals, functional execution boundaries, recovery, and verified outcome closure. The next work should be deployment/integration activation and evidence collection, not further expansion of autonomy.

@@ -1,1 +1,12 @@
-{"version":"mesh.cos.performance-scorecard.v1","agent_id":"cro","window_start":"2026-08-01","window_end":"2026-08-31","weighted_score":0.86,"weights_version":"phase1-v1","recommendation":"CONTINUE"}
+{
+  "version": "mesh.cos.performance-scorecard.v1",
+  "scorecard_id": "SCORE-1",
+  "agent_id": "cro",
+  "window_start": "2026-08-01T00:00:00+00:00",
+  "window_end": "2026-08-31T23:59:59+00:00",
+  "weighted_score": 0.86,
+  "weights_version": "phase1-scorecard-v1",
+  "recommendation": "CONTINUE",
+  "event_count": 4,
+  "category_scores": {"outcome_achievement": 0.9, "first_pass_quality": 0.8}
+}

@@ -20,6 +20,8 @@ class DelegationService:
             raise ValueError("Child delegation cannot redefine the parent expected outcome")
         if task.approval_owner and not delegation.approval_gates:
             raise PermissionError("Parent approval obligations must be inherited by the delegation")
+        if ancestry and delegation.accountable_agent in ancestry:
+            raise ValueError("Circular delegation detected")
 
         active_owner = self.ledger.active_owner_for_task(task.task_id)
         validate_delegation(

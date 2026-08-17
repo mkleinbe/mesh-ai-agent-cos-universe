@@ -2,6 +2,31 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 0.1.4 - 2026-08-17 - Canonical Phase 1 role model
+
+### Role identity and versioning
+
+- Standardized the durable Phase 1 organizational identities as CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content.
+- Separated organizational naming from implementation versioning. Agent implementation versions remain in the registry `version` field using semantic version metadata; repository releases carry control-plane release versions.
+- Added runtime validation that rejects display names containing implementation-version labels and rejects malformed agent implementation versions.
+- Added a repository-wide regression test that prevents legacy version-bearing CFO/COO role names from returning.
+
+### Phase 1 capability hardening
+
+- Expanded CRO permitted actions for opportunity qualification, pipeline health, next-best commercial action, expansion strategy, and commercial-risk framing while preserving Revenue Intelligence as designated commercial/account fact authority.
+- Expanded CFO permitted actions for cost-to-serve, contribution economics, margin leakage, supported working-capital implications, economic scenario comparison, and assumption management while preserving the Engagement Finance / FP&A boundary.
+- Expanded COO permitted actions for delivery configuration, POD/resource composition, dependency readiness, delivery-risk sensing, partner capacity, and operational-constraint management while preserving CoS ownership of the enterprise work graph.
+- Expanded Consultant Network Steward capabilities for candidate identification/matching, validation timestamps, readiness gaps, refresh workflow, and evidence-backed staffing-ready status.
+- Expanded CMO capabilities for audience/ICP strategy, category positioning, demand architecture, distribution, campaign optimization, marketing-commercial feedback, and brand governance.
+- Expanded VP Content capabilities for editorial planning/calendar, source/evidence assembly, channel adaptation, derivative production, Mesh IP reuse, content inventory, and performance feedback.
+- Added the existing Client Servicing Messaging capability to the CRO skill composition for governed expansion/client-servicing work. No new external integration was fabricated.
+
+### Governance and documentation
+
+- Reconciled the six role cards, Agent Registry, README, architecture, operating contract, conflict-resolution guidance, decision/audit governance, Agent Operating Instructions, final-closure record, tests, and runtime/documentation drift checks.
+- Clarified that role scope and maturity are expressed through accountable domain, source authority, actions, approvals, delegation, and prohibitions, not role-name suffixes.
+- Preserved all existing L0-L5 authority ceilings and human approval requirements. This release hardens capabilities inside existing Phase 1 accountabilities and does not expand autonomous authority.
+
 ## 0.1.3 - 2026-08-17 - Explainable decisions and auditable agent governance
 
 ### Governance contracts
@@ -110,7 +135,7 @@ The remediation increment was executed with test-first acceptance criteria and C
 
 - Python 3.11+ modular-monolith control plane with SQLite-backed canonical task and event ledger.
 - Versioned JSON contracts for agent records, tasks, delegations, agent events, decisions, conflicts, approvals, performance events, and performance scorecards.
-- Canonical Phase 1 agent registry covering CoS, AgentOps, Answer Desk, CRO, CFO v1, COO v1, Consultant Network Steward, CMO, VP Content, Devil's Advocate, and Message Operations.
+- Canonical Phase 1 agent registry covering CoS, AgentOps, Answer Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, Devil's Advocate, and Message Operations.
 - Explicit L0-L5 decision-rights model with fail-closed human approval at L4 and Michael-exclusive authority at L5 unless explicitly delegated later.
 - Task state machine separating artifact completion from verified business outcome.
 - Delegation, approval, audit, conflict, AgentOps, Answer Desk, staffing-freshness, security, Slack-protocol, and kill-switch controls.

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from jsonschema import Draft202012Validator
 
+from mesh_cos import __version__
 from mesh_cos.audit import AuditEvent
 from mesh_cos.contracts import agent_record_contract, validate_runtime_contract
 from mesh_cos.governance import GovernanceJournal, verify_audit_chain
@@ -28,6 +29,11 @@ for schema_path in sorted(CONTRACTS.glob("*.schema.json")):
     require(schema.get("additionalProperties") is False, f"{schema_path.name}: contracts must be closed")
     require("version" in schema.get("required", []), f"{schema_path.name}: version must be required")
 
+registry_source = json.loads((ROOT / "agents" / "registry.json").read_text())
+identity_policy = registry_source.get("role_identity_policy", {})
+require(identity_policy.get("display_names_are_stable") is True, "Role identity policy drifted")
+require(identity_policy.get("implementation_version_field") == "version", "Role implementation-version policy drifted")
+
 registry = load_registry(ROOT / "agents" / "registry.json")
 for agent_id, record in registry.items():
     validate_runtime_contract("agent-record", agent_record_contract(record), CONTRACTS)
@@ -40,6 +46,114 @@ for agent_id, record in registry.items():
         governance_policy.get("decision_logging") == "REQUIRED_WHEN_DECIDING_OR_RECOMMENDING",
         f"{agent_id}: decision policy drifted",
     )
+
+canonical_role_names = {
+    "cro": "CRO",
+    "cfo": "CFO",
+    "coo": "COO",
+    "consultant-network-steward": "Consultant Network Steward",
+    "cmo": "CMO",
+    "vp-content": "VP Content",
+}
+required_role_actions = {
+    "cro": {
+        "commercial_analysis",
+        "opportunity_qualification",
+        "pipeline_health_analysis",
+        "pursuit_prioritization",
+        "proposal_strategy",
+        "next_best_commercial_action",
+        "expansion_strategy",
+        "commercial_risk_framing",
+        "request_cfo_economics",
+        "request_coo_feasibility",
+        "request_devils_advocate_review",
+    },
+    "cfo": {
+        "engagement_economics",
+        "pricing_scenarios",
+        "cost_to_serve_analysis",
+        "contribution_economics",
+        "margin_analysis",
+        "margin_leakage_detection",
+        "working_capital_implications",
+        "economic_scenario_comparison",
+        "assumption_management",
+        "financial_risk_analysis",
+        "forecast_vs_actual",
+    },
+    "coo": {
+        "delivery_feasibility",
+        "delivery_configuration",
+        "capacity_analysis",
+        "pod_resource_composition",
+        "dependency_readiness_analysis",
+        "delivery_risk_sensing",
+        "partner_capacity_analysis",
+        "operational_constraint_management",
+        "staffing_recommendation",
+        "delegate_network_steward",
+    },
+    "consultant-network-steward": {
+        "candidate_identification",
+        "candidate_matching",
+        "candidate_fit_check",
+        "availability_freshness_check",
+        "validation_timestamp_check",
+        "rate_validity_check",
+        "contracting_readiness_check",
+        "readiness_gap_analysis",
+        "refresh_workflow",
+        "mark_requires_refresh",
+        "establish_staffing_ready_status",
+    },
+    "cmo": {
+        "marketing_strategy",
+        "audience_icp_strategy",
+        "category_positioning",
+        "campaign_strategy",
+        "demand_campaign_architecture",
+        "distribution_strategy",
+        "campaign_performance_optimization",
+        "marketing_commercial_feedback",
+        "brand_governance",
+        "editorial_priority",
+        "content_review",
+        "delegate_vp_content",
+    },
+    "vp-content": {
+        "editorial_planning",
+        "editorial_calendar_management",
+        "source_evidence_assembly",
+        "draft_content",
+        "channel_adaptation",
+        "derivative_content_production",
+        "repurpose_content",
+        "ip_reuse",
+        "content_inventory_management",
+        "editorial_qa",
+        "performance_feedback",
+        "prepare_for_cmo_review",
+    },
+}
+for agent_id, display_name in canonical_role_names.items():
+    record = registry[agent_id]
+    require(record["display_name"] == display_name, f"{agent_id}: canonical role name drifted")
+    require(
+        required_role_actions[agent_id] <= set(record.get("permitted_actions", [])),
+        f"{agent_id}: canonical Phase 1 capability surface drifted",
+    )
+
+require(registry["cfo"]["accountable_domain"] == "engagement finance and FP&A", "CFO domain drifted")
+require(
+    registry["coo"]["accountable_domain"] == "delivery feasibility, capacity, and resource readiness",
+    "COO domain drifted",
+)
+require(registry["consultant-network-steward"]["parent_agent_id"] == "coo", "Network Steward hierarchy drifted")
+
+pyproject_text = (ROOT / "pyproject.toml").read_text()
+require(f'version = "{__version__}"' in pyproject_text, "Package and runtime release versions drifted")
+require(__version__ == "0.1.4", "Expected canonical-role release version 0.1.4")
 
 task = TaskRecord("T-drift", "objective", "outcome", "michael", "michael", "cro", "michael", acceptance_test="accepted")
 validate_runtime_contract("task", task.to_dict(), CONTRACTS)
@@ -133,12 +247,13 @@ env_text = (ROOT / ".env.example").read_text()
 require("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A" in env_text, "Agent Ops Slack channel drifted")
 
 required_docs = {
-    "README.md": ["#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "ChiefOfStaffService"],
-    "docs/architecture.md": ["GovernanceJournal", "decision.v2", "agent-event.v2", "TaskLedger"],
-    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought"],
-    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident"],
+    "README.md": ["#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "ChiefOfStaffService", "Role identity and implementation versioning"],
+    "docs/agent-registry.md": ["Role identity policy", "CFO", "COO", "permitted_actions"],
+    "docs/architecture.md": ["GovernanceJournal", "decision.v2", "agent-event.v2", "TaskLedger", "Stable role identity model"],
+    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought", "Role identity, authority, and version provenance"],
+    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident", "agent_role", "skill_agent_version"],
     "docs/observability.md": ["decision.v2", "agent-event.v2", "verify_audit_chain"],
-    "docs/phase-1-operating-contract.md": ["L4", "L5", "VERIFIED"],
+    "docs/phase-1-operating-contract.md": ["L4", "L5", "VERIFIED", "Stable role identity"],
     "docs/testing-evaluation.md": ["test_governance.py", "decision.v2", "agent-event.v2"],
 }
 for relative, tokens in required_docs.items():

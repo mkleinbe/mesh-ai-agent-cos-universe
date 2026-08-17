@@ -1,7 +1,7 @@
 # Phase 1 Operating Contract
 
 **Status:** Canonical human-readable Phase 1 operating constitution  
-**Last reconciled:** 2026-08-17 after prioritized gap remediation  
+**Last reconciled:** 2026-08-17 after canonical role-model pressure test  
 **Machine-readable counterparts:** `../contracts/`, `../agents/registry.json`, `../config/performance-policy.v1.json`
 
 ## 1. Mission
@@ -15,13 +15,14 @@ The CoS is an executive control plane. It is responsible for outcome orchestrati
 1. **Outcome over activity.** Work is complete only when the defined business acceptance test passes.
 2. **One accountable owner.** Each task and delegated work package has exactly one accountable agent or human owner.
 3. **Bounded autonomy.** Authority is explicit, versioned, and cannot be self-expanded.
-4. **Functional truth is preserved.** Domain and source authority remain with the appropriate function or authoritative system.
-5. **Delegation narrows, never widens.** Child work inherits constraints and approval obligations.
-6. **Human consequence boundaries are explicit.** L4 actions require qualified human approval and L5 remains Michael-exclusive.
-7. **Canonical state is durable.** Chat and Slack are not the ledger.
-8. **Evidence precedes verification.** `COMPLETED != VERIFIED`.
-9. **Security is invocation-time, not documentary.** Source/tool/action allowlists are enforced before use.
-10. **Autonomy is earned.** AgentOps recommendations may increase, watch, restrict, or quarantine routing based on evidence and policy.
+4. **Stable role identity.** Organizational role names are durable identities; software/release versions are separate metadata.
+5. **Functional truth is preserved.** Domain and source authority remain with the appropriate function or authoritative system.
+6. **Delegation narrows, never widens.** Child work inherits constraints and approval obligations.
+7. **Human consequence boundaries are explicit.** L4 actions require qualified human approval and L5 remains Michael-exclusive.
+8. **Canonical state is durable.** Chat and Slack are not the ledger.
+9. **Evidence precedes verification.** `COMPLETED != VERIFIED`.
+10. **Security is invocation-time, not documentary.** Source/tool/action allowlists are enforced before use.
+11. **Autonomy is earned.** AgentOps recommendations may increase, watch, restrict, or quarantine routing based on evidence and policy.
 
 ## 3. Operating topology
 
@@ -31,8 +32,8 @@ flowchart TB
     C --> A[AgentOps]
     C --> D[Answer Desk]
     C --> R[CRO]
-    C --> F[CFO v1]
-    C --> O[COO v1]
+    C --> F[CFO]
+    C --> O[COO]
     O --> N[Consultant Network Steward]
     C --> K[CMO]
     K --> V[VP Content]
@@ -47,7 +48,13 @@ flowchart TB
     K --> L
 ```
 
-## 4. Phase 1 workforce
+## 4. Role identity and implementation versioning
+
+`agent_id` is the durable machine identity. `display_name` is the stable organizational role identity. The registry `version` field carries implementation version using `MAJOR.MINOR.PATCH`; repository releases carry the operating-core release version. Scope limitations are expressed through accountable domain, authoritative sources, permitted/prohibited actions, approvals, and delegation rules, not by adding version labels to organizational titles.
+
+Runtime registry validation and CI drift checks enforce this rule.
+
+## 5. Phase 1 workforce
 
 ### Chief of Staff
 
@@ -61,20 +68,41 @@ Owns workforce observability and performance recommendations. It evaluates evide
 
 Handles team questions using requester permissions, source accessibility, evidence sufficiency, established policy, reversibility, judgment requirements, and CEO authority. It records dispositions for audit and metrics. Team-facing Slack activation remains pending a separate channel ID.
 
-### Functional agents
+### CRO
 
-- **CRO:** commercial and pursuit executive within delegated authority.
-- **CFO v1:** Engagement Finance / FP&A, not enterprise accounting or unrestricted financial authority.
-- **COO v1:** delivery feasibility, capacity, resource readiness, and operational constraints.
-- **Consultant Network Steward:** consultant fit, availability freshness, rate, readiness, and contracting evidence under COO.
-- **CMO:** marketing strategy and delegated marketing execution.
-- **VP Content:** editorial production under CMO.
-- **Devil's Advocate:** independent challenge. Never final decision owner.
-- **Message Operations:** controlled execution boundary for approved communications.
+Owns commercial strategy within delegated authority, including opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion strategy, and commercial-risk framing. Revenue Intelligence remains canonical for designated commercial/account evidence.
 
-Existing Mesh skills and sources are composed through governed adapters. Their logic is not reimplemented inside the CoS.
+### CFO
 
-## 5. Decision rights
+Owns Engagement Finance / FP&A within approved source boundaries, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margin analysis, margin leakage, supported working-capital implications, forecast-versus-actual, assumption management, economic scenario comparison, and financial-risk recommendations. It is not enterprise accounting, treasury, tax, audit, balance-sheet, bank-balance, or unrestricted financial authority.
+
+### COO
+
+Owns delivery feasibility, delivery configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations. The COO coordinates consultant readiness while the CoS retains enterprise work-graph orchestration and cross-functional arbitration.
+
+### Consultant Network Steward
+
+Operates under COO authority to identify and match consultants, assess capability fit, availability freshness, validation timestamps, rate validity, readiness gaps, refresh needs, NDA/ICA/contracting readiness, and evidence-backed staffing-ready status. It does not make final staffing commitments.
+
+### CMO
+
+Owns marketing strategy and delegated execution, including audience/ICP strategy, category positioning, campaign/demand architecture, distribution strategy, brand governance, campaign optimization, editorial priorities, content review, and the marketing-commercial feedback loop.
+
+### VP Content
+
+Operates under CMO authority for editorial planning/calendar, source/evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory, editorial QA, performance feedback, and publication-ready handoff. It does not gain autonomous publishing authority.
+
+### Devil's Advocate
+
+Independent challenge function. Never final decision owner.
+
+### Message Operations
+
+Controlled execution boundary for approved communications.
+
+Existing Mesh skills and sources are composed through governed adapters. Their logic is not reimplemented inside the CoS. Permitted actions define executable Phase 1 capabilities; a permitted action does not fabricate a new external skill or source integration.
+
+## 6. Decision rights
 
 | Level | Meaning | Default Phase 1 behavior |
 |---|---|---|
@@ -87,7 +115,7 @@ Existing Mesh skills and sources are composed through governed adapters. Their l
 
 No monetary thresholds may be invented. Until explicitly configured, threshold-sensitive actions remain approval-required.
 
-## 6. Task and outcome lifecycle
+## 7. Task and outcome lifecycle
 
 ```mermaid
 stateDiagram-v2
@@ -117,7 +145,7 @@ stateDiagram-v2
 
 The runtime must persist every consequential state change. A task reaching `COMPLETED` means the accountable owner produced the deliverable and evidence. It reaches `VERIFIED` only after explicit acceptance-test execution is recorded as passing. Failed acceptance routes the task to `REWORK`.
 
-## 7. Delegation contract
+## 8. Delegation contract
 
 Normal depth is CoS -> functional executive -> specialist/worker. Delegation must:
 
@@ -132,14 +160,17 @@ Normal depth is CoS -> functional executive -> specialist/worker. Delegation mus
 - define dependencies and check-in/escalation conditions where relevant,
 - persist the delegation record in canonical state.
 
-## 8. Functional truth and conflict resolution
+## 9. Functional truth and conflict resolution
 
 Authoritative ownership is preserved even when multiple agents collaborate. Examples:
 
-- engagement economics -> CFO v1 within its supported scope,
-- commercial evidence and account qualification -> approved Revenue Intelligence source where available,
-- staffing feasibility -> COO v1,
-- marketing strategy -> CMO.
+- engagement finance and FP&A -> CFO within supported source scope,
+- commercial/account evidence -> approved Revenue Intelligence source where designated,
+- commercial interpretation/pursuit recommendation -> CRO within delegated scope,
+- delivery/resource feasibility -> COO,
+- consultant readiness -> Consultant Network Steward under COO,
+- marketing strategy -> CMO,
+- editorial production -> VP Content under CMO.
 
 Cross-functional conflicts become durable conflict records. A decision must name the decision owner, disposition, and reversal condition. Devil's Advocate may challenge assumptions but cannot own the final decision. If the decision exceeds delegated CoS authority, it escalates to Michael.
 
@@ -156,7 +187,7 @@ flowchart LR
     M --> R
 ```
 
-## 9. Slack coordination
+## 10. Slack coordination
 
 The private agent-operations channel is `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`.
 
@@ -171,7 +202,7 @@ Slack is a collaboration surface, not canonical state. The Phase 1 coordination 
 
 Live Slack calls require the bot token and signing secret. The separate team-facing Answer Desk channel ID remains a production configuration dependency.
 
-## 10. Security and source governance
+## 11. Security and source governance
 
 Before an agent invokes a source, tool, or consequential action, runtime authorization must check the canonical registry. Retrieved content is untrusted data and cannot override system policy, decision rights, or agent scope.
 
@@ -187,7 +218,7 @@ Security controls include:
 - quarantine and routing restriction,
 - emergency kill switch.
 
-## 11. AgentOps and performance
+## 12. AgentOps and performance
 
 Performance is governed by `config/performance-policy.v1.json`. Current weighted categories are:
 
@@ -201,17 +232,17 @@ Performance is governed by `config/performance-policy.v1.json`. Current weighted
 
 Current thresholds are versioned and must not be changed silently. Critical-severity events can force quarantine regardless of aggregate score.
 
-## 12. Observability and success metrics
+## 13. Observability and success metrics
 
 Consequential actions and state changes must produce durable records sufficient to reconstruct what happened, who or what acted, what evidence was used, what authority applied, and what outcome resulted.
 
 Phase 1 metrics include deterministic measures for verified outcomes, CEO deflection, and methodologically supported CEO time avoided. Additional metrics may be derived only when the underlying telemetry exists and the calculation method is explicit.
 
-## 13. Reliability
+## 14. Reliability
 
 Transient failures may use bounded retry behavior. Idempotency must prevent duplicate Slack events and duplicate consequential effects. No retry mechanism may widen authority or bypass an approval gate.
 
-## 14. Production dependencies
+## 15. Production dependencies
 
 The control-plane implementation is complete for the prioritized Phase 1 code remediation. Production operation still requires:
 
@@ -224,6 +255,6 @@ The control-plane implementation is complete for the prioritized Phase 1 code re
 
 These dependencies do not expand Phase 1 authority and must not be fabricated in code or documentation.
 
-## 15. Change control
+## 16. Change control
 
-Any change to authority, hierarchy, source/tool permissions, delegation, approvals, canonical state, performance policy, Slack trust boundaries, or lifecycle semantics must update tests, documentation, diagrams, and versioned policy together. Behavioral changes should use red-green-refactor loops and merge only after CI passes.
+Any change to role identity, accountable domain, authority, hierarchy, source/tool permissions, skills, permitted/prohibited actions, delegation, approvals, canonical state, performance policy, Slack trust boundaries, or lifecycle semantics must update tests, documentation, diagrams, and versioned policy together. Behavioral changes should use red-green-refactor loops and merge only after CI passes.

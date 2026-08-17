@@ -8,6 +8,8 @@ from typing import Any
 
 VALID_STATES = {"SHADOW", "ACTIVE", "WATCH", "RESTRICTED", "QUARANTINED", "RETIRED"}
 REGISTRY_MIGRATION_TIMESTAMP = "2026-08-17T00:00:00+00:00"
+DISPLAY_VERSION_PATTERN = re.compile(r"\bv\d+(?:\.\d+)*\b", re.IGNORECASE)
+IMPLEMENTATION_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+")
 
 
 def _authority_level(value: Any) -> int:
@@ -21,6 +23,18 @@ def _authority_level(value: Any) -> int:
         if "advisory" in lowered or "execution" in lowered:
             return 1
     raise ValueError(f"Invalid decision authority: {value!r}")
+
+
+def _validate_role_identity(record: dict[str, Any]) -> None:
+    agent_id = record.get("agent_id", "unknown")
+    display_name = record.get("display_name")
+    if not isinstance(display_name, str) or not display_name.strip():
+        raise ValueError(f"Agent {agent_id} must have a stable display_name")
+    if DISPLAY_VERSION_PATTERN.search(display_name):
+        raise ValueError(f"Agent {agent_id} display_name must not embed implementation version: {display_name!r}")
+    version = record.get("version")
+    if not isinstance(version, str) or not IMPLEMENTATION_VERSION_PATTERN.fullmatch(version):
+        raise ValueError(f"Agent {agent_id} must carry implementation version as MAJOR.MINOR.PATCH metadata")
 
 
 def _load_governance_policy(registry_path: Path) -> dict[str, Any]:
@@ -63,6 +77,7 @@ def load_registry(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
             raise ValueError("Every agent must have a unique agent_id")
         if record.get("status") not in VALID_STATES:
             raise ValueError(f"Invalid health state for {agent_id}")
+        _validate_role_identity(record)
         original_authority = record.get("decision_authority")
         record["decision_authority_description"] = original_authority
         record["decision_authority"] = _authority_level(original_authority)

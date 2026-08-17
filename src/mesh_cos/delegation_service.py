@@ -23,6 +23,10 @@ class DelegationService:
         if ancestry and delegation.accountable_agent in ancestry:
             raise ValueError("Circular delegation detected")
 
+        target = self.registry.get(delegation.accountable_agent)
+        if delegation.delegating_agent != "cos" and target.get("parent_agent_id") != delegation.delegating_agent:
+            raise PermissionError("Cross-functional delegation or reassignment must route through CoS")
+
         active_owner = self.ledger.active_owner_for_task(task.task_id)
         validate_delegation(
             delegation,
@@ -32,15 +36,14 @@ class DelegationService:
             ancestry=ancestry,
         )
 
-        agent = self.registry.get(delegation.accountable_agent)
-        allowed = set(agent.get("permitted_actions", []))
-        prohibited = set(agent.get("prohibited_actions", []))
+        allowed = set(target.get("permitted_actions", []))
+        prohibited = set(target.get("prohibited_actions", []))
         if delegation.permitted_actions and not set(delegation.permitted_actions).issubset(allowed):
             unknown = sorted(set(delegation.permitted_actions) - allowed)
             raise PermissionError(f"Delegation attempted actions outside agent authority: {unknown}")
         if prohibited.intersection(delegation.permitted_actions):
             raise PermissionError("Delegation attempted to permit an agent-prohibited action")
-        if depth > int(agent.get("max_delegation_depth", 0)) + 1 and delegation.delegating_agent != "cos":
+        if depth > int(target.get("max_delegation_depth", 0)) + 1 and delegation.delegating_agent != "cos":
             raise ValueError("Agent-specific delegation depth exceeded")
 
         self.ledger.save_delegation(delegation.to_dict())

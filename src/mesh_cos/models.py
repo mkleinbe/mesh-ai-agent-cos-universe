@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from enum import IntEnum, StrEnum
 from typing import Any
@@ -97,6 +97,8 @@ class TaskRecord:
     ceo_time_avoided_estimate_minutes: int | None = None
     ceo_time_avoided_methodology: str | None = None
     audit_events: list[str] = field(default_factory=list)
+    superseded_by_task_id: str | None = None
+    version: str = field(default="mesh.cos.task.v1", init=False)
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -130,3 +132,59 @@ class Delegation:
     dependencies: list[str] = field(default_factory=list)
     next_check_at: str | None = None
     escalation_condition: str = ""
+    status: str = "ACTIVE"
+    created_at: str = field(default_factory=utcnow)
+    accepted_at: str | None = None
+    completed_at: str | None = None
+    version: str = field(default="mesh.cos.delegation.v1", init=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["authority_level"] = int(self.authority_level)
+        return data
+
+
+@dataclass(slots=True)
+class DecisionRecord:
+    decision_id: str
+    task_id: str
+    decision_owner: str
+    decision: str
+    rationale: str
+    authority_level: AuthorityLevel
+    approval_reference: str | None = None
+    options_considered: list[str] = field(default_factory=list)
+    source_references: list[str] = field(default_factory=list)
+    reversal_condition: str | None = None
+    decided_at: str = field(default_factory=utcnow)
+    version: str = field(default="mesh.cos.decision.v1", init=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["authority_level"] = int(self.authority_level)
+        return data
+
+
+@dataclass(slots=True)
+class ConflictRecord:
+    conflict_id: str
+    task_id: str
+    created_by: str
+    uncontested_facts: list[str]
+    disputed_facts: list[str]
+    source_authority: dict[str, str]
+    options: list[str]
+    positions: dict[str, str]
+    confidence: dict[str, float]
+    reversibility: str
+    decision_owner: str
+    consequences: list[str] = field(default_factory=list)
+    devils_advocate_review: str | None = None
+    cos_recommendation: str | None = None
+    reversal_condition: str | None = None
+    disposition: str = "OPEN"
+    created_at: str = field(default_factory=utcnow)
+    version: str = field(default="mesh.cos.conflict.v1", init=False)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)

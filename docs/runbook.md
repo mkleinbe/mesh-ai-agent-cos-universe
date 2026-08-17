@@ -1,24 +1,25 @@
 # Operations Runbook
 
-## Startup and Workspace Agent deployment path
+Current repository release: **`v1.0.0 Production Readiness`**.
+
+This runbook distinguishes repository readiness from environment activation. A green release build is necessary but does not authorize production routing until preflight, credentials, connectors, approvers, and live smoke tests are green.
+
+## Startup and activation path
 
 ```mermaid
 flowchart TB
-    CFG[Configure .env] --> CONTRACTS[Validate contracts]
-    CONTRACTS --> DRIFT[Runtime/doc drift check]
-    DRIFT --> WAP[Workspace Agent package drift check]
-    WAP --> TEST[Pytest + coverage]
-    TEST --> LINT[Critical lint]
-    LINT --> SEC[High-severity security scan]
-    SEC --> REG[Load Agent Registry + governance policy]
-    REG --> LEDGER[Verify TaskLedger]
-    LEDGER --> GOV[Verify governance v2 + hash chain]
-    GOV --> MCP{Remote MCP deployed?}
-    MCP -->|no| LOCAL[Repository/local test operation]
-    MCP -->|yes| PREVIEW[Workspace Agent private preview]
-    PREVIEW --> NEG[Authority + evidence + permission negative tests]
-    NEG -->|fail| FIX[Fix config/runtime, rerun CI]
-    NEG -->|pass| PUBLISH[RBAC-controlled publication]
+    CFG[Configure Environment] --> CONTRACTS[Validate Contracts]
+    CONTRACTS --> DRIFT[Runtime / Docs / Workspace Drift]
+    DRIFT --> LINT[Strict Ruff + mypy]
+    LINT --> TEST[Pytest + 100% Branch Coverage]
+    TEST --> SEC[Bandit High-Severity Scan]
+    SEC --> PREFLIGHT[ProductionPreflight]
+    PREFLIGHT -->|Fail| BLOCK[Block Activation and Remediate]
+    PREFLIGHT -->|Pass| MCP[Deploy / Verify HTTPS mesh-cos-mcp]
+    MCP --> PREVIEW[Workspace Agent Private Preview]
+    PREVIEW --> NEG[Positive + Negative Acceptance Tests]
+    NEG -->|Fail| BLOCK
+    NEG -->|Pass| PUBLISH[RBAC-Controlled Activation]
 ```
 
 ## Configuration
@@ -31,18 +32,18 @@ MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A
 MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID=
 ```
 
-`MESH_COS_MCP_SERVER_URL` must point to an approved deployed HTTPS MCP endpoint. The repository does not fabricate that endpoint. Authentication credentials, service-account secrets, OAuth tokens, Slack secrets, and source credentials must remain outside source control.
+Authentication credentials, service-account secrets, OAuth tokens, Slack secrets, API keys, and source credentials stay outside source control.
 
-Governance Sheet identifiers are versioned in `config/governance-logs.v1.json`:
+Governance Sheet identifiers:
 
 ```text
 CoS Decision Log = 1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw
 CoS Audit Log    = 1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0
 ```
 
-The Sheets remain operational mirrors. `TaskLedger` remains canonical.
+The Sheets are operational mirrors. `TaskLedger` remains canonical.
 
-## Pre-start verification
+## Release verification
 
 ```bash
 python3 -m venv .venv
@@ -52,134 +53,154 @@ python -m pip check
 python scripts/validate-contracts.py
 python scripts/check-runtime-doc-drift.py
 python scripts/check-chatgpt-packages.py
-ruff check src tests scripts --select E9,F63,F7,F82
-pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=55
+ruff check src
+ruff check tests scripts --select E9,F63,F7,F82
+mypy src --check-untyped-defs
+pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
 python -m compileall -q src
 ```
 
 Do not activate or publish a known failing build.
 
+## Production preflight
+
+Run before any production activation:
+
+```bash
+python scripts/production-preflight.py
+```
+
+When relevant:
+
+```bash
+python scripts/production-preflight.py --require-slack --require-answer-desk --require-ledger
+```
+
+A failed preflight is a blocker. Do not bypass it by changing a test or weakening a policy.
+
 ## Workspace Agent package preflight
 
 Before opening the Workspace Agent builder:
 
-1. Confirm release `0.2.0` is aligned in `pyproject.toml`, `mesh_cos.__version__`, all 11 Workspace Agent manifests, and `mesh-cos-mcp.v1.json`.
-2. Confirm each `chatgpt/skills/<role>/` package validates with OpenAI skill-creator `quick_validate.py` and packages as `skill.zip` with `package_skill.py`.
+1. Confirm release `1.0.0` is aligned in `pyproject.toml`, `mesh_cos.__version__`, all 11 Workspace Agent manifests, and `mesh-cos-mcp.v1.json`.
+2. Confirm each role Skill contains `SKILL.md`, `agents/openai.yaml`, `references/role-contract.md`, and `references/production-readiness.md`.
 3. Run `python scripts/check-chatgpt-packages.py` and require `ChatGPT Workspace Agent package drift check: OK`.
 4. Confirm `WorkspaceAgentMCPPolicy.validate_runtime_bindings()` returns no unresolved bindings.
-5. Confirm Message Operations has read-only `approval.get` but not `approval.record_decision`.
+5. Confirm `approval.record_decision` and `reliability.human_override` are human-only and not in agent allowlists.
 6. Confirm only CoS has `task.reassign`.
-7. Confirm Answer Desk Slack is disabled and has no channel ID until a separate team-facing channel is configured.
-8. Confirm Connector Action Constraints remain present for LinkedIn, AuthoredUp, Apollo, Gmail, Slack, and evidence-only Drive access as applicable.
+7. Confirm accountable worker roles have only the completion permissions required by the MCP contract and do not gain verification authority by implication.
+8. Confirm Answer Desk Slack is disabled until a dedicated channel ID exists.
+9. Confirm connector constraints remain present for LinkedIn, AuthoredUp, Apollo, Gmail, Slack, and evidence-only Drive access as applicable.
 
 ## Deploy `mesh-cos-mcp`
 
-The checked-in MCP contract is `chatgpt/mcp/mesh-cos-mcp.v1.json`. The deployment adapter must preserve its fail-closed order:
+The checked-in contract is `chatgpt/mcp/mesh-cos-mcp.v1.json`. The production transport must preserve this sequence:
 
-1. authenticate the Workspace Agent or approved service identity,
-2. resolve canonical `agent_id`,
-3. invoke `WorkspaceAgentMCPPolicy.authorize(agent_id, tool_name)`,
-4. enforce registry source/tool/action permissions and L0-L5 authority,
-5. fail closed when Mesh human approval is required,
-6. call the declared existing runtime binding,
-7. persist canonical state before returning non-canonical mirrors/responses,
-8. emit required `decision.v2` and `agent-event.v2` governance records.
+1. authenticate the agent or human principal;
+2. resolve canonical principal identity;
+3. dispatch through `mesh_cos.mcp_runtime.MCPRuntime`;
+4. apply the checked-in per-agent or human tool allowlist;
+5. apply registry source/tool/action permissions and L0-L5 authority;
+6. fail closed when qualified-human or Michael approval is required;
+7. call only fixed server-side handlers and registered replay executors;
+8. persist canonical state before returning non-canonical mirrors/responses;
+9. emit required `decision.v2` and `agent-event.v2` governance records.
 
-Do not expose a generic arbitrary-Python or arbitrary-ledger tool. Do not trust the builder-side allowlist as the sole enforcement boundary.
+Do not expose arbitrary Python, arbitrary ledger mutation, client-supplied replay callables, import paths, shell commands, or generic execution tools.
 
 ## Workspace Agent builder procedure
 
-Use `chatgpt/workspace-agent-builder-prompt.md` as the deployment instruction. For each of the **11 agents**:
+Use `chatgpt/workspace-agent-builder-prompt.md`. For each of the 11 agents:
 
-1. Apply `builder_configuration` from `chatgpt/workspace-agents/<agent_id>.json` exactly.
-2. Attach the matching packaged Skill and only the listed knowledge files.
-3. Connect `mesh-cos-mcp` through `MESH_COS_MCP_SERVER_URL` and enable only the declared MCP tools.
-4. Connect only the manifest-listed Workspace apps with the specified least-privilege mode.
-5. Set Workspace write approval to **Always ask** unless a manifest explicitly defines a narrow admin-reviewed exception.
-6. Apply all Connector Action Constraints exactly.
-7. Keep the agent Private while preview tests run.
-8. Configure Slack/API channels only as declared. Do not enable Answer Desk Slack without its dedicated channel ID.
+1. Apply `builder_configuration` exactly.
+2. Attach the matching Skill and only listed knowledge files.
+3. Connect `mesh-cos-mcp` through the approved HTTPS `MESH_COS_MCP_SERVER_URL`.
+4. Enable only the declared MCP tools.
+5. Connect only manifest-listed Workspace apps with least privilege.
+6. Keep Workspace write approval at **Always ask** unless an explicit, reviewed exception exists.
+7. Apply every Connector Action Constraint exactly.
+8. Keep the agent Private while preview tests run.
+9. Do not enable Answer Desk Slack without its dedicated channel ID.
 
-## Workspace Agent preview acceptance tests
+## Preview acceptance tests
 
 For every agent, run all three starter prompts plus:
 
-- one positive in-scope execution test,
-- one **negative authority test** that attempts a prohibited or non-allowlisted action,
-- one **missing-evidence test** that requires the agent to block/route rather than guess,
-- one MCP permission-denial test,
-- one app Connector Action Constraint test if the agent has a connected app.
+- one positive in-scope execution test;
+- one negative authority test;
+- one missing-evidence test;
+- one MCP permission-denial test;
+- one human-approval spoofing test;
+- one connector constraint test where applicable;
+- one kill-switch denial test;
+- one replay-safety test where executable client input is rejected;
+- one completion-versus-verification test where applicable.
 
-For CoS, additionally test decomposition, dependency gating, reassignment, stalled-work remediation, an L4 approval path, an L5 escalation path, and MCP-safe verification. Passing verification must include a named verifier and explicit evidence references. A passing result with no evidence must fail closed and leave the task at `COMPLETED`.
+For CoS, additionally test decomposition, dependency gating, reassignment, stalled-work remediation, L4 approval, L5 escalation, human-only tool denial, and MCP-safe verification.
 
-For Message Operations, verify that missing/mismatched approval blocks sending and that even a valid Mesh approval still encounters Workspace **Always ask** before a consequential send.
+For Message Operations, verify that missing/mismatched approval blocks sending and that a valid Mesh approval still encounters Workspace **Always ask** before a consequential send.
 
-Repeat configuration/debug/test loops until all expected allow and deny results pass. Do not publish a Workspace Agent with an unresolved negative test.
+Do not publish with an unresolved negative test.
 
-## Governance preflight
+## Completion and verification
 
-Before enabling agent execution:
+```mermaid
+sequenceDiagram
+    participant O as Accountable Owner
+    participant M as MCPRuntime
+    participant L as TaskLedger
+    participant V as Authorized Verifier
 
-1. Confirm every loaded agent includes `governance-journal`, `decision.v2`, and `agent-event.v2` through the shared governance policy.
-2. Create a non-production `decision.v2` record and validate it against the schema.
-3. Create at least two `agent-event.v2` records and confirm `verify_audit_chain()` succeeds.
-4. Confirm L4/L5 decision recording fails closed without approval reference and approver.
-5. Confirm Workspace Agent activity preserves canonical stable `agent_role` plus separate model/Skill/implementation provenance.
-6. Confirm the configured CoS Decision Log and CoS Audit Log IDs match `config/governance-logs.v1.json`.
-7. If a Sheet mirror adapter is enabled, verify canonical state exists before the Sheet row and mirror failure persists a durable failure record.
+    O->>M: task.complete(outcome, evidence)
+    M->>L: Persist COMPLETED
+    V->>M: task.verify(acceptance, evidence)
+    alt Pass
+      M->>L: VERIFIED
+    else Fail
+      M->>L: REWORK
+    end
+```
 
-## CoS smoke workflow
-
-1. Create an idempotent intake task.
-2. Decompose into bounded child work packages.
-3. Persist delegation and dependencies.
-4. Advance through triage, planning, assignment, and execution.
-5. Record a check-in and evidence.
-6. Confirm dependency gating prevents premature work.
-7. For a material recommendation, create `decision.v2` with evidence, alternatives, criteria, confidence, risk, authority, and reversal condition.
-8. Confirm consequential agent/Skill/MCP actions emit `agent-event.v2`.
-9. Complete the deliverable.
-10. Verify through the acceptance test and evidence. Local runtime may use its callback path; Workspace Agent/MCP uses `record_verification_result()`.
-11. Confirm acceptance reaches `VERIFIED` then `CLOSED`; rejection routes to `REWORK`.
-12. Reload task, decision, verification, delegation, and audit state from `TaskLedger`.
+`COMPLETED` is not `VERIFIED`. Do not let an owner self-certify an unsupported result.
 
 ## Slack smoke test
 
-For `#mesh-agent-ops` (`C0BRL4GCL3A`), verify HMAC signature handling, stale-request rejection, durable event dedupe, one-task/one-thread mapping, structured messages, and approval notifications. CoS and AgentOps Workspace Agent Slack writes are limited to internal coordination. The separate Answer Desk channel remains disabled until configured.
-
-## Governance reconciliation
-
-Reconcile the Google Sheets to canonical records using `decision_id`, `event_id`, `correlation_id`, and `canonical_record_ref`. Never edit canonical history to match a Sheet. Hash-chain failure is an integrity incident.
+For `#mesh-agent-ops` (`C0BRL4GCL3A`), verify HMAC signature validation, timestamp freshness, durable event dedupe, atomic event persistence, one-task/one-thread mapping, structured messages, and approval notifications. The separate Answer Desk channel remains disabled until configured.
 
 ## Failure, replay, and human override
 
 ```mermaid
 flowchart LR
-    FAIL[Tool/agent/MCP effect fails] --> REC[Persist execution_failure + audit]
-    REC --> AUTO{Safe transient replay?}
-    AUTO -->|yes| REPLAY[Replay with bounded policy]
-    AUTO -->|no| HUMAN[Human override]
-    REPLAY -->|success| DONE[Persist replay result + audit]
-    REPLAY -->|fails| REC
-    HUMAN --> OVERRIDE[Persist actor, disposition, reason + audit]
+    FAIL[Tool / Agent / MCP Effect Fails] --> REC[Persist Failure + Audit]
+    REC --> SAFE{Registered Safe Replay?}
+    SAFE -->|Yes| REPLAY[Server-Owned Replay Executor]
+    SAFE -->|No| HUMAN[Authenticated Human Override]
+    REPLAY -->|Success| DONE[Persist Replay Result + Audit]
+    REPLAY -->|Failure| REC
+    HUMAN --> OVERRIDE[Persist Actor, Disposition, Reason + Audit]
 ```
 
-Do not replay an irreversible external effect unless its idempotency and approval conditions are explicitly safe.
+Never replay an irreversible effect unless its idempotency, approval, and external-effect semantics are explicitly safe.
 
 ## Critical incident path
 
-A critical defect, unauthorized Workspace Agent action, MCP allowlist bypass, app constraint failure, governance hash failure, or L4/L5 breach should trigger: stop execution, enable kill switch if needed, preserve canonical evidence, restrict/unpublish the affected agent, test-first correction, full CI, private preview regression tests, and controlled restoration.
+A critical defect, MCP allowlist bypass, human-principal spoofing attempt, app constraint failure, governance hash failure, L4/L5 breach, or unsafe replay attempt should trigger: stop execution, enable the kill switch if needed, preserve canonical evidence, restrict/unpublish the affected agent, correct through tests first, rerun full release CI, rerun private-preview tests, and restore only under controlled approval.
 
-## Production dependencies
+## Release and activation
 
-- approved remote `mesh-cos-mcp` deployment and `MESH_COS_MCP_SERVER_URL`,
-- Workspace app authentication with least privilege,
-- separate Answer Desk Slack channel ID,
-- production approval-owner mapping,
-- approved source/Skill credentials and permissions,
-- deployment infrastructure and secrets management,
-- authenticated Google Sheets access if automatic governance mirroring is enabled,
+`v1.0.0` is the semantic production-readiness release. See `release-1.0.0-production-readiness.md` and `../RELEASE.md`.
+
+Production activation dependencies remain:
+
+- approved HTTPS `mesh-cos-mcp` deployment and `MESH_COS_MCP_SERVER_URL`;
+- Workspace authentication and least-privilege app permissions;
+- Slack bot/signing credentials when Slack is enabled;
+- separate Answer Desk Slack channel;
+- production approval-owner mapping;
+- approved source/Skill credentials and permissions;
+- deployment infrastructure, secrets management, monitoring, and operational ownership;
+- authenticated Google Sheets access if automatic governance mirroring is enabled;
 - any future thresholds explicitly approved by Michael.
 
-Do not mark these complete until they are actually configured and tested in the target workspace.
+Do not mark these complete until configured and tested in the target environment.

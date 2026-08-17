@@ -16,6 +16,7 @@ from mesh_cos.registry import load_registry
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "contracts"
+RELEASE = "1.0.0"
 
 
 def require(condition: bool, message: str) -> None:
@@ -35,6 +36,7 @@ require(identity_policy.get("display_names_are_stable") is True, "Role identity 
 require(identity_policy.get("implementation_version_field") == "version", "Role implementation-version policy drifted")
 
 registry = load_registry(ROOT / "agents" / "registry.json")
+require(len(registry) == 11, "Canonical Phase 1 roster must contain 11 agents")
 for agent_id, record in registry.items():
     validate_runtime_contract("agent-record", agent_record_contract(record), CONTRACTS)
     require("governance-journal" in record.get("tools", []), f"{agent_id}: governance journal missing")
@@ -97,8 +99,14 @@ require(registry["coo"]["accountable_domain"] == "delivery feasibility, capacity
 require(registry["consultant-network-steward"]["parent_agent_id"] == "coo", "Network Steward hierarchy drifted")
 
 pyproject_text = (ROOT / "pyproject.toml").read_text()
-require(f'version = "{__version__}"' in pyproject_text, "Package and runtime release versions drifted")
-require(__version__ == "0.2.0", "Expected Workspace Agent release version 0.2.0")
+require(__version__ == RELEASE, f"Expected production-readiness release {RELEASE}")
+require(f'version = "{RELEASE}"' in pyproject_text, "Package and runtime release versions drifted")
+
+mcp_contract = json.loads((ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json").read_text())
+require(mcp_contract["runtime_release"] == RELEASE, "MCP release drifted")
+for manifest_path in sorted((ROOT / "chatgpt" / "workspace-agents").glob("*.json")):
+    manifest = json.loads(manifest_path.read_text())
+    require(manifest["repository_release"] == RELEASE, f"{manifest_path.name}: Workspace Agent release drifted")
 
 task = TaskRecord("T-drift", "objective", "outcome", "michael", "michael", "cro", "michael", acceptance_test="accepted")
 validate_runtime_contract("task", task.to_dict(), CONTRACTS)
@@ -118,7 +126,7 @@ decision = governance.record_decision(
     task_id="T-drift",
     correlation_id="corr-drift",
     agent_id="cos",
-    agent_role="AI Chief of Staff",
+    agent_role="Chief of Staff",
     decision_owner="cos",
     authority_level=2,
     human_approval_required=False,
@@ -187,18 +195,25 @@ require("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A" in env_text, "Agent Op
 require("MESH_COS_MCP_SERVER_URL=" in env_text, "Workspace Agent MCP endpoint placeholder missing")
 
 required_docs = {
-    "README.md": ["#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "ChiefOfStaffService", "Role identity and implementation versioning", "Workspace Agent"],
+    "README.md": ["v1.0.0 Production Readiness", "#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "MCPRuntime", "Workspace Agents"],
+    "AGENTS.md": ["v1.0.0 Production Readiness", "human-only", "task.complete", "task.verify", "Production activation"],
+    "SECURITY.md": ["v1.0.0 Production Readiness", "MCPRuntime", "human-only", "replay", "100% branch-aware"],
+    "CONTRIBUTING.md": ["v1.0.0 Production Readiness", "100%", "production-preflight.py"],
     "docs/agent-registry.md": ["Role identity policy", "CFO", "COO", "permitted_actions", "Workspace Agent"],
-    "docs/architecture.md": ["GovernanceJournal", "decision.v2", "agent-event.v2", "TaskLedger", "Stable role identity model", "mesh-cos-mcp"],
-    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought", "Role identity, authority, and version provenance", "Always ask"],
-    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident", "agent_role", "skill_agent_version", "Workspace Agent"],
+    "docs/architecture.md": ["v1.0.0", "MCPRuntime", "decision.v2", "agent-event.v2", "TaskLedger"],
+    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought", "Always ask"],
+    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident", "agent_role", "skill_agent_version"],
     "docs/observability.md": ["decision.v2", "agent-event.v2", "verify_audit_chain"],
     "docs/phase-1-operating-contract.md": ["L4", "L5", "VERIFIED", "Stable role identity"],
-    "docs/security-governance.md": ["mesh-cos-mcp", "deny-by-default", "Workspace Agent"],
-    "docs/testing-evaluation.md": ["test_governance.py", "decision.v2", "agent-event.v2", "check-chatgpt-packages.py"],
-    "docs/runbook.md": ["MESH_COS_MCP_SERVER_URL", "Workspace Agent", "preview"],
-    "chatgpt/README.md": ["Workspace Agent", "TaskLedger", "mesh-cos-mcp"],
-    "chatgpt/workspace-agent-builder-prompt.md": ["11 agents", "Always ask", "negative authority test"],
+    "docs/production-readiness.md": ["v1.0.0 Production Readiness", "100%", "ProductionPreflight", "task.complete", "task.verify"],
+    "docs/release-1.0.0-production-readiness.md": ["v1.0.0", "100%", "Semantic Tag", "Production Activation"],
+    "docs/security-governance.md": ["v1.0.0", "MCPRuntime", "deny-by-default", "replay", "human-only"],
+    "docs/testing-evaluation.md": ["v1.0.0", "100%", "check-chatgpt-packages.py", "MCPRuntime"],
+    "docs/runbook.md": ["v1.0.0", "MESH_COS_MCP_SERVER_URL", "production-preflight.py", "task.complete"],
+    "chatgpt/README.md": ["1.0.0", "Workspace Agent", "TaskLedger", "MCPRuntime"],
+    "chatgpt/mcp/README.md": ["1.0.0", "MCPRuntime", "human-only", "replay"],
+    "chatgpt/workspace-agent-builder-prompt.md": ["v1.0.0", "11 agents", "Always ask", "negative authority test", "replay-safety test"],
+    "RELEASE.md": ["v1.0.0 Production Readiness", "100%", "Production activation boundary"],
 }
 for relative, tokens in required_docs.items():
     text = (ROOT / relative).read_text()

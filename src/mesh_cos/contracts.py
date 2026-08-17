@@ -53,4 +53,6 @@ def agent_record_contract(record: dict[str, Any]) -> dict[str, Any]:
         "performance_policy": str(record.get("performance_policy", "phase1-scorecard-v1")),
         "confidentiality_class": str(record.get("confidentiality_class", "internal-confidential")),
         "runtime_health": str(record.get("runtime_health", record["status"])),
+        "created_at": str(record["created_at"]),
+        "updated_at": str(record["updated_at"]),
     }

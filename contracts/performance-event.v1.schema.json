@@ -1,1 +1,18 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,"properties":{"version":{"const":"mesh.cos.performance-event.v1"},"agent_id":{"type":"string"},"task_id":{"type":"string"},"category":{"enum":["outcome_achievement","first_pass_quality","rework_rate","escalation_judgment","execution_reliability","evidence_governance","ceo_leverage","efficiency"]},"score":{"type":"number","minimum":0,"maximum":1},"severity":{"enum":["CRITICAL","HIGH","MEDIUM","LOW"]}},"required":["version","agent_id","task_id","category","score","severity"]}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "version": {"const": "mesh.cos.performance-event.v1"},
+    "performance_event_id": {"type": "string", "minLength": 1},
+    "agent_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "category": {"enum": ["outcome_achievement", "first_pass_quality", "escalation_judgment", "evidence_governance", "execution_reliability", "ceo_leverage", "efficiency"]},
+    "score": {"type": "number", "minimum": 0, "maximum": 1},
+    "severity": {"enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]},
+    "reason": {"type": "string"},
+    "timestamp": {"type": "string", "minLength": 1},
+    "cost": {"type": ["number", "null"], "minimum": 0}
+  },
+  "required": ["version", "performance_event_id", "agent_id", "task_id", "category", "score", "severity", "reason", "timestamp", "cost"]
+}

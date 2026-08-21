@@ -1,0 +1,75 @@
+name: normalize-v2-manifests
+
+on:
+  push:
+    branches:
+      - refactor/shared-devils-advocate
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: refactor/shared-devils-advocate
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Normalize manifests
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('chatgpt/workspace-agents')
+          consumers = {'cos', 'cro'}
+          for path in sorted(root.glob('*.json')):
+              data = json.loads(path.read_text())
+              agent_id = data['agent_id']
+              data['repository_release'] = '2.0.0'
+              shared = ['mesh-devils-advocate'] if agent_id in consumers else []
+              if shared:
+                  data['shared_skills'] = shared
+                  data['builder_configuration']['shared_skills'] = shared
+              else:
+                  data.pop('shared_skills', None)
+                  data['builder_configuration'].pop('shared_skills', None)
+
+              if agent_id == 'cos':
+                  step = "Invoke the shared Mesh Devil's Advocate Skill through skills.invoke_governed when consequential recommendations need independent challenge; treat its challenge packet as advisory and return decision authority to the owning role or qualified human."
+                  if step not in data['workflow']:
+                      data['workflow'].insert(-1, step)
+                  check = "Shared Mesh Devil's Advocate output is advisory only and never overwrites canonical facts or human decision rights."
+                  if check not in data['quality_checklist']:
+                      data['quality_checklist'].append(check)
+              if agent_id == 'cro':
+                  data['workflow'] = [
+                      item.replace("Request Devil's Advocate challenge for important recommendations.", "Invoke the shared Mesh Devil's Advocate Skill through skills.invoke_governed for important recommendations; preserve Revenue Intelligence as canonical commercial evidence and treat the challenge packet as advisory only.")
+                      for item in data['workflow']
+                  ]
+                  data['starter_prompts'] = [
+                      item.replace("Devil's Advocate input", "shared Mesh Devil's Advocate Skill challenge")
+                      for item in data['starter_prompts']
+                  ]
+                  data['builder_configuration']['starter_prompts'] = list(data['starter_prompts'])
+                  check = "Shared Mesh Devil's Advocate challenge cannot rewrite canonical commercial facts, scores, stages, or activation readiness."
+                  if check not in data['quality_checklist']:
+                      data['quality_checklist'].append(check)
+
+              path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+          PY
+      - name: Commit normalized manifests
+        run: |
+          if git diff --quiet -- chatgpt/workspace-agents; then
+            echo 'Workspace Agent manifests already normalized.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add chatgpt/workspace-agents
+          git commit -m 'build: normalize v2 Workspace Agent manifests'
+          git push origin HEAD:refactor/shared-devils-advocate

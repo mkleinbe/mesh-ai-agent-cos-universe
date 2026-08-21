@@ -86,7 +86,9 @@ def test_registry_and_task_read_handlers_cover_present_and_missing_records() -> 
     assert runtime.call_agent("cro", "registry.get_agent", {"agent_id": "cro"})["agent_id"] == "cro"
     with pytest.raises(KeyError):
         runtime._registry_get_agent("cro", {"agent_id": "missing"})
-    assert len(runtime._registry_list_agents("cos", {})) == 11
+    agents = runtime._registry_list_agents("cos", {})
+    assert len(agents) == 10
+    assert all(record["agent_id"] != "devils-advocate" for record in agents)
     assert runtime._task_get("cro", {"task_id": "missing"}) is None
     ledger.save_task(make_task())
     assert runtime._task_get("cro", {"task_id": "T1"})["task_id"] == "T1"
@@ -179,6 +181,7 @@ def test_service_adapter_handlers_return_serialized_results(monkeypatch: pytest.
 
     monkeypatch.setattr(runtime.adapters, "execute", lambda agent_id, capability, payload: {"agent_id": agent_id, "capability": capability, "payload": payload})
     assert runtime._skill_invoke("cro", {"capability": "mesh-revenue-intelligence", "payload": {"x": 1}})["agent_id"] == "cro"
+    assert runtime._skill_invoke("cro", {"capability": "mesh-devils-advocate", "payload": {"x": 1}})["capability"] == "mesh-devils-advocate"
 
     monkeypatch.setattr(runtime.metrics, "summary", lambda: {"verified_outcomes": 1})
     assert runtime._metrics_snapshot("cos", {}) == {"verified_outcomes": 1}

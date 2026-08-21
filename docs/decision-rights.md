@@ -1,6 +1,6 @@
 # Decision Rights
 
-Phase 1 uses six authority levels, L0 through L5. Authority is explicit, cannot be self-expanded, and is enforced together with registry source/tool/action policy, approval requirements, explainable-decision logging, and Workspace Agent connector controls.
+Phase 1 uses six authority levels, L0 through L5. Authority is explicit, cannot be self-expanded, and is enforced together with registry source/tool/action policy, approval requirements, explainable-decision logging, Workspace Agent connector controls, and shared-Skill boundaries.
 
 ## Authority ladder
 
@@ -28,14 +28,34 @@ flowchart TB
 
 - Authority is the maximum permission ceiling, not a requirement to exercise that authority.
 - A delegated child cannot have more authority than its parent work package.
-- Source or tool access never implies authority to make a consequential decision.
+- Source, tool, app, MCP, or shared-Skill access never implies authority to make a consequential decision.
 - Approval obligations cannot be delegated away.
 - No agent may infer approval from historical preference or conversational tone.
 - Monetary thresholds are not invented. If a threshold matters and is not configured, treat the action as approval-required.
-- Devil's Advocate can challenge any material recommendation within scope but does not become the decision owner.
-- Any agent that decides or makes a material recommendation must create an explainable `mesh.cos.decision.v2` record.
-- Decision explainability records concise observable factors, evidence, alternatives, criteria, confidence, risk and reversal conditions, not hidden chain-of-thought.
+- The shared **Mesh Devil's Advocate** Skill may challenge a material recommendation only when invoked by Chief of Staff or CRO through the governed Skill path. It remains **advisory**, never becomes the task or decision owner, cannot modify canonical facts, cannot execute external actions, and cannot expand the caller's authority.
+- Any registered agent that decides or makes a material recommendation must create an explainable `mesh.cos.decision.v2` record.
+- Decision explainability records concise observable factors, evidence, alternatives, criteria, confidence, risk, and reversal conditions, not hidden chain-of-thought.
 - Superseding or reversing a decision does not delete its historical record.
+
+## Shared challenge and canonical fact ownership
+
+Release `v2.0.0` contains **10 registered agent principals**. The former repository-local Devil's Advocate principal, role card, Workspace Agent manifest, MCP principal, and duplicate role Skill are removed. `mesh-devils-advocate` is an external shared capability for Chief of Staff and CRO only.
+
+The challenge packet is evidence-bearing advisory input. It may test assumptions, interpretation, evidence sufficiency, routing, premortems, capacity, strategic coherence, and decision conditions. It does not create a competing source of truth.
+
+For commercial work, Mesh Revenue Intelligence remains authoritative for canonical account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. CFO remains authoritative for engagement finance and FP&A analysis. COO remains authoritative for delivery feasibility, capacity, and resource readiness. The shared challenge Skill cannot rewrite any of those functional facts.
+
+```mermaid
+flowchart LR
+    OWNER[Functional / Decision Owner] --> REC[Recommendation]
+    REC -->|optional governed challenge| DA[[Mesh Devil's Advocate Shared Skill]]
+    DA --> PACKET[Advisory Challenge Packet]
+    PACKET --> OWNER
+    OWNER --> D{Authority Level}
+    D -->|L0-L3 permitted| EXEC[Bounded Decision / Execution]
+    D -->|L4| H[Qualified Human Approval]
+    D -->|L5| M[Michael Decision]
+```
 
 ## Workspace Agent write approvals
 
@@ -70,6 +90,7 @@ Role identity, decision authority, and implementation version are independent go
 - `skill_agent_version`, model version, and repository release metadata establish which implementation produced the recommendation or action.
 - A change in implementation version does not rename the organizational role or expand its authority.
 - A change in accountable domain or authority must follow normal registry and L4/L5 change control, even if no software version changes.
+- A shared Skill name does not create a durable agent identity or independent decision principal.
 
 For the Phase 1 functional executives, the stable names are CRO, CFO, COO, CMO, with Consultant Network Steward and VP Content as their defined specialist roles. Their current scopes are governed by `agents/registry.json`, not by title modifiers.
 
@@ -108,8 +129,10 @@ For a material decision or recommendation, the record must identify:
 8. model/skill provenance for AI-generated recommendations,
 9. outcome validation and current outcome state.
 
+A Devil's Advocate challenge packet may be referenced as supporting or dissenting evidence, but it is not itself an approval record or canonical-fact update.
+
 ## Change control
 
-Any authority or accountable-domain change requires corresponding registry, test, documentation, governance-policy, Workspace Agent manifest/Skill, MCP allowlist, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent. Role-name changes are identity changes and must not be used as a shortcut for implementation versioning.
+Any authority, accountable-domain, agent-principal, or shared-capability-entitlement change requires corresponding registry, test, documentation, governance-policy, Workspace Agent manifest/Skill, MCP allowlist, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent. Role-name changes are identity changes and must not be used as a shortcut for implementation versioning.
 
 See `explainable-decisions-audit.md` for the canonical v2 fields and Google Sheets mirror controls.

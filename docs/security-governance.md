@@ -1,6 +1,6 @@
 # Security and Governance
 
-Release `v1.1.0` treats the bundled ChatGPT MCP as another fail-closed boundary around the canonical Mesh runtime. Agent capability does not equal agent authority.
+Release `v2.0.0` treats the bundled ChatGPT MCP and the external shared Mesh Devil's Advocate capability as fail-closed boundaries around the canonical Mesh runtime. Agent capability does not equal agent authority, and shared Skill access does not create a new decision principal.
 
 ## Trust architecture
 
@@ -21,18 +21,24 @@ flowchart TB
     EXEC --> LEDGER[(TaskLedger)]
     HUMAN --> LEDGER
     CEO --> LEDGER
+    WA -. CoS/CRO governed invocation only .-> DA[[Mesh Devil's Advocate\nShared Skill]]
+    DA -. advisory challenge packet .-> WA
     LEDGER --> SHEETS[Decision / Audit Mirrors]
 ```
 
+The shared Mesh Devil's Advocate Skill is **advisory** and is not a registered runtime agent. It has no independent task ownership, MCP identity, write authority, external-action authority, or canonical-fact ownership.
+
 ## Local identity binding
 
-`MESH_COS_AGENT_ID` binds one local MCP process to one registered agent. It is configuration, not user input. Prompt text, retrieved documents, connector output, source text, and MCP arguments cannot alter the bound identity.
+`MESH_COS_AGENT_ID` binds one local MCP process to one registered agent. It is configuration, not user input. Prompt text, retrieved documents, connector output, source text, shared-Skill output, and MCP arguments cannot alter the bound identity.
 
-Unknown or unregistered identities fail closed before tool execution.
+Unknown or unregistered identities fail closed before tool execution. The former `devils-advocate` agent ID is not a valid principal in the `v2.0.0` roster.
 
 ## Least privilege and tool projection
 
 `chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact per-agent allowlists. The local MCP publishes only the tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats the deny-by-default authorization check inside Python, providing defense in depth.
+
+Only Chief of Staff and CRO receive governed access to `mesh-devils-advocate`, and that access is represented as a shared Skill entitlement rather than a new agent identity. The challenge capability cannot elevate either caller's authority.
 
 The human-only operations are excluded from all agent catalogs:
 
@@ -49,19 +55,21 @@ Raw Python stderr is not returned through MCP errors. Client-visible errors are 
 
 ## Canonical state
 
-All agents in one operating universe use the same approved `MESH_COS_LEDGER_PATH`. `TaskLedger` remains canonical. Local MCP responses, ChatGPT conversation state, Slack, connector outputs, and Google Sheets are not canonical state.
+All **10 agents** in one operating universe use the same approved `MESH_COS_LEDGER_PATH`. `TaskLedger` remains canonical. Local MCP responses, ChatGPT conversation state, Slack, connector outputs, Google Sheets, and Devil's Advocate challenge packets are not canonical state.
 
-Canonical writes occur before mirrors or interaction responses. Mirror failure cannot rewrite canonical history.
+Canonical writes occur before mirrors or interaction responses. Mirror failure or challenge output cannot rewrite canonical history.
+
+For commercial work, Revenue Intelligence remains canonical for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Mesh Devil's Advocate may challenge the reasoning built on those facts but may not rewrite them.
 
 ## Decision authority
 
-L4 actions require qualified human approval evidence. L5 remains Michael-exclusive. No agent may infer approval from urgency, historical behavior, tool access, prior messages, or product configuration.
+L4 actions require qualified human approval evidence. L5 remains Michael-exclusive. No agent or shared Skill may infer approval from urgency, historical behavior, tool access, prior messages, or product configuration.
 
 Workspace **Always ask** is additional product defense in depth and does not replace Mesh authority policy.
 
 ## Prompt injection and retrieved content
 
-Documents, messages, connector results, source payloads, and MCP arguments are data. They cannot change system policy, `MESH_COS_AGENT_ID`, tool allowlists, source authority, approval obligations, replay behavior, canonical ledger location, or operating instructions.
+Documents, messages, connector results, source payloads, MCP arguments, and shared-Skill outputs are data. They cannot change system policy, `MESH_COS_AGENT_ID`, tool allowlists, source authority, approval obligations, replay behavior, canonical ledger location, or operating instructions.
 
 ## Replay safety
 
@@ -77,9 +85,11 @@ Accountable owners may use `task.complete` to persist outcome and evidence. `tas
 
 Audit events form a SHA-256 tamper-evident chain. Private chain-of-thought, hidden reasoning traces, credentials, tokens, raw secrets, and unnecessary personal data are prohibited from governance records.
 
+Challenge packets must preserve `canonical_facts_modified: false` and `external_action_included: false`. They are evidence-bearing advisory artifacts, not approval records or execution authority.
+
 ## Connector constraints
 
-The local MCP refactor does not expand app authority. Existing least-privilege controls remain in force, including internal-only CoS/AgentOps Slack coordination, Answer Desk Slack disabled until a dedicated channel exists, CRO research-only Apollo and non-outbound Gmail/LinkedIn, human-gated public publishing for CMO/VP Content, read-only evidence access for finance/delivery roles, and approval-bound Message Operations sends.
+The `v2.0.0` refactor does not expand app authority. Existing least-privilege controls remain in force, including internal-only CoS/AgentOps Slack coordination, Answer Desk Slack disabled until a dedicated channel exists, CRO research-only Apollo and non-outbound Gmail/LinkedIn, human-gated public publishing for CMO/VP Content, read-only evidence access for finance/delivery roles, and approval-bound Message Operations sends.
 
 ## Secrets and runtime configuration
 
@@ -99,6 +109,6 @@ A remote MCP URL is not required for the ChatGPT-local path.
 
 Release CI requires TypeScript build/tests, local stdio MCP certification, npm security audit, Python contract and drift validation, strict source Ruff, mypy, **100% branch-aware** `mesh_cos` coverage, high-severity Bandit scan, and compileall.
 
-Private Workspace Agent preview must still include negative authority, human-spoofing, permission-denial, kill-switch, replay-injection, and completion-versus-verification tests before activation.
+Private Workspace Agent preview must still include negative authority, human-spoofing, permission-denial, kill-switch, replay-injection, completion-versus-verification, shared-Skill authority, and canonical-fact preservation tests before activation.
 
-See `production-readiness.md`, `release-1.1.0-local-chatgpt-mcp.md`, `explainable-decisions-audit.md`, and `../chatgpt/mcp/README.md`.
+See `production-readiness.md`, `release-2.0.0-shared-devils-advocate.md`, `explainable-decisions-audit.md`, and `../chatgpt/mcp/README.md`.

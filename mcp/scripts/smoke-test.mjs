@@ -52,7 +52,8 @@ try {
   assert.equal(names.includes('reliability.human_override'), false);
 
   const agents = await call('registry.list_agents');
-  assert.equal(agents.length, 11);
+  assert.equal(agents.length, 10);
+  assert.equal(agents.some((agent) => agent.agent_id === 'devils-advocate'), false);
 
   const task = await call('task.intake', {
     objective: 'certify local stdio runtime',
@@ -63,7 +64,7 @@ try {
     decision_owner: 'michael',
     authority_level: 2,
     acceptance_test: 'task can be read from the same canonical ledger',
-    idempotency_key: 'local-mcp-smoke-v1',
+    idempotency_key: 'local-mcp-smoke-v2',
   });
   assert.ok(task.task_id);
   const reread = await call('task.get', { task_id: task.task_id });
@@ -78,7 +79,7 @@ try {
   assert.ok(deniedText && 'text' in deniedText);
   assert.equal(deniedText.text.includes('do-not-leak'), false);
 
-  console.log(`CoS MCP stdio certification passed: ${names.length} CoS tools, local canonical persistence, human-only exclusion, and safe denial behavior.`);
+  console.log(`CoS MCP stdio certification passed: ${names.length} CoS tools, 10-agent roster, local canonical persistence, human-only exclusion, and safe denial behavior.`);
 } finally {
   await client.close();
   fs.rmSync(tempDir, { recursive: true, force: true });

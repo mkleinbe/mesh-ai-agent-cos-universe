@@ -1,16 +1,16 @@
 # Contributing
 
-Current release target: **`v1.1.0 Local ChatGPT MCP`**.
+Current release target: **`v2.0.0 Shared Mesh Devil's Advocate`**.
 
-Changes must preserve the Phase 1 operating constitution, the production-readiness controls established in `1.0.0`, and the bundled ChatGPT-local MCP controls established in `1.1.0`. Use test-driven, short-loop engineering practices.
+Changes must preserve the Phase 1 operating constitution, the production-readiness controls established in `1.0.0`, the bundled ChatGPT-local MCP controls established in `1.1.0`, and the 10-agent plus shared challenge topology established in `2.0.0`. Use test-driven, short-loop engineering practices.
 
 ## Required workflow
 
 1. Create a feature branch from current `main`.
-2. Add or update tests first for behavioral changes, including negative authorization, failure-path, idempotency, human-principal, local-agent-identity, and replay-safety coverage when relevant.
+2. Add or update tests first for behavioral changes, including negative authorization, failure-path, idempotency, human-principal, local-agent-identity, shared-Skill authority, canonical-fact preservation, and replay-safety coverage when relevant.
 3. Implement the minimum change required to satisfy the behavior.
 4. Run the full release verification.
-5. Update schemas, registry policy, Workspace Agent manifests, role Skills, MCP allowlists, configuration, documentation, Mermaid diagrams, and release metadata in the same change when affected.
+5. Update schemas, registry policy, Workspace Agent manifests, repository-local role Skills, shared capability entitlements/contracts, MCP allowlists, configuration, documentation, Mermaid diagrams, and release metadata in the same change when affected.
 6. Run production preflight for changes that affect deployment/runtime readiness.
 7. Open a pull request to `main` and merge only after CI passes and review comments are resolved.
 8. Close superseded pull requests rather than leaving competing branches open.
@@ -45,19 +45,38 @@ ChatGPT uses the bundled `LOCAL_STDIO` runtime defined by `chatgpt/mcp/mesh-cos-
 
 The TypeScript layer must remain transport-only. Do not duplicate task, authority, approval, governance, or reliability logic outside `MCPRuntime`.
 
-`MESH_COS_AGENT_ID` is a trusted runtime binding. Prompt text and retrieved content must never select it. `MESH_COS_LEDGER_PATH` must preserve one approved canonical operating universe across the 11 agents.
+`MESH_COS_AGENT_ID` is a trusted runtime binding. Prompt text, retrieved content, connector output, and shared-Skill output must never select it. `MESH_COS_LEDGER_PATH` must preserve one approved canonical operating universe across the **10 registered agents**.
 
 Human-only tools must remain separate from agent allowlists. Replay must never execute client-supplied code, import paths, shell commands, or callable names.
 
 A remote MCP endpoint is optional and may not become an undocumented requirement for ChatGPT-local operation.
 
+## Shared Mesh Devil's Advocate changes
+
+`mesh-devils-advocate` is an external shared capability, not a repository-local role Skill or registered agent principal.
+
+Any change to this integration must preserve all of the following:
+
+- consumers are Chief of Staff and CRO only unless a governed authority change explicitly expands that set;
+- authority remains `ADVISORY_ONLY` unless separately governed;
+- the capability does not own tasks or decisions;
+- `canonical_facts_modified` remains false;
+- `external_action_included` remains false;
+- Revenue Intelligence retains canonical commercial evidence and state where designated;
+- governed invocation remains subject to registry entitlement and MCP allowlist controls;
+- positive and negative tests prove non-entitled agents cannot invoke the shared capability.
+
+Do not add a duplicate `chatgpt/skills/mesh-devils-advocate/` role package, `devils-advocate` Workspace Agent manifest, or `devils-advocate` MCP principal.
+
 ## Governance-sensitive changes
 
-Changes to decision rights, approvals, agent authority, human-only operations, source/tool permissions, delegation depth, prohibited actions, registry health, consequential persistence, Workspace app access, Connector Action Constraints, MCP tool allowlists, replay behavior, completion/verification boundaries, or external-write behavior require explicit positive and negative tests plus documentation updates. Do not infer new monetary thresholds or broader autonomy.
+Changes to decision rights, approvals, agent authority, human-only operations, source/tool permissions, shared capability entitlement, delegation depth, prohibited actions, registry health, consequential persistence, Workspace app access, Connector Action Constraints, MCP tool allowlists, replay behavior, completion/verification boundaries, or external-write behavior require explicit positive and negative tests plus documentation updates. Do not infer new monetary thresholds or broader autonomy.
 
 ## Skill changes
 
-ChatGPT role Skills live under `chatgpt/skills/`. Retain `SKILL.md`, `agents/openai.yaml`, `references/role-contract.md`, and `references/production-readiness.md`. Skill packaging does not prove Workspace app connectivity or deployment activation.
+Repository-local ChatGPT role Skills live under `chatgpt/skills/`. Retain `SKILL.md`, `agents/openai.yaml`, `references/role-contract.md`, and `references/production-readiness.md`. Skill packaging does not prove Workspace app connectivity or deployment activation.
+
+External shared Skills are referenced through canonical registry entitlements and deployment configuration, not copied into the role-Skill directory as duplicate authorities.
 
 ## Production preflight
 
@@ -65,6 +84,6 @@ Run `python scripts/production-preflight.py` before activation or release change
 
 ## Documentation standard
 
-Documentation must describe what the runtime and deployment package actually implement. Keep Mermaid diagrams synchronized with executable paths and canonical state boundaries. Historical release and Phase 1 closure records remain historical snapshots.
+Documentation must describe what the runtime and deployment package actually implement. Keep Mermaid diagrams synchronized with executable paths, registered-agent topology, shared capability boundaries, and canonical state boundaries. Historical release and Phase 1 closure records remain historical snapshots.
 
-Current guidance belongs in `docs/release-1.1.0-local-chatgpt-mcp.md`, `docs/production-readiness.md`, `docs/runbook.md`, and `RELEASE.md`.
+Current guidance belongs in `docs/release-2.0.0-shared-devils-advocate.md`, `docs/production-readiness.md`, `docs/runbook.md`, and `RELEASE.md`.

@@ -1,14 +1,14 @@
 # Phase 1 Operating Contract
 
 **Status:** Canonical human-readable Phase 1 operating constitution  
-**Last reconciled:** 2026-08-17 after ChatGPT Workspace Agent packaging and MCP pressure test  
+**Last reconciled:** 2026-08-21 for release `v2.0.0 Shared Mesh Devil's Advocate`  
 **Machine-readable counterparts:** `../contracts/`, `../agents/registry.json`, `../config/performance-policy.v1.json`, `../chatgpt/mcp/mesh-cos-mcp.v1.json`
 
 ## 1. Mission
 
-The AI Chief of Staff exists to maximize the return on Michael's judgment, relationships, attention, and authority by independently resolving everything that does not require the CEO, and materially improving everything that does.
+The AI Chief of Staff exists to maximize the return on executive judgment, relationships, attention, and authority by independently resolving work that does not require a human decision and materially improving work that does.
 
-The CoS is an executive control plane. It is responsible for outcome orchestration, not for replacing functional truth owners or becoming an unbounded super-agent.
+The CoS is an executive control plane. It orchestrates outcomes without replacing functional truth owners or becoming an unbounded super-agent.
 
 ## 2. Constitutional principles
 
@@ -19,18 +19,19 @@ The CoS is an executive control plane. It is responsible for outcome orchestrati
 5. **Functional truth is preserved.** Domain and source authority remain with the appropriate function or authoritative system.
 6. **Delegation narrows, never widens.** Child work inherits constraints and approval obligations.
 7. **Human consequence boundaries are explicit.** L4 actions require qualified human approval and L5 remains Michael-exclusive.
-8. **Canonical state is durable.** ChatGPT, Slack, and Google Sheets are not the ledger.
+8. **Canonical state is durable.** `TaskLedger` is canonical; ChatGPT, Slack, Sheets, connector output, and challenge packets are not.
 9. **Evidence precedes verification.** `COMPLETED != VERIFIED`.
-10. **Security is invocation-time, not documentary.** Source/tool/action and Workspace MCP allowlists are enforced before use.
+10. **Security is invocation-time.** Source/tool/action, shared-Skill entitlement, and Workspace MCP allowlists are enforced before use.
 11. **Autonomy is earned.** AgentOps recommendations may increase, watch, restrict, or quarantine routing based on evidence and policy.
 12. **Product controls are defense in depth.** Workspace Agent `Always ask`, app permissions, and Connector Action Constraints may narrow behavior but cannot widen Mesh authority.
+13. **Challenge is advisory.** Mesh Devil's Advocate may challenge reasoning but cannot become a task owner, decision owner, canonical fact owner, or execution authority.
 
 ## 3. Operating topology
 
 ```mermaid
 flowchart TB
     M[Michael / CEO] --> W[ChatGPT Workspace Agent layer]
-    W --> MCP[mesh-cos-mcp]
+    W --> MCP[mesh-cos-mcp\nLOCAL_STDIO]
     MCP --> C[Chief of Staff runtime]
     C --> A[AgentOps]
     C --> D[Answer Desk]
@@ -40,7 +41,6 @@ flowchart TB
     O --> N[Consultant Network Steward]
     C --> K[CMO]
     K --> V[VP Content]
-    C --> X[Devil's Advocate]
     C --> Q[Message Operations]
     C --> L[(Canonical TaskLedger)]
     A --> L
@@ -49,33 +49,38 @@ flowchart TB
     F --> L
     O --> L
     K --> L
+    Q --> L
+    C -. governed challenge .-> DA[[Mesh Devil's Advocate\nShared Skill]]
+    R -. governed challenge .-> DA
+    DA -. advisory packet .-> C
+    DA -. advisory packet .-> R
 ```
 
-Workspace Agents provide the interaction/deployment surface. Their role Skills and manifests are subordinate to the canonical Agent Registry, and `mesh-cos-mcp` routes permitted calls into the existing runtime. No Workspace Agent becomes a parallel control plane.
+The live Phase 1 workforce contains exactly **10 registered agent principals**. Mesh Devil's Advocate is an external shared Skill, not an eleventh agent. Workspace Agent manifests and role Skills are subordinate to the canonical Agent Registry, and `mesh-cos-mcp` routes permitted calls into the existing runtime.
 
 ## 4. Role identity and implementation versioning
 
-`agent_id` is the durable machine identity. `display_name` is the stable organizational role identity. The registry `version` field carries implementation version using `MAJOR.MINOR.PATCH`; repository releases carry the operating-core release version. Scope limitations are expressed through accountable domain, authoritative sources, permitted/prohibited actions, approvals, and delegation rules, not by adding version labels to organizational titles.
+`agent_id` is the durable machine identity. `display_name` is the stable organizational role identity. The registry `version` field carries implementation version using `MAJOR.MINOR.PATCH`; repository releases carry the operating-core release version.
 
-Runtime registry validation, Workspace Agent package validation, and CI drift checks enforce this rule.
+Scope is expressed through accountable domain, authoritative sources, permitted/prohibited actions, approvals, delegation rules, and shared capability entitlements, not by adding version labels to organizational titles.
 
 ## 5. Phase 1 workforce
 
 ### Chief of Staff
 
-Owns intake, triage, planning, assignment, outcome orchestration, cross-functional arbitration, escalation, acceptance verification, remediation routing, and executive compression. The CoS does not overwrite authoritative functional facts.
+Owns intake, triage, planning, assignment, outcome orchestration, cross-functional arbitration, escalation, acceptance verification, remediation routing, executive compression, and governed shared-challenge invocation where useful. It does not overwrite authoritative functional facts.
 
-### AgentOps
+### AgentOps Controller
 
-Owns workforce observability and performance recommendations. It evaluates evidence against a versioned policy, detects stalled work and coordination loops, and can recommend the complete configured health/routing vocabulary without independently expanding authority.
+Owns workforce observability and performance recommendations. It evaluates evidence against versioned policy, detects stalled work and coordination loops, and recommends health/routing actions without independently expanding authority.
 
-### Answer Desk
+### Answer & Decision Desk
 
-Handles team questions using requester permissions, source accessibility, evidence sufficiency, established policy, reversibility, judgment requirements, and CEO authority. It records dispositions for audit and metrics. Team-facing Slack activation remains pending a separate channel ID.
+Handles team questions using requester permissions, source accessibility, evidence sufficiency, established policy, reversibility, judgment requirements, and CEO authority. Team-facing Slack activation remains pending a separate channel ID.
 
 ### CRO
 
-Owns commercial strategy within delegated authority, including opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion strategy, and commercial-risk framing. Revenue Intelligence remains canonical for designated commercial/account evidence.
+Owns commercial strategy within delegated authority, including opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion strategy, and commercial-risk framing. Revenue Intelligence remains canonical for designated commercial/account evidence. CRO may invoke the shared Mesh Devil's Advocate Skill for independent challenge.
 
 ### CFO
 
@@ -97,17 +102,28 @@ Owns marketing strategy and delegated execution, including audience/ICP strategy
 
 Operates under CMO authority for editorial planning/calendar, source/evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory, editorial QA, performance feedback, and publication-ready handoff. It does not gain autonomous publishing authority.
 
-### Devil's Advocate
-
-Independent challenge function. Never final decision owner.
-
 ### Message Operations
 
 Controlled execution boundary for approved communications. It may inspect approval state but may not decide its own approval.
 
-Existing Mesh Skills and sources are composed through governed adapters. Their logic is not reimplemented inside the CoS. Permitted actions define executable Phase 1 capabilities; a permitted action does not fabricate a new external Skill or source integration.
+## 6. Shared Mesh Devil's Advocate capability
 
-## 6. Decision rights
+Release `v2.0.0` removes the former repository-local Devil's Advocate agent, role card, Workspace Agent manifest, MCP principal, and duplicate role Skill.
+
+`mesh-devils-advocate` is now an `EXTERNAL_SHARED_SKILL` with these constitutional constraints:
+
+- consumers: Chief of Staff and CRO only;
+- authority: `ADVISORY_ONLY`;
+- request contract: `mesh.devils-advocate.challenge-request.v1`;
+- response contract: `mesh.devils-advocate.challenge-packet.v1`;
+- `canonical_facts_modified: false`;
+- `external_action_included: false`.
+
+The challenge capability can test assumptions, evidence sufficiency, strategic coherence, route logic, downside cases, premortems, capacity, and reversal conditions. It never becomes the final decision owner or execution authority.
+
+For commercial work, Mesh Revenue Intelligence remains canonical for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Shared challenge output may dispute interpretation but cannot mutate those facts.
+
+## 7. Decision rights
 
 | Level | Meaning | Default Phase 1 behavior |
 |---|---|---|
@@ -118,9 +134,9 @@ Existing Mesh Skills and sources are composed through governed adapters. Their l
 | L4 | Human approval required | Consequential commercial, external, public, legal, regulatory, security, privacy, personnel, destructive, sensitive-system, and irreversible actions fail closed until qualified approval. |
 | L5 | Michael exclusive | Firm strategy, major pivots/capital decisions, material client or partner exceptions, senior personnel decisions, CoS authority, decision-rights policy, and material agent-authority expansion. |
 
-No monetary thresholds may be invented. Until explicitly configured, threshold-sensitive actions remain approval-required. Workspace Agent write approval cannot grant authority that Mesh decision rights deny.
+No monetary thresholds may be invented. Workspace Agent write approval cannot grant authority that Mesh decision rights deny. A shared Skill cannot expand the caller's authority.
 
-## 7. Task and outcome lifecycle
+## 8. Task and outcome lifecycle
 
 ```mermaid
 stateDiagram-v2
@@ -148,128 +164,66 @@ stateDiagram-v2
     IN_PROGRESS --> CANCELLED
 ```
 
-The runtime persists every consequential state change. A task reaching `COMPLETED` means the accountable owner produced the deliverable and evidence. It reaches `VERIFIED` only after explicit acceptance-test execution is recorded as passing. Failed acceptance routes the task to `REWORK`.
+The runtime persists every consequential state change. `COMPLETED` means the accountable owner produced the deliverable and evidence. `VERIFIED` requires explicit acceptance-test execution and evidence. Failed acceptance routes to `REWORK`.
 
-Local runtime verification may use its in-process acceptance callback. Workspace Agent/MCP verification uses `ChiefOfStaffService.record_verification_result()` and requires a named verifier, reason, and explicit evidence references. A passing result without evidence fails closed and does not change a completed task to `VERIFIED`.
+## 9. Delegation contract
 
-## 8. Delegation contract
+Normal depth is CoS -> functional executive -> specialist/worker. Delegation must name exactly one accountable agent, preserve the parent objective/outcome, define measurable success criteria and acceptance test, remain within parent authority, avoid circularity, inherit approval obligations, preserve permitted/prohibited action consistency, and persist to canonical state.
 
-Normal depth is CoS -> functional executive -> specialist/worker. Delegation must:
+The shared Mesh Devil's Advocate capability is **not a delegated agent**. Invoking it does not transfer ownership or create a child task owner.
 
-- name exactly one accountable agent,
-- preserve the parent objective and expected outcome,
-- define deliverable, measurable success criteria, and acceptance test,
-- not exceed parent authority,
-- not create circular delegation,
-- not silently replace an active accountable owner,
-- inherit parent approval obligations,
-- keep permitted and prohibited actions non-conflicting,
-- define dependencies and check-in/escalation conditions where relevant,
-- persist the delegation record in canonical state.
+## 10. Functional truth and conflict resolution
 
-A Workspace Agent may call delegation only when `mesh-cos-mcp` explicitly allowlists the agent for `delegation.create`; the existing runtime delegation rules remain authoritative.
+Authoritative ownership is preserved even when multiple agents collaborate:
 
-## 9. Functional truth and conflict resolution
-
-Authoritative ownership is preserved even when multiple agents collaborate. Examples:
-
-- engagement finance and FP&A -> CFO within supported source scope,
-- commercial/account evidence -> approved Revenue Intelligence source where designated,
-- commercial interpretation/pursuit recommendation -> CRO within delegated scope,
-- delivery/resource feasibility -> COO,
-- consultant readiness -> Consultant Network Steward under COO,
-- marketing strategy -> CMO,
+- engagement finance and FP&A -> CFO within supported source scope;
+- commercial/account evidence -> approved Revenue Intelligence source where designated;
+- commercial interpretation/pursuit recommendation -> CRO within delegated scope;
+- delivery/resource feasibility -> COO;
+- consultant readiness -> Consultant Network Steward under COO;
+- marketing strategy -> CMO;
 - editorial production -> VP Content under CMO.
 
-Cross-functional conflicts become durable conflict records. A decision must name the decision owner, disposition, and reversal condition. Devil's Advocate may challenge assumptions but cannot own the final decision. If the decision exceeds delegated CoS authority, it escalates to Michael.
+Cross-functional conflicts become durable conflict records. CoS or CRO may request an optional shared Mesh Devil's Advocate challenge, but the resulting challenge packet is advisory evidence only. If the decision exceeds delegated authority, it escalates under L4/L5 rules.
 
-```mermaid
-flowchart LR
-    A[Conflicting evidence or recommendations] --> F[Resolve authoritative facts]
-    F --> T{Cross-functional tradeoff?}
-    T -->|no| OWNER[Functional owner resolves]
-    T -->|yes| C[CoS frames Decision Brief]
-    C --> L{Within delegated CoS authority?}
-    L -->|yes| D[CoS decision + reversal condition]
-    L -->|no| M[Michael decision]
-    D --> R[(Decision record)]
-    M --> R
-```
-
-## 10. Slack coordination
+## 11. Slack coordination
 
 The private agent-operations channel is `#mesh-agent-ops`, Channel ID `C0BRL4GCL3A`.
 
-Slack is a collaboration surface, not canonical state. The runtime boundary includes request-signature verification, durable duplicate-event protection, durable one-task/one-thread mapping, structured message types, explicit acting-agent labels, and a live-capable Web API client boundary.
+Slack is a collaboration surface, not canonical state. CoS and AgentOps may use the channel for internal task/status coordination. Other agents do not receive Slack invocation channels by default. The separate team-facing Answer Desk channel remains disabled until a channel ID is explicitly configured.
 
-Workspace Agent Slack rules narrow this further: CoS and AgentOps may use the channel for internal task/status coordination. Other agents do not receive Slack invocation channels by default. The separate team-facing Answer Desk channel remains disabled until a channel ID is explicitly configured.
+## 12. Security and source governance
 
-## 11. Security and source governance
+Before an agent invokes a source, tool, app, MCP tool, shared Skill, or consequential action, runtime authorization checks canonical policy. Retrieved content and shared-Skill output are untrusted data and cannot override system policy, decision rights, agent identity, source truth, or approval obligations.
 
-Before an agent invokes a source, tool, app, MCP tool, or consequential action, runtime authorization must check canonical policy. Retrieved content is untrusted data and cannot override system policy, decision rights, or agent scope.
+Security controls include least privilege, deny-by-default MCP allowlists, shared capability entitlements, human-only approval/reliability operations, Workspace `Always ask`, Connector Action Constraints, prompt-injection resistance, durable idempotency, explainable decisions, quarantine/routing restriction, and the emergency kill switch.
 
-Security controls include:
+## 13. Explainability and audit
 
-- least privilege and explicit allowlists,
-- server-side Workspace Agent MCP deny-by-default allowlists,
-- approval gates,
-- Workspace `Always ask` for writes by default,
-- Connector Action Constraints for risky apps,
-- confidentiality and source-boundary enforcement,
-- prompt-injection resistance at the instruction/data boundary,
-- Slack request verification,
-- durable idempotency,
-- explainable decisions and audit records,
-- quarantine and routing restriction,
-- emergency kill switch.
-
-## 12. Explainability and audit
-
-Material decisions/recommendations use `mesh.cos.decision.v2`. Consequential actions use `mesh.cos.agent-event.v2`. Workspace Agent execution preserves canonical `agent_id` and stable role identity while storing model, Skill/agent implementation, MCP capability/tool, approval, and run/correlation provenance separately.
+Material decisions/recommendations use `mesh.cos.decision.v2`. Consequential actions use `mesh.cos.agent-event.v2`. Shared challenge packets may be referenced as advisory evidence but are not approval records or canonical-state mutations.
 
 Private chain-of-thought, hidden reasoning traces, credentials, tokens, raw sensitive prompts, and unnecessary personal data are not governance artifacts.
 
-## 13. AgentOps and performance
+## 14. AgentOps and performance
 
-Performance is governed by `config/performance-policy.v1.json`. Current weighted categories are outcome achievement 0.30, first-pass quality 0.20, escalation judgment 0.15, evidence governance 0.10, execution reliability 0.10, CEO leverage 0.10, and efficiency 0.05.
-
-Current thresholds are versioned and must not be changed silently. Critical-severity events can force quarantine regardless of aggregate score. Workspace Agent publication/routing should respect runtime health state.
-
-## 14. Observability, reliability, and success metrics
-
-Consequential actions and state changes must produce durable records sufficient to reconstruct what happened, who or what acted, what evidence was used, what authority applied, and what outcome resulted. Phase 1 metrics remain deterministic and evidence-backed.
-
-Transient failures may use bounded retry behavior. Idempotency must prevent duplicate Slack events and duplicate consequential effects. Explicit replay and human override remain governed. No retry mechanism may widen authority or bypass an approval gate.
+Performance is governed by `config/performance-policy.v1.json`. Current weighted categories and thresholds are versioned and cannot be changed silently. Critical events can force quarantine regardless of aggregate score. Runtime health never expands authority.
 
 ## 15. ChatGPT Workspace Agent deployment projection
 
-Release `0.2.0` packages every canonical Phase 1 role as a ChatGPT Workspace Agent-ready configuration:
+Release `v2.0.0` deploys exactly **10 Workspace Agents** and 10 repository-local role Skills. The external shared Mesh Devil's Advocate Skill is attached only to Chief of Staff and CRO.
 
-- role Skill source under `../chatgpt/skills/`,
-- exact manifest under `../chatgpt/workspace-agents/`,
-- custom MCP contract under `../chatgpt/mcp/mesh-cos-mcp.v1.json`,
-- builder handoff under `../chatgpt/workspace-agent-builder-prompt.md`.
+`WorkspaceAgentMCPPolicy` rejects unknown agents, including the removed `devils-advocate` principal, unknown tools, and unlisted tools. The manifest's Builder tool selection is a second, narrower product control.
 
-`WorkspaceAgentMCPPolicy` rejects unknown agents, unknown tools, and unlisted tools. The manifest's Builder tool selection is a second, narrower product control. Per-agent app access and Connector Action Constraints cannot broaden the registry.
-
-All Workspace Agents remain Private until role starter prompts, a negative authority test, a missing-evidence test, and app/MCP permission-denial tests pass in the target workspace.
+All Workspace Agents remain Private until role starter prompts, negative authority tests, missing-evidence tests, app/MCP permission-denial tests, human-approval spoofing tests, completion-versus-verification tests, replay-safety tests, and any applicable shared-Skill authority tests pass in the target workspace.
 
 ## 16. Production dependencies
 
-Repository-level Workspace Agent packages and runtime contracts are complete for release `0.2.0`. Production operation still requires:
+Repository-level runtime and deployment packages are release-ready only when the full CI suite and production preflight pass. Target-environment activation still requires approved Workspace app authentication, applicable Slack credentials, a dedicated Answer Desk channel, approved source/shared-Skill credentials and permissions, production approval-owner mapping, secrets management, monitoring, target Workspace RBAC/publication settings, and any future monetary thresholds explicitly approved by Michael.
 
-- approved remote `mesh-cos-mcp` deployment and `MESH_COS_MCP_SERVER_URL`,
-- Workspace app authentication with least privilege,
-- Slack bot token/signing secret where runtime Slack integration is used,
-- separate Answer Desk Slack channel ID,
-- approved source/Skill credentials and permissions,
-- production approval-owner mapping,
-- deployment infrastructure and secrets management,
-- target Workspace Agent private preview tests and RBAC-controlled publication,
-- any future monetary thresholds explicitly approved by Michael.
-
-These dependencies do not expand Phase 1 authority and must not be fabricated in code or documentation.
+A remote MCP endpoint and `MESH_COS_MCP_SERVER_URL` are **not** required for ChatGPT-local operation.
 
 ## 17. Change control
 
-Any change to role identity, accountable domain, authority, hierarchy, source/tool/app permissions, Skills, MCP allowlists, permitted/prohibited actions, delegation, approvals, canonical state, performance policy, Slack trust boundaries, Workspace Agent channel/write controls, or lifecycle semantics must update tests, deployment manifests, documentation, diagrams, and versioned policy together. Behavioral changes use red-green-refactor loops and merge only after all CI gates pass.
+Any change to role identity, accountable domain, registered-agent roster, shared capability entitlement, authority, hierarchy, source/tool/app permissions, MCP allowlists, permitted/prohibited actions, delegation, approvals, canonical state, performance policy, Slack trust boundaries, Workspace Agent channel/write controls, or lifecycle semantics must update tests, deployment manifests, documentation, Mermaid diagrams, and versioned policy together.
+
+Behavioral changes use red-green-refactor loops and merge only after all release gates pass.

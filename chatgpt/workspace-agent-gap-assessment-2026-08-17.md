@@ -57,3 +57,9 @@ The repository now enforces the following invariants rather than relying on prom
 - Run private Workspace Agent preview acceptance tests in the target workspace and publish through the intended RBAC only after those tests pass.
 
 Do not mark any production dependency complete until it is actually configured and tested in the target workspace.
+
+<!-- mesh-cos-v2-shared-da -->
+## v2.0.0 current architecture
+
+The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
+

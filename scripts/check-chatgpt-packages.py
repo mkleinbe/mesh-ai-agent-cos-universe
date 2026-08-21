@@ -25,9 +25,9 @@ EXPECTED = {
     "consultant-network-steward": ("Consultant Network Steward", "coo", "mesh-consultant-network-steward"),
     "cmo": ("CMO", "cos", "mesh-cmo"),
     "vp-content": ("VP Content", "cmo", "mesh-vp-content"),
-    "devils-advocate": ("Devil's Advocate", "cos", "mesh-devils-advocate"),
     "message-ops": ("Message Operations", "cos", "mesh-message-operations"),
 }
+SHARED_CHALLENGE_CONSUMERS = {"cos", "cro"}
 
 
 def require(condition: bool, message: str) -> None:
@@ -49,8 +49,20 @@ def parse_frontmatter(text: str) -> dict[str, str]:
 registry_source = json.loads((ROOT / "agents" / "registry.json").read_text())
 registry = {record["agent_id"]: record for record in registry_source["agents"]}
 require(set(registry) == set(EXPECTED), "Workspace Agent roster drifted from canonical registry")
-require(__version__ == "1.1.0", "Workspace Agent release must be 1.1.0")
+require(__version__ == "2.0.0", "Workspace Agent release must be 2.0.0")
 require(f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
+
+shared = {item["capability"]: item for item in registry_source.get("shared_capabilities", [])}
+challenge = shared.get("mesh-devils-advocate")
+require(challenge is not None, "Shared Mesh Devil's Advocate capability missing")
+require(challenge["deployment"] == "EXTERNAL_SHARED_SKILL", "Shared challenge deployment drifted")
+require(set(challenge["consumers"]) == SHARED_CHALLENGE_CONSUMERS, "Shared challenge consumer set drifted")
+require(challenge["authority"] == "ADVISORY_ONLY", "Shared challenge authority drifted")
+require(challenge["canonical_facts_modified"] is False, "Shared challenge cannot modify canonical facts")
+require(challenge["external_action_included"] is False, "Shared challenge cannot execute external actions")
+require(not (ROOT / "agents" / "devils-advocate.md").exists(), "Duplicate Devil's Advocate role card remains")
+require(not (AGENTS / "devils-advocate.json").exists(), "Duplicate Devil's Advocate Workspace Agent remains")
+require(not (SKILLS / "mesh-devils-advocate").exists(), "Duplicate repository-local Mesh Devil's Advocate Skill remains")
 
 contract = json.loads(MCP.read_text())
 require(contract["runtime_release"] == __version__, "MCP contract release drifted")
@@ -65,6 +77,8 @@ require(contract["deployment"]["managed_remote"] == "OPTIONAL_NOT_REQUIRED", "Ma
 policy = WorkspaceAgentMCPPolicy.from_file(MCP)
 require(policy.validate_runtime_bindings() == [], "MCP runtime binding is unresolved")
 contract_allowlists = contract["agent_tool_allowlists"]
+require(set(contract_allowlists) == set(EXPECTED), "MCP agent principal roster drifted")
+require("devils-advocate" not in contract_allowlists, "Devil's Advocate must not be an MCP agent principal")
 
 for relative in (
     "README.md",
@@ -78,8 +92,11 @@ for relative in (
 ):
     require((MCP_PACKAGE / relative).is_file(), f"Local MCP package missing {relative}")
 package = json.loads((MCP_PACKAGE / "package.json").read_text())
+package_lock = json.loads((MCP_PACKAGE / "package-lock.json").read_text())
 require(package["name"] == "@meshdigitalio/mesh-cos-mcp", "Local MCP package name drifted")
 require(package["version"] == __version__, "Local MCP package version drifted")
+require(package_lock["version"] == __version__, "Local MCP package-lock version drifted")
+require(package_lock["packages"][""]["version"] == __version__, "Local MCP root lock package version drifted")
 require(package["dependencies"].get("@modelcontextprotocol/sdk") == "1.30.0", "Official MCP SDK dependency drifted")
 
 for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
@@ -119,6 +136,15 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(config["governance"]["audit_logging"] == "REQUIRED", f"{agent_id}: audit policy weakened")
     require(config["governance"]["decision_logging"] == "REQUIRED_WHEN_DECIDING_OR_RECOMMENDING", f"{agent_id}: decision logging weakened")
     require(config["governance"]["private_chain_of_thought"] == "PROHIBITED", f"{agent_id}: reasoning persistence drifted")
+    expected_shared = ["mesh-devils-advocate"] if agent_id in SHARED_CHALLENGE_CONSUMERS else []
+    require(config.get("shared_skills", []) == expected_shared, f"{agent_id}: shared Skill projection drifted")
+    require(config["builder_configuration"].get("shared_skills", []) == expected_shared, f"{agent_id}: builder shared Skill projection drifted")
+    if agent_id in SHARED_CHALLENGE_CONSUMERS:
+        require("mesh-devils-advocate" in record.get("skills", []), f"{agent_id}: registry shared Skill entitlement missing")
+        require("skills.invoke_governed" in contract_allowlists[agent_id], f"{agent_id}: governed Skill invocation missing")
+    else:
+        require("mesh-devils-advocate" not in record.get("skills", []), f"{agent_id}: unauthorized shared challenge entitlement")
+
     mcp = config["mcp"]
     require(mcp["transport"] == "LOCAL_STDIO", f"{agent_id}: MCP transport drifted")
     require(mcp["command"] == "node" and mcp["args"] == ["mcp/dist/index.js"], f"{agent_id}: local MCP launch drifted")
@@ -164,8 +190,10 @@ require(any("approval" in rule.lower() for rule in message_ops["connector_action
 
 prompt = (CHATGPT / "workspace-agent-builder-prompt.md").read_text()
 for token in (
-    "11 agents",
-    "v1.1.0",
+    "10 agents",
+    "v2.0.0",
+    "Mesh Devil's Advocate",
+    "shared Skill",
     "mesh-cos-mcp",
     "local stdio",
     "mcp/dist/index.js",

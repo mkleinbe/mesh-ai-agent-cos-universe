@@ -16,7 +16,7 @@ from mesh_cos.registry import load_registry
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "contracts"
-RELEASE = "1.1.0"
+RELEASE = "2.0.0"
 
 
 def require(condition: bool, message: str) -> None:
@@ -35,8 +35,30 @@ identity_policy = registry_source.get("role_identity_policy", {})
 require(identity_policy.get("display_names_are_stable") is True, "Role identity policy drifted")
 require(identity_policy.get("implementation_version_field") == "version", "Role implementation-version policy drifted")
 
+shared_capabilities = {
+    item["capability"]: item for item in registry_source.get("shared_capabilities", [])
+}
+require("mesh-devils-advocate" in shared_capabilities, "Shared Mesh Devil's Advocate capability missing")
+challenge = shared_capabilities["mesh-devils-advocate"]
+require(challenge.get("deployment") == "EXTERNAL_SHARED_SKILL", "Shared challenge deployment drifted")
+require(challenge.get("consumers") == ["cos", "cro"], "Shared challenge consumers drifted")
+require(challenge.get("authority") == "ADVISORY_ONLY", "Shared challenge authority drifted")
+require(challenge.get("canonical_facts_modified") is False, "Shared challenge cannot modify canonical facts")
+require(challenge.get("external_action_included") is False, "Shared challenge cannot include external action")
+require(
+    challenge.get("request_contract") == "mesh.devils-advocate.challenge-request.v1",
+    "Shared challenge request contract drifted",
+)
+require(
+    challenge.get("response_contract") == "mesh.devils-advocate.challenge-packet.v1",
+    "Shared challenge response contract drifted",
+)
+
 registry = load_registry(ROOT / "agents" / "registry.json")
-require(len(registry) == 11, "Canonical Phase 1 roster must contain 11 agents")
+require(len(registry) == 10, "Canonical Phase 1 roster must contain 10 agents")
+require("devils-advocate" not in registry, "Devil's Advocate must not remain a workforce agent principal")
+require("mesh-devils-advocate" in registry["cos"].get("skills", []), "CoS shared challenge entitlement missing")
+require("mesh-devils-advocate" in registry["cro"].get("skills", []), "CRO shared challenge entitlement missing")
 for agent_id, record in registry.items():
     validate_runtime_contract("agent-record", agent_record_contract(record), CONTRACTS)
     require("governance-journal" in record.get("tools", []), f"{agent_id}: governance journal missing")
@@ -102,10 +124,19 @@ pyproject_text = (ROOT / "pyproject.toml").read_text()
 require(__version__ == RELEASE, f"Expected local ChatGPT MCP release {RELEASE}")
 require(f'version = "{RELEASE}"' in pyproject_text, "Package and runtime release versions drifted")
 
+package = json.loads((ROOT / "mcp" / "package.json").read_text())
+package_lock = json.loads((ROOT / "mcp" / "package-lock.json").read_text())
+require(package["version"] == RELEASE, "MCP package version drifted")
+require(package_lock["version"] == RELEASE, "MCP package-lock version drifted")
+require(package_lock["packages"][""]["version"] == RELEASE, "MCP package-lock root package version drifted")
+
 mcp_contract = json.loads((ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json").read_text())
 require(mcp_contract["runtime_release"] == RELEASE, "MCP release drifted")
 require(mcp_contract["transport"] == "LOCAL_STDIO", "ChatGPT MCP transport must remain LOCAL_STDIO")
 require(mcp_contract["serialized_runtime"] == "mesh_cos.mcp_runtime.MCPRuntime", "MCP runtime binding drifted")
+require("devils-advocate" not in mcp_contract["agent_tool_allowlists"], "Devil's Advocate agent MCP principal remains")
+require("skills.invoke_governed" in mcp_contract["agent_tool_allowlists"]["cos"], "CoS governed Skill invocation missing")
+require("skills.invoke_governed" in mcp_contract["agent_tool_allowlists"]["cro"], "CRO governed Skill invocation missing")
 local_runtime = mcp_contract["local_runtime"]
 require(local_runtime["command"] == "node", "Local MCP command drifted")
 require(local_runtime["args"] == ["mcp/dist/index.js"], "Local MCP entry point drifted")
@@ -114,10 +145,22 @@ require(local_runtime["ledger_path_env"] == "MESH_COS_LEDGER_PATH", "Local canon
 require(mcp_contract["deployment"]["chatgpt_runtime"] == "BUNDLED_LOCAL_STDIO", "ChatGPT runtime deployment mode drifted")
 require(mcp_contract["deployment"]["managed_remote"] == "OPTIONAL_NOT_REQUIRED", "Remote MCP incorrectly became mandatory")
 
-for manifest_path in sorted((ROOT / "chatgpt" / "workspace-agents").glob("*.json")):
+manifest_paths = sorted((ROOT / "chatgpt" / "workspace-agents").glob("*.json"))
+require(len(manifest_paths) == 10, "Workspace Agent package must contain exactly 10 manifests")
+require(not (ROOT / "chatgpt" / "workspace-agents" / "devils-advocate.json").exists(), "Devil's Advocate Workspace Agent remains")
+require(not (ROOT / "chatgpt" / "skills" / "mesh-devils-advocate").exists(), "Duplicate repository-local Devil's Advocate Skill remains")
+require(not (ROOT / "agents" / "devils-advocate.md").exists(), "Duplicate Devil's Advocate role card remains")
+
+for manifest_path in manifest_paths:
     manifest = json.loads(manifest_path.read_text())
     agent_id = manifest["agent_id"]
     require(manifest["repository_release"] == RELEASE, f"{manifest_path.name}: Workspace Agent release drifted")
+    expected_shared = ["mesh-devils-advocate"] if agent_id in {"cos", "cro"} else []
+    require(manifest.get("shared_skills", []) == expected_shared, f"{agent_id}: shared Skill projection drifted")
+    require(
+        manifest["builder_configuration"].get("shared_skills", []) == expected_shared,
+        f"{agent_id}: builder shared Skill projection drifted",
+    )
     mcp = manifest["mcp"]
     require(mcp["transport"] == "LOCAL_STDIO", f"{agent_id}: Workspace Agent MCP transport drifted")
     require(mcp["command"] == "node", f"{agent_id}: Workspace Agent MCP command drifted")
@@ -164,7 +207,7 @@ decision = governance.record_decision(
     model_provider=None,
     model_id_version=None,
     prompt_template_version=None,
-    skill_agent_version="drift-check-v1",
+    skill_agent_version="drift-check-v2",
     data_classification="INTERNAL",
     outcome_validation="CI validates contracts, policy, deployment packages and documentation tokens.",
     outcome_status="VALIDATED",
@@ -195,7 +238,7 @@ event = governance.record_event(
     data_classification="INTERNAL",
     model_provider=None,
     model_id_version=None,
-    skill_agent_version="drift-check-v1",
+    skill_agent_version="drift-check-v2",
     environment="CI",
     retention_class="GOVERNANCE_LONG_TERM",
 )
@@ -216,20 +259,24 @@ require("MESH_COS_MCP_SERVER_URL" not in env_text, "Remote MCP endpoint dependen
 require("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A" in env_text, "Agent Ops Slack channel drifted")
 
 required_docs = {
-    "README.md": ["v1.1.0", "LOCAL_STDIO", "MESH_COS_AGENT_ID", "TaskLedger", "MCPRuntime"],
-    "AGENTS.md": ["TaskLedger", "human-only", "task.complete", "task.verify"],
-    "SECURITY.md": ["MCPRuntime", "human-only", "replay", "100% branch-aware"],
+    "README.md": ["v2.0.0", "10-agent", "Mesh Devil's Advocate", "LOCAL_STDIO", "TaskLedger"],
+    "AGENTS.md": ["10-agent", "Mesh Devil's Advocate", "shared Skill", "TaskLedger"],
+    "SECURITY.md": ["Mesh Devil's Advocate", "advisory", "MCPRuntime", "human-only", "100% branch-aware"],
     "CONTRIBUTING.md": ["100%", "production-preflight.py"],
-    "docs/architecture.md": ["v1.1.0", "LOCAL_STDIO", "mcp_stdio_bridge", "TaskLedger"],
-    "docs/production-readiness.md": ["v1.1.0", "LOCAL_STDIO", "MESH_COS_LEDGER_PATH", "100%"],
-    "docs/security-governance.md": ["LOCAL_STDIO", "MESH_COS_AGENT_ID", "deny-by-default", "human-only"],
-    "docs/testing-evaluation.md": ["100%", "check-chatgpt-packages.py", "MCPRuntime"],
-    "docs/runbook.md": ["v1.1.0", "MESH_COS_AGENT_ID", "MESH_COS_LEDGER_PATH", "npm run check"],
-    "chatgpt/README.md": ["1.1.0", "LOCAL_STDIO", "Workspace Agent", "TaskLedger"],
-    "chatgpt/mcp/README.md": ["1.1.0", "LOCAL_STDIO", "mcp_stdio_bridge", "human-only"],
-    "chatgpt/workspace-agent-builder-prompt.md": ["v1.1.0", "LOCAL_STDIO", "11 agents", "Always ask"],
-    "docs/release-1.1.0-local-chatgpt-mcp.md": ["v1.1.0", "LOCAL_STDIO", "Mesh Revenue Intelligence", "Semantic Tag"],
-    "RELEASE.md": ["v1.1.0", "LOCAL_STDIO", "Production activation boundary"],
+    "docs/architecture.md": ["v2.0.0", "10-agent", "Mesh Devil's Advocate", "LOCAL_STDIO", "TaskLedger"],
+    "docs/agent-registry.md": ["Mesh Devil's Advocate", "shared capability", "advisory"],
+    "docs/decision-rights.md": ["Mesh Devil's Advocate", "advisory", "canonical facts"],
+    "docs/delegation-model.md": ["Mesh Devil's Advocate", "shared Skill", "not a delegated agent"],
+    "docs/conflict-resolution.md": ["Mesh Devil's Advocate", "challenge", "advisory"],
+    "docs/production-readiness.md": ["v2.0.0", "10", "Mesh Devil's Advocate", "LOCAL_STDIO", "100%"],
+    "docs/security-governance.md": ["Mesh Devil's Advocate", "LOCAL_STDIO", "deny-by-default", "human-only"],
+    "docs/testing-evaluation.md": ["v2.0.0", "shared Devil's Advocate", "100%", "check-chatgpt-packages.py"],
+    "docs/runbook.md": ["v2.0.0", "10 agents", "Mesh Devil's Advocate", "MESH_COS_LEDGER_PATH", "npm run check"],
+    "chatgpt/README.md": ["2.0.0", "10 Workspace Agents", "Mesh Devil's Advocate", "LOCAL_STDIO", "TaskLedger"],
+    "chatgpt/mcp/README.md": ["2.0.0", "10 agent", "Mesh Devil's Advocate", "LOCAL_STDIO", "human-only"],
+    "chatgpt/workspace-agent-builder-prompt.md": ["v2.0.0", "10 agents", "Mesh Devil's Advocate", "shared Skill", "Always ask"],
+    "docs/release-2.0.0-shared-devils-advocate.md": ["v2.0.0", "Mesh Devil's Advocate", "Breaking", "Semantic Tag"],
+    "RELEASE.md": ["v2.0.0", "Mesh Devil's Advocate", "Production activation boundary"],
 }
 for relative, tokens in required_docs.items():
     text = (ROOT / relative).read_text()

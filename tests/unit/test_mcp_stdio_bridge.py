@@ -100,7 +100,7 @@ def test_bridge_calls_real_mcp_runtime_with_canonical_policy(tmp_path: Path) -> 
 
 
 def test_bridge_rejects_removed_devils_advocate_agent_identity(tmp_path: Path) -> None:
-    with pytest.raises(PermissionError, match="Unknown agent principal"):
+    with pytest.raises(PermissionError, match="Unknown or unconfigured Workspace Agent: devils-advocate"):
         bridge.execute_request(
             {"tool_name": "registry.list_agents", "arguments": {}},
             env=env(tmp_path, agent_id="devils-advocate"),

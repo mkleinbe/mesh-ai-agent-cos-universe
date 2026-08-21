@@ -40,9 +40,12 @@ export function requireAgentId(
 }
 
 export function toolsForAgent(contract: MCPContract, agentId: string): ToolContract[] {
-  const allowed = new Set(contract.agent_tool_allowlists[agentId] ?? []);
+  const byName = new Map(contract.tools.map((tool) => [tool.name, tool]));
   const humanOnly = new Set(contract.human_tool_allowlist ?? []);
-  return contract.tools.filter((tool) => allowed.has(tool.name) && !humanOnly.has(tool.name));
+  return (contract.agent_tool_allowlists[agentId] ?? [])
+    .filter((name) => !humanOnly.has(name))
+    .map((name) => byName.get(name))
+    .filter((tool): tool is ToolContract => tool !== undefined);
 }
 
 export function validateArgumentsSize(argumentsValue: unknown): Record<string, unknown> {

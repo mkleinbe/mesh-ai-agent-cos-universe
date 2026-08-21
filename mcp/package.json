@@ -1,6 +1,6 @@
 {
   "name": "@meshdigitalio/mesh-cos-mcp",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Bundled local stdio MCP transport for the governed Mesh AI Chief of Staff runtime",
   "type": "module",

@@ -1,13 +1,14 @@
 # Testing and Evaluation
 
-Release `v1.0.0` uses explicit red-green-refactor loops and a fail-closed release pipeline. Behavioral changes begin with an executable expectation, then the minimum implementation, then refactoring while preserving contracts, governance, security, Workspace Agent packaging, and documentation alignment.
+Release `v1.1.0` uses explicit red-green-refactor loop engineering with fail-closed release gates. Behavioral changes begin with executable expectations, then the minimum implementation, then refactoring while preserving contracts, governance, authority, Workspace Agent packaging, local MCP behavior, and documentation alignment.
 
 ## Verification pipeline
 
 ```mermaid
 flowchart LR
-    R[RED: Source-Derived Test] --> G[GREEN: Minimum Fix]
-    G --> C[Contracts]
+    R[RED: Acceptance Test] --> G[GREEN: Minimum Fix]
+    G --> N[Node Build / Test / Stdio Certification]
+    N --> C[Contracts]
     C --> D[Runtime + Documentation Drift]
     D --> W[Workspace Agent Package Drift]
     W --> L[Strict Source Ruff]
@@ -19,7 +20,6 @@ flowchart LR
     CI -->|Failure| F[Classify Product vs Test Defect]
     F --> R
     CI -->|Success| PF[Production Preflight]
-    PF --> M[Merge / Release Candidate]
 ```
 
 ## Release commands
@@ -29,6 +29,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 python -m pip check
+cd mcp
+npm ci
+npm run check
+cd ..
 python scripts/validate-contracts.py
 python scripts/check-runtime-doc-drift.py
 python scripts/check-chatgpt-packages.py
@@ -40,75 +44,51 @@ bandit -q -r src -lll
 python -m compileall -q src
 ```
 
-## v1.0.0 release acceptance
+## Local MCP test layers
 
-The `mesh_cos` package must remain at 100% branch-aware coverage. The purpose is not cosmetic coverage inflation. The loop removes dead/unreachable code when appropriate and adds behavior-oriented tests for reachable production paths.
+The `mcp/` package is validated independently and end to end:
 
-The production-hardening loop added or strengthened tests for:
+- TypeScript compile;
+- Node unit tests for contract loading, agent identity, exact tool projection, human-only exclusion, argument bounds, safe errors, Python environment, and transport drift;
+- real `LOCAL_STDIO` MCP client/server smoke certification;
+- canonical task persistence across separate MCP calls through `mesh_cos.mcp_stdio_bridge` and `MCPRuntime`;
+- safe denial behavior for unauthorized calls;
+- npm audit with high-severity failure threshold.
 
-- serialized MCP runtime composition and exact contract/handler parity;
-- deny-by-default agent and human principal authorization;
-- L4 approval evidence and Michael-exclusive L5 authority;
-- human actor spoofing prevention;
-- server-derived agent identity and provenance;
-- server-owned replay executors and rejection of client-supplied executable replay mechanisms;
-- accountable-owner `task.complete` and independent `task.verify` separation;
-- atomic Slack and governance-event idempotency;
-- kill-switch enforcement;
-- retry, timeout, replay, override, and durable failure paths;
-- naive/aware timestamp compatibility;
-- fail-closed empty source allowlists;
-- decomposition atomicity;
-- audit-chain ordering and integrity;
-- registry, Skill, Workspace Agent manifest, MCP allowlist, and release-version consistency;
-- production-preflight success and failure paths.
+The TypeScript layer is transport only. Tests ensure business and governance logic stays in `MCPRuntime`.
 
-## Test layers
+## Workspace Agent package acceptance
 
-### Contracts and governance
+`tests/evaluations/test_chatgpt_workspace_agent_packages.py`, `tests/evaluations/test_local_chatgpt_mcp_projection.py`, and `scripts/check-chatgpt-packages.py` verify all 11 role Skills/manifests, exact registry authority, release `1.1.0`, local stdio launch metadata, per-agent `MESH_COS_AGENT_ID`, shared canonical ledger configuration, exact MCP allowlists, human-only separation, connector constraints, Answer Desk Slack gating, and stable role naming.
 
-Versioned schemas preserve backward compatibility. `decision.v2` and `agent-event.v2` remain closed governance contracts. Tests verify canonical decision persistence, L4/L5 fail-closed behavior, idempotent audit events, SHA-256 hash-chain integrity, shared governance policy injection, mirror configuration, and the rule that `TaskLedger` remains canonical.
+## MCP runtime safety
 
-### Canonical role-model integrity
+`MCPRuntime` remains the serialized execution boundary behind the local MCP. Unknown identities, unknown tools, non-allowlisted tools, quarantined/retired agents, authority claims above the role ceiling, missing L4 approval evidence, non-Michael L5 claims, and agent attempts to call human-only operations fail closed.
 
-Role-model tests verify stable organizational display names, independent `MAJOR.MINOR.PATCH` implementation metadata, complete Phase 1 capability surfaces, repository/runtime release alignment, and authority boundaries for CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, Devil's Advocate, AgentOps, Answer Desk, Message Operations, and Chief of Staff.
+Replay tests verify that callers cannot inject Python callables, import paths, shell commands, or source-text execution mechanisms. Only a server-registered executor referenced by canonical failure state may run.
 
-### Workspace Agent package acceptance
+## Contracts and governance
 
-`tests/evaluations/test_chatgpt_workspace_agent_packages.py` and `scripts/check-chatgpt-packages.py` verify all 11 role Skills/manifests, exact registry authority, release `1.0.0`, production-readiness references, Builder configuration, MCP allowlists, human-only tool separation, connector constraints, Answer Desk Slack gating, and stable role naming.
+`decision.v2` and `agent-event.v2` remain closed governance contracts. Tests verify canonical decision persistence, L4/L5 fail-closed behavior, idempotent audit events, SHA-256 hash-chain integrity, shared governance policy injection, mirror configuration, and the rule that `TaskLedger` remains canonical.
 
-### MCP runtime safety
+## Completion versus verification
 
-`MCPRuntime` is tested as the serialized remote composition boundary. Unknown principals, unknown tools, non-allowlisted tools, quarantined/retired agents, authority claims above the role ceiling, missing L4 approval evidence, non-Michael L5 claims, and agent attempts to call human-only operations fail closed.
+Accountable owners may use `task.complete` to persist outcome and evidence and reach `COMPLETED`. Verification remains separate. Passing verification without evidence fails closed. Failed acceptance routes to `REWORK`. An agent cannot self-certify missing evidence into `VERIFIED`.
 
-Replay tests verify that remote callers cannot inject a Python callable, import path, shell command, or source-text execution mechanism. Only a server-registered executor referenced by canonical failure state can run.
+## Runtime/documentation drift
 
-### Completion versus verification
+`scripts/check-runtime-doc-drift.py` verifies release `1.1.0`, schema closure/versioning, runtime AgentRecords, role identities/capabilities, local MCP transport and entry point, agent identity binding, ledger binding, representative governance payloads, mirror configuration, and current documentation invariants. It also prevents `MESH_COS_MCP_SERVER_URL` from returning as a ChatGPT-local requirement.
 
-Accountable owners may use `task.complete` to persist outcome/evidence and reach `COMPLETED`. Verification is separate. Passing verification without evidence fails closed. Failed acceptance routes to `REWORK`. An agent cannot self-certify missing evidence into `VERIFIED`.
+## Production preflight
 
-### Runtime/documentation drift
+`ProductionPreflight` validates kill-switch state, canonical registry/health, local MCP contract/package composition, runtime bindings, canonical ledger configuration, optional Slack requirements, optional Answer Desk channel, and optional audit-chain integrity. Failed preflight blocks activation.
 
-`scripts/check-runtime-doc-drift.py` verifies schema closure/versioning, runtime AgentRecords, role identities/capabilities, representative contract payloads, governance-policy injection, decision/audit behavior, Slack/MCP configuration, and required documentation invariants.
+## v1.1.0 TDD / loop-engineering record
 
-### Production preflight
+The enhancement began with intentionally failing local-MCP acceptance tests on `enhancement/local-chatgpt-mcp`. The loop surfaced and corrected missing local runtime artifacts, tool-catalog ordering, stale remote-endpoint assumptions, release drift, incomplete manifest projection, and npm dependency vulnerabilities. The dependency surface was reduced rather than accepting high/moderate findings.
 
-`ProductionPreflight` tests kill-switch state, HTTPS MCP URL validation, canonical 11-agent registry/health, MCP contract/runtime binding resolution, serialized runtime composition, optional Slack requirements, optional Answer Desk channel, and optional audit-chain integrity. Failed preflight blocks activation.
-
-## TDD / loop-engineering record
-
-The initial Workspace Agent package increment was released as `0.2.0`. The subsequent production-hardening loop intentionally raised the bar rather than merely incrementing documentation. It surfaced and closed split-write idempotency windows, remote replay safety, remote completion semantics, human-principal spoofing, MCP composition ambiguity, authority-claim spoofing, timestamp compatibility faults, source-allowlist widening, partial decomposition persistence, record-ordering drift, and missing production-preflight composition checks.
-
-The resulting repository release is `1.0.0`. See `production-hardening-2026-08-17.md` and `release-1.0.0-production-readiness.md`.
-
-## OpenAI Skill validation
-
-Each role Skill follows the OpenAI Skill package layout and is validated/repackaged after changes. Every role Skill includes `references/production-readiness.md`. Skill packaging does not prove external app connectivity or a deployed MCP endpoint, which remain activation dependencies.
-
-## Original Phase 1 evaluations
-
-The original 13 representative scenarios remain in the suite: routine team question, pricing escalation, CRO/CFO conflict, infeasible staffing, stale consultant availability, content approval gate, WATCH after repeated poor work, QUARANTINE after critical defect, Slack duplicate delivery, coordination loop, missing source authority, high-impact/low-confidence escalation, and failed outcome verification returning to REWORK.
+The loop is complete only when Node checks, Python checks, package/drift checks, **100% branch-aware `mesh_cos` coverage**, security scans, and post-merge `main` CI are green.
 
 ## Test integrity
 
-Tests must not fabricate production credentials, weaken authority or approval policy, turn ChatGPT, Slack, or Google Sheets into canonical state, persist private reasoning traces, claim an MCP/app integration is live when only a contract exists, or treat Workspace `Always ask` as a replacement for Mesh L4/L5 governance.
+Tests must not fabricate credentials, weaken authority or approval policy, turn ChatGPT/Slack/Google Sheets into canonical state, persist private reasoning traces, claim a connector is live when only a contract exists, or treat Workspace `Always ask` as a replacement for Mesh L4/L5 governance.

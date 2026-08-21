@@ -1,65 +1,63 @@
 # ChatGPT Workspace Agent Packages
 
-Current repository release: **`1.0.0`**.
+Current repository release target: **`1.1.0`**.
 
-This directory projects the canonical Mesh Phase 1 agent organization into production-ready ChatGPT Workspace Agent deployment packages. It does not replace the Python control plane or move canonical state into ChatGPT.
+This directory projects the canonical Mesh CoS organization into ChatGPT Workspace Agent deployment packages. It does not replace the Python control plane and does not move canonical state into ChatGPT.
 
 ## Contents
 
-- `skills/`: 11 validated OpenAI Skill packages, one for each canonical role. Every Skill includes `references/role-contract.md` and `references/production-readiness.md`.
-- `workspace-agents/`: exact Builder manifests derived from `agents/registry.json`, aligned to repository release `1.0.0` and the MCP contract.
-- `mcp/mesh-cos-mcp.v1.json`: custom MCP tool contract mapping agents to the serialized governed runtime, including human-only tool definitions.
-- `mcp/README.md`: MCP implementation, security, and deployment boundary.
-- `workspace-agent-builder-prompt.md`: production deployment and private-preview handoff prompt.
-- `workspace-agent-gap-assessment-2026-08-17.md`: historical TDD/loop-engineering closure record for the initial package increment.
+- `skills/`: 11 validated OpenAI role Skills.
+- `workspace-agents/`: exact Workspace Agent manifests aligned to repository release `1.1.0`.
+- `mcp/mesh-cos-mcp.v1.json`: MCP contract, per-agent allowlists, local runtime metadata, and human-only operations.
+- `mcp/README.md`: bundled MCP implementation and security boundary.
+- `workspace-agent-builder-prompt.md`: deployment and private-preview handoff.
 
-## Architecture
+## ChatGPT-local architecture
 
 ```mermaid
 flowchart LR
     WA[Workspace Agent] --> SK[Role Skill]
     WA --> APPS[Approved Workspace Apps]
-    WA --> MCP[mesh-cos-mcp]
-    SK --> PR[Production-Readiness Contract]
-    PR --> WA
-    APPS -->|Evidence / Approved Action| WA
-    MCP --> RT[MCPRuntime]
-    RT --> AUTH[Registry + MCP Allowlist + Authority + Approval]
-    AUTH --> SVC[Mesh CoS Runtime Services]
-    SVC --> TL[(TaskLedger Canonical State)]
-    SVC --> GOV[decision.v2 + agent-event.v2]
-    GOV --> TL
+    WA --> MCP[mesh-cos-mcp\nLOCAL_STDIO]
+    MCP --> NODE[node mcp/dist/index.js]
+    NODE --> BRIDGE[mesh_cos.mcp_stdio_bridge]
+    BRIDGE --> RT[MCPRuntime]
+    RT --> AUTH[Registry + Allowlist + Authority + Approval]
+    AUTH --> TL[(TaskLedger)]
 ```
 
-The Workspace Agent is the conversational/workflow surface. The Skill carries repeatable role behavior. `MCPRuntime` and `WorkspaceAgentMCPPolicy` are the controlled bridge to canonical execution. Workspace apps provide role-scoped evidence or explicitly approved actions. Retrieved content is data, not operating instructions.
+The bundled TypeScript MCP handles transport only. `MCPRuntime` remains the sole business/governance execution core.
 
-## v1.0.0 production invariants
+## Required local binding
+
+Each Workspace Agent launches the same package with:
+
+```text
+MESH_COS_AGENT_ID=<registered agent id>
+MESH_COS_LEDGER_PATH=.mesh-cos/task-ledger.sqlite3
+MESH_COS_PYTHON_BIN=python
+```
+
+All 11 agents in one operating universe share the approved ledger path. The bound agent identity cannot be changed by prompt text, retrieved content, or tool arguments.
+
+## Production invariants
 
 - `TaskLedger` remains canonical.
+- MCP transport for ChatGPT is `LOCAL_STDIO`.
 - L4 fails closed until qualified human approval exists.
 - L5 remains Michael-exclusive.
-- `approval.record_decision` and `reliability.human_override` are human-only MCP operations.
-- Agent identity, role, implementation version, and authority are derived server-side from the canonical registry.
+- `approval.record_decision` and `reliability.human_override` are human-only and never appear in agent tool catalogs.
+- Per-agent tool projection is deny-by-default.
 - Workspace write actions default to **Always ask**.
-- Remote replay accepts only a server-registered executor referenced by canonical failure state.
-- Accountable owners use `task.complete`; verification remains a separate authorized `task.verify` action.
+- Reliability replay accepts only server-registered executors referenced by canonical failure state.
+- Accountable owners use `task.complete`; verification remains a separate `task.verify` action.
 - Workspace Agent package drift is a CI blocker.
-- Production preflight and private-preview negative tests are required before publication/activation.
+- Production preflight and private-preview positive/negative tests are required before activation.
 
 ## Deployment boundary
 
-```mermaid
-flowchart TD
-    A[Repository v1.0.0] --> B[Release CI Green]
-    B --> C[Production Preflight]
-    C --> D{Remote MCP + Apps + Approvers + Channels Ready?}
-    D -->|No| E[Keep Agents Private / Block Routing]
-    D -->|Yes| F[Private Preview Tests]
-    F --> G{Positive + Negative Tests Pass?}
-    G -->|No| E
-    G -->|Yes| H[RBAC-Controlled Production Activation]
-```
+A separately deployed HTTPS MCP endpoint and `MESH_COS_MCP_SERVER_URL` are not required for ChatGPT-local operation. A managed remote transport may be added separately, but it must preserve the same `MCPRuntime`, authority, approval, audit, allowlist, and canonical-state controls.
 
-The repository does not fabricate the remote MCP endpoint or credentials. Production activation still requires an approved HTTPS MCP deployment, `MESH_COS_MCP_SERVER_URL`, Workspace app authentication, applicable Slack credentials, the dedicated Answer Desk channel, production approval-owner mappings, approved source/Skill credentials, secrets management, and deployment ownership.
+External activation dependencies still include Workspace app authentication, applicable Slack credentials, a dedicated Answer Desk Slack channel, production approval-owner mappings, approved source/Skill credentials, secrets management, and target-workspace RBAC/publication settings.
 
-See `../docs/release-1.0.0-production-readiness.md`, `../docs/production-readiness.md`, and `../RELEASE.md`.
+See `../docs/release-1.1.0-local-chatgpt-mcp.md`, `../docs/production-readiness.md`, and `../RELEASE.md`.

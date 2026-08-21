@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Release `v1.0.0` is the production-ready repository architecture for the Mesh AI Chief of Staff. It is a governed executive control plane for a bounded hybrid organization of agents, reusable Mesh Skills, authoritative sources, and explicit human decision owners. The runtime remains a Python modular monolith with SQLite behind the `TaskLedger` persistence boundary. ChatGPT Workspace Agents are a governed deployment and interaction layer, not a replacement for the control plane.
+Release `v1.1.0` preserves the governed Mesh AI Chief of Staff control plane and moves the ChatGPT MCP execution boundary into the ChatGPT environment through a bundled `LOCAL_STDIO` transport. The control plane remains a Python modular monolith with SQLite behind the `TaskLedger` persistence boundary.
 
-Material recommendations use the closed `decision.v2` explainability contract, and consequential actions use `agent-event.v2` audit records.
+Material recommendations use `decision.v2`; consequential actions use `agent-event.v2`.
 
 ## End-to-end topology
 
@@ -14,147 +14,92 @@ flowchart TB
     H[Qualified L4 Approvers] --> WA
 
     subgraph CHATGPT[ChatGPT Deployment Layer]
-      COSWA[Chief of Staff Workspace Agent]
+      COSWA[Chief of Staff]
       FWA[10 Functional / Controller / Specialist Agents]
       SK[Governed Role Skills]
       APPS[Approved Workspace Apps]
+      MCP[Bundled mesh-cos-mcp\nLOCAL_STDIO]
       COSWA --> SK
       FWA --> SK
       COSWA --> APPS
       FWA --> APPS
+      COSWA --> MCP
+      FWA --> MCP
     end
 
-    WA --> COSWA
-    WA --> FWA
-    COSWA --> MCP[mesh-cos-mcp]
-    FWA --> MCP
-
-    subgraph RUNTIME[Mesh CoS Control Plane]
-      MCP --> RT[MCPRuntime]
-      RT --> MCPPOL[WorkspaceAgentMCPPolicy\nDeny by Default]
-      MCPPOL --> REG[Agent Registry + Governance Policy]
-      REG --> AUTH[Source / Tool / Action / Authority Checks]
-      AUTH --> COS[ChiefOfStaffService]
-      AUTH --> WM[ChiefOfStaffWorkforceManager]
-      AUTH --> AO[AgentOpsEvaluator]
-      AUTH --> AD[AnswerDeskService]
-      AUTH --> GOV[GovernanceJournal]
-      AUTH --> FA[Governed Functional Adapters]
-      COS --> LEDGER[(TaskLedger)]
-      WM --> LEDGER
-      AO --> LEDGER
-      AD --> LEDGER
-      GOV --> LEDGER
-      FA --> LEDGER
-    end
+    MCP --> NODE[node mcp/dist/index.js]
+    NODE --> BRIDGE[mesh_cos.mcp_stdio_bridge]
+    BRIDGE --> RT[MCPRuntime]
+    RT --> MCPPOL[WorkspaceAgentMCPPolicy\nDeny by Default]
+    MCPPOL --> REG[Agent Registry + Governance Policy]
+    REG --> AUTH[Source / Tool / Action / Authority Checks]
+    AUTH --> COS[ChiefOfStaffService]
+    AUTH --> WM[ChiefOfStaffWorkforceManager]
+    AUTH --> AO[AgentOpsEvaluator]
+    AUTH --> AD[AnswerDeskService]
+    AUTH --> GOV[GovernanceJournal]
+    AUTH --> FA[Governed Functional Adapters]
+    COS --> LEDGER[(TaskLedger)]
+    WM --> LEDGER
+    AO --> LEDGER
+    AD --> LEDGER
+    GOV --> LEDGER
+    FA --> LEDGER
 
     LEDGER --> DLOG[CoS Decision Log Mirror]
     LEDGER --> ALOG[CoS Audit Log Mirror]
-    OPS[#mesh-agent-ops\nC0BRL4GCL3A] <--> COSWA
 ```
 
-The trust direction is deliberate. Workspace Agent instructions and app configuration can narrow behavior but cannot expand the canonical registry. `MCPRuntime` dispatches only the fixed contract surface, `WorkspaceAgentMCPPolicy` applies per-agent allowlists, and the runtime then applies source, tool, action, authority, approval, idempotency, audit, and reliability controls.
+The TypeScript layer is intentionally thin. It implements MCP transport, tool projection, argument bounds, safe error handling, and process bridging. It does not duplicate task, authority, approval, governance, reliability, or source-control logic from Python.
 
-## Serialized MCP boundary
+## Local identity and state binding
 
-`mesh_cos.mcp_runtime.MCPRuntime` is the production composition root behind the remote `mesh-cos-mcp` transport. The transport supplies an authenticated principal, tool name, and JSON arguments. The runtime does not execute client-supplied Python, import paths, callable names, shell commands, or source-text instructions.
+Each Workspace Agent launches the same MCP package with an explicit identity:
+
+```text
+MESH_COS_AGENT_ID=<agent-id>
+MESH_COS_LEDGER_PATH=.mesh-cos/task-ledger.sqlite3
+MESH_COS_PYTHON_BIN=python
+```
+
+`MESH_COS_AGENT_ID` must match a registered agent. Prompt text, retrieved documents, connector output, and MCP arguments cannot select or modify agent identity. All 11 agents in one operating universe use the same approved ledger path so tasks, decisions, approvals, audit events, and performance state remain coherent.
+
+## Serialized execution boundary
 
 ```mermaid
 sequenceDiagram
     participant U as User / Executive
     participant W as Workspace Agent
+    participant S as Local stdio MCP
+    participant B as Python Bridge
     participant M as MCPRuntime
     participant R as Agent Registry
     participant L as TaskLedger
-    participant H as Human Approver
 
     U->>W: Outcome request
-    W->>M: Authenticated governed tool call
+    W->>S: MCP tool call
+    S->>B: bounded JSON request
+    B->>M: call_agent(bound identity, tool, arguments)
     M->>R: Resolve role, authority, health, allowlist
-    M->>L: Read canonical task/evidence
-    alt Within agent authority
-      M->>L: Persist canonical action and audit
-      L-->>W: Result
-    else L4
-      M->>L: Persist approval request
-      H->>M: Authenticated human decision
-      M->>L: Persist approval-bound result
-    else L5
-      M->>L: Escalate to Michael-exclusive decision
-    end
+    M->>L: Read or mutate canonical state
+    L-->>M: Canonical result
+    M-->>B: Structured result
+    B-->>S: Safe bridge response
+    S-->>W: MCP result
 ```
 
-Human-only tools are separated from agent tools. `approval.record_decision` and `reliability.human_override` require an authenticated human principal. L4 actions fail closed without qualified human approval evidence. L5 remains Michael-exclusive.
-
-## Stable role identity model
-
-Organizational role identity and software version are separate. `display_name` is stable. The registry `version` field carries role implementation version using `MAJOR.MINOR.PATCH`. Repository release `1.0.0` identifies the production-readiness release of the control plane and deployment contract. Accountable domain, source authority, permitted/prohibited actions, approvals, and delegation rules express scope.
-
-Canonical Phase 1 roles remain `Chief of Staff`, `AgentOps Controller`, `Answer & Decision Desk`, `CRO`, `CFO`, `COO`, `Consultant Network Steward`, `CMO`, `VP Content`, `Devil's Advocate`, and `Message Operations`.
+Human-only tools are not projected into agent catalogs. `approval.record_decision` and `reliability.human_override` require a separately authenticated human-principal path. L4 fails closed without qualified approval; L5 remains Michael-exclusive.
 
 ## Workspace Agent packaging model
 
-Release `1.0.0` maps every canonical role into coordinated artifacts:
+Release `1.1.0` maps every canonical role into coordinated artifacts:
 
-1. `chatgpt/skills/<skill>/SKILL.md` contains reusable role workflow and non-obvious operating rules.
-2. `chatgpt/skills/<skill>/references/production-readiness.md` adds the shared production-readiness contract.
-3. `chatgpt/workspace-agents/<agent_id>.json` contains exact Builder configuration, model preference/fallback, knowledge files, apps, channels, write approval, connector constraints, starter prompts, and MCP allowlist.
-4. `chatgpt/mcp/mesh-cos-mcp.v1.json` defines the serialized tool contract and human-only operations.
-
-```mermaid
-flowchart LR
-    R[agents/registry.json] --> M[Workspace Agent Manifest]
-    R --> S[Role Skill]
-    S --> PR[Production-Readiness Reference]
-    M --> B[Workspace Agent Builder]
-    PR --> B
-    C[mesh-cos-mcp.v1.json] --> B
-    C --> RT[MCPRuntime]
-    RT --> P[WorkspaceAgentMCPPolicy]
-    P --> L[(TaskLedger)]
-```
-
-The Skill is not the system of record and the Workspace Agent is not a prompt-only persona. The Skill drives repeatable behavior, the manifest configures the product surface, and the MCP boundary supplies controlled canonical execution.
-
-## Functional accountability boundaries
-
-- **CRO:** commercial strategy, opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best action, expansion, and commercial-risk framing. Revenue Intelligence remains authoritative where designated.
-- **CFO:** Engagement Finance / FP&A only. No enterprise-accounting, treasury, tax, audit, or unrestricted finance authority is implied.
-- **COO:** delivery feasibility, configuration, capacity, POD/resource composition, dependency readiness, partner capacity, delivery-risk sensing, operational constraints, and staffing recommendations. The CoS retains enterprise work-graph orchestration.
-- **Consultant Network Steward:** consultant identification/matching, fit, freshness, validation timestamp, rate, availability, readiness gaps, refresh, and contracting-readiness evidence under COO authority.
-- **CMO:** marketing strategy, audience/ICP, category positioning, demand architecture, distribution, brand governance, campaign optimization, editorial priorities, and marketing-commercial feedback.
-- **VP Content:** editorial planning/calendar, evidence assembly, drafting, adaptation, derivatives, repurposing, Mesh IP reuse, inventory, editorial QA, and performance feedback under CMO authority.
-- **Devil's Advocate:** independent challenge only, never final decision ownership.
-- **Message Operations:** controlled execution of approved communications only.
-
-## Completion and verification separation
-
-Remote accountable owners use `task.complete` to persist finished outcome evidence. Verification is separate.
-
-```mermaid
-sequenceDiagram
-    participant O as Accountable Owner
-    participant M as mesh-cos-mcp
-    participant L as TaskLedger
-    participant V as Authorized Verifier
-
-    O->>M: task.complete(outcome, evidence)
-    M->>L: Persist COMPLETED + evidence
-    V->>M: task.verify(acceptance result, evidence)
-    alt Pass
-      M->>L: VERIFIED
-    else Fail
-      M->>L: REWORK
-    end
-```
-
-`COMPLETED` never implies `VERIFIED`. Verification requires explicit verifier identity and acceptance evidence.
-
-## Reliability architecture
-
-Runtime reliability includes idempotent intake, atomic Slack/governance-event idempotency, bounded retries, timeouts, execution leases, durable failure records, server-owned replay executors, explicit human override, stalled-work remediation, supersession, kill switch, and acceptance verification.
-
-Consequential record listing preserves insertion chronology so audit-chain predecessor selection and rolling evidence windows remain deterministic. Legacy naive timestamps are normalized to UTC for comparisons.
+1. `chatgpt/skills/<skill>/SKILL.md` defines reusable role workflow.
+2. `chatgpt/skills/<skill>/references/production-readiness.md` defines the shared local-MCP readiness contract.
+3. `chatgpt/workspace-agents/<agent_id>.json` defines exact ChatGPT configuration and local MCP launch settings.
+4. `chatgpt/mcp/mesh-cos-mcp.v1.json` defines tool contracts, per-agent allowlists, local runtime metadata, human-only operations, and deployment mode.
+5. `mcp/` is the bundled stdio transport package.
+6. `mesh_cos.mcp_stdio_bridge` bridges bounded JSON into the existing `MCPRuntime`.
 
 ## Canonical source-of-truth map
 
@@ -164,26 +109,26 @@ Consequential record listing preserves insertion chronology so audit-chain prede
 | Workspace Agent deployment settings | `chatgpt/workspace-agents/*.json`, subordinate to registry |
 | Role workflows | `chatgpt/skills/*/SKILL.md`, subordinate to registry |
 | MCP permissions and human-only tools | `chatgpt/mcp/mesh-cos-mcp.v1.json` + `WorkspaceAgentMCPPolicy` |
-| Serialized remote execution | `mesh_cos.mcp_runtime.MCPRuntime` |
+| ChatGPT MCP transport | `mcp/` using `LOCAL_STDIO` |
+| Serialized business/governance execution | `mesh_cos.mcp_runtime.MCPRuntime` |
 | Task/work graph and outcomes | `TaskLedger` |
-| Explainable decisions | `decision.v2` records in `TaskLedger`; CoS Decision Log is a mirror |
-| Consequential events | `agent-event.v2` records in `TaskLedger`; CoS Audit Log is a mirror |
+| Explainable decisions | `decision.v2` in `TaskLedger`; CoS Decision Log is a mirror |
+| Consequential events | `agent-event.v2` in `TaskLedger`; CoS Audit Log is a mirror |
 | Conflicts and approvals | `TaskLedger` typed records |
 | Performance | performance events/scorecards plus versioned policy |
-| Slack state | TaskLedger mappings/idempotency, not Slack history |
 
-## Production-readiness boundary
+## Functional accountability boundaries
 
-```mermaid
-flowchart TD
-    A[Repository v1.0.0] --> B[100% Branch-Aware CI]
-    B --> C[ProductionPreflight]
-    C --> D{External Dependencies Configured?}
-    D -->|No| E[Production-Ready Repository]
-    D -->|Yes| F[Live Integration Smoke Tests]
-    F --> G{All Positive and Negative Tests Pass?}
-    G -->|No| H[Block Activation]
-    G -->|Yes| I[Production Activation]
-```
+The local MCP refactor does not expand role authority. CRO remains commercial; CFO remains Engagement Finance / FP&A only; COO remains delivery feasibility and resource readiness; Consultant Network Steward remains a COO specialist; CMO owns marketing strategy; VP Content owns editorial production under CMO; Devil's Advocate remains advisory; Message Operations remains controlled approved communication execution; AgentOps remains operational governance; Answer & Decision Desk remains permission-aware knowledge/routing; CoS remains the orchestration control plane.
 
-The repository contains production-ready Skills, manifests, MCP contract, serialized runtime, tests, preflight, documentation, and Builder instructions. Live activation still requires an approved HTTPS MCP deployment, `MESH_COS_MCP_SERVER_URL`, Workspace app authentication, applicable Slack credentials, a dedicated Answer Desk channel, production approval-owner mapping, approved source credentials, deployment infrastructure, secrets management, and private-preview testing. SQLite should be revisited before multi-instance or high-availability deployment.
+## Completion, verification, and reliability
+
+`task.complete` persists accountable-owner outcome evidence. `task.verify` remains a separate acceptance action. `COMPLETED` never implies `VERIFIED`.
+
+Runtime reliability continues to include idempotent intake, bounded retries, execution leases, durable failure records, server-owned replay executors, explicit human override, stalled-work remediation, kill switch, and acceptance verification. The local MCP layer cannot introduce client-supplied code execution, import paths, replay callables, shell commands, or source-text instructions.
+
+## Deployment boundary
+
+The ChatGPT-local path does not require an HTTPS MCP service or `MESH_COS_MCP_SERVER_URL`. A managed remote MCP transport may be added as a separate deployment option, but it must preserve the same `MCPRuntime`, registry, allowlists, authority, approval, audit, and canonical-state controls.
+
+SQLite should be revisited before multi-instance or high-availability deployment.

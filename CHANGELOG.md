@@ -2,6 +2,36 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 1.1.0 - 2026-08-21 - Local ChatGPT MCP
+
+### ChatGPT-local MCP runtime
+
+- Refactored `mesh-cos-mcp` from a required remote HTTPS deployment into a bundled `LOCAL_STDIO` MCP runtime for ChatGPT, following the established Mesh Revenue Intelligence local-MCP pattern.
+- Added the TypeScript MCP package under `mcp/` using the official Model Context Protocol SDK and `node mcp/dist/index.js` as the checked-in entry point.
+- Added `mesh_cos.mcp_stdio_bridge` to bridge bounded JSON requests into the existing Python `mesh_cos.mcp_runtime.MCPRuntime` without duplicating business or governance logic.
+- Added immutable per-process agent binding through `MESH_COS_AGENT_ID` and shared canonical state through `MESH_COS_LEDGER_PATH`.
+- Removed the ChatGPT requirement for `MESH_COS_MCP_SERVER_URL`; managed remote transport is optional and non-authoritative.
+
+### Security, authority, and reliability
+
+- Preserved exact per-agent MCP allowlists and deny-by-default runtime authorization.
+- Kept `approval.record_decision` and `reliability.human_override` human-only and excluded from all agent tool catalogs.
+- Added bounded MCP argument handling, safe error categories, raw Python stderr suppression, and no client-supplied code/import/shell execution.
+- Preserved L4 qualified-human approval, Michael-exclusive L5, `TaskLedger` canonical state, server-owned replay behavior, and separate `task.complete` / `task.verify` acceptance boundaries.
+
+### TDD and release engineering
+
+- Started the enhancement with acceptance tests before implementation and used repeated RED/GREEN loop engineering to close runtime, manifest, documentation, ordering, security, and drift defects.
+- Added TypeScript build/tests, a real stdio MCP certification, canonical persistence checks across MCP calls, human-only exclusion tests, safe-denial tests, and npm audit to CI.
+- Removed an unnecessary dependency after npm surfaced high/moderate vulnerability findings, returning the MCP package to zero reported npm vulnerabilities in CI.
+- Preserved strict source Ruff, mypy, contract validation, runtime/documentation drift, Workspace Agent package drift, 100% branch-aware `mesh_cos` coverage, high-severity Bandit, and compileall release gates.
+
+### Skills, Workspace Agents, and documentation
+
+- Reconciled all 11 Workspace Agent manifests to release `1.1.0`, `LOCAL_STDIO`, exact per-agent identity binding, and shared canonical ledger configuration.
+- Updated all role Skill production-readiness references for the bundled local MCP model.
+- Updated the Builder handoff, production preflight, README, architecture, security/governance guide, runbook, ChatGPT package guide, MCP guide, release notes, and release record.
+
 ## 1.0.0 - 2026-08-17 - Production Readiness
 
 ### Stable production-readiness milestone

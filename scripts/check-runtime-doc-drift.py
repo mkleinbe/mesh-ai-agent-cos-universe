@@ -16,7 +16,7 @@ from mesh_cos.registry import load_registry
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "contracts"
-RELEASE = "1.0.0"
+RELEASE = "1.1.0"
 
 
 def require(condition: bool, message: str) -> None:
@@ -99,18 +99,36 @@ require(registry["coo"]["accountable_domain"] == "delivery feasibility, capacity
 require(registry["consultant-network-steward"]["parent_agent_id"] == "coo", "Network Steward hierarchy drifted")
 
 pyproject_text = (ROOT / "pyproject.toml").read_text()
-require(__version__ == RELEASE, f"Expected production-readiness release {RELEASE}")
+require(__version__ == RELEASE, f"Expected local ChatGPT MCP release {RELEASE}")
 require(f'version = "{RELEASE}"' in pyproject_text, "Package and runtime release versions drifted")
 
 mcp_contract = json.loads((ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json").read_text())
 require(mcp_contract["runtime_release"] == RELEASE, "MCP release drifted")
+require(mcp_contract["transport"] == "LOCAL_STDIO", "ChatGPT MCP transport must remain LOCAL_STDIO")
+require(mcp_contract["serialized_runtime"] == "mesh_cos.mcp_runtime.MCPRuntime", "MCP runtime binding drifted")
+local_runtime = mcp_contract["local_runtime"]
+require(local_runtime["command"] == "node", "Local MCP command drifted")
+require(local_runtime["args"] == ["mcp/dist/index.js"], "Local MCP entry point drifted")
+require(local_runtime["agent_identity_env"] == "MESH_COS_AGENT_ID", "Local agent identity binding drifted")
+require(local_runtime["ledger_path_env"] == "MESH_COS_LEDGER_PATH", "Local canonical ledger binding drifted")
+require(mcp_contract["deployment"]["chatgpt_runtime"] == "BUNDLED_LOCAL_STDIO", "ChatGPT runtime deployment mode drifted")
+require(mcp_contract["deployment"]["managed_remote"] == "OPTIONAL_NOT_REQUIRED", "Remote MCP incorrectly became mandatory")
+
 for manifest_path in sorted((ROOT / "chatgpt" / "workspace-agents").glob("*.json")):
     manifest = json.loads(manifest_path.read_text())
+    agent_id = manifest["agent_id"]
     require(manifest["repository_release"] == RELEASE, f"{manifest_path.name}: Workspace Agent release drifted")
+    mcp = manifest["mcp"]
+    require(mcp["transport"] == "LOCAL_STDIO", f"{agent_id}: Workspace Agent MCP transport drifted")
+    require(mcp["command"] == "node", f"{agent_id}: Workspace Agent MCP command drifted")
+    require(mcp["args"] == ["mcp/dist/index.js"], f"{agent_id}: Workspace Agent MCP args drifted")
+    require(mcp["env"]["MESH_COS_AGENT_ID"] == agent_id, f"{agent_id}: MCP identity env drifted")
+    require(mcp["env"]["MESH_COS_LEDGER_PATH"] == ".mesh-cos/task-ledger.sqlite3", f"{agent_id}: ledger path drifted")
+    require("server_url_env" not in mcp, f"{agent_id}: remote MCP endpoint dependency reintroduced")
+
 
 task = TaskRecord("T-drift", "objective", "outcome", "michael", "michael", "cro", "michael", acceptance_test="accepted")
 validate_runtime_contract("task", task.to_dict(), CONTRACTS)
-
 delegation = Delegation(
     "D-drift", "T-drift", "cos", "cro", "objective", "outcome", "brief", ["accepted"], "P1", AuthorityLevel.L2, "accepted"
 )
@@ -191,29 +209,27 @@ require(governance_logs["audit_log"]["spreadsheet_id"] == "1T8vKx4gaUJdeG8kSc18M
 require(governance_logs["decision_log"]["spreadsheet_id"] == "1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw", "CoS Decision Log ID drifted")
 
 env_text = (ROOT / ".env.example").read_text()
+require("MESH_COS_AGENT_ID=cos" in env_text, "Local agent identity example missing")
+require("MESH_COS_LEDGER_PATH=.mesh-cos/task-ledger.sqlite3" in env_text, "Canonical local ledger path example missing")
+require("MESH_COS_PYTHON_BIN=python" in env_text, "Python bridge runtime example missing")
+require("MESH_COS_MCP_SERVER_URL" not in env_text, "Remote MCP endpoint dependency reintroduced")
 require("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A" in env_text, "Agent Ops Slack channel drifted")
-require("MESH_COS_MCP_SERVER_URL=" in env_text, "Workspace Agent MCP endpoint placeholder missing")
 
 required_docs = {
-    "README.md": ["v1.0.0 Production Readiness", "#mesh-agent-ops", "C0BRL4GCL3A", "TaskLedger", "MCPRuntime", "Workspace Agents"],
-    "AGENTS.md": ["v1.0.0 Production Readiness", "human-only", "task.complete", "task.verify", "Production activation"],
-    "SECURITY.md": ["v1.0.0 Production Readiness", "MCPRuntime", "human-only", "replay", "100% branch-aware"],
-    "CONTRIBUTING.md": ["v1.0.0 Production Readiness", "100%", "production-preflight.py"],
-    "docs/agent-registry.md": ["Role identity policy", "CFO", "COO", "permitted_actions", "Workspace Agent"],
-    "docs/architecture.md": ["v1.0.0", "MCPRuntime", "decision.v2", "agent-event.v2", "TaskLedger"],
-    "docs/decision-rights.md": ["decision.v2", "L4", "L5", "chain-of-thought", "Always ask"],
-    "docs/explainable-decisions-audit.md": ["CoS Decision Log", "CoS Audit Log", "TaskLedger", "tamper-evident", "agent_role", "skill_agent_version"],
-    "docs/observability.md": ["decision.v2", "agent-event.v2", "verify_audit_chain"],
-    "docs/phase-1-operating-contract.md": ["L4", "L5", "VERIFIED", "Stable role identity"],
-    "docs/production-readiness.md": ["v1.0.0 Production Readiness", "100%", "ProductionPreflight", "task.complete", "task.verify"],
-    "docs/release-1.0.0-production-readiness.md": ["v1.0.0", "100%", "Semantic Tag", "Production Activation"],
-    "docs/security-governance.md": ["v1.0.0", "MCPRuntime", "deny-by-default", "replay", "human-only"],
-    "docs/testing-evaluation.md": ["v1.0.0", "100%", "check-chatgpt-packages.py", "MCPRuntime"],
-    "docs/runbook.md": ["v1.0.0", "MESH_COS_MCP_SERVER_URL", "production-preflight.py", "task.complete"],
-    "chatgpt/README.md": ["1.0.0", "Workspace Agent", "TaskLedger", "MCPRuntime"],
-    "chatgpt/mcp/README.md": ["1.0.0", "MCPRuntime", "human-only", "replay"],
-    "chatgpt/workspace-agent-builder-prompt.md": ["v1.0.0", "11 agents", "Always ask", "negative authority test", "replay-safety test"],
-    "RELEASE.md": ["v1.0.0 Production Readiness", "100%", "Production activation boundary"],
+    "README.md": ["v1.1.0", "LOCAL_STDIO", "MESH_COS_AGENT_ID", "TaskLedger", "MCPRuntime"],
+    "AGENTS.md": ["TaskLedger", "human-only", "task.complete", "task.verify"],
+    "SECURITY.md": ["MCPRuntime", "human-only", "replay", "100% branch-aware"],
+    "CONTRIBUTING.md": ["100%", "production-preflight.py"],
+    "docs/architecture.md": ["v1.1.0", "LOCAL_STDIO", "mcp_stdio_bridge", "TaskLedger"],
+    "docs/production-readiness.md": ["v1.1.0", "LOCAL_STDIO", "MESH_COS_LEDGER_PATH", "100%"],
+    "docs/security-governance.md": ["LOCAL_STDIO", "MESH_COS_AGENT_ID", "deny-by-default", "human-only"],
+    "docs/testing-evaluation.md": ["100%", "check-chatgpt-packages.py", "MCPRuntime"],
+    "docs/runbook.md": ["v1.1.0", "MESH_COS_AGENT_ID", "MESH_COS_LEDGER_PATH", "npm run check"],
+    "chatgpt/README.md": ["1.1.0", "LOCAL_STDIO", "Workspace Agent", "TaskLedger"],
+    "chatgpt/mcp/README.md": ["1.1.0", "LOCAL_STDIO", "mcp_stdio_bridge", "human-only"],
+    "chatgpt/workspace-agent-builder-prompt.md": ["v1.1.0", "LOCAL_STDIO", "11 agents", "Always ask"],
+    "docs/release-1.1.0-local-chatgpt-mcp.md": ["v1.1.0", "LOCAL_STDIO", "Mesh Revenue Intelligence", "Semantic Tag"],
+    "RELEASE.md": ["v1.1.0", "LOCAL_STDIO", "Production activation boundary"],
 }
 for relative, tokens in required_docs.items():
     text = (ROOT / relative).read_text()

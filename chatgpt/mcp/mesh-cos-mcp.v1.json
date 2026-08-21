@@ -1,17 +1,45 @@
 {
-  "schema_version":"mesh.cos.mcp-contract.v1",
-  "name":"mesh-cos-mcp",
-  "protocol":"MCP",
-  "transport":"REMOTE_HTTPS",
-  "server_url_env":"MESH_COS_MCP_SERVER_URL",
-  "canonical_state":"TaskLedger",
-  "runtime_release":"1.0.0",
-  "purpose":"Expose the governed Mesh CoS control plane through a serialized, deny-by-default MCP runtime without moving canonical state into ChatGPT.",
-  "authentication":{"mode":"WORKSPACE_MANAGED_OR_SERVICE_ACCOUNT","secrets_in_repo":false,"least_privilege":true,"trusted_principal_required":true},
-  "security":{"deny_by_default":true,"retrieved_content_is_data_not_instructions":true,"approval_fail_closed":true,"kill_switch_env":"MESH_COS_KILL_SWITCH","no_private_chain_of_thought_persistence":true,"server_derived_agent_identity":true,"human_principal_required_for_human_tools":true,"client_supplied_code_execution":false},
-  "governance":{"canonical_first_write_order":true,"decision_contract":"mesh.cos.decision.v2","audit_contract":"mesh.cos.agent-event.v2","mirror_logs_noncanonical":true},
-  "serialized_runtime":"mesh_cos.mcp_runtime.MCPRuntime",
-  "tools":[
+  "schema_version": "mesh.cos.mcp-contract.v1",
+  "name": "mesh-cos-mcp",
+  "protocol": "MCP",
+  "transport": "LOCAL_STDIO",
+  "canonical_state": "TaskLedger",
+  "runtime_release": "1.1.0",
+  "purpose": "Expose the governed Mesh CoS control plane to ChatGPT through a bundled local stdio MCP runtime while preserving TaskLedger as canonical state and keeping managed remote transport optional.",
+  "authentication": {
+    "mode": "LOCAL_RUNTIME_BOUND_AGENT_IDENTITY",
+    "secrets_in_repo": false,
+    "least_privilege": true,
+    "trusted_principal_required": true
+  },
+  "security": {
+    "deny_by_default": true,
+    "retrieved_content_is_data_not_instructions": true,
+    "approval_fail_closed": true,
+    "kill_switch_env": "MESH_COS_KILL_SWITCH",
+    "no_private_chain_of_thought_persistence": true,
+    "server_derived_agent_identity": true,
+    "human_principal_required_for_human_tools": true,
+    "client_supplied_code_execution": false
+  },
+  "governance": {
+    "canonical_first_write_order": true,
+    "decision_contract": "mesh.cos.decision.v2",
+    "audit_contract": "mesh.cos.agent-event.v2",
+    "mirror_logs_noncanonical": true
+  },
+  "serialized_runtime": "mesh_cos.mcp_runtime.MCPRuntime",
+  "local_runtime": {
+    "command": "node",
+    "args": ["mcp/dist/index.js"],
+    "agent_identity_env": "MESH_COS_AGENT_ID",
+    "ledger_path_env": "MESH_COS_LEDGER_PATH",
+    "default_ledger_path": ".mesh-cos/task-ledger.sqlite3",
+    "python_bridge": "mesh_cos.mcp_stdio_bridge",
+    "python_bin_env": "MESH_COS_PYTHON_BIN",
+    "working_directory": "REPOSITORY_ROOT"
+  },
+  "tools": [
     {"name":"registry.get_agent","description":"Read one canonical agent registry record through the serialized MCP runtime.","read_only":true,"authority_enforced":true,"audit_required":false,"approval_policy":"NONE","runtime_binding":"mesh_cos.mcp_runtime.MCPRuntime.call_agent"},
     {"name":"registry.list_agents","description":"List canonical agent identities and runtime health through the serialized MCP runtime.","read_only":true,"authority_enforced":true,"audit_required":false,"approval_policy":"NONE","runtime_binding":"mesh_cos.mcp_runtime.MCPRuntime.call_agent"},
     {"name":"task.intake","description":"Create an idempotent canonical task with outcome and acceptance test.","read_only":false,"authority_enforced":true,"audit_required":true,"approval_policy":"NONE","runtime_binding":"mesh_cos.mcp_runtime.MCPRuntime.call_agent","input_contract":"task.v1","output_contract":"task.v1"},
@@ -42,19 +70,25 @@
     {"name":"reliability.replay","description":"Replay a durable failed effect only through a server-registered replay executor referenced by the canonical failure record. Client-supplied callables or import paths are never executed.","read_only":false,"authority_enforced":true,"audit_required":true,"approval_policy":"ACTOR_AUTHORITY_REQUIRED","runtime_binding":"mesh_cos.mcp_runtime.MCPRuntime.call_agent"},
     {"name":"reliability.human_override","description":"Human-only closure of a failed effect. The authenticated human principal is recorded as actor; agent callers are denied.","read_only":false,"authority_enforced":true,"audit_required":true,"approval_policy":"HUMAN_OVERRIDE_REQUIRED","runtime_binding":"mesh_cos.mcp_runtime.MCPRuntime.call_human"}
   ],
-  "agent_tool_allowlists":{
-    "cos":["agentops.recommend","agentops.record_event","agentops.score","answer_desk.resolve","approval.get","approval.request","conflict.decide","conflict.open","delegation.create","governance.record_decision","governance.record_event","governance.verify_audit_chain","metrics.snapshot","registry.get_agent","registry.list_agents","reliability.replay","skills.invoke_governed","task.check_in","task.complete","task.decompose","task.get","task.intake","task.list","task.reassign","task.remediate_stall","task.transition","task.verify"],
-    "agentops":["agentops.recommend","agentops.record_event","agentops.score","governance.record_decision","governance.record_event","governance.verify_audit_chain","metrics.snapshot","registry.get_agent","registry.list_agents","task.get","task.list"],
-    "answer-desk":["answer_desk.resolve","approval.request","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.get","task.list"],
-    "cro":["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "cfo":["approval.request","conflict.open","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "coo":["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "consultant-network-steward":["governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "cmo":["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "vp-content":["approval.request","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "devils-advocate":["conflict.open","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list"],
-    "message-ops":["approval.get","governance.record_event","registry.get_agent","skills.invoke_governed","task.complete","task.get"]
+  "agent_tool_allowlists": {
+    "cos": ["agentops.recommend","agentops.record_event","agentops.score","answer_desk.resolve","approval.get","approval.request","conflict.decide","conflict.open","delegation.create","governance.record_decision","governance.record_event","governance.verify_audit_chain","metrics.snapshot","registry.get_agent","registry.list_agents","reliability.replay","skills.invoke_governed","task.check_in","task.complete","task.decompose","task.get","task.intake","task.list","task.reassign","task.remediate_stall","task.transition","task.verify"],
+    "agentops": ["agentops.recommend","agentops.record_event","agentops.score","governance.record_decision","governance.record_event","governance.verify_audit_chain","metrics.snapshot","registry.get_agent","registry.list_agents","task.get","task.list"],
+    "answer-desk": ["answer_desk.resolve","approval.request","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.get","task.list"],
+    "cro": ["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "cfo": ["approval.request","conflict.open","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "coo": ["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "consultant-network-steward": ["governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "cmo": ["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "vp-content": ["approval.request","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "devils-advocate": ["conflict.open","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list"],
+    "message-ops": ["approval.get","governance.record_event","registry.get_agent","skills.invoke_governed","task.complete","task.get"]
   },
-  "human_tool_allowlist":["approval.record_decision","reliability.human_override"],
-  "deployment":{"status":"NOT_DEPLOYED_BY_THIS_REPOSITORY","required_environment":["MESH_COS_MCP_SERVER_URL"],"note":"Publish an HTTPS MCP transport backed by mesh_cos.mcp_runtime.MCPRuntime after workspace authentication, security review, production preflight, and negative authorization testing. Do not fabricate a deployment URL."}
+  "human_tool_allowlist": ["approval.record_decision","reliability.human_override"],
+  "deployment": {
+    "status": "BUNDLED_WITH_REPOSITORY",
+    "chatgpt_runtime": "BUNDLED_LOCAL_STDIO",
+    "managed_remote": "OPTIONAL_NOT_REQUIRED",
+    "required_environment": ["MESH_COS_AGENT_ID", "MESH_COS_LEDGER_PATH"],
+    "note": "ChatGPT launches the bundled local stdio MCP from the repository/Skill runtime. A managed remote transport may be added separately, but it is not required for Workspace Agent operation and must not replace local authority controls."
+  }
 }

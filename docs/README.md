@@ -1,119 +1,73 @@
 # Documentation Index
 
-Current release: **`v1.0.0 Production Readiness`**.
+Current release target: **`v1.1.0 Local ChatGPT MCP`**.
 
-The Mesh AI Chief of Staff documentation set covers the canonical operating constitution, governed runtime, 11-agent Workspace Agent deployment projection, security and decision rights, production preflight, release verification, and environment-specific activation. Historical Phase 1 closure/remediation records remain preserved as historical snapshots.
+The documentation set covers the canonical operating constitution, governed runtime, 11-agent ChatGPT Workspace Agent projection, bundled local MCP, security and decision rights, production preflight, release verification, and target-environment activation. Historical release and Phase 1 closure records remain preserved as historical snapshots.
 
-```mermaid
-flowchart LR
-    C[Operating Contract] --> A[Architecture]
-    A --> G[Governance]
-    A --> W[Work Lifecycle]
-    A --> CA[Workspace Agents]
-    A --> S[Slack + Answer Desk]
-    A --> O[AgentOps + Observability]
-    G --> X[Explainable Decisions + Audit]
-    CA --> MCP[Serialized mesh-cos-mcp]
-    G --> T[Testing]
-    W --> T
-    S --> T
-    O --> T
-    X --> T
-    MCP --> T
-    T --> P[Production Preflight]
-    P --> R[v1.0.0 Release]
-    R --> ACT[Environment Activation]
-```
+## Current release documentation
 
-## v1.0.0 release documentation
-
-- `release-1.0.0-production-readiness.md`: semantic release record, production-readiness invariants, Mermaid release/execution/activation diagrams, and activation boundary.
-- `production-readiness.md`: fail-closed repository and environment readiness model.
-- `production-hardening-2026-08-17.md`: TDD and loop-engineering hardening record that produced the 100% branch-aware release gate and production runtime controls.
-- `../RELEASE.md`: canonical GitHub release notes for `v1.0.0 Production Readiness`.
-- `../CHANGELOG.md`: full semantic release history.
+- `release-1.1.0-local-chatgpt-mcp.md`: semantic release record and TDD/loop-engineering summary.
+- `production-readiness.md`: current fail-closed readiness model.
+- `architecture.md`: current ChatGPT-local `LOCAL_STDIO` topology.
+- `security-governance.md`: authority, local identity binding, human-only separation, replay safety, and audit controls.
+- `testing-evaluation.md`: release gates and evaluation strategy.
+- `runbook.md`: build, certification, preflight, preview, and incident operations.
+- `../RELEASE.md`: canonical release notes.
+- `../CHANGELOG.md`: semantic release history.
 
 ## Canonical runtime
 
 - `phase-1-operating-contract.md`: operating constitution.
 - `../agents/registry.json`: canonical agent definitions and authority.
-- `../contracts/`: versioned machine contracts, including `decision.v2` and `agent-event.v2`.
+- `../contracts/`: machine contracts, including `decision.v2` and `agent-event.v2`.
 - `../config/performance-policy.v1.json`: AgentOps policy.
-- `../config/governance-policy.v1.json`: shared explainability and audit policy.
+- `../config/governance-policy.v1.json`: explainability and audit policy.
 - `../config/governance-logs.v1.json`: non-secret Decision/Audit Sheet mirror configuration.
-- `../src/mesh_cos/ledger.py`: canonical runtime persistence boundary.
-- `../src/mesh_cos/mcp_runtime.py`: serialized remote MCP execution boundary.
-- `../src/mesh_cos/preflight.py`: production preflight implementation.
+- `../src/mesh_cos/ledger.py`: canonical persistence boundary.
+- `../src/mesh_cos/mcp_runtime.py`: serialized business/governance execution core.
+- `../src/mesh_cos/mcp_stdio_bridge.py`: bounded local MCP bridge.
+- `../src/mesh_cos/preflight.py`: production preflight.
 
-## ChatGPT Workspace Agent deployment
+## ChatGPT deployment
 
-- `../chatgpt/README.md`: Workspace Agent deployment-package overview and architecture.
-- `../chatgpt/skills/`: 11 validated OpenAI Skill source packages, one per canonical agent.
-- `../chatgpt/workspace-agents/`: exact Workspace Agent manifests and Builder configurations, aligned to repository release `1.0.0`.
-- `../chatgpt/mcp/mesh-cos-mcp.v1.json`: per-agent custom MCP contract, allowlists, human-only tools, and serialized runtime binding.
-- `../chatgpt/mcp/README.md`: MCP authorization and enforcement sequence.
-- `../chatgpt/workspace-agent-builder-prompt.md`: production deployment and private-preview handoff for the Workspace Agent builder.
-- `../chatgpt/workspace-agent-gap-assessment-2026-08-17.md`: historical TDD gap-closure record for the initial Workspace Agent package layer.
+- `../chatgpt/README.md`: Workspace Agent package architecture.
+- `../chatgpt/skills/`: 11 validated role Skills.
+- `../chatgpt/workspace-agents/`: exact Workspace Agent manifests aligned to release `1.1.0`.
+- `../chatgpt/mcp/mesh-cos-mcp.v1.json`: MCP contract, per-agent allowlists, local runtime metadata, and human-only tools.
+- `../chatgpt/mcp/README.md`: bundled MCP implementation and security boundary.
+- `../chatgpt/workspace-agent-builder-prompt.md`: Workspace Agent deployment handoff.
+- `../mcp/`: TypeScript local stdio MCP transport package.
 
-These artifacts project the canonical organization into ChatGPT. They do not replace `agents/registry.json` or `TaskLedger`.
+The ChatGPT runtime path is `Workspace Agent -> LOCAL_STDIO -> node mcp/dist/index.js -> mesh_cos.mcp_stdio_bridge -> MCPRuntime -> TaskLedger`.
+
+A separately deployed remote MCP service is optional and not required for ChatGPT-local operation.
 
 ## Architecture and governance
 
-- `architecture.md`: runtime, Workspace Agent, MCP, human authority, and production-activation topology.
-- `decision-rights.md`: L0-L5 authority, qualified-human L4 approvals, and Michael-exclusive L5 authority.
-- `explainable-decisions-audit.md`: decision/audit schemas, provenance, mirrors, privacy, integrity, and reconciliation.
-- `delegation-model.md`: bounded work contracts and one-owner policy.
-- `task-lifecycle.md`: outcome lifecycle, accountable-owner completion, independent verification, and rework.
-- `agent-registry.md`: governed workforce definitions and Workspace Agent projection rules.
+- `decision-rights.md`: L0-L5 authority.
+- `explainable-decisions-audit.md`: governance schemas, provenance, mirrors, privacy, and integrity.
+- `delegation-model.md`: bounded delegation and one-owner policy.
+- `task-lifecycle.md`: completion, independent verification, and rework.
+- `agent-registry.md`: workforce definitions and deployment projection rules.
 - `agent-performance.md`: AgentOps performance management.
-- `conflict-resolution.md`: functional fact authority and CoS arbitration.
-- `escalation-policy.md`: impact, authority, confidence, and reversibility routing.
-- `security-governance.md`: least privilege, serialized MCP deny-by-default controls, injection defense, app constraints, approvals, replay safety, and audit integrity.
-- `observability.md`: audit, explainability, mirror, and metrics model.
+- `conflict-resolution.md`: functional authority and arbitration.
+- `escalation-policy.md`: escalation routing.
+- `observability.md`: audit, explainability, and metrics model.
 
 ## Collaboration
 
-- `slack-agent-protocol.md`: `#mesh-agent-ops`, signature/freshness validation, dedupe, task/thread mapping, and approval notifications.
-- `answer-desk.md`: separate team-facing Answer Desk interface and dispositions.
-
-## Verification and operations
-
-- `testing-evaluation.md`: TDD, contract tests, 100% branch-aware release coverage, static checks, negative control tests, drift gates, and Skill/package validation.
-- `runbook.md`: production preflight, MCP deployment, Workspace Agent private preview, governance reconciliation, incidents, replay/override, quarantine, and shutdown.
-- `pressure-test.md`: independent challenge criteria.
-- `adr/`: architecture decisions.
-
-## Historical Phase 1 records
-
-The following remain intentionally historical and should not be mechanically rewritten to claim they were authored against `v1.0.0`:
-
-- `phase-1-gap-assessment-2026-08-17.md`;
-- `phase-1-remediation-completion-2026-08-17.md`;
-- `phase-1-final-closure-2026-08-17.md`.
+- `slack-agent-protocol.md`: `#mesh-agent-ops` and Slack runtime controls.
+- `answer-desk.md`: team-facing Answer Desk interface and dispositions.
 
 ## Governance registers
 
-- **CoS Decision Log**: Google Sheet ID `1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw`.
-- **CoS Audit Log**: Google Sheet ID `1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0`.
+- **CoS Decision Log**: `1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw`.
+- **CoS Audit Log**: `1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0`.
 
 They are operational mirrors. `TaskLedger` remains canonical.
 
-## Production readiness versus production activation
+## Historical records
 
-```mermaid
-flowchart TD
-    A[Repository v1.0.0] --> B[100% Branch-Aware CI]
-    B --> C[Production Preflight]
-    C --> D{External Dependencies Configured?}
-    D -->|No| E[Production-Ready Repository]
-    D -->|Yes| F[Live Integration Smoke Tests]
-    F --> G{All Positive and Negative Tests Pass?}
-    G -->|No| H[Block Activation and Remediate]
-    G -->|Yes| I[Production Activation]
-    E --> J[Configure MCP URL, Workspace Auth, Slack, Answer Desk, Approvers, Source Credentials]
-    J --> F
-```
+`release-1.0.0-production-readiness.md`, `production-hardening-2026-08-17.md`, the original Workspace Agent gap assessment, and Phase 1 closure/remediation documents remain historical. They are not rewritten to imply they were authored against `v1.1.0`.
 
-Production activation still requires an approved remote `mesh-cos-mcp` endpoint and `MESH_COS_MCP_SERVER_URL`, Workspace app authentication, applicable Slack credentials, the separate Answer Desk Slack channel, approved source/Skill credentials and permissions, production approval-owner mapping, deployment infrastructure, secrets management, and any future thresholds explicitly approved by Michael.
-
-Documentation must describe current runtime behavior. CI runs contract validation, runtime/documentation drift, Workspace Agent package drift, strict source Ruff, mypy, 100% branch-aware coverage, Bandit high-severity scanning, and compileall before release.
+Current documentation must describe the bundled local runtime. CI enforces contract validation, runtime/documentation drift, Workspace Agent package drift, TypeScript/Node MCP certification, strict source Ruff, mypy, 100% branch-aware Python coverage, Bandit high-severity scanning, and compileall.

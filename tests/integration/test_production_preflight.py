@@ -14,7 +14,9 @@ ROOT = Path(__file__).resolve().parents[2]
 def production_env() -> dict[str, str]:
     return {
         "MESH_COS_KILL_SWITCH": "false",
-        "MESH_COS_MCP_SERVER_URL": "https://mesh-cos.example.internal/mcp",
+        "MESH_COS_AGENT_ID": "cos",
+        "MESH_COS_LEDGER_PATH": ".mesh-cos/test-task-ledger.sqlite3",
+        "MESH_COS_PYTHON_BIN": "python",
         "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": "C0BRL4GCL3A",
         "MESH_COS_SLACK_BOT_TOKEN": "xoxb-test-secret",
         "MESH_COS_SLACK_SIGNING_SECRET": "signing-secret",
@@ -36,19 +38,21 @@ def test_production_preflight_passes_without_exposing_secrets() -> None:
     rendered = str(result)
     assert "xoxb-test-secret" not in rendered
     assert "signing-secret" not in rendered
+    assert ".mesh-cos/test-task-ledger.sqlite3" not in rendered
 
 
-def test_production_preflight_fails_closed_for_missing_or_invalid_runtime_config() -> None:
+def test_production_preflight_fails_closed_for_missing_local_runtime_config() -> None:
     missing = production_env()
-    missing.pop("MESH_COS_MCP_SERVER_URL")
+    missing.pop("MESH_COS_LEDGER_PATH")
     result = ProductionPreflight(root=ROOT, env=missing).check()
     assert result["ready"] is False
-    assert any(check["name"] == "mcp_server_url" and check["status"] == "FAIL" for check in result["checks"])
+    assert any(
+        check["name"] == "mcp_ledger_path" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
 
-    invalid = production_env()
-    invalid["MESH_COS_MCP_SERVER_URL"] = "http://insecure.example/mcp"
-    with pytest.raises(RuntimeError, match="mcp_server_url"):
-        ProductionPreflight(root=ROOT, env=invalid).assert_ready()
+    with pytest.raises(RuntimeError, match="mcp_ledger_path"):
+        ProductionPreflight(root=ROOT, env=missing).assert_ready()
 
     killed = production_env()
     killed["MESH_COS_KILL_SWITCH"] = "true"

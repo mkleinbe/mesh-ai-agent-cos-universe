@@ -13,6 +13,7 @@ CHATGPT = ROOT / "chatgpt"
 SKILLS = CHATGPT / "skills"
 AGENTS = CHATGPT / "workspace-agents"
 MCP = CHATGPT / "mcp" / "mesh-cos-mcp.v1.json"
+MCP_PACKAGE = ROOT / "mcp"
 
 EXPECTED = {
     "cos": ("Chief of Staff", None, "mesh-chief-of-staff"),
@@ -48,14 +49,38 @@ def parse_frontmatter(text: str) -> dict[str, str]:
 registry_source = json.loads((ROOT / "agents" / "registry.json").read_text())
 registry = {record["agent_id"]: record for record in registry_source["agents"]}
 require(set(registry) == set(EXPECTED), "Workspace Agent roster drifted from canonical registry")
-require(__version__ == "1.0.0", "Workspace Agent release must be 1.0.0")
+require(__version__ == "1.1.0", "Workspace Agent release must be 1.1.0")
 require(f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
 
 contract = json.loads(MCP.read_text())
 require(contract["runtime_release"] == __version__, "MCP contract release drifted")
+require(contract["transport"] == "LOCAL_STDIO", "Bundled local stdio must be the primary MCP transport")
+require(contract["local_runtime"]["command"] == "node", "Local MCP command drifted")
+require(contract["local_runtime"]["args"] == ["mcp/dist/index.js"], "Local MCP entrypoint drifted")
+require(contract["local_runtime"]["agent_identity_env"] == "MESH_COS_AGENT_ID", "Local MCP agent binding drifted")
+require(contract["local_runtime"]["ledger_path_env"] == "MESH_COS_LEDGER_PATH", "Local MCP ledger binding drifted")
+require("server_url_env" not in contract, "Remote MCP URL must not be required for ChatGPT")
+require(contract["deployment"]["chatgpt_runtime"] == "BUNDLED_LOCAL_STDIO", "ChatGPT MCP deployment drifted")
+require(contract["deployment"]["managed_remote"] == "OPTIONAL_NOT_REQUIRED", "Managed remote transport must remain optional")
 policy = WorkspaceAgentMCPPolicy.from_file(MCP)
 require(policy.validate_runtime_bindings() == [], "MCP runtime binding is unresolved")
 contract_allowlists = contract["agent_tool_allowlists"]
+
+for relative in (
+    "README.md",
+    "package.json",
+    "package-lock.json",
+    "tsconfig.json",
+    "src/index.ts",
+    "src/server.ts",
+    "src/python-bridge.ts",
+    "scripts/smoke-test.mjs",
+):
+    require((MCP_PACKAGE / relative).is_file(), f"Local MCP package missing {relative}")
+package = json.loads((MCP_PACKAGE / "package.json").read_text())
+require(package["name"] == "@meshdigitalio/mesh-cos-mcp", "Local MCP package name drifted")
+require(package["version"] == __version__, "Local MCP package version drifted")
+require(package["dependencies"].get("@modelcontextprotocol/sdk") == "1.30.0", "Official MCP SDK dependency drifted")
 
 for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     record = registry[agent_id]
@@ -72,6 +97,9 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(len(frontmatter.get("description", "")) >= 80, f"{agent_id}: Skill description too thin")
     metadata = (skill_dir / "agents" / "openai.yaml").read_text()
     require(f'display_name: "{display_name}"' in metadata, f"{agent_id}: Skill UI metadata drifted")
+    readiness = (skill_dir / "references" / "production-readiness.md").read_text()
+    require("local stdio" in readiness.lower(), f"{agent_id}: Skill local MCP readiness missing")
+    require("MESH_COS_MCP_SERVER_URL" not in readiness, f"{agent_id}: Skill still requires remote MCP URL")
 
     config_path = AGENTS / f"{agent_id}.json"
     require(config_path.is_file(), f"{agent_id}: Workspace Agent manifest missing")
@@ -91,13 +119,22 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(config["governance"]["audit_logging"] == "REQUIRED", f"{agent_id}: audit policy weakened")
     require(config["governance"]["decision_logging"] == "REQUIRED_WHEN_DECIDING_OR_RECOMMENDING", f"{agent_id}: decision logging weakened")
     require(config["governance"]["private_chain_of_thought"] == "PROHIBITED", f"{agent_id}: reasoning persistence drifted")
-    require(config["mcp"]["server_url_env"] == "MESH_COS_MCP_SERVER_URL", f"{agent_id}: MCP endpoint configuration drifted")
-    require(config["mcp"]["allowed_tools"] == contract_allowlists[agent_id], f"{agent_id}: MCP allowlist drifted")
+    mcp = config["mcp"]
+    require(mcp["transport"] == "LOCAL_STDIO", f"{agent_id}: MCP transport drifted")
+    require(mcp["command"] == "node" and mcp["args"] == ["mcp/dist/index.js"], f"{agent_id}: local MCP launch drifted")
+    require(mcp["env"]["MESH_COS_AGENT_ID"] == agent_id, f"{agent_id}: MCP agent binding drifted")
+    require(bool(mcp["env"]["MESH_COS_LEDGER_PATH"]), f"{agent_id}: canonical ledger path missing")
+    require("server_url_env" not in mcp, f"{agent_id}: remote MCP URL dependency remains")
+    require(mcp["allowed_tools"] == contract_allowlists[agent_id], f"{agent_id}: MCP allowlist drifted")
     builder = config["builder_configuration"]
     require(builder["name"] == display_name, f"{agent_id}: builder name drifted")
     require(builder["skill"] == skill_name, f"{agent_id}: builder Skill drifted")
     require(builder["custom_mcp"] == "mesh-cos-mcp", f"{agent_id}: builder MCP drifted")
-    require(builder["mcp_allowed_tools"] == config["mcp"]["allowed_tools"], f"{agent_id}: builder MCP tools drifted")
+    require(builder["mcp_transport"] == "LOCAL_STDIO", f"{agent_id}: builder MCP transport drifted")
+    require(builder["mcp_command"] == "node", f"{agent_id}: builder MCP command drifted")
+    require(builder["mcp_args"] == ["mcp/dist/index.js"], f"{agent_id}: builder MCP args drifted")
+    require(builder["mcp_environment"]["MESH_COS_AGENT_ID"] == agent_id, f"{agent_id}: builder agent binding drifted")
+    require(builder["mcp_allowed_tools"] == mcp["allowed_tools"], f"{agent_id}: builder MCP tools drifted")
     require(builder["write_action_approval"] == "Always ask", f"{agent_id}: builder write approval weakened")
     require(builder["connector_action_constraints"] == config["connector_action_constraints"], f"{agent_id}: connector constraints drifted")
     require(not re.search(r"\bv\d+(?:\.\d+)*\b", display_name, re.I), f"{agent_id}: version embedded in stable role name")
@@ -128,9 +165,12 @@ require(any("approval" in rule.lower() for rule in message_ops["connector_action
 prompt = (CHATGPT / "workspace-agent-builder-prompt.md").read_text()
 for token in (
     "11 agents",
-    "v1.0.0",
+    "v1.1.0",
     "mesh-cos-mcp",
-    "MESH_COS_MCP_SERVER_URL",
+    "local stdio",
+    "mcp/dist/index.js",
+    "MESH_COS_AGENT_ID",
+    "MESH_COS_LEDGER_PATH",
     "Always ask",
     "negative authority test",
     "missing-evidence test",
@@ -139,8 +179,11 @@ for token in (
     "replay-safety test",
 ):
     require(token in prompt, f"Workspace Agent builder prompt missing {token!r}")
+require("MESH_COS_MCP_SERVER_URL" not in prompt, "Builder prompt still requires remote MCP URL")
 
 env_text = (ROOT / ".env.example").read_text()
-require("MESH_COS_MCP_SERVER_URL=" in env_text, "MCP server URL environment placeholder missing")
+require("MESH_COS_LEDGER_PATH=" in env_text, "Local MCP canonical ledger environment placeholder missing")
+require("MESH_COS_AGENT_ID=" in env_text, "Local MCP agent binding environment placeholder missing")
+require("MESH_COS_MCP_SERVER_URL=" not in env_text, "Remote MCP URL placeholder must be removed")
 
 print("ChatGPT Workspace Agent package drift check: OK")

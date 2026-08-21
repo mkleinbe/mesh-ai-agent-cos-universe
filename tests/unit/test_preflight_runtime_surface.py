@@ -20,7 +20,7 @@ def test_preflight_reports_runtime_tool_surface_drift(monkeypatch) -> None:
         root=Path(__file__).resolve().parents[2],
         env={
             "MESH_COS_KILL_SWITCH": "false",
-            "MESH_COS_MCP_SERVER_URL": "https://mesh.example/mcp",
+            "MESH_COS_LEDGER_PATH": ".mesh-cos/test-ledger.sqlite3",
         },
     ).check()
     check = next(item for item in result["checks"] if item["name"] == "mcp_runtime")

@@ -1,133 +1,104 @@
 # Security and Governance
 
-Release `v1.0.0` treats security as a layered, fail-closed control system. Agent capability does not equal agent authority. Workspace Agent product configuration is defense in depth around the canonical Mesh runtime, not the source of authorization truth.
+Release `v1.1.0` treats the bundled ChatGPT MCP as another fail-closed boundary around the canonical Mesh runtime. Agent capability does not equal agent authority.
 
 ## Trust architecture
 
 ```mermaid
 flowchart TB
-    IN[External Input / Retrieved Content] --> UNTRUST[Treat as Untrusted Data]
-    UNTRUST --> WA[Workspace Agent / Slack / API Trigger]
-    WA --> APPS[Role-Scoped Workspace Apps]
-    WA --> MCP[mesh-cos-mcp]
-    MCP --> RT[MCPRuntime]
-    RT --> MP[WorkspaceAgentMCPPolicy\nDeny by Default]
-    MP --> AUTH[Registry Source / Tool / Action Authorization]
+    IN[External / Retrieved Input] --> WA[Workspace Agent]
+    WA --> MCP[Bundled mesh-cos-mcp\nLOCAL_STDIO]
+    MCP --> ID[MESH_COS_AGENT_ID]
+    MCP --> BRIDGE[mesh_cos.mcp_stdio_bridge]
+    BRIDGE --> RT[MCPRuntime]
+    RT --> MP[WorkspaceAgentMCPPolicy\ndeny-by-default]
+    MP --> AUTH[Registry Source / Tool / Action / Authority]
     AUTH -->|Denied| BLOCK[Reject + Audit]
     AUTH -->|Allowed| LEVEL{Decision Consequence}
-    LEVEL -->|L0-L2| EXEC[Bounded Execution]
-    LEVEL -->|L3 Delegated| EXEC
-    LEVEL -->|L3 Not Delegated| OWNER[Named Decision Owner]
+    LEVEL -->|L0-L3 delegated| EXEC[Bounded Execution]
     LEVEL -->|L4| HUMAN[Qualified Human Approval]
     LEVEL -->|L5| CEO[Michael]
-    EXEC --> GOV[GovernanceJournal]
-    OWNER --> GOV
-    HUMAN --> GOV
-    CEO --> GOV
-    GOV --> LEDGER[(TaskLedger Canonical State)]
+    EXEC --> LEDGER[(TaskLedger)]
+    HUMAN --> LEDGER
+    CEO --> LEDGER
     LEDGER --> SHEETS[Decision / Audit Mirrors]
 ```
 
-## Core production controls
+## Local identity binding
 
-### Least privilege
+`MESH_COS_AGENT_ID` binds one local MCP process to one registered agent. It is configuration, not user input. Prompt text, retrieved documents, connector output, source text, and MCP arguments cannot alter the bound identity.
 
-Every agent has explicit source, tool, Skill, action, and authority boundaries in the canonical registry. Workspace Agent manifests add app access, MCP allowlists, channel settings, write approval, and Connector Action Constraints. These may narrow access but cannot widen canonical authority.
+Unknown or unregistered identities fail closed before tool execution.
 
-### Serialized MCP boundary
+## Least privilege and tool projection
 
-`chatgpt/mcp/mesh-cos-mcp.v1.json` defines the approved remote surface. `MCPRuntime` dispatches only fixed handlers. `WorkspaceAgentMCPPolicy` enforces per-agent allowlists with deny-by-default behavior. Unknown agents, unknown tools, unlisted tools, quarantined/retired agents, and runtime/contract drift fail closed.
+`chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact per-agent allowlists. The local MCP publishes only the tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats the deny-by-default authorization check inside Python, providing defense in depth.
 
-### Human-principal separation
+The human-only operations are excluded from all agent catalogs:
 
-`approval.record_decision` and `reliability.human_override` are human-only. An agent cannot gain human authority by passing a human name in JSON. The transport must authenticate the human principal and the runtime persists that authenticated identity.
+- `approval.record_decision`
+- `reliability.human_override`
 
-### Decision authority
+Those operations require a separately authenticated human-principal path. Supplying a human name in tool arguments does not create human authority.
 
-L4 actions require qualified human approval evidence. L5 remains Michael-exclusive. No agent may infer approval from urgency, prior behavior, tool access, or conversational wording. No monetary thresholds are inferred.
+## Local bridge safety
 
-Workspace **Always ask** is an additional product control, not a substitute for Mesh L4/L5 policy.
+The TypeScript transport sends bounded JSON to `mesh_cos.mcp_stdio_bridge`, which invokes the existing `MCPRuntime`. The bridge does not accept arbitrary Python, import paths, callable names, source code, shell commands, or client-provided replay executors.
 
-### Prompt-injection boundary
+Raw Python stderr is not returned through MCP errors. Client-visible errors are reduced to safe categories and request identifiers.
 
-Documents, Slack messages, app payloads, MCP arguments, source payloads, and retrieved text are data. They cannot change system policy, role identity, tool access, source authority, approval obligations, replay behavior, or operating instructions.
+## Canonical state
 
-### Replay safety
+All agents in one operating universe use the same approved `MESH_COS_LEDGER_PATH`. `TaskLedger` remains canonical. Local MCP responses, ChatGPT conversation state, Slack, connector outputs, and Google Sheets are not canonical state.
 
-Remote replay may use only a server-registered replay executor referenced by canonical failure state. Client-supplied Python callables, import paths, shell commands, code snippets, or source-text instructions are never executable replay mechanisms.
+Canonical writes occur before mirrors or interaction responses. Mirror failure cannot rewrite canonical history.
 
-### Completion versus verification
+## Decision authority
 
-Accountable owners may use `task.complete` to persist outcome/evidence. `task.verify` is a separate acceptance boundary. `COMPLETED` does not imply `VERIFIED`, and missing evidence cannot be self-certified into acceptance.
+L4 actions require qualified human approval evidence. L5 remains Michael-exclusive. No agent may infer approval from urgency, historical behavior, tool access, prior messages, or product configuration.
 
-### Atomic idempotency
+Workspace **Always ask** is additional product defense in depth and does not replace Mesh authority policy.
 
-Slack inbound events and governance events atomically claim idempotency and persist canonical state. A crash cannot leave an idempotency key claimed while the corresponding canonical event is absent.
+## Prompt injection and retrieved content
 
-### Connector Action Constraints
+Documents, messages, connector results, source payloads, and MCP arguments are data. They cannot change system policy, `MESH_COS_AGENT_ID`, tool allowlists, source authority, approval obligations, replay behavior, canonical ledger location, or operating instructions.
 
-- CoS and AgentOps Slack writes are limited to internal `#mesh-agent-ops` coordination.
-- Answer Desk Slack stays disabled until a dedicated channel ID exists.
-- CRO Apollo access is research/enrichment only; Gmail and LinkedIn are non-outbound.
-- CMO and VP Content have no autonomous public posting; AuthoredUp is analytics/draft preparation only.
-- CFO, COO, and Consultant Network Steward use approved evidence sources read-only.
-- Message Operations may execute approved Gmail/Slack communications only when canonical approval matches the exact artifact, recipient/channel, and scope, and Workspace **Always ask** still applies.
+## Replay safety
 
-### Explainability and audit integrity
+Reliability replay may use only server-registered replay executors referenced by canonical failure state. Client-supplied code, import paths, shell commands, executable snippets, or instructions recovered from source content are never replay mechanisms.
 
-`decision.v2` records concise decision basis, evidence, authoritative sources, alternatives, criteria, confidence, risk, authority, approval, reversibility, reversal condition, and outcome validation. `agent-event.v2` records actor/action/result provenance, source/tool, task/correlation/decision IDs, approval evidence, risk/classification, and retention metadata.
+## Completion versus verification
 
-Audit events form a SHA-256 hash chain. The chain is tamper-evident. `verify_audit_chain()` detects mutation or discontinuity.
+Accountable owners may use `task.complete` to persist outcome and evidence. `task.verify` is a separate acceptance boundary. `COMPLETED` does not imply `VERIFIED`, and missing evidence cannot be self-certified into acceptance.
 
-Private chain-of-thought, hidden reasoning traces, credentials, tokens, raw secrets, and unnecessary personal data are prohibited from governance records.
+## Explainability and audit integrity
 
-### Canonical-first mirroring
+`decision.v2` records concise decision basis, evidence, alternatives, criteria, confidence, risk, authority, approval, reversibility, and outcome validation. `agent-event.v2` records actor/action/result provenance, task/correlation/decision identifiers, approval evidence, risk, classification, and retention metadata.
 
-`TaskLedger` is canonical. ChatGPT conversations, Slack, CoS Decision Log, and CoS Audit Log are interaction/review surfaces. Canonical writes occur first. Mirror failure cannot roll back canonical history and must be handled as a durable failure where consequential.
+Audit events form a SHA-256 tamper-evident chain. Private chain-of-thought, hidden reasoning traces, credentials, tokens, raw secrets, and unnecessary personal data are prohibited from governance records.
 
-### Delegation safety
+## Connector constraints
 
-Delegation cannot widen authority, remove approval gates, create circular delegation, or create conflicting ownership. Workspace Agents may only invoke delegation tools in their MCP allowlist, and the runtime delegation engine remains authoritative.
+The local MCP refactor does not expand app authority. Existing least-privilege controls remain in force, including internal-only CoS/AgentOps Slack coordination, Answer Desk Slack disabled until a dedicated channel exists, CRO research-only Apollo and non-outbound Gmail/LinkedIn, human-gated public publishing for CMO/VP Content, read-only evidence access for finance/delivery roles, and approval-bound Message Operations sends.
 
-### Secrets
+## Secrets and runtime configuration
 
-MCP authentication secrets, Slack tokens/signing secrets, OAuth tokens, API keys, service-account credentials, and source credentials must not be committed or copied into governance records. `MESH_COS_MCP_SERVER_URL` is configuration, not an authentication secret.
+Non-secret local runtime variables are:
 
-### Kill switch and quarantine
-
-`MESH_COS_KILL_SWITCH` remains the emergency stop. Critical defects can trigger `QUARANTINE`, routing restriction, or Workspace Agent unpublication. Production preflight fails while the kill switch is enabled.
-
-## Production security verification
-
-```mermaid
-flowchart LR
-    A[100% Branch-Aware CI] --> B[ProductionPreflight]
-    B --> C[Private Workspace Preview]
-    C --> D[Negative Authority Test]
-    C --> E[Human-Spoof Test]
-    C --> F[Permission Denial Test]
-    C --> G[Kill-Switch Test]
-    C --> H[Replay Injection Test]
-    C --> I[Completion / Verification Test]
-    D --> J{All Pass?}
-    E --> J
-    F --> J
-    G --> J
-    H --> J
-    I --> J
-    J -->|No| K[Block Activation]
-    J -->|Yes| L[RBAC-Controlled Activation]
+```text
+MESH_COS_AGENT_ID
+MESH_COS_LEDGER_PATH
+MESH_COS_PYTHON_BIN
 ```
 
-## Incident response
+Credentials, tokens, OAuth secrets, Slack secrets, API keys, service accounts, and source credentials remain outside source control.
 
-1. Stop or restrict unsafe Workspace Agent/MCP execution and enable the kill switch if needed.
-2. Preserve canonical records, hash-chain evidence, decision lineage, approvals, MCP tool identity, and app activity references.
-3. Identify affected tasks, actions, agents, Skills, tools, decisions, approvals, app calls, and source calls.
-4. Reconcile mirrors to `canonical_record_ref`; never edit canonical history to match a mirror.
-5. Quarantine or unpublish affected agents/adapters when warranted.
-6. Correct the defect through tests first.
-7. Re-run contract validation, drift checks, strict Ruff, mypy, 100% branch coverage, Bandit, compileall, production preflight, and targeted private-preview tests before restoring routing.
-8. Escalate material security/privacy/legal consequence to the appropriate human owner.
+A remote MCP URL is not required for the ChatGPT-local path.
 
-See `production-readiness.md`, `release-1.0.0-production-readiness.md`, `explainable-decisions-audit.md`, and `../chatgpt/mcp/README.md`.
+## Security verification
+
+Release CI requires TypeScript build/tests, local stdio MCP certification, npm security audit, Python contract and drift validation, strict source Ruff, mypy, **100% branch-aware** `mesh_cos` coverage, high-severity Bandit scan, and compileall.
+
+Private Workspace Agent preview must still include negative authority, human-spoofing, permission-denial, kill-switch, replay-injection, and completion-versus-verification tests before activation.
+
+See `production-readiness.md`, `release-1.1.0-local-chatgpt-mcp.md`, `explainable-decisions-audit.md`, and `../chatgpt/mcp/README.md`.

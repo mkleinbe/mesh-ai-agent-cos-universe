@@ -27,6 +27,28 @@ def test_strict_contract_rejects_missing_runtime_security_invariants(mutate, mes
         WorkspaceAgentMCPPolicy(value).validate()
 
 
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda c: c.__setitem__("transport", "REMOTE_HTTPS"), "LOCAL_STDIO"),
+        (lambda c: c.__setitem__("local_runtime", None), "local_runtime"),
+        (lambda c: c["local_runtime"].__setitem__("command", "python"), "command"),
+        (lambda c: c["local_runtime"].__setitem__("args", ["wrong"]), "mcp/dist/index.js"),
+        (lambda c: c["local_runtime"].__setitem__("agent_identity_env", "WRONG"), "MESH_COS_AGENT_ID"),
+        (lambda c: c["local_runtime"].__setitem__("ledger_path_env", "WRONG"), "MESH_COS_LEDGER_PATH"),
+        (lambda c: c["local_runtime"].__setitem__("python_bridge", "unsafe.bridge"), "mcp_stdio_bridge"),
+        (lambda c: c["deployment"].__setitem__("chatgpt_runtime", "REMOTE"), "bundled local stdio"),
+        (lambda c: c["deployment"].__setitem__("managed_remote", "REQUIRED"), "remain optional"),
+        (lambda c: c.__setitem__("server_url_env", "MESH_COS_MCP_SERVER_URL"), "remote server URL"),
+    ],
+)
+def test_strict_contract_rejects_local_transport_drift(mutate, message: str) -> None:
+    value = contract()
+    mutate(value)
+    with pytest.raises(ValueError, match=message):
+        WorkspaceAgentMCPPolicy(value).validate()
+
+
 def test_strict_contract_rejects_human_tool_allowlist_defects() -> None:
     value = contract()
     value["human_tool_allowlist"] = ["unknown.tool"]

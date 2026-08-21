@@ -253,4 +253,7 @@ def test_governed_adapter_registry_can_bind_existing_mesh_skills_without_reimple
     }
     assert adapters.bind_available_skills(available) >= 2
     assert adapters.execute("cro", "mesh-revenue-intelligence", {"task_id": "T1"})["status"] == "ok"
-    assert adapters.execute("devils-advocate", "mesh-devils-advocate", {"task_id": "T1"})["status"] == "challenged"
+    assert adapters.execute("cro", "mesh-devils-advocate", {"task_id": "T1"})["status"] == "challenged"
+    assert adapters.execute("cos", "mesh-devils-advocate", {"task_id": "T1"})["status"] == "challenged"
+    with pytest.raises(KeyError):
+        adapters.execute("cfo", "mesh-devils-advocate", {"task_id": "T1"})

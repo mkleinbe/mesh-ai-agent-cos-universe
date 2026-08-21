@@ -11,7 +11,7 @@ flowchart TB
     MCP --> ID[MESH_COS_AGENT_ID]
     MCP --> BRIDGE[mesh_cos.mcp_stdio_bridge]
     BRIDGE --> RT[MCPRuntime]
-    RT --> MP[WorkspaceAgentMCPPolicy\nDeny by Default]
+    RT --> MP[WorkspaceAgentMCPPolicy\ndeny-by-default]
     MP --> AUTH[Registry Source / Tool / Action / Authority]
     AUTH -->|Denied| BLOCK[Reject + Audit]
     AUTH -->|Allowed| LEVEL{Decision Consequence}
@@ -32,7 +32,7 @@ Unknown or unregistered identities fail closed before tool execution.
 
 ## Least privilege and tool projection
 
-`chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact per-agent allowlists. The local MCP publishes only the tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats the authorization check inside Python, providing defense in depth.
+`chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact per-agent allowlists. The local MCP publishes only the tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats the deny-by-default authorization check inside Python, providing defense in depth.
 
 Human-only operations are excluded from all agent catalogs:
 

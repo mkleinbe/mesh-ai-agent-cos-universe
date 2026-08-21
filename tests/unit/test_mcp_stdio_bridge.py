@@ -27,11 +27,11 @@ def test_bridge_requires_bound_agent_and_canonical_ledger(tmp_path: Path) -> Non
 
 def test_bridge_validates_request_shape_and_blocks_human_tools(tmp_path: Path) -> None:
     values = env(tmp_path)
-    with pytest.raises(ValueError, match="JSON object"):
+    with pytest.raises(TypeError, match="JSON object"):
         bridge.execute_request([], env=values)
     with pytest.raises(ValueError, match="tool_name"):
         bridge.execute_request({}, env=values)
-    with pytest.raises(ValueError, match="arguments"):
+    with pytest.raises(TypeError, match="arguments"):
         bridge.execute_request({"tool_name": "task.list", "arguments": []}, env=values)
     with pytest.raises(PermissionError, match="Human-only"):
         bridge.execute_request({"tool_name": "approval.record_decision"}, env=values)
@@ -103,6 +103,7 @@ def test_bridge_calls_real_mcp_runtime_with_canonical_policy(tmp_path: Path) -> 
     [
         (PermissionError("secret"), "permission_denied"),
         (KeyError("secret"), "not_found"),
+        (TypeError("secret"), "invalid_request"),
         (ValueError("secret"), "invalid_request"),
         (RuntimeError("secret"), "runtime_blocked"),
         (OSError("secret"), "runtime_error"),

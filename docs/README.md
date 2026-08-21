@@ -1,15 +1,17 @@
 # Documentation Index
 
-Current release target: **`v1.1.0 Local ChatGPT MCP`**.
+Current release target: **`v2.0.0 Shared Mesh Devil's Advocate`**.
 
-The documentation set covers the canonical operating constitution, governed runtime, 11-agent ChatGPT Workspace Agent projection, bundled local MCP, security and decision rights, production preflight, release verification, and target-environment activation. Historical release and Phase 1 closure records remain preserved as historical snapshots.
+The documentation set covers the canonical operating constitution, governed runtime, **10-agent** ChatGPT Workspace Agent projection, external shared Mesh Devil's Advocate capability, bundled local MCP, security and decision rights, production preflight, release verification, and target-environment activation. Historical release and Phase 1 closure records remain preserved as historical snapshots.
 
 ## Current release documentation
 
-- `release-1.1.0-local-chatgpt-mcp.md`: semantic release record and TDD/loop-engineering summary.
+- `release-2.0.0-shared-devils-advocate.md`: semantic release record, breaking topology change, and TDD/loop-engineering summary.
 - `production-readiness.md`: current fail-closed readiness model.
-- `architecture.md`: current ChatGPT-local `LOCAL_STDIO` topology.
-- `security-governance.md`: authority, local identity binding, human-only separation, replay safety, and audit controls.
+- `architecture.md`: current ChatGPT-local `LOCAL_STDIO` topology and shared challenge boundary.
+- `agent-registry.md`: exact 10-agent runtime roster and shared capability entitlement model.
+- `decision-rights.md`: L0-L5 authority and advisory shared-challenge semantics.
+- `security-governance.md`: authority, local identity binding, human-only separation, replay safety, shared-Skill constraints, and audit controls.
 - `testing-evaluation.md`: release gates and evaluation strategy.
 - `runbook.md`: build, certification, preflight, preview, and incident operations.
 - `../RELEASE.md`: canonical release notes.
@@ -18,7 +20,7 @@ The documentation set covers the canonical operating constitution, governed runt
 ## Canonical runtime
 
 - `phase-1-operating-contract.md`: operating constitution.
-- `../agents/registry.json`: canonical agent definitions and authority.
+- `../agents/registry.json`: canonical 10-agent definitions, authority, and shared capability entitlements.
 - `../contracts/`: machine contracts, including `decision.v2` and `agent-event.v2`.
 - `../config/performance-policy.v1.json`: AgentOps policy.
 - `../config/governance-policy.v1.json`: explainability and audit policy.
@@ -31,26 +33,27 @@ The documentation set covers the canonical operating constitution, governed runt
 ## ChatGPT deployment
 
 - `../chatgpt/README.md`: Workspace Agent package architecture.
-- `../chatgpt/skills/`: 11 validated role Skills.
-- `../chatgpt/workspace-agents/`: exact Workspace Agent manifests aligned to release `1.1.0`.
-- `../chatgpt/mcp/mesh-cos-mcp.v1.json`: MCP contract, per-agent allowlists, local runtime metadata, and human-only tools.
+- `../chatgpt/skills/`: 10 validated repository-local role Skills.
+- `../chatgpt/workspace-agents/`: 10 exact Workspace Agent manifests aligned to release `2.0.0`.
+- external `mesh-devils-advocate`: shared Mesh Devil's Advocate Skill attached only to Chief of Staff and CRO.
+- `../chatgpt/mcp/mesh-cos-mcp.v1.json`: MCP contract, per-agent allowlists, local runtime metadata, governed shared-Skill invocation boundary, and human-only tools.
 - `../chatgpt/mcp/README.md`: bundled MCP implementation and security boundary.
 - `../chatgpt/workspace-agent-builder-prompt.md`: Workspace Agent deployment handoff.
 - `../mcp/`: TypeScript local stdio MCP transport package.
 
 The ChatGPT runtime path is `Workspace Agent -> LOCAL_STDIO -> node mcp/dist/index.js -> mesh_cos.mcp_stdio_bridge -> MCPRuntime -> TaskLedger`.
 
+The shared challenge path is `Chief of Staff or CRO -> skills.invoke_governed -> Mesh Devil's Advocate shared Skill -> advisory challenge packet -> owning role or qualified human`. Mesh Devil's Advocate is not an agent principal, cannot overwrite canonical facts, and cannot execute external actions.
+
 A separately deployed remote MCP service is optional and not required for ChatGPT-local operation.
 
 ## Architecture and governance
 
-- `decision-rights.md`: L0-L5 authority.
 - `explainable-decisions-audit.md`: governance schemas, provenance, mirrors, privacy, and integrity.
-- `delegation-model.md`: bounded delegation and one-owner policy.
+- `delegation-model.md`: bounded delegation, one-owner policy, and explicit rule that the shared challenge Skill is not a delegated agent.
 - `task-lifecycle.md`: completion, independent verification, and rework.
-- `agent-registry.md`: workforce definitions and deployment projection rules.
 - `agent-performance.md`: AgentOps performance management.
-- `conflict-resolution.md`: functional authority and arbitration.
+- `conflict-resolution.md`: functional authority, optional governed challenge, and arbitration.
 - `escalation-policy.md`: escalation routing.
 - `observability.md`: audit, explainability, and metrics model.
 
@@ -68,12 +71,6 @@ They are operational mirrors. `TaskLedger` remains canonical.
 
 ## Historical records
 
-`release-1.0.0-production-readiness.md`, `production-hardening-2026-08-17.md`, the original Workspace Agent gap assessment, and Phase 1 closure/remediation documents remain historical. They are not rewritten to imply they were authored against `v1.1.0`.
+`release-1.1.0-local-chatgpt-mcp.md`, `release-1.0.0-production-readiness.md`, `production-hardening-2026-08-17.md`, the original Workspace Agent gap assessment, and Phase 1 closure/remediation documents remain historical. They are not rewritten to imply they were authored against `v2.0.0`.
 
-Current documentation must describe the bundled local runtime. CI enforces contract validation, runtime/documentation drift, Workspace Agent package drift, TypeScript/Node MCP certification, strict source Ruff, mypy, 100% branch-aware Python coverage, Bandit high-severity scanning, and compileall.
-
-<!-- mesh-cos-v2-shared-da -->
-## v2.0.0 current architecture
-
-The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
-
+Current documentation must describe the 10-agent plus shared Mesh Devil's Advocate model and bundled local runtime. CI enforces contract validation, runtime/documentation drift, Workspace Agent package drift, TypeScript/Node MCP certification, strict source Ruff, mypy, 100% branch-aware Python coverage, Bandit high-severity scanning, and compileall.

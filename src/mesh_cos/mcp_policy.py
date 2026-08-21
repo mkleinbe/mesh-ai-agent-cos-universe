@@ -33,6 +33,30 @@ class WorkspaceAgentMCPPolicy:
         strict_contract = self.contract.get("schema_version") == "mesh.cos.mcp-contract.v1"
         if strict_contract and self.contract.get("serialized_runtime") != "mesh_cos.mcp_runtime.MCPRuntime":
             raise ValueError("MCP contract must use the serialized MCPRuntime boundary")
+        if strict_contract:
+            if self.contract.get("transport") != "LOCAL_STDIO":
+                raise ValueError("MCP contract must use bundled LOCAL_STDIO as the primary ChatGPT transport")
+            local_runtime = self.contract.get("local_runtime")
+            if not isinstance(local_runtime, dict):
+                raise ValueError("MCP contract requires local_runtime configuration")
+            if local_runtime.get("command") != "node":
+                raise ValueError("Local MCP runtime command must be node")
+            if local_runtime.get("args") != ["mcp/dist/index.js"]:
+                raise ValueError("Local MCP runtime must launch mcp/dist/index.js")
+            if local_runtime.get("agent_identity_env") != "MESH_COS_AGENT_ID":
+                raise ValueError("Local MCP runtime must bind agent identity through MESH_COS_AGENT_ID")
+            if local_runtime.get("ledger_path_env") != "MESH_COS_LEDGER_PATH":
+                raise ValueError("Local MCP runtime must bind canonical persistence through MESH_COS_LEDGER_PATH")
+            if local_runtime.get("python_bridge") != "mesh_cos.mcp_stdio_bridge":
+                raise ValueError("Local MCP runtime must bridge to mesh_cos.mcp_stdio_bridge")
+            deployment = self.contract.get("deployment", {})
+            if deployment.get("chatgpt_runtime") != "BUNDLED_LOCAL_STDIO":
+                raise ValueError("ChatGPT deployment must use the bundled local stdio MCP")
+            if deployment.get("managed_remote") != "OPTIONAL_NOT_REQUIRED":
+                raise ValueError("Managed remote MCP transport must remain optional")
+            if "server_url_env" in self.contract:
+                raise ValueError("Local ChatGPT MCP must not require a remote server URL")
+
         security = self.contract.get("security", {})
         if security.get("deny_by_default") is not True:
             raise ValueError("MCP policy must deny by default")

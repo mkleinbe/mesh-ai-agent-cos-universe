@@ -1,4 +1,5 @@
 name: generate-mcp-lock
+# Final projection helper for enhancement/local-chatgpt-mcp. Remove before merge.
 
 on:
   push:

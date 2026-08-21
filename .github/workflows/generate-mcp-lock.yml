@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Generate package lock
+      - name: Generate package lock and local projections
         working-directory: mcp
         run: npm install --package-lock-only --ignore-scripts
       - name: Project local MCP runtime across manifests and Skills

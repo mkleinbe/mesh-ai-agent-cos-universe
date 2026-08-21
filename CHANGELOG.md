@@ -2,6 +2,41 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 2.0.0 - 2026-08-21 - Shared Mesh Devil's Advocate
+
+### Breaking workforce topology
+
+- Reduced the canonical Phase 1 runtime from 11 registered agent principals to **10** by removing the repository-local Devil's Advocate principal.
+- Removed `agents/devils-advocate.md`, `chatgpt/workspace-agents/devils-advocate.json`, the `devils-advocate` MCP principal, and the duplicate `chatgpt/skills/mesh-devils-advocate/` role Skill package.
+- Added **Mesh Devil's Advocate** as an external `EXTERNAL_SHARED_SKILL` capability available only to Chief of Staff and CRO through governed Skill invocation.
+- Preserved the normal delegation model. The shared challenge capability is not a delegated task owner or independent decision principal.
+
+### Authority and canonical truth
+
+- Defined Mesh Devil's Advocate as `ADVISORY_ONLY` with `canonical_facts_modified: false` and `external_action_included: false`.
+- Added the governed challenge request/response contracts `mesh.devils-advocate.challenge-request.v1` and `mesh.devils-advocate.challenge-packet.v1`.
+- Preserved functional source authority. Mesh Revenue Intelligence remains canonical for commercial account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization.
+- Preserved L4 qualified-human approval, Michael-exclusive L5 authority, human-only approval/reliability operations, and `TaskLedger` canonical state.
+
+### Runtime, ChatGPT, and MCP
+
+- Reconciled the Agent Registry, 10 Workspace Agent manifests, 10 repository-local role Skills, MCP allowlists, stdio certification, production preflight, Builder handoff, and runtime/documentation drift controls to the new topology.
+- Restricted `mesh-devils-advocate` entitlement and `skills.invoke_governed` challenge access to Chief of Staff and CRO.
+- Preserved `LOCAL_STDIO`, `node mcp/dist/index.js`, `mesh_cos.mcp_stdio_bridge`, and `mesh_cos.mcp_runtime.MCPRuntime` as the ChatGPT execution path.
+- Preserved deny-by-default tool projection and explicit separation between `task.complete` and `task.verify`.
+
+### TDD, loop engineering, and documentation
+
+- Started with intentionally failing acceptance tests against the former 11-agent model, then iterated through registry, package, manifest, test, documentation, security, release, and coverage defects without weakening quality gates.
+- Updated README, AGENTS, security policy, architecture, registry, decision rights, delegation model, production readiness, testing/evaluation, runbook, ChatGPT/MCP documentation, Builder handoff, release notes, and Mermaid architecture diagrams.
+- Kept release acceptance at dependency integrity, TypeScript build and Node tests, stdio MCP smoke certification, npm audit, contract validation, runtime/documentation drift, Workspace Agent package drift, strict source Ruff, mypy, **100% branch-aware `mesh_cos` coverage**, high-severity Bandit, and compileall.
+
+### Release identity
+
+- Semantic version: `2.0.0`
+- Semantic tag: `v2.0.0`
+- Release title: `v2.0.0 Shared Mesh Devil's Advocate`
+
 ## 1.1.0 - 2026-08-21 - Local ChatGPT MCP
 
 ### ChatGPT-local MCP runtime
@@ -155,9 +190,3 @@ The repository does not fabricate live environment configuration. Production act
 - Added the Python 3.11+ modular-monolith CoS control plane with SQLite-backed `TaskLedger`.
 - Added versioned contracts, the canonical 11-agent registry, explicit L0-L5 decision rights, task lifecycle, delegation, approval, audit, conflict, AgentOps, Answer Desk, Slack protocol, and kill-switch controls.
 - Preserved Phase 1 non-goals: no autonomous pricing/discounts, consequential external/public commitments, unrestricted enterprise finance, legal/regulatory/security/privacy/personnel conclusions, recursive swarms, autonomous agent creation, or self-expansion of authority.
-
-<!-- mesh-cos-v2-shared-da -->
-## v2.0.0 current architecture
-
-The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
-

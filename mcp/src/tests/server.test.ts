@@ -15,7 +15,7 @@ const contract = loadContract();
 
 test('contract loads local stdio release metadata', () => {
   assert.equal(contract.name, 'mesh-cos-mcp');
-  assert.equal(contract.runtime_release, '1.1.0');
+  assert.equal(contract.runtime_release, '2.0.0');
   assert.equal(contract.transport, 'LOCAL_STDIO');
 });
 

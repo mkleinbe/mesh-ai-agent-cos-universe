@@ -39,13 +39,13 @@ def _ledger_target(env: Mapping[str, str]) -> str:
 
 def _validate_request(payload: Any) -> tuple[str, dict[str, Any]]:
     if not isinstance(payload, dict):
-        raise ValueError("MCP bridge request must be a JSON object")
+        raise TypeError("MCP bridge request must be a JSON object")
     tool_name = payload.get("tool_name")
     if not isinstance(tool_name, str) or not tool_name.strip():
         raise ValueError("tool_name is required")
     arguments = payload.get("arguments", {})
     if not isinstance(arguments, dict):
-        raise ValueError("arguments must be a JSON object")
+        raise TypeError("arguments must be a JSON object")
     if tool_name in HUMAN_ONLY_TOOLS:
         raise PermissionError("Human-only MCP tools are not exposed by the local agent runtime")
     return tool_name, dict(arguments)
@@ -81,7 +81,7 @@ def _safe_error(exc: BaseException) -> dict[str, Any]:
         category = "permission_denied"
     elif isinstance(exc, KeyError):
         category = "not_found"
-    elif isinstance(exc, ValueError):
+    elif isinstance(exc, (TypeError, ValueError)):
         category = "invalid_request"
     elif isinstance(exc, RuntimeError):
         category = "runtime_blocked"

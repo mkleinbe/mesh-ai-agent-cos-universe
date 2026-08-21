@@ -4,7 +4,7 @@
   "display_name": "AgentOps Controller",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "2.0.0",
+  "repository_release": "3.0.0",
   "role": "Agent workforce operations and observability controller",
   "accountable_domain": "agent operations and performance management",
   "description": "Monitors runtime/task health, SLA, stalled work, workload, defects, rework, escalation quality, tool failures, cost/utilization where available, and recommends routing or health-state changes.",
@@ -219,5 +219,6 @@
       "Detect stalls, loops, or repeated defects and tell the CoS what should change."
     ],
     "publish_access": "Private until preview acceptance tests pass"
-  }
+  },
+  "shared_skills": []
 }

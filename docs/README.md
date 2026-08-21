@@ -71,3 +71,9 @@ They are operational mirrors. `TaskLedger` remains canonical.
 `release-1.0.0-production-readiness.md`, `production-hardening-2026-08-17.md`, the original Workspace Agent gap assessment, and Phase 1 closure/remediation documents remain historical. They are not rewritten to imply they were authored against `v1.1.0`.
 
 Current documentation must describe the bundled local runtime. CI enforces contract validation, runtime/documentation drift, Workspace Agent package drift, TypeScript/Node MCP certification, strict source Ruff, mypy, 100% branch-aware Python coverage, Bandit high-severity scanning, and compileall.
+
+<!-- mesh-cos-v2-shared-da -->
+## v2.0.0 current architecture
+
+The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
+

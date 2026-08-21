@@ -113,3 +113,9 @@ For a material decision or recommendation, the record must identify:
 Any authority or accountable-domain change requires corresponding registry, test, documentation, governance-policy, Workspace Agent manifest/Skill, MCP allowlist, and audit/version updates. Material authority expansion is itself a governed L5 decision and cannot be performed by the affected agent. Role-name changes are identity changes and must not be used as a shortcut for implementation versioning.
 
 See `explainable-decisions-audit.md` for the canonical v2 fields and Google Sheets mirror controls.
+
+<!-- mesh-cos-v2-shared-da -->
+## v2.0.0 current architecture
+
+The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
+

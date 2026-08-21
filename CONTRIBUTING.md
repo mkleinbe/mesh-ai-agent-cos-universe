@@ -1,20 +1,19 @@
 # Contributing
 
-Current stable repository release: **`v1.0.0 Production Readiness`**.
+Current release target: **`v1.1.0 Local ChatGPT MCP`**.
 
-Changes must preserve the Phase 1 operating constitution and the production-readiness controls established in `1.0.0`. Use test-driven, short-loop engineering practices.
+Changes must preserve the Phase 1 operating constitution, the production-readiness controls established in `1.0.0`, and the bundled ChatGPT-local MCP controls established in `1.1.0`. Use test-driven, short-loop engineering practices.
 
 ## Required workflow
 
 1. Create a feature branch from current `main`.
-2. Add/update tests first for behavioral changes, including negative authorization, failure-path, idempotency, human-principal, and replay-safety coverage when relevant.
+2. Add or update tests first for behavioral changes, including negative authorization, failure-path, idempotency, human-principal, local-agent-identity, and replay-safety coverage when relevant.
 3. Implement the minimum change required to satisfy the behavior.
-4. Run the full release verification locally when possible.
+4. Run the full release verification.
 5. Update schemas, registry policy, Workspace Agent manifests, role Skills, MCP allowlists, configuration, documentation, Mermaid diagrams, and release metadata in the same change when affected.
 6. Run production preflight for changes that affect deployment/runtime readiness.
-7. Open a pull request to `main`.
-8. Merge only after CI passes and review comments are resolved.
-9. Close superseded pull requests rather than leaving competing branches open.
+7. Open a pull request to `main` and merge only after CI passes and review comments are resolved.
+8. Close superseded pull requests rather than leaving competing branches open.
 
 ## Local release verification
 
@@ -23,6 +22,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e '.[dev]'
 python -m pip check
+cd mcp
+npm ci
+npm run check
+cd ..
 python scripts/validate-contracts.py
 python scripts/check-runtime-doc-drift.py
 python scripts/check-chatgpt-packages.py
@@ -34,36 +37,34 @@ bandit -q -r src -lll
 python -m compileall -q src
 ```
 
-`mesh_cos` branch-aware coverage is a 100% release gate. Do not weaken the threshold to make a build green. Add behavior-oriented tests for reachable paths or remove genuinely unreachable code through a test-backed refactor.
+`mesh_cos` branch-aware coverage is a **100%** release gate. Do not weaken the threshold to make a build green.
 
-## Production preflight
+## MCP changes
 
-Before production activation or release changes that affect activation semantics:
+ChatGPT uses the bundled `LOCAL_STDIO` runtime defined by `chatgpt/mcp/mesh-cos-mcp.v1.json` and implemented under `mcp/`. New or changed MCP behavior requires explicit read/write classification, authority enforcement, audit behavior, approval policy, fixed Python runtime handler, least-privilege per-agent allowlists, negative authorization tests, Node tests, stdio certification, and package-drift coverage.
 
-```bash
-python scripts/production-preflight.py
-```
+The TypeScript layer must remain transport-only. Do not duplicate task, authority, approval, governance, or reliability logic outside `MCPRuntime`.
 
-Use `--require-slack`, `--require-answer-desk`, and `--require-ledger` when those surfaces are in scope.
+`MESH_COS_AGENT_ID` is a trusted runtime binding. Prompt text and retrieved content must never select it. `MESH_COS_LEDGER_PATH` must preserve one approved canonical operating universe across the 11 agents.
+
+Human-only tools must remain separate from agent allowlists. Replay must never execute client-supplied code, import paths, shell commands, or callable names.
+
+A remote MCP endpoint is optional and may not become an undocumented requirement for ChatGPT-local operation.
 
 ## Governance-sensitive changes
 
 Changes to decision rights, approvals, agent authority, human-only operations, source/tool permissions, delegation depth, prohibited actions, registry health, consequential persistence, Workspace app access, Connector Action Constraints, MCP tool allowlists, replay behavior, completion/verification boundaries, or external-write behavior require explicit positive and negative tests plus documentation updates. Do not infer new monetary thresholds or broader autonomy.
 
-Workspace Agent Builder settings are subordinate to `agents/registry.json`. They may narrow access but may not widen accountable domain, authority, source truth, approval rights, prohibited actions, or delegation depth.
-
 ## Skill changes
 
-ChatGPT role Skills live under `chatgpt/skills/`. Retain required `SKILL.md`, `agents/openai.yaml`, `references/role-contract.md`, and `references/production-readiness.md`. Validate/package affected Skills through the OpenAI skill-creator workflow before release. Skill packaging does not prove MCP or Workspace app connectivity.
+ChatGPT role Skills live under `chatgpt/skills/`. Retain `SKILL.md`, `agents/openai.yaml`, `references/role-contract.md`, and `references/production-readiness.md`. Skill packaging does not prove Workspace app connectivity or deployment activation.
 
-## MCP changes
+## Production preflight
 
-`chatgpt/mcp/mesh-cos-mcp.v1.json` maps Workspace Agent tools to the serialized `MCPRuntime`. New or changed tools require explicit read/write classification, authority enforcement, audit behavior, approval policy, fixed runtime handler, least-privilege per-agent allowlists, negative authorization tests, and package-drift coverage.
-
-Human-only tools must remain separate from agent allowlists. Remote replay must never execute client-supplied code, import paths, shell commands, or callable names.
+Run `python scripts/production-preflight.py` before activation or release changes that affect activation semantics. Use `--require-slack`, `--require-answer-desk`, and `--require-ledger` when those surfaces are in scope.
 
 ## Documentation standard
 
-Documentation must describe what the runtime and deployment package actually implement. Planned, product-side, or environment-dependent behavior must be labeled accordingly. Keep Mermaid diagrams synchronized with executable paths and canonical state boundaries.
+Documentation must describe what the runtime and deployment package actually implement. Keep Mermaid diagrams synchronized with executable paths and canonical state boundaries. Historical release and Phase 1 closure records remain historical snapshots.
 
-Historical Phase 1 gap/remediation/closure records remain historical snapshots. Current release and activation guidance belongs in `docs/release-1.0.0-production-readiness.md`, `docs/production-readiness.md`, `docs/runbook.md`, and `RELEASE.md`.
+Current guidance belongs in `docs/release-1.1.0-local-chatgpt-mcp.md`, `docs/production-readiness.md`, `docs/runbook.md`, and `RELEASE.md`.

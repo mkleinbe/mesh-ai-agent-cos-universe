@@ -6,6 +6,21 @@
     "implementation_version_field": "version",
     "rule": "Organizational role names must not embed implementation or release version labels."
   },
+  "shared_capabilities": [
+    {
+      "capability": "mesh-devils-advocate",
+      "display_name": "Mesh Devil's Advocate",
+      "type": "shared_skill",
+      "deployment": "EXTERNAL_SHARED_SKILL",
+      "consumers": ["cos", "cro"],
+      "authority": "ADVISORY_ONLY",
+      "canonical_facts_modified": false,
+      "external_action_included": false,
+      "request_contract": "mesh.devils-advocate.challenge-request.v1",
+      "response_contract": "mesh.devils-advocate.challenge-packet.v1",
+      "rule": "Challenge decision logic without becoming the decision owner or overwriting canonical facts; route authority back to the owning agent or qualified human."
+    }
+  ],
   "agents": [
     {
       "agent_id": "cos",
@@ -19,7 +34,7 @@
       "accountable_domain": "executive orchestration and outcome accountability",
       "authoritative_sources": ["Task and Outcome Ledger", "Agent Registry", "Decision and Audit Records"],
       "allowed_sources": ["authorized Mesh enterprise sources"],
-      "skills": ["mesh-ppmd-bot"],
+      "skills": ["mesh-ppmd-bot", "mesh-devils-advocate"],
       "tools": ["task-ledger", "authority-engine", "approval-engine", "audit", "agentops", "slack-adapter"],
       "input_contracts": ["task.v1", "delegation.v1", "conflict.v1", "performance-scorecard.v1"],
       "output_contracts": ["delegation.v1", "decision.v1", "conflict.v1", "agent-event.v1"],
@@ -27,7 +42,7 @@
       "prohibited_actions": ["rewrite_canonical_financial_facts", "rewrite_canonical_commercial_facts", "rewrite_delivery_capacity_truth", "unilateral_external_send", "commercial_commitment_without_approval", "autonomous_agent_creation", "material_authority_expansion"],
       "decision_authority": "L3 only where explicitly delegated; L4/L5 require human authority",
       "required_approvals": ["L4 qualified human", "L5 Michael"],
-      "delegation_permissions": ["functional executive", "controller", "reviewer", "operations"],
+      "delegation_permissions": ["functional executive", "controller", "operations"],
       "max_delegation_depth": 2,
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
@@ -100,7 +115,7 @@
       "accountable_domain": "commercial strategy, pursuits, opportunity quality, buyer dynamics, and expansion",
       "authoritative_sources": ["Revenue Intelligence where available"],
       "allowed_sources": ["mesh-revenue-intelligence", "mesh-firm-360", "approved commercial artifacts"],
-      "skills": ["mesh-revenue-intelligence", "mesh-firm-360", "mesh-competitive-displacement-engine", "mesh-gtm-orchestrator", "mesh-buyer-psychology", "mesh-sales-messaging", "mesh-client-servicing-messaging"],
+      "skills": ["mesh-revenue-intelligence", "mesh-firm-360", "mesh-competitive-displacement-engine", "mesh-gtm-orchestrator", "mesh-buyer-psychology", "mesh-sales-messaging", "mesh-client-servicing-messaging", "mesh-devils-advocate"],
       "tools": ["task-ledger", "delegation", "audit"],
       "input_contracts": ["task.v1", "delegation.v1"],
       "output_contracts": ["decision.v1", "delegation.v1", "agent-event.v1"],
@@ -248,33 +263,6 @@
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
       "confidentiality_class": "internal-confidential",
-      "runtime_health": "ACTIVE"
-    },
-    {
-      "agent_id": "devils-advocate",
-      "display_name": "Devil's Advocate",
-      "role": "Independent challenge reviewer",
-      "description": "Challenges important recommendations, tests assumptions, runs premortems, identifies second-order consequences, examines reversibility, and surfaces evidence gaps.",
-      "parent_agent_id": "cos",
-      "agent_type": "reviewer",
-      "status": "ACTIVE",
-      "version": "1.0.0",
-      "accountable_domain": "independent challenge",
-      "authoritative_sources": [],
-      "allowed_sources": ["evidence supplied for review"],
-      "skills": ["mesh-devils-advocate"],
-      "tools": ["review", "audit"],
-      "input_contracts": ["delegation.v1", "conflict.v1", "decision.v1"],
-      "output_contracts": ["agent-event.v1"],
-      "permitted_actions": ["challenge_assumptions", "premortem", "identify_second_order_effects", "assess_reversibility", "identify_evidence_gaps"],
-      "prohibited_actions": ["final_decision", "rewrite_canonical_fact"],
-      "decision_authority": "advisory only",
-      "required_approvals": [],
-      "delegation_permissions": [],
-      "max_delegation_depth": 0,
-      "normal_SLA": "configurable",
-      "performance_policy": "reviewer-quality-v1",
-      "confidentiality_class": "inherits-task-confidentiality",
       "runtime_health": "ACTIVE"
     },
     {

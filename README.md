@@ -1,14 +1,14 @@
 # Mesh AI Chief of Staff Agent Universe
 
-Production-ready operating core for Mesh Digital LLC's governed AI Chief of Staff workforce. The repository implements a bounded executive operating control plane for 11 coordinated ChatGPT Workspace Agents. ChatGPT, Slack, connector responses, and governance Sheets are interaction surfaces. `TaskLedger` remains canonical state.
+Production-ready operating core for Mesh Digital LLC's governed AI Chief of Staff workforce. Release `v2.0.0` deploys a **10-agent** ChatGPT Workspace organization and replaces the former repository-local Devil's Advocate agent with the more robust shared **Mesh Devil's Advocate** Skill. ChatGPT, Slack, connector responses, and governance Sheets are interaction surfaces. `TaskLedger` remains canonical state.
 
 ## Release status
 
-**Current semantic release target: `v1.1.0 Local ChatGPT MCP`.**
+**Current semantic release: `v2.0.0 Shared Mesh Devil's Advocate`.**
 
-Version `1.1.0` changes the ChatGPT execution topology. The CoS MCP no longer requires a separately deployed HTTPS endpoint for normal ChatGPT operation. Following the same operating pattern used by the Mesh Revenue Intelligence Skill, ChatGPT launches the checked-in MCP package locally over `LOCAL_STDIO`.
+This is a breaking deployment-model change because the canonical agent roster moves from 11 principals to 10. `mesh-devils-advocate` is no longer a separately deployed Workspace Agent or repository-local role Skill. It is an external shared Skill used only by Chief of Staff and CRO through governed Skill invocation.
 
-The architecture is:
+## Runtime topology
 
 ```text
 ChatGPT Workspace Agent
@@ -30,11 +30,49 @@ TaskLedger / canonical SQLite state
 
 A managed remote MCP transport may be added separately, but it is optional and may not replace the same authority, approval, audit, or canonical-state controls.
 
+## Workforce topology
+
+```mermaid
+flowchart TD
+    M[Michael / Qualified Human]
+    COS[Chief of Staff]
+    AO[AgentOps Controller]
+    AD[Answer and Decision Desk]
+    CRO[CRO]
+    CFO[CFO]
+    COO[COO]
+    CNS[Consultant Network Steward]
+    CMO[CMO]
+    VPC[VP Content]
+    MSG[Message Operations]
+    DA[[Shared Mesh Devil's Advocate Skill]]
+
+    M --> COS
+    COS --> AO
+    COS --> AD
+    COS --> CRO
+    COS --> CFO
+    COS --> COO
+    COO --> CNS
+    COS --> CMO
+    CMO --> VPC
+    COS --> MSG
+    COS -. governed challenge .-> DA
+    CRO -. governed challenge .-> DA
+    DA -. advisory challenge packet .-> COS
+    DA -. advisory challenge packet .-> CRO
+```
+
+The shared Mesh Devil's Advocate is **not an agent principal**. It does not own tasks, canonical facts, scores, stages, diagnoses, commitments, or external actions. Its job is independent challenge: steelmanning, contrarian hypotheses, assumption testing, premortems, red-team analysis, evidence audits, and decision-condition testing. It returns authority to the owning role or qualified human.
+
+For Revenue Intelligence work, the shared challenge Skill preserves canonical account IDs, evidence classes, scores, stage, lifecycle, queue state, and activation readiness. It may challenge interpretation, route, assumptions, capacity, evidence sufficiency, and decision logic.
+
 ## Release artifacts
 
-- 11 validated role Skills under `chatgpt/skills/`;
-- 11 Workspace Agent manifests under `chatgpt/workspace-agents/`;
-- `chatgpt/mcp/mesh-cos-mcp.v1.json`, release `1.1.0`, transport `LOCAL_STDIO`;
+- 10 validated role Skills under `chatgpt/skills/`;
+- 10 Workspace Agent manifests under `chatgpt/workspace-agents/`;
+- external shared `mesh-devils-advocate` capability entitlement for Chief of Staff and CRO;
+- `chatgpt/mcp/mesh-cos-mcp.v1.json`, release `2.0.0`, transport `LOCAL_STDIO`;
 - bundled TypeScript MCP package under `mcp/`;
 - Python bridge `mesh_cos.mcp_stdio_bridge`;
 - canonical `mesh_cos.mcp_runtime.MCPRuntime` business/governance execution core;
@@ -42,11 +80,9 @@ A managed remote MCP transport may be added separately, but it is optional and m
 - human-only approval and reliability-override paths;
 - 100% branch-aware `mesh_cos` coverage gate plus Node build/test/smoke/security gates;
 - production preflight and private-preview requirements;
-- release record `docs/release-1.1.0-local-chatgpt-mcp.md` and `RELEASE.md`.
+- release record `docs/release-2.0.0-shared-devils-advocate.md` and `RELEASE.md`.
 
 ## Runtime configuration
-
-The bundled ChatGPT MCP uses non-secret runtime configuration:
 
 ```text
 MESH_COS_AGENT_ID=<registered-agent-id>
@@ -54,18 +90,18 @@ MESH_COS_LEDGER_PATH=.mesh-cos/task-ledger.sqlite3
 MESH_COS_PYTHON_BIN=python
 ```
 
-`MESH_COS_AGENT_ID` binds the local MCP process to one registered role. Prompt text and retrieved content cannot change that identity. All 11 agents in one CoS operating universe must use the same approved `MESH_COS_LEDGER_PATH`.
+`MESH_COS_AGENT_ID` binds the local MCP process to one registered role. Prompt text and retrieved content cannot change that identity. All 10 agents in one CoS operating universe use the same approved `MESH_COS_LEDGER_PATH`.
 
 There is no required `MESH_COS_MCP_SERVER_URL` for ChatGPT-local operation.
 
 ## Canonical boundaries
 
-- `agents/registry.json` is authoritative for agent identity, role authority, source/tool policy, delegation permissions, health, and prohibited actions.
+- `agents/registry.json` is authoritative for agent identity, authority, source/tool policy, delegation, health, prohibited actions, and shared capability entitlements.
 - `TaskLedger` is canonical for task state, work graph, approvals, conflicts, explainable decisions, audit events, verification, performance, and consequential operating records.
-- `chatgpt/workspace-agents/*.json` is the ChatGPT deployment projection. It may narrow behavior but may not widen canonical authority.
-- `chatgpt/skills/*` contains reusable role workflows. Skills are not a second authority source.
+- `chatgpt/workspace-agents/*.json` is the deployment projection. It may narrow behavior but may not widen canonical authority.
+- `chatgpt/skills/*` contains repository-local role workflows. The shared Mesh Devil's Advocate Skill is external and is not duplicated here.
 - `chatgpt/mcp/mesh-cos-mcp.v1.json` defines the MCP contract and per-agent allowlists.
-- `mcp/` provides the local stdio transport only. It does not duplicate business, authority, approval, governance, or reliability logic from `MCPRuntime`.
+- `mcp/` provides the local stdio transport only. Business and governance execution remain in `MCPRuntime`.
 - CoS Decision Log and CoS Audit Log remain human-readable mirrors, not canonical state.
 
 ## Authority model
@@ -77,7 +113,7 @@ There is no required `MESH_COS_MCP_SERVER_URL` for ChatGPT-local operation.
 - **L4** qualified human approval required.
 - **L5** Michael-exclusive decisions.
 
-Human-only MCP operations, including `approval.record_decision` and `reliability.human_override`, are excluded from every agent MCP catalog and require a separate authenticated human-principal path.
+The shared Mesh Devil's Advocate is advisory-only and cannot elevate authority. Human-only MCP operations, including `approval.record_decision` and `reliability.human_override`, remain excluded from every agent MCP catalog.
 
 ## Completion and verification
 
@@ -102,36 +138,16 @@ bandit -q -r src -lll
 python -m compileall -q src
 ```
 
-`npm run check` compiles the TypeScript MCP, runs Node unit tests, executes a real local stdio MCP certification against the Python control plane, verifies canonical persistence across calls, tests human-only exclusion and safe-denial behavior, and runs the npm security audit.
-
-Before activation:
-
-```bash
-python scripts/production-preflight.py
-```
-
-Add `--require-slack`, `--require-answer-desk`, and `--require-ledger` when those surfaces are required.
+Before activation, run `python scripts/production-preflight.py`. Add `--require-slack`, `--require-answer-desk`, and/or `--require-ledger` when those surfaces are required.
 
 ## Production activation boundary
 
 Repository readiness does not fabricate Workspace app authentication, Slack credentials, a dedicated Answer Desk Slack channel, approved source credentials, production approval-owner mappings, Google Sheets write credentials, secrets management, or target-workspace publication settings. Those dependencies still require configuration and private-preview testing.
 
-A separate remote MCP deployment is **not** a production activation dependency for ChatGPT-local operation.
-
-SQLite remains the Phase 1 persistence choice. Revisit persistence before multi-instance or high-availability deployment.
+A separate remote MCP deployment is **not** a production activation dependency for ChatGPT-local operation. SQLite remains the Phase 1 persistence choice and should be revisited before multi-instance or high-availability deployment.
 
 ## Documentation
 
-Start at `docs/README.md`. Current operating references include:
+Start at `docs/README.md`. Current operating references include `docs/release-2.0.0-shared-devils-advocate.md`, `docs/production-readiness.md`, `docs/architecture.md`, `docs/security-governance.md`, `docs/testing-evaluation.md`, `docs/runbook.md`, `chatgpt/README.md`, `chatgpt/mcp/README.md`, and `chatgpt/workspace-agent-builder-prompt.md`.
 
-- `docs/release-1.1.0-local-chatgpt-mcp.md`
-- `docs/production-readiness.md`
-- `docs/architecture.md`
-- `docs/security-governance.md`
-- `docs/testing-evaluation.md`
-- `docs/runbook.md`
-- `chatgpt/README.md`
-- `chatgpt/mcp/README.md`
-- `chatgpt/workspace-agent-builder-prompt.md`
-
-Historical release documents remain historical snapshots and are not rewritten to imply they were authored against `v1.1.0`.
+Historical release documents remain historical snapshots. Current deployment authority is release `v2.0.0` and the canonical registry.

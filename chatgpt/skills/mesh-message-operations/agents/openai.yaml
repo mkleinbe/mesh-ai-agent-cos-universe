@@ -1,3 +1,0 @@
-interface:
-  display_name: "Message Operations"
-  short_description: "Controlled execution of explicitly approved Mesh communications with approval validation and auditable delivery."

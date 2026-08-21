@@ -34,7 +34,7 @@ Unknown or unregistered identities fail closed before tool execution.
 
 `chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact per-agent allowlists. The local MCP publishes only the tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats the deny-by-default authorization check inside Python, providing defense in depth.
 
-Human-only operations are excluded from all agent catalogs:
+The human-only operations are excluded from all agent catalogs:
 
 - `approval.record_decision`
 - `reliability.human_override`

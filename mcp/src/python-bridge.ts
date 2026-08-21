@@ -52,15 +52,13 @@ export async function callPythonBridge(
   const child = spawn(python, ['-m', 'mesh_cos.mcp_stdio_bridge'], {
     cwd: repoRoot,
     env: pythonEnvironment(env),
-    stdio: ['pipe', 'pipe', 'pipe'],
+    stdio: ['pipe', 'pipe', 'ignore'],
   });
 
   let stdout = '';
-  let stderr = '';
   let outputTooLarge = false;
 
   child.stdout.setEncoding('utf8');
-  child.stderr.setEncoding('utf8');
   child.stdout.on('data', (chunk: string) => {
     if (stdout.length + chunk.length > MAX_RESPONSE_BYTES) {
       outputTooLarge = true;
@@ -68,9 +66,6 @@ export async function callPythonBridge(
       return;
     }
     stdout += chunk;
-  });
-  child.stderr.on('data', (chunk: string) => {
-    if (stderr.length < 4096) stderr += chunk.slice(0, 4096 - stderr.length);
   });
 
   const completed = new Promise<number>((resolve, reject) => {
@@ -86,7 +81,7 @@ export async function callPythonBridge(
     throw new PythonBridgeError('bridge_unavailable');
   }
   if (outputTooLarge) throw new PythonBridgeError('response_too_large');
-  if (code !== 0) throw new PythonBridgeError(stderr ? 'bridge_process_failed' : 'bridge_process_failed');
+  if (code !== 0) throw new PythonBridgeError('bridge_process_failed');
 
   let response: BridgeResponse;
   try {

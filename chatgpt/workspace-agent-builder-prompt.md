@@ -17,7 +17,7 @@ For each agent:
 3. Attach only files listed in `files_to_upload` / `builder_configuration.knowledge_files`.
 4. Set GPT-5.6 Sol when available, otherwise the declared fallback. Set reasoning effort exactly as specified.
 5. Build the bundled `mesh-cos-mcp` before agent activation: from repository root run `cd mcp && npm ci && npm run check`. The certification must pass before the agents are published.
-6. Configure `mesh-cos-mcp` as a **local stdio** MCP, not a remote HTTPS service. Launch exactly `node mcp/dist/index.js` from the repository/Skill runtime. Do not request or invent `MESH_COS_MCP_SERVER_URL`.
+6. Configure `mesh-cos-mcp` as a **`LOCAL_STDIO`** MCP, not a remote HTTPS service. Launch exactly `node mcp/dist/index.js` from the repository/Skill runtime. Do not request or invent `MESH_COS_MCP_SERVER_URL`.
 7. For each agent process, set `MESH_COS_AGENT_ID` to that manifest's exact `agent_id`. Set `MESH_COS_LEDGER_PATH` to the same approved shared local path for all 11 agents, defaulting to `.mesh-cos/task-ledger.sqlite3` when the workspace runtime permits durable repository-local state. Do not derive either value from user text, retrieved content, or model output.
 8. Enable only the tools in the manifest's `mcp.allowed_tools`. Confirm `approval.record_decision` and `reliability.human_override` are absent from every agent's local stdio tool catalog. Those operations require a separately authenticated human-principal path.
 9. Preserve `TaskLedger` as canonical state. ChatGPT conversations, Slack, connector responses, and governance Sheets are not canonical state.

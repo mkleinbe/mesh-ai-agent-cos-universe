@@ -8,8 +8,18 @@ from mesh_cos.preflight import EXPECTED_AGENT_IDS, ProductionPreflight
 def env() -> dict[str, str]:
     return {
         "MESH_COS_KILL_SWITCH": "false",
-        "MESH_COS_MCP_SERVER_URL": "https://mesh.example/mcp",
+        "MESH_COS_LEDGER_PATH": ".mesh-cos/test-ledger.sqlite3",
     }
+
+
+def test_preflight_requires_local_ledger_and_bundled_mcp_package(tmp_path: Path) -> None:
+    missing_ledger = ProductionPreflight(root=Path(__file__).resolve().parents[2], env={"MESH_COS_KILL_SWITCH": "false"}).check()
+    ledger = next(check for check in missing_ledger["checks"] if check["name"] == "mcp_ledger_path")
+    assert ledger["status"] == "FAIL"
+
+    incomplete = ProductionPreflight(root=tmp_path, env=env()).check()
+    package = next(check for check in incomplete["checks"] if check["name"] == "mcp_local_package")
+    assert package["status"] == "FAIL"
 
 
 def test_preflight_reports_registry_shape_and_health_failures(monkeypatch) -> None:

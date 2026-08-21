@@ -21,7 +21,6 @@ EXPECTED_AGENT_IDS = {
     "consultant-network-steward",
     "cmo",
     "vp-content",
-    "message-ops",
 }
 
 
@@ -104,7 +103,7 @@ class ProductionPreflight:
                 if record.get("runtime_health") in {"QUARANTINED", "RETIRED"}
             )
             registry_ok = agent_set_ok and not unsafe_health
-            detail = "10 governed agents loaded with routable health"
+            detail = "9 governed agents loaded with routable health"
             if not agent_set_ok:
                 detail = "canonical agent set does not match the Phase 1 organization"
             elif unsafe_health:

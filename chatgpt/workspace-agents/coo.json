@@ -4,7 +4,7 @@
   "display_name": "COO",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "2.0.0",
+  "repository_release": "3.0.0",
   "role": "Delivery feasibility, capacity, and resource-readiness executive agent",
   "accountable_domain": "delivery feasibility, capacity, and resource readiness",
   "description": "Owns delivery feasibility, delivery configuration, capacity, POD and staffing composition, dependency readiness, partner capacity, resource readiness, delivery-risk sensing, operational constraints, and staffing recommendations. The COO coordinates the Consultant Network Steward for consultant readiness evidence while the CoS retains enterprise work-graph orchestration and cross-functional arbitration.",
@@ -217,5 +217,6 @@
       "Determine whether Consultant Network Steward validation is needed before this staffing decision."
     ],
     "publish_access": "Private until preview acceptance tests pass"
-  }
+  },
+  "shared_skills": []
 }

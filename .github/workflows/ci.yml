@@ -2,17 +2,26 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**', 'quality/**']
+    branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**', 'quality/**', 'enhancement/**', 'release/**']
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
       - run: pip install -e '.[dev]'
       - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py

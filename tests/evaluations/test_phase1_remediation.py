@@ -20,8 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_contract_and_registry_are_single_runtime_source_of_truth():
     registry = load_registry(ROOT / "agents" / "registry.json")
     assert registry["cro"]["decision_authority"] == 3
-    assert registry["devils-advocate"]["skills"] == ["mesh-devils-advocate"]
-    assert len(registry) == 11
+    assert "mesh-devils-advocate" in registry["cro"]["skills"]
+    assert "mesh-devils-advocate" in registry["cos"]["skills"]
+    assert "devils-advocate" not in registry
+    assert len(registry) == 10
 
 
 def test_ledger_persists_all_consequential_record_types():
@@ -88,9 +90,11 @@ def test_slack_signature_thread_mapping_and_durable_dedupe():
 
 def test_slack_web_client_posts_to_configured_channel_via_injected_transport():
     calls = []
+
     def transport(method, payload, token):
         calls.append((method, payload, token))
         return {"ok": True, "ts": "171234.567"}
+
     client = SlackWebClient("xoxb-test", transport=transport)
     result = client.post_message("C0BRL4GCL3A", "hello", thread_ts="171234.000")
     assert result["ok"] is True

@@ -105,7 +105,13 @@ def test_every_agent_config_preserves_raw_registry_authority_and_governance() ->
         assert config["governance"]["private_chain_of_thought"] == "PROHIBITED"
         assert config["write_action_policy"]["default"] == "ALWAYS_ASK"
         assert "mesh-cos-mcp" in config["tools"]
-        assert config["mcp"]["server_url_env"] == "MESH_COS_MCP_SERVER_URL"
+        assert config["repository_release"] == "1.1.0"
+        assert config["mcp"]["transport"] == "LOCAL_STDIO"
+        assert config["mcp"]["command"] == "node"
+        assert config["mcp"]["args"] == ["mcp/dist/index.js"]
+        assert config["mcp"]["env"]["MESH_COS_AGENT_ID"] == agent_id
+        assert config["mcp"]["env"]["MESH_COS_LEDGER_PATH"]
+        assert "server_url_env" not in config["mcp"]
 
 
 def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
@@ -119,6 +125,10 @@ def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
         assert set(allowlist) <= REQUIRED_MCP_TOOLS
         assert allowlist == contract_allowlists[agent_id]
         assert config["builder_configuration"]["mcp_allowed_tools"] == allowlist
+        assert config["builder_configuration"]["mcp_transport"] == "LOCAL_STDIO"
+        assert config["builder_configuration"]["mcp_command"] == "node"
+        assert config["builder_configuration"]["mcp_args"] == ["mcp/dist/index.js"]
+        assert config["builder_configuration"]["mcp_environment"]["MESH_COS_AGENT_ID"] == agent_id
         assert "registry.get_agent" in allowlist
         assert "governance.record_event" in allowlist
         if agent_id == "cos":
@@ -133,12 +143,18 @@ def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
     assert set(contract["human_tool_allowlist"]) == {"approval.record_decision", "reliability.human_override"}
 
 
-def test_mcp_contract_covers_runtime_control_plane_and_fail_closed_rules() -> None:
+def test_mcp_contract_covers_local_runtime_control_plane_and_fail_closed_rules() -> None:
     contract = json.loads(MCP.read_text())
     assert contract["name"] == "mesh-cos-mcp"
     assert contract["protocol"] == "MCP"
     assert contract["canonical_state"] == "TaskLedger"
-    assert contract["server_url_env"] == "MESH_COS_MCP_SERVER_URL"
+    assert contract["transport"] == "LOCAL_STDIO"
+    assert contract["runtime_release"] == "1.1.0"
+    assert contract["local_runtime"]["command"] == "node"
+    assert contract["local_runtime"]["args"] == ["mcp/dist/index.js"]
+    assert contract["local_runtime"]["agent_identity_env"] == "MESH_COS_AGENT_ID"
+    assert contract["local_runtime"]["ledger_path_env"] == "MESH_COS_LEDGER_PATH"
+    assert "server_url_env" not in contract
     assert contract["serialized_runtime"] == "mesh_cos.mcp_runtime.MCPRuntime"
     assert contract["security"]["retrieved_content_is_data_not_instructions"] is True
     assert contract["security"]["deny_by_default"] is True
@@ -212,8 +228,9 @@ def test_risky_app_boundaries_remain_fail_closed() -> None:
 
 def test_workspace_agent_builder_handoff_prompt_is_exact_and_complete() -> None:
     text = BUILDER_PROMPT.read_text()
-    for token in ("Workspace Agent builder", "11 agents", "mesh-cos-mcp", "MESH_COS_MCP_SERVER_URL", "TaskLedger", "L4", "L5", "Always ask", "Connector Action Constraints", "Skills", "Chief of Staff", "AgentOps Controller", "Answer & Decision Desk", "Consultant Network Steward", "Message Operations", "negative authority test", "missing-evidence test"):
+    for token in ("Workspace Agent Builder", "11 agents", "mesh-cos-mcp", "local stdio", "mcp/dist/index.js", "MESH_COS_AGENT_ID", "MESH_COS_LEDGER_PATH", "TaskLedger", "L4", "L5", "Always ask", "Connector Action Constraints", "Skills", "Chief of Staff", "AgentOps Controller", "Answer & Decision Desk", "Consultant Network Steward", "Message Operations", "negative authority test", "missing-evidence test"):
         assert token in text
+    assert "MESH_COS_MCP_SERVER_URL" not in text
 
 
 def test_no_workspace_agent_config_embeds_release_versions_in_role_names() -> None:

@@ -2,232 +2,83 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
-## 3.0.0 - 2026-08-21 - Shared Mesh Message Operations
+## 4.0.0 - 2026-08-21 - Chief of Staff Delegation Contract Remediation
 
-### Breaking workforce topology
+### Breaking topology correction
 
-- Reduced the canonical Phase 1 runtime from 10 registered agent principals to **9** by removing the repository-local Message Operations principal.
-- Removed `agents/message-ops.md`, `chatgpt/workspace-agents/message-ops.json`, the `message-ops` MCP principal, and the duplicate `chatgpt/skills/mesh-message-operations/` role Skill package.
-- Added **Mesh Message Operations** as an external `EXTERNAL_SHARED_SKILL` capability available only to Chief of Staff, CRO, and CMO through `skills.invoke_governed`.
-- Preserved VP Content as drafting/editorial-production only, with no message execution entitlement.
-- Preserved the existing external Mesh Devil's Advocate capability for Chief of Staff and CRO only.
+- Restored the canonical Phase 1 workforce to **10 registered agents**, with Message Operations as the tenth registered agent.
+- Preserved **Mesh Devil's Advocate** as the sole external governed shared Skill, available only to Chief of Staff and CRO and never counted as an agent principal.
+- Marked the v3.0.0 9-agent topology as historical and superseded for current operation.
 
-### Approval-bound execution and governance
+### Authority isolation
 
-- Defined Mesh Message Operations as `APPROVAL_BOUND_EXECUTION_ONLY` and explicitly separated it from strategy, copy creation, recipient selection, pricing, commitments, consent/legal decisions, and publishing policy.
-- Required explicit current approval bound to exact payload hash/version, sender identity and monitored reply path, immutable audience definition/count, channel, purpose, jurisdiction, consent basis, suppressions/exclusions/frequency controls, test result, required approvers, and execution window.
-- Made any material payload or execution-context change invalidate approval and return the item to preflight.
-- Preserved full sender/recipient/purpose/channel/jurisdiction/consent/suppression/link/attachment/merge-field/reply-to/unsubscribe/authentication/delivery-window preflight, exact preview, seed/test send where required, cancellation and kill-switch recheck, documented connector actions, idempotency, per-attempt receipts, and observed provider-state verification.
-- Preserved distinct requested, scheduled, sent, delivered, and replied states. Delivery/reply claims require observed evidence.
-- Preserved L4 qualified-human approval, Michael-exclusive L5 authority, human-only `approval.record_decision` / `reliability.human_override`, `TaskLedger` canonical state, and completion-versus-verification separation.
+- Removed stale human-only operations from the Chief of Staff role contract and enforced exact role-contract/MCP allowlist equality in CI.
+- Kept `approval.record_decision` and `reliability.human_override` exclusively in the authenticated human-principal catalog.
+- Added all-agent negative authorization coverage, positive human-path coverage, and prompt/task identity spoofing regression tests.
 
-### Runtime, ChatGPT, and MCP
+### Completion and verification
 
-- Reconciled the Agent Registry, 9 Workspace Agent manifests, 9 repository-local role Skills, MCP allowlists, local stdio certification, production preflight, Builder handoff, and runtime/documentation drift controls to the new topology.
-- Removed `message-ops` from `agent_tool_allowlists`; no separate Message Operations MCP principal exists.
-- Preserved `LOCAL_STDIO`, `node mcp/dist/index.js`, `mesh_cos.mcp_stdio_bridge`, and `mesh_cos.mcp_runtime.MCPRuntime` as the ChatGPT execution path.
-- Updated Python, MCP package/package-lock, runtime contract, Workspace manifest, release workflow, and documentation release identity to `3.0.0` / `v3.0.0`.
+- Confirmed `task.complete` as the canonical accountable-owner completion operation.
+- Hardened completion so a non-empty outcome and supporting evidence are required before `COMPLETED` can be persisted.
+- Kept `task.verify` separate and exposed it only to Chief of Staff in the Phase 1 agent catalog.
+- Added regression coverage for missing evidence, duplicate completion, unauthorized self-verification, parent/child isolation, and `COMPLETED != VERIFIED`.
 
-### TDD, loop engineering, and documentation
+### Delegation and end-to-end certification
 
-- Started with intentionally failing acceptance tests against the former 10-agent model, then iterated through registry, package, manifest, MCP, test, documentation, release, and coverage defects without weakening quality gates.
-- Added shared Message Operations integration acceptance coverage and updated stale 10-agent/v2 test expectations to the 9-agent/v3 architecture.
-- Reconciled README, AGENTS, security policy, architecture, registry, decision rights, delegation model, Phase 1 operating contract, production readiness, testing/evaluation, runbook, ChatGPT/MCP documentation, Builder handoff, release notes, and Mermaid architecture diagrams.
-- Kept release acceptance at dependency integrity, TypeScript build and Node tests, local stdio MCP smoke certification, npm audit, contract validation, runtime/documentation drift, Workspace Agent package drift, strict source Ruff, mypy, **100% branch-aware `mesh_cos` coverage**, high-severity Bandit, and compileall.
+- Preserved direct-child delegation, non-expanding authority, inherited approval gates, one accountable owner, and depth ceilings.
+- Certified `Michael -> CoS -> COO -> Consultant Network Steward` as the legal depth-2 specialist path and denied further Steward delegation.
+- Added a synthetic end-to-end scenario spanning CoS, CRO, CFO, COO, Consultant Network Steward, AgentOps, governed Devil's Advocate challenge, owner completion, CoS synthesis/verification, and audit-chain validation.
+- Added stale-consultant-readiness and child-failure parent-bypass negative tests.
+
+### Documentation and release engineering
+
+- Reconciled role Skills, Workspace manifests, registry, MCP contract, runtime certification, architecture, lifecycle, decision rights, delegation model, security, testing, runbook, Builder handoff, release notes, and Mermaid diagrams.
+- Added stronger roster, role-contract, human-tool, verifier, identity, and documentation drift gates.
+- Bumped Python package, MCP package/lock, manifests, and runtime contract to `4.0.0`.
+- Preserved the full release suite including 100% branch-aware Python coverage.
 
 ### Release identity
 
-- Semantic version: `3.0.0`
-- Semantic tag: `v3.0.0`
-- Release title: `v3.0.0 Shared Mesh Message Operations`
-- Canonical workforce: 9 registered agents
-- Shared execution consumers: Chief of Staff, CRO, CMO
+- Semantic version: `4.0.0`
+- Semantic tag: `v4.0.0`
+- Release title: `v4.0.0 Chief of Staff Delegation Contract Remediation`
+
+## 3.0.0 - 2026-08-21 - Shared Mesh Message Operations
+
+Historical release. Reduced the then-current workforce from 10 registered agents to 9 and externalized Mesh Message Operations as a shared approval-bound execution Skill. Preserved human-only approval/reliability operations, TaskLedger canonical state, completion/verification separation, local stdio MCP, TDD loop engineering, and release gates. This topology is superseded by v4.0.0.
 
 ## 2.0.0 - 2026-08-21 - Shared Mesh Devil's Advocate
 
-### Breaking workforce topology
-
-- Reduced the canonical Phase 1 runtime from 11 registered agent principals to **10** by removing the repository-local Devil's Advocate principal.
-- Removed `agents/devils-advocate.md`, `chatgpt/workspace-agents/devils-advocate.json`, the `devils-advocate` MCP principal, and the duplicate `chatgpt/skills/mesh-devils-advocate/` role Skill package.
-- Added **Mesh Devil's Advocate** as an external `EXTERNAL_SHARED_SKILL` capability available only to Chief of Staff and CRO through governed Skill invocation.
-- Preserved the normal delegation model. The shared challenge capability is not a delegated task owner or independent decision principal.
-
-### Authority and canonical truth
-
-- Defined Mesh Devil's Advocate as `ADVISORY_ONLY` with `canonical_facts_modified: false` and `external_action_included: false`.
-- Added the governed challenge request/response contracts `mesh.devils-advocate.challenge-request.v1` and `mesh.devils-advocate.challenge-packet.v1`.
-- Preserved functional source authority. Mesh Revenue Intelligence remains canonical for commercial account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization.
-- Preserved L4 qualified-human approval, Michael-exclusive L5 authority, human-only approval/reliability operations, and `TaskLedger` canonical state.
-
-### Runtime, ChatGPT, and MCP
-
-- Reconciled the Agent Registry, 10 Workspace Agent manifests, 10 repository-local role Skills, MCP allowlists, stdio certification, production preflight, Builder handoff, and runtime/documentation drift controls to the new topology.
-- Restricted `mesh-devils-advocate` entitlement and `skills.invoke_governed` challenge access to Chief of Staff and CRO.
-- Preserved `LOCAL_STDIO`, `node mcp/dist/index.js`, `mesh_cos.mcp_stdio_bridge`, and `mesh_cos.mcp_runtime.MCPRuntime` as the ChatGPT execution path.
-- Preserved deny-by-default tool projection and explicit separation between `task.complete` and `task.verify`.
-
-### TDD, loop engineering, and documentation
-
-- Started with intentionally failing acceptance tests against the former 11-agent model, then iterated through registry, package, manifest, test, documentation, security, release, and coverage defects without weakening quality gates.
-- Updated README, AGENTS, security policy, architecture, registry, decision rights, delegation model, production readiness, testing/evaluation, runbook, ChatGPT/MCP documentation, Builder handoff, release notes, and Mermaid architecture diagrams.
-- Kept release acceptance at dependency integrity, TypeScript build and Node tests, stdio MCP smoke certification, npm audit, contract validation, runtime/documentation drift, Workspace Agent package drift, strict source Ruff, mypy, **100% branch-aware `mesh_cos` coverage**, high-severity Bandit, and compileall.
-
-### Release identity
-
-- Semantic version: `2.0.0`
-- Semantic tag: `v2.0.0`
-- Release title: `v2.0.0 Shared Mesh Devil's Advocate`
+Removed the repository-local Devil's Advocate principal from the former 11-agent model, resulting in 10 registered agents. Added Mesh Devil's Advocate as an external `EXTERNAL_SHARED_SKILL` for Chief of Staff and CRO with `ADVISORY_ONLY` authority, no canonical-fact mutation, and no external-action authority. Reconciled registry, Workspace manifests, local role Skills, MCP allowlists, certification, documentation, and release metadata.
 
 ## 1.1.0 - 2026-08-21 - Local ChatGPT MCP
 
-### ChatGPT-local MCP runtime
-
-- Refactored `mesh-cos-mcp` from a required remote HTTPS deployment into a bundled `LOCAL_STDIO` MCP runtime for ChatGPT, following the established Mesh Revenue Intelligence local-MCP pattern.
-- Added the TypeScript MCP package under `mcp/` using the official Model Context Protocol SDK and `node mcp/dist/index.js` as the checked-in entry point.
-- Added `mesh_cos.mcp_stdio_bridge` to bridge bounded JSON requests into the existing Python `mesh_cos.mcp_runtime.MCPRuntime` without duplicating business or governance logic.
-- Added immutable per-process agent binding through `MESH_COS_AGENT_ID` and shared canonical state through `MESH_COS_LEDGER_PATH`.
-- Removed the ChatGPT requirement for `MESH_COS_MCP_SERVER_URL`; managed remote transport is optional and non-authoritative.
-
-### Security, authority, and reliability
-
-- Preserved exact per-agent MCP allowlists and deny-by-default runtime authorization.
-- Kept `approval.record_decision` and `reliability.human_override` human-only and excluded from all agent tool catalogs.
-- Added bounded MCP argument handling, safe error categories, raw Python stderr suppression, and no client-supplied code/import/shell execution.
-- Preserved L4 qualified-human approval, Michael-exclusive L5, `TaskLedger` canonical state, server-owned replay behavior, and separate `task.complete` / `task.verify` acceptance boundaries.
-
-### TDD and release engineering
-
-- Started the enhancement with acceptance tests before implementation and used repeated RED/GREEN loop engineering to close runtime, manifest, documentation, ordering, security, and drift defects.
-- Added TypeScript build/tests, a real stdio MCP certification, canonical persistence checks across MCP calls, human-only exclusion tests, safe-denial tests, and npm audit to CI.
-- Removed an unnecessary dependency after npm surfaced high/moderate vulnerability findings, returning the MCP package to zero reported npm vulnerabilities in CI.
-- Preserved strict source Ruff, mypy, contract validation, runtime/documentation drift, Workspace Agent package drift, 100% branch-aware `mesh_cos` coverage, high-severity Bandit, and compileall release gates.
-
-### Skills, Workspace Agents, and documentation
-
-- Reconciled all 11 Workspace Agent manifests to release `1.1.0`, `LOCAL_STDIO`, exact per-agent identity binding, and shared canonical ledger configuration.
-- Updated all role Skill production-readiness references for the bundled local MCP model.
-- Updated the Builder handoff, production preflight, README, architecture, security/governance guide, runbook, ChatGPT package guide, MCP guide, release notes, and release record.
+Moved ChatGPT execution to the bundled `LOCAL_STDIO` MCP path using `node mcp/dist/index.js`, `mesh_cos.mcp_stdio_bridge`, and the canonical Python `MCPRuntime`. Added immutable `MESH_COS_AGENT_ID`, shared `MESH_COS_LEDGER_PATH`, Node build/test/smoke/security certification, and removed the requirement for a remote MCP URL.
 
 ## 1.0.0 - 2026-08-17 - Production Readiness
 
-### Stable production-readiness milestone
-
-- Established `1.0.0` as the first stable semantic production-readiness release and `v1.0.0` as the release tag.
-- Preserved the completed Phase 1 operating constitution while hardening the runtime, Workspace Agent deployment layer, Skills, MCP boundary, CI, preflight, and release process for production activation.
-- Explicitly separated repository production readiness from environment-specific production activation.
-
-### Release engineering and quality
-
-- Raised branch-aware `mesh_cos` coverage to a required 100% release gate.
-- Added strict source Ruff, mypy, dependency integrity, contract validation, runtime/documentation drift, Workspace Agent package drift, high-severity Bandit scanning, and compileall to the release path.
-- Added `ProductionPreflight` and `scripts/production-preflight.py` to fail closed on kill-switch state, HTTPS MCP configuration, registry health, runtime bindings, serialized runtime composition, optional Slack/Answer Desk requirements, and optional audit-chain integrity.
-- Added Dependabot coverage for Python quality dependencies and GitHub Actions.
-
-### Runtime and MCP hardening
-
-- Added serialized `mesh_cos.mcp_runtime.MCPRuntime` as the production MCP composition boundary with exact tool-surface validation.
-- Split human-only MCP operations from agent operations. `approval.record_decision` and `reliability.human_override` require authenticated human principals.
-- Derive agent identity, role, implementation provenance, and authority server-side from the canonical registry.
-- Enforce L4 approval evidence and Michael-exclusive L5 semantics at the runtime boundary.
-- Added server-owned replay executor registration. Client-supplied callables, module paths, shell commands, and executable source instructions are never replay mechanisms.
-- Added governed `task.complete` for accountable owners while preserving separate `task.verify` acceptance verification.
-- Made Slack event idempotency and governance-event idempotency atomic with canonical persistence.
-- Preserved insertion chronology for consequential records and hardened timestamp compatibility across staffing, AgentOps, leases, Slack, and metrics.
-- Fixed fail-closed source authorization when an explicit allowed-source list is empty, replay/override audit evidence, and atomic decomposition validation.
-
-### Skills and Workspace Agents
-
-- Added a common `references/production-readiness.md` contract to all 11 role Skills and revalidated/repackaged them.
-- Aligned all 11 Workspace Agent manifests and the MCP contract to repository release `1.0.0`.
-- Reconciled per-agent MCP allowlists, including `task.complete` for accountable worker roles and removal of human-only operations from agent allowlists.
-- Hardened the Workspace Agent Builder handoff to require production preflight, 100% release CI, authority/evidence/permission tests, human-spoofing tests, kill-switch tests, replay-safety tests, and completion-versus-verification tests before publication.
-
-### Documentation and release packaging
-
-- Added `docs/release-1.0.0-production-readiness.md` with Mermaid release, execution, and activation diagrams.
-- Updated the root README, documentation index, architecture, production-readiness guide, testing/evaluation guide, operations runbook, security/governance guidance, ChatGPT deployment documentation, MCP documentation, and Workspace Agent Builder handoff for `v1.0.0`.
-- Added `RELEASE.md` as the canonical GitHub release-note source.
-- Added a GitHub Actions release workflow that creates the semantic `v1.0.0` tag and `v1.0.0 Production Readiness` release on the merged `main` commit.
-
-### Activation boundary
-
-The repository does not fabricate live environment configuration. Production activation still requires the approved HTTPS `mesh-cos-mcp` endpoint, `MESH_COS_MCP_SERVER_URL`, Workspace authentication and app permissions, applicable Slack credentials, a dedicated Answer Desk channel, production approval-owner mappings, approved source/Skill credentials, secrets management, and runtime/deployment ownership.
+Established the first stable production-readiness release with 100% branch-aware coverage, strict lint/type/schema/security gates, `ProductionPreflight`, serialized `MCPRuntime`, human-only approval/reliability operations, governed `task.complete`, separate `task.verify`, server-owned replay, Workspace Agent package hardening, and release automation.
 
 ## 0.2.0 - 2026-08-17 - ChatGPT Workspace Agent packages
 
-### Workspace Agent deployment layer
-
-- Added 11 OpenAI Skill source packages, one for each canonical Phase 1 agent: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, Devil's Advocate, and Message Operations.
-- Added 11 exact Workspace Agent manifests with name/description, model preference and fallback, reasoning effort, knowledge files, role Skill, Workspace apps, channel configuration, starter prompts, write approval, Connector Action Constraints, and private-until-tested publication state.
-- Preserved the canonical registry as organizational authority and `TaskLedger` as canonical operating state. ChatGPT, Slack, and the governance Sheets remain non-canonical surfaces.
-
-### Mesh CoS MCP
-
-- Added `chatgpt/mcp/mesh-cos-mcp.v1.json`, mapping Workspace Agent calls to the existing Phase 1 runtime rather than reimplementing business logic.
-- Added per-agent least-privilege MCP tool allowlists for registry, task/work graph, delegation, approval, conflict, governance, AgentOps, Answer Desk, governed Skill invocation, metrics, replay, and human override.
-- Added `WorkspaceAgentMCPPolicy` to enforce the checked-in allowlists server-side with deny-by-default behavior and runtime-binding validation.
-- Added read-only `registry.list_agents` and `approval.get`; Message Operations can inspect approval state but cannot decide its own approval.
-- Added MCP-safe `ChiefOfStaffService.record_verification_result()` requiring a named verifier and explicit evidence. Passing verification with no evidence fails closed without moving a task to `VERIFIED`.
-
-### App and approval controls
-
-- Workspace write actions default to **Always ask** as product-level defense in depth; this does not replace Mesh L4/L5 governance.
-- Restricted CoS and AgentOps Slack writes to internal `#mesh-agent-ops` coordination.
-- Kept Answer Desk Slack disabled until a dedicated channel ID is configured.
-- Kept CRO Apollo research/enrichment only and Gmail/LinkedIn non-outbound.
-- Kept CMO and VP Content LinkedIn non-publishing and AuthoredUp analytics/draft only.
-- Kept CFO, COO, and Consultant Network Steward evidence access read-only.
-- Kept Message Operations outbound execution approval-bound and materially immutable without reapproval.
-
-### TDD and loop engineering
-
-- Started with an intentionally failing Workspace Agent acceptance suite before implementation.
-- Initial RED CI confirmed missing Skills, manifests, MCP contract, and builder handoff.
-- Closed additional gaps discovered during the loop: registry discovery, approval-read access, server-side MCP enforcement, remote verification, exact raw-registry authority comparison, risky app constraints, and release provenance.
-- Corrected a test defect that compared human-readable authority to normalized runtime authority, while retaining separate normalized-runtime coverage.
-- Added `scripts/check-chatgpt-packages.py` and extended runtime/documentation drift validation to prevent registry, Skill, manifest, MCP, permission, release, or documentation drift.
-
-### Documentation and deployment handoff
-
-- Added `chatgpt/README.md`, MCP documentation, exact builder manifests, a TDD gap-assessment record, and `chatgpt/workspace-agent-builder-prompt.md`.
-- Updated README, Agent Operating Instructions, architecture, registry, decision rights, explainable-decision/audit governance, security, testing, runbook, and documentation index.
-- Added `MESH_COS_MCP_SERVER_URL` as a non-secret environment placeholder. The repository does not fabricate a deployed MCP endpoint or workspace credentials.
+Added the initial 11 Workspace Agent/role Skill projection, MCP contract, deny-by-default allowlists, product-level Always Ask controls, approval-read access, remote-safe verification, Builder handoff, and package/runtime drift validation.
 
 ## 0.1.4 - 2026-08-17 - Canonical Phase 1 role model
 
-- Standardized durable organizational identities as CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content.
-- Separated organizational naming from implementation versioning and added runtime/CI enforcement against version-bearing role names.
-- Expanded the six functional role capability surfaces inside their existing Phase 1 authority boundaries.
-- Preserved CFO as Engagement Finance / FP&A only, COO under CoS work-graph orchestration, and human-gated public/commercial consequence boundaries.
-- Added the existing Client Servicing Messaging capability to CRO's governed Skill composition for expansion/client-servicing work.
-- Reconciled role cards, registry, architecture, governance, tests, and release documentation.
+Standardized stable organizational role names and separated role identity from implementation versioning. Expanded CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content capability surfaces within existing authority boundaries.
 
 ## 0.1.3 - 2026-08-17 - Explainable decisions and auditable agent governance
 
-- Added closed `mesh.cos.decision.v2` and `mesh.cos.agent-event.v2` contracts while preserving v1 compatibility.
-- Added explainable decision provenance, alternatives, criteria, confidence, risk, reversibility, lineage, and outcome validation.
-- Added fully auditable actor/action/result/event provenance and a tamper-evident SHA-256 audit chain.
-- Applied `config/governance-policy.v1.json` to all registered agents and governed Skill/tool invocations.
-- Initialized the CoS Decision Log and CoS Audit Log Google Sheets as human-readable operational mirrors while preserving `TaskLedger` as canonical state.
-- Prohibited private chain-of-thought, hidden reasoning traces, secrets, credentials, tokens, and unnecessary personal data from governance records.
+Added closed `decision.v2` and `agent-event.v2` contracts, explainable provenance, alternatives, confidence/risk/reversibility, tamper-evident audit-chain records, governance Sheet mirrors, and private-reasoning/secrets prohibitions.
 
 ## 0.1.2 - 2026-08-17 - Final Phase 1 requirement closure
 
-- Aligned runtime `TaskRecord`, `Delegation`, `AgentRecord`, conflict, approval, and audit behavior with canonical contracts.
-- Completed CoS work decomposition, dependencies, check-ins, reassignment, stalled-work remediation, escalation, governed functional invocation, verification, closure, and supersession.
-- Added Slack freshness/replay protection, structured messages, one-task/one-thread persistence, approval notifications, and separate Answer Desk channel configuration.
-- Completed durable AgentOps rolling evidence, workload/SLA signals, recommendation vocabulary, replay/human override reliability, kill-switch enforcement, and the original Phase 1 metric set.
-- Added dependency integrity, drift checks, Ruff critical linting, coverage enforcement, high-severity Bandit scanning, schema validation, pytest, and compileall to CI.
+Completed task/delegation/conflict/approval/runtime contract alignment, Slack idempotency and thread mapping, AgentOps evidence and recommendations, reliability replay/override, kill-switch enforcement, metrics, dependency checks, drift validation, security scanning, and coverage enforcement.
 
 ## 0.1.1 - 2026-08-17 - Phase 1 remediation and documentation alignment
 
-- Replaced duplicate hardcoded registry state with canonical loading from `agents/registry.json`.
-- Added durable consequential records for tasks, delegations, conflicts, approvals, verification, performance, Answer Desk, Slack mappings, idempotency, and audit.
-- Strengthened delegation, authorization, AgentOps, Slack, reliability, metrics, and functional-adapter boundaries.
-- Reconciled documentation and Mermaid architecture diagrams to the remediated runtime.
+Replaced duplicate hardcoded registry state with canonical loading, added durable consequential records, strengthened delegation/authorization/AgentOps/Slack/reliability/metrics boundaries, and reconciled documentation and Mermaid architecture.
 
 ## 0.1.0 - 2026-08-17 - Phase 1 operating core
 
-- Added the Python 3.11+ modular-monolith CoS control plane with SQLite-backed `TaskLedger`.
-- Added versioned contracts, the canonical 11-agent registry, explicit L0-L5 decision rights, task lifecycle, delegation, approval, audit, conflict, AgentOps, Answer Desk, Slack protocol, and kill-switch controls.
-- Preserved Phase 1 non-goals: no autonomous pricing/discounts, consequential external/public commitments, unrestricted enterprise finance, legal/regulatory/security/privacy/personnel conclusions, recursive swarms, autonomous agent creation, or self-expansion of authority.
+Added the modular Python CoS control plane, SQLite-backed `TaskLedger`, versioned contracts, the original 11-agent registry, L0-L5 decision rights, task lifecycle, delegation, approval, audit, conflict, AgentOps, Answer Desk, Slack protocol, and kill-switch controls.

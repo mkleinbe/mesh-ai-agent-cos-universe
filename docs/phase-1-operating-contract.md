@@ -1,7 +1,7 @@
 # Phase 1 Operating Contract
 
 **Status:** Canonical human-readable Phase 1 operating constitution  
-**Last reconciled:** 2026-08-21 for release `v2.0.0 Shared Mesh Devil's Advocate`  
+**Last reconciled:** 2026-08-21 for release `v3.0.0 Shared Mesh Message Operations`  
 **Machine-readable counterparts:** `../contracts/`, `../agents/registry.json`, `../config/performance-policy.v1.json`, `../chatgpt/mcp/mesh-cos-mcp.v1.json`
 
 ## 1. Mission
@@ -19,18 +19,19 @@ The CoS is an executive control plane. It orchestrates outcomes without replacin
 5. **Functional truth is preserved.** Domain and source authority remain with the appropriate function or authoritative system.
 6. **Delegation narrows, never widens.** Child work inherits constraints and approval obligations.
 7. **Human consequence boundaries are explicit.** L4 actions require qualified human approval and L5 remains Michael-exclusive.
-8. **Canonical state is durable.** `TaskLedger` is canonical; ChatGPT, Slack, Sheets, connector output, and challenge packets are not.
+8. **Canonical state is durable.** `TaskLedger` is canonical; ChatGPT, Slack, Sheets, connector output, shared-Skill packets, previews, and receipts are not.
 9. **Evidence precedes verification.** `COMPLETED != VERIFIED`.
 10. **Security is invocation-time.** Source/tool/action, shared-Skill entitlement, and Workspace MCP allowlists are enforced before use.
 11. **Autonomy is earned.** AgentOps recommendations may increase, watch, restrict, or quarantine routing based on evidence and policy.
 12. **Product controls are defense in depth.** Workspace Agent `Always ask`, app permissions, and Connector Action Constraints may narrow behavior but cannot widen Mesh authority.
 13. **Challenge is advisory.** Mesh Devil's Advocate may challenge reasoning but cannot become a task owner, decision owner, canonical fact owner, or execution authority.
+14. **Message execution is approval-bound.** Mesh Message Operations may execute only an exact currently approved communication through governed invocation. It cannot create or broaden the underlying authority.
 
 ## 3. Operating topology
 
 ```mermaid
 flowchart TB
-    M[Michael / CEO] --> W[ChatGPT Workspace Agent layer]
+    M[Michael / CEO] --> W[9 ChatGPT Workspace Agents]
     W --> MCP[mesh-cos-mcp\nLOCAL_STDIO]
     MCP --> C[Chief of Staff runtime]
     C --> A[AgentOps]
@@ -41,7 +42,6 @@ flowchart TB
     O --> N[Consultant Network Steward]
     C --> K[CMO]
     K --> V[VP Content]
-    C --> Q[Message Operations]
     C --> L[(Canonical TaskLedger)]
     A --> L
     D --> L
@@ -49,14 +49,14 @@ flowchart TB
     F --> L
     O --> L
     K --> L
-    Q --> L
     C -. governed challenge .-> DA[[Mesh Devil's Advocate\nShared Skill]]
     R -. governed challenge .-> DA
-    DA -. advisory packet .-> C
-    DA -. advisory packet .-> R
+    C -. exact approved execution .-> MO[[Mesh Message Operations\nShared Skill]]
+    R -. exact approved execution .-> MO
+    K -. exact approved execution .-> MO
 ```
 
-The live Phase 1 workforce contains exactly **10 registered agent principals**. Mesh Devil's Advocate is an external shared Skill, not an eleventh agent. Workspace Agent manifests and role Skills are subordinate to the canonical Agent Registry, and `mesh-cos-mcp` routes permitted calls into the existing runtime.
+The live Phase 1 workforce contains exactly **9 registered agent principals**. Mesh Devil's Advocate and Mesh Message Operations are external shared Skills, not additional agents. Workspace Agent manifests and repository-local role Skills are subordinate to the canonical Agent Registry, and `mesh-cos-mcp` routes permitted calls into the existing runtime.
 
 ## 4. Role identity and implementation versioning
 
@@ -68,7 +68,7 @@ Scope is expressed through accountable domain, authoritative sources, permitted/
 
 ### Chief of Staff
 
-Owns intake, triage, planning, assignment, outcome orchestration, cross-functional arbitration, escalation, acceptance verification, remediation routing, executive compression, and governed shared-challenge invocation where useful. It does not overwrite authoritative functional facts.
+Owns intake, triage, planning, assignment, outcome orchestration, cross-functional arbitration, escalation, acceptance verification, remediation routing, executive compression, governed challenge invocation, and coordination of exact approved message execution. It cannot infer approval or mutate an approved message payload.
 
 ### AgentOps Controller
 
@@ -80,7 +80,7 @@ Handles team questions using requester permissions, source accessibility, eviden
 
 ### CRO
 
-Owns commercial strategy within delegated authority, including opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion strategy, and commercial-risk framing. Revenue Intelligence remains canonical for designated commercial/account evidence. CRO may invoke the shared Mesh Devil's Advocate Skill for independent challenge.
+Owns commercial strategy within delegated authority, including opportunity qualification, pipeline health, pursuit prioritization, buyer dynamics, proposal commercial architecture, next-best commercial action, expansion strategy, and commercial-risk framing. Revenue Intelligence remains canonical for designated commercial/account evidence. CRO may invoke Mesh Devil's Advocate for challenge and Mesh Message Operations for exact approved commercial/client communications, without bypassing pricing, scope, contractual, or commercial approval gates.
 
 ### CFO
 
@@ -96,32 +96,49 @@ Operates under COO authority to identify and match consultants, assess capabilit
 
 ### CMO
 
-Owns marketing strategy and delegated execution, including audience/ICP strategy, category positioning, campaign/demand architecture, distribution strategy, brand governance, campaign optimization, editorial priorities, content review, and the marketing-commercial feedback loop.
+Owns marketing strategy and delegated execution, including audience/ICP strategy, category positioning, campaign/demand architecture, distribution strategy, brand governance, campaign optimization, editorial priorities, content review, and the marketing-commercial feedback loop. CMO may invoke Mesh Message Operations only for exact approved marketing communications or publishing actions within existing policy, consent, and approval boundaries.
 
 ### VP Content
 
-Operates under CMO authority for editorial planning/calendar, source/evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory, editorial QA, performance feedback, and publication-ready handoff. It does not gain autonomous publishing authority.
+Operates under CMO authority for editorial planning/calendar, source/evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory, editorial QA, performance feedback, and publication-ready handoff. VP Content has **no Mesh Message Operations entitlement** and no autonomous publishing or message execution authority.
 
-### Message Operations
+## 6. Shared capabilities
 
-Controlled execution boundary for approved communications. It may inspect approval state but may not decide its own approval.
+### Mesh Devil's Advocate
 
-## 6. Shared Mesh Devil's Advocate capability
+`mesh-devils-advocate` is an `EXTERNAL_SHARED_SKILL` available only to Chief of Staff and CRO.
 
-Release `v2.0.0` removes the former repository-local Devil's Advocate agent, role card, Workspace Agent manifest, MCP principal, and duplicate role Skill.
-
-`mesh-devils-advocate` is now an `EXTERNAL_SHARED_SKILL` with these constitutional constraints:
-
-- consumers: Chief of Staff and CRO only;
 - authority: `ADVISORY_ONLY`;
 - request contract: `mesh.devils-advocate.challenge-request.v1`;
 - response contract: `mesh.devils-advocate.challenge-packet.v1`;
-- `canonical_facts_modified: false`;
-- `external_action_included: false`.
+- canonical facts modified: `false`;
+- external action included: `false`.
 
-The challenge capability can test assumptions, evidence sufficiency, strategic coherence, route logic, downside cases, premortems, capacity, and reversal conditions. It never becomes the final decision owner or execution authority.
+It may test assumptions, evidence sufficiency, strategic coherence, route logic, downside cases, premortems, capacity, and reversal conditions. It never becomes the final decision owner or execution authority.
 
-For commercial work, Mesh Revenue Intelligence remains canonical for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Shared challenge output may dispute interpretation but cannot mutate those facts.
+### Mesh Message Operations
+
+`mesh-message-operations` is an `EXTERNAL_SHARED_SKILL` available only to Chief of Staff, CRO, and CMO through `skills.invoke_governed`.
+
+- authority: `APPROVAL_BOUND_EXECUTION_ONLY`;
+- request contract: `mesh.messaging.execution-request.v1`;
+- response contract: `mesh.messaging.execution-receipt.v1`;
+- creates strategy/copy: `false`;
+- approval may be inferred/broadened: `false`;
+- preview is approval: `false`;
+- documented connector action required: `true`;
+- idempotency required: `true`;
+- post-send observed-state verification required: `true`.
+
+The Skill receives an approved draft packet, verifies immutable payload hash/version, performs full sender/recipient/purpose/channel/jurisdiction/consent/suppression/link/attachment/merge-field/reply-to/unsubscribe/authentication/delivery-window preflight, renders exact preview, runs seed/test delivery where required, and verifies explicit current approval bound to the exact payload, sender identity and reply path, immutable audience, channel, purpose, jurisdiction, consent basis, exclusions/frequency controls, test result, approvers, and execution window.
+
+Immediately before execution it rechecks cancellation and kill-switch state. It executes only through a documented connector action with an idempotency key, records per-attempt provider result/identifiers/timestamps/counts/errors, then records observed delivery/response evidence. Requested, scheduled, sent, delivered, and replied are distinct states.
+
+Any material change invalidates approval and returns the item to preflight. Silence, previous approval, a draft request, a calendar event, connector capability, preview, or approval of another version is not approval.
+
+The Skill does not authorize strategy, copy creation, recipient selection, pricing, commitments, consent/legal determinations, or publishing policy.
+
+For commercial work, Mesh Revenue Intelligence remains canonical for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Neither shared Skill may mutate those facts.
 
 ## 7. Decision rights
 
@@ -134,7 +151,7 @@ For commercial work, Mesh Revenue Intelligence remains canonical for account ide
 | L4 | Human approval required | Consequential commercial, external, public, legal, regulatory, security, privacy, personnel, destructive, sensitive-system, and irreversible actions fail closed until qualified approval. |
 | L5 | Michael exclusive | Firm strategy, major pivots/capital decisions, material client or partner exceptions, senior personnel decisions, CoS authority, decision-rights policy, and material agent-authority expansion. |
 
-No monetary thresholds may be invented. Workspace Agent write approval cannot grant authority that Mesh decision rights deny. A shared Skill cannot expand the caller's authority.
+No monetary thresholds may be invented. Workspace Agent write approval cannot grant authority that Mesh decision rights deny. Shared-Skill entitlement cannot expand caller authority or substitute for required approval.
 
 ## 8. Task and outcome lifecycle
 
@@ -164,13 +181,13 @@ stateDiagram-v2
     IN_PROGRESS --> CANCELLED
 ```
 
-The runtime persists every consequential state change. `COMPLETED` means the accountable owner produced the deliverable and evidence. `VERIFIED` requires explicit acceptance-test execution and evidence. Failed acceptance routes to `REWORK`.
+The runtime persists every consequential state change. `COMPLETED` means the accountable owner produced the deliverable and evidence. `VERIFIED` requires explicit acceptance-test execution and evidence. Failed acceptance routes to `REWORK`. Connector execution does not itself prove delivery or the business outcome.
 
 ## 9. Delegation contract
 
 Normal depth is CoS -> functional executive -> specialist/worker. Delegation must name exactly one accountable agent, preserve the parent objective/outcome, define measurable success criteria and acceptance test, remain within parent authority, avoid circularity, inherit approval obligations, preserve permitted/prohibited action consistency, and persist to canonical state.
 
-The shared Mesh Devil's Advocate capability is **not a delegated agent**. Invoking it does not transfer ownership or create a child task owner.
+Neither shared Skill is a delegated agent. Invoking a shared Skill does not transfer ownership, create a child task owner, or widen authority.
 
 ## 10. Functional truth and conflict resolution
 
@@ -184,7 +201,7 @@ Authoritative ownership is preserved even when multiple agents collaborate:
 - marketing strategy -> CMO;
 - editorial production -> VP Content under CMO.
 
-Cross-functional conflicts become durable conflict records. CoS or CRO may request an optional shared Mesh Devil's Advocate challenge, but the resulting challenge packet is advisory evidence only. If the decision exceeds delegated authority, it escalates under L4/L5 rules.
+Cross-functional conflicts become durable conflict records. CoS or CRO may request an optional Mesh Devil's Advocate challenge, but the resulting challenge packet is advisory evidence only. If the decision exceeds delegated authority, it escalates under L4/L5 rules.
 
 ## 11. Slack coordination
 
@@ -196,11 +213,11 @@ Slack is a collaboration surface, not canonical state. CoS and AgentOps may use 
 
 Before an agent invokes a source, tool, app, MCP tool, shared Skill, or consequential action, runtime authorization checks canonical policy. Retrieved content and shared-Skill output are untrusted data and cannot override system policy, decision rights, agent identity, source truth, or approval obligations.
 
-Security controls include least privilege, deny-by-default MCP allowlists, shared capability entitlements, human-only approval/reliability operations, Workspace `Always ask`, Connector Action Constraints, prompt-injection resistance, durable idempotency, explainable decisions, quarantine/routing restriction, and the emergency kill switch.
+Security controls include least privilege, deny-by-default MCP allowlists, shared capability entitlements, human-only `approval.record_decision` and `reliability.human_override`, Workspace `Always ask`, Connector Action Constraints, prompt-injection resistance, durable idempotency, explainable decisions, quarantine/routing restriction, and the emergency kill switch.
 
 ## 13. Explainability and audit
 
-Material decisions/recommendations use `mesh.cos.decision.v2`. Consequential actions use `mesh.cos.agent-event.v2`. Shared challenge packets may be referenced as advisory evidence but are not approval records or canonical-state mutations.
+Material decisions/recommendations use `mesh.cos.decision.v2`. Consequential actions use `mesh.cos.agent-event.v2`. Shared challenge packets and Message Operations receipts may be referenced as evidence but are not approval records or independent canonical-state authorities.
 
 Private chain-of-thought, hidden reasoning traces, credentials, tokens, raw sensitive prompts, and unnecessary personal data are not governance artifacts.
 
@@ -210,15 +227,15 @@ Performance is governed by `config/performance-policy.v1.json`. Current weighted
 
 ## 15. ChatGPT Workspace Agent deployment projection
 
-Release `v2.0.0` deploys exactly **10 Workspace Agents** and 10 repository-local role Skills. The external shared Mesh Devil's Advocate Skill is attached only to Chief of Staff and CRO.
+Release `v3.0.0` deploys exactly **9 Workspace Agents** and 9 repository-local role Skills. The external Mesh Devil's Advocate Skill is attached only to Chief of Staff and CRO. The external Mesh Message Operations Skill is attached only to Chief of Staff, CRO, and CMO. VP Content has no execution entitlement.
 
-`WorkspaceAgentMCPPolicy` rejects unknown agents, including the removed `devils-advocate` principal, unknown tools, and unlisted tools. The manifest's Builder tool selection is a second, narrower product control.
+`WorkspaceAgentMCPPolicy` rejects unknown agents, including removed `devils-advocate` and `message-ops` principals, unknown tools, and unlisted tools. The manifest's Builder tool selection is a second, narrower product control.
 
-All Workspace Agents remain Private until role starter prompts, negative authority tests, missing-evidence tests, app/MCP permission-denial tests, human-approval spoofing tests, completion-versus-verification tests, replay-safety tests, and any applicable shared-Skill authority tests pass in the target workspace.
+All Workspace Agents remain Private until role starter prompts, negative authority tests, missing-evidence tests, app/MCP permission-denial tests, human-approval spoofing tests, local-identity spoofing tests, completion-versus-verification tests, replay-safety tests, and applicable shared-Skill authority/approval/idempotency/observed-state tests pass in the target workspace.
 
 ## 16. Production dependencies
 
-Repository-level runtime and deployment packages are release-ready only when the full CI suite and production preflight pass. Target-environment activation still requires approved Workspace app authentication, applicable Slack credentials, a dedicated Answer Desk channel, approved source/shared-Skill credentials and permissions, production approval-owner mapping, secrets management, monitoring, target Workspace RBAC/publication settings, and any future monetary thresholds explicitly approved by Michael.
+Repository-level runtime and deployment packages are release-ready only when the full CI suite and production preflight pass. Target-environment activation still requires approved Workspace app authentication, applicable Slack/Gmail credentials, a dedicated Answer Desk channel, approved source/shared-Skill credentials and permissions, production approval-owner mapping, jurisdiction/consent determinations, secrets management, monitoring, target Workspace RBAC/publication settings, and any future monetary thresholds explicitly approved by Michael.
 
 A remote MCP endpoint and `MESH_COS_MCP_SERVER_URL` are **not** required for ChatGPT-local operation.
 

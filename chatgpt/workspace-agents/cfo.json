@@ -4,7 +4,7 @@
   "display_name": "CFO",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "3.0.0",
+  "repository_release": "2.0.0",
   "role": "Engagement Finance / FP&A executive agent",
   "accountable_domain": "engagement finance and FP&A",
   "description": "Owns engagement finance and FP&A within approved source boundaries, including engagement economics, pricing scenarios, cost-to-serve, contribution economics, margins, supported working-capital implications, proposal economics, forecast-versus-actual analysis, margin leakage, assumption management, scenario comparison, and financial-risk recommendations. The role does not imply enterprise accounting, treasury, tax, audit, balance-sheet, or unrestricted financial authority.",
@@ -217,6 +217,5 @@
       "Identify margin leakage and supported working-capital implications from approved evidence."
     ],
     "publish_access": "Private until preview acceptance tests pass"
-  },
-  "shared_skills": []
+  }
 }

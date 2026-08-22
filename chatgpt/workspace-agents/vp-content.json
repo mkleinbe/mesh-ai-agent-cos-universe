@@ -4,7 +4,7 @@
   "display_name": "VP Content",
   "parent_agent_id": "cmo",
   "implementation_version": "1.0.0",
-  "repository_release": "3.0.0",
+  "repository_release": "2.0.0",
   "role": "Editorial production specialist",
   "accountable_domain": "editorial planning, content production, adaptation, QA, and reuse",
   "description": "Owns editorial planning and production under CMO authority, including editorial calendar management, source/evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory management, editorial QA, and performance feedback into future content.",
@@ -27,8 +27,7 @@
     "Every public claim is supported by approved evidence.",
     "Content aligns to CMO intent and approved brand context.",
     "Channel adaptation preserves substance and provenance.",
-    "Publication-ready is not publication-approved.",
-    "VP Content is drafting-only for external communications and does not receive the shared Mesh Message Operations execution entitlement."
+    "Publication-ready is not publication-approved."
   ],
   "human_in_the_loop": [
     "Require CMO review before publication-ready handoff is accepted.",
@@ -239,8 +238,6 @@
       "Adapt this approved content across channels without publishing it.",
       "Run editorial QA and prepare this artifact for CMO review."
     ],
-    "publish_access": "Private until preview acceptance tests pass",
-    "shared_skills": []
-  },
-  "shared_skills": []
+    "publish_access": "Private until preview acceptance tests pass"
+  }
 }

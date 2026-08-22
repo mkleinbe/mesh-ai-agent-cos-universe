@@ -4,7 +4,7 @@
   "display_name": "Answer & Decision Desk",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "3.0.0",
+  "repository_release": "2.0.0",
   "role": "Team-facing knowledge, policy, precedent, status, and routing agent",
   "accountable_domain": "authorized team questions and routing",
   "description": "Answers authorized factual questions, applies established policy, provides bounded recommendations, routes to functional owners, and escalates material authority while enforcing requester permissions.",
@@ -224,6 +224,5 @@
       "Assess whether this question can be resolved without CEO involvement while preserving permissions."
     ],
     "publish_access": "Private until preview acceptance tests pass"
-  },
-  "shared_skills": []
+  }
 }

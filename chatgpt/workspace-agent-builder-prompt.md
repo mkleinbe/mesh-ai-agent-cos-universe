@@ -10,7 +10,7 @@ Repository: `mkleinbe/mesh-ai-agent-cos-universe` on `main`, release tag `v3.0.0
 
 Create exactly these Workspace Agents with these exact display names: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content.
 
-**Do not create a Devil's Advocate Workspace Agent or a Message Operations Workspace Agent.** Both former repository-local principals and duplicate role Skills are removed. **Mesh Devil's Advocate** (`mesh-devils-advocate`) and **Mesh Message Operations** (`mesh-message-operations`) are external **shared Skills**, not agent principals.
+**Do not create Workspace Agent principals for either external shared capability.** Both former repository-local principals and duplicate role Skills are removed. Attach the shared capabilities only to the governed consumers specified below.
 
 For each agent:
 

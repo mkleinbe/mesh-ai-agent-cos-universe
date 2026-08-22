@@ -84,7 +84,11 @@ task = runtime.cos.intake(
 )
 for status in (TaskStatus.TRIAGED, TaskStatus.PLANNED, TaskStatus.ASSIGNED, TaskStatus.IN_PROGRESS, TaskStatus.QA):
     runtime.cos.advance(task.task_id, status)
-completed = runtime.call_agent("cro", "task.complete", {"task_id": task.task_id, "outcome": "done", "evidence_references": ["synthetic://completion"]})
+completed = runtime.call_agent(
+    "cro",
+    "task.complete",
+    {"task_id": task.task_id, "outcome": "done", "evidence": ["synthetic://completion"]},
+)
 require(completed["status"] == "COMPLETED", "Owner completion did not produce COMPLETED")
 require(runtime.ledger.get_task(task.task_id).status == TaskStatus.COMPLETED, "Canonical task did not persist COMPLETED")
 try:

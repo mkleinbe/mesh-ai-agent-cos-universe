@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def replace_required(path: str, old: str, new: str) -> None:
     target = ROOT / path
     text = target.read_text()
+    if new in text:
+        return
     if old not in text:
         raise SystemExit(f"required token missing in {path}: {old!r}")
     target.write_text(text.replace(old, new))

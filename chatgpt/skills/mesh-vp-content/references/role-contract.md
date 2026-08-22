@@ -3,7 +3,7 @@
 - **Agent ID:** `vp-content`
 - **Parent:** `cmo`
 - **Implementation version:** `1.0.0`
-- **Repository release:** `0.2.0`
+- **Repository release:** `4.0.0`
 - **Accountable domain:** editorial planning, content production, adaptation, QA, and reuse
 - **Decision authority:** L2 production execution
 - **Max delegation depth:** 0
@@ -21,7 +21,10 @@ Authoritative: CMO marketing intent and approved Mesh brand/messaging context. A
 `public_publish`, `unapproved_public_claim`.
 
 ## Required approvals
-CMO review and qualified human approval before public publishing where required.
+CMO review and qualified human approval before public publishing where required. Inherited approval gates cannot be removed or weakened.
+
+## Completion boundary
+Use `task.complete` to persist an owned task's outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. VP Content has no `task.verify` authority.
 
 ## MCP allowlist
-`approval.request`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.get`, `task.list`, `task.transition`.
+`approval.request`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.get`, `task.list`, `task.transition`.

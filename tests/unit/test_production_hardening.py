@@ -690,14 +690,18 @@ def test_lifecycle_all_timestamp_and_rework_branches() -> None:
     transition(task, TaskStatus.IN_PROGRESS)
     assert task.started_at == started
     transition(task, TaskStatus.QA)
+    task.outcome = "done"
+    task.outcome_evidence = ["evidence://completion"]
     transition(task, TaskStatus.COMPLETED)
     assert task.completed_at is not None
+    task.outcome_evidence = []
     with pytest.raises(ValueError, match="outcome evidence"):
         transition(task, TaskStatus.VERIFIED)
     transition(task, TaskStatus.REWORK)
     assert task.rework_count == 1
     transition(task, TaskStatus.IN_PROGRESS)
     transition(task, TaskStatus.QA)
+    task.outcome_evidence = ["evidence://second-completion"]
     transition(task, TaskStatus.COMPLETED)
     task.outcome_evidence = ["evidence://1"]
     transition(task, TaskStatus.VERIFIED)

@@ -15,24 +15,32 @@ const contract = loadContract();
 
 test('contract loads local stdio release metadata', () => {
   assert.equal(contract.name, 'mesh-cos-mcp');
-  assert.equal(contract.runtime_release, '3.0.0');
+  assert.equal(contract.runtime_release, '4.0.0');
   assert.equal(contract.transport, 'LOCAL_STDIO');
 });
 
 test('agent identity is required and must be registered', () => {
   assert.throws(() => requireAgentId(contract, {}), /MESH_COS_AGENT_ID/);
   assert.throws(() => requireAgentId(contract, { MESH_COS_AGENT_ID: 'unknown' }), /registered/);
-  assert.throws(() => requireAgentId(contract, { MESH_COS_AGENT_ID: 'message-ops' }), /registered/);
+  assert.throws(() => requireAgentId(contract, { MESH_COS_AGENT_ID: 'devils-advocate' }), /registered/);
+  assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: 'message-ops' }), 'message-ops');
   assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: 'cro' }), 'cro');
 });
 
 test('tool projection is exact and excludes human-only tools', () => {
-  const cos = toolsForAgent(contract, 'cos').map((tool) => tool.name);
-  assert.deepEqual(cos, contract.agent_tool_allowlists.cos);
-  assert.equal(cos.includes('approval.record_decision'), false);
-  assert.equal(cos.includes('reliability.human_override'), false);
-  assert.equal(contract.agent_tool_allowlists['message-ops'], undefined);
-  assert.deepEqual(toolsForAgent(contract, 'message-ops'), []);
+  const humanOnly = new Set(contract.human_tool_allowlist);
+  for (const agentId of Object.keys(contract.agent_tool_allowlists)) {
+    const projected = toolsForAgent(contract, agentId).map((tool) => tool.name);
+    assert.deepEqual(projected, contract.agent_tool_allowlists[agentId]);
+    for (const tool of projected) {
+      assert.equal(humanOnly.has(tool), false, `${agentId} unexpectedly exposes human-only tool ${tool}`);
+    }
+  }
+  assert.deepEqual(
+    toolsForAgent(contract, 'message-ops').map((tool) => tool.name),
+    contract.agent_tool_allowlists['message-ops'],
+  );
+  assert.deepEqual(toolsForAgent(contract, 'devils-advocate'), []);
 });
 
 test('argument validation is object-only and size bounded', () => {
@@ -63,8 +71,9 @@ test('python environment always makes repository src importable', () => {
   assert.ok(existing.PYTHONPATH?.includes(`${root}/src`));
 });
 
-test('server creation rejects transport drift and accepts a registered agent', () => {
+test('server creation rejects transport drift and accepts registered agents', () => {
   const drifted = { ...contract, transport: 'REMOTE_HTTPS' };
   assert.throws(() => createServer({ MESH_COS_AGENT_ID: 'cos' }, drifted), /LOCAL_STDIO/);
   assert.ok(createServer({ MESH_COS_AGENT_ID: 'cos' }, contract));
+  assert.ok(createServer({ MESH_COS_AGENT_ID: 'message-ops' }, contract));
 });

@@ -4,7 +4,7 @@
   "display_name": "Consultant Network Steward",
   "parent_agent_id": "coo",
   "implementation_version": "1.0.0",
-  "repository_release": "3.0.0",
+  "repository_release": "4.0.0",
   "role": "Consultant-network readiness specialist",
   "accountable_domain": "consultant identification, matching, and readiness verification",
   "description": "Identifies and matches candidate consultants, checks capability fit, validates availability freshness and timestamps, checks rate validity and NDA/ICA/contracting readiness, surfaces readiness gaps, routes refresh work, and establishes evidence-backed staffing-ready status for COO decisions.",
@@ -208,6 +208,5 @@
       "Tell the COO which candidates are staffing-ready and which require refresh."
     ],
     "publish_access": "Private until preview acceptance tests pass"
-  },
-  "shared_skills": []
+  }
 }

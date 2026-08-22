@@ -15,13 +15,13 @@ EXPECTED = {
     "mesh-consultant-network-steward",
     "mesh-cmo",
     "mesh-vp-content",
+    "mesh-message-operations",
 }
 
 
 def test_every_repository_local_role_skill_contains_production_readiness_contract() -> None:
     assert {path.name for path in SKILLS.iterdir() if path.is_dir()} == EXPECTED
     assert not (SKILLS / "mesh-devils-advocate").exists()
-    assert not (SKILLS / "mesh-message-operations").exists()
     for name in EXPECTED:
         text = (SKILLS / name / "references" / "production-readiness.md").read_text()
         for token in (
@@ -47,17 +47,15 @@ def test_shared_mesh_devils_advocate_is_external_not_duplicated_role_skill() -> 
     assert challenge["external_action_included"] is False
 
 
-def test_shared_mesh_message_operations_is_external_not_duplicated_role_skill() -> None:
+def test_message_operations_role_skill_is_local_and_registered() -> None:
     source = json.loads((ROOT / "agents" / "registry.json").read_text())
     shared = {item["capability"]: item for item in source["shared_capabilities"]}
-    execution = shared["mesh-message-operations"]
-    assert execution["deployment"] == "EXTERNAL_SHARED_SKILL"
-    assert set(execution["consumers"]) == {"cos", "cro", "cmo"}
-    assert execution["authority"] == "APPROVAL_BOUND_EXECUTION_ONLY"
-    assert execution["requires_per_message_approval"] is True
-    assert execution["requires_documented_connector_action"] is True
-    assert execution["requires_idempotency"] is True
-    assert execution["requires_post_send_verification"] is True
+    records = {item["agent_id"]: item for item in source["agents"]}
+    assert "mesh-message-operations" not in shared
+    assert records["message-ops"]["skills"] == ["mesh-message-operations"]
+    assert (SKILLS / "mesh-message-operations" / "SKILL.md").is_file()
+    assert (SKILLS / "mesh-message-operations" / "references" / "role-contract.md").is_file()
+    assert (SKILLS / "mesh-message-operations" / "references" / "production-readiness.md").is_file()
 
 
 def test_builder_prompt_requires_skill_production_readiness_contract() -> None:
@@ -68,5 +66,5 @@ def test_builder_prompt_requires_skill_production_readiness_contract() -> None:
     assert "task.complete" in text
     assert "task.verify" in text
     assert "Mesh Devil's Advocate" in text
-    assert "Mesh Message Operations" in text
+    assert "Message Operations" in text
     assert "shared Skill" in text

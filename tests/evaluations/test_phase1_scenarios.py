@@ -26,5 +26,6 @@ def test_11_missing_source():assert authoritative_owner('enterprise_cash_balance
 def test_12_low_confidence():assert classify('internal_recommendation',AuthorityLevel.L3,material=True,low_confidence=True).human_approval_required
 def test_13_verification_rework():
     t=TaskRecord(task_id='T',objective='o',expected_outcome='e',requested_by='m',executive_sponsor='m',accountable_agent='cro',decision_owner='m',acceptance_test='verify')
+    t.outcome='done';t.outcome_evidence=['evidence://completion']
     for s in [TaskStatus.TRIAGED,TaskStatus.PLANNED,TaskStatus.ASSIGNED,TaskStatus.IN_PROGRESS,TaskStatus.QA,TaskStatus.COMPLETED]:transition(t,s)
     transition(t,TaskStatus.REWORK);assert t.status==TaskStatus.REWORK and t.rework_count==1

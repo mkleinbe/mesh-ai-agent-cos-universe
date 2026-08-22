@@ -1,12 +1,10 @@
 # Mesh CoS MCP
 
-This package is the bundled Model Context Protocol transport for the Mesh AI Chief of Staff operating core. Current repository release: **`v3.0.0 Shared Mesh Message Operations`**.
+This package is the bundled Model Context Protocol transport for the Mesh AI Chief of Staff operating core. Current repository release: **`v4.0.0 Chief of Staff Delegation Contract Remediation`**.
 
 ## Runtime model
 
-`mesh-cos-mcp` follows the same primary runtime pattern as Mesh Revenue Intelligence: ChatGPT launches a local stdio MCP process from the checked-in package. A separately managed remote transport is optional and is not required for Workspace Agent operation.
-
-The TypeScript MCP layer is intentionally thin. It does not duplicate task, authority, governance, approval, reliability, AgentOps, or shared-Skill business logic. Every allowed tool call is bridged to `mesh_cos.mcp_stdio_bridge`, which creates the canonical Python `MCPRuntime` against the configured `TaskLedger` SQLite file.
+ChatGPT launches the checked-in package as a local stdio MCP process. The TypeScript layer remains intentionally thin and bridges every permitted call into the canonical Python `MCPRuntime` using the configured `TaskLedger`.
 
 ```text
 ChatGPT Workspace Agent
@@ -15,7 +13,6 @@ ChatGPT Workspace Agent
         v
 node mcp/dist/index.js
         |
-        | bounded JSON bridge
         v
 mesh_cos.mcp_stdio_bridge
         |
@@ -26,34 +23,30 @@ mesh_cos.mcp_runtime.MCPRuntime
 TaskLedger SQLite
 ```
 
-## Required runtime environment
+## Required environment
 
-- `MESH_COS_AGENT_ID`: the exact canonical agent ID for the Workspace Agent launching this MCP process.
-- `MESH_COS_LEDGER_PATH`: path to the shared canonical SQLite TaskLedger. All **9 registered agents** must use the same approved path for one operating universe.
-- `MESH_COS_KILL_SWITCH`: optional emergency stop. Truthy values fail closed.
-- `MESH_COS_PYTHON_BIN`: optional Python executable override. Defaults to `python`.
+- `MESH_COS_AGENT_ID`: exact registered agent ID for the process.
+- `MESH_COS_LEDGER_PATH`: canonical shared SQLite ledger path for the 10-agent operating universe.
+- `MESH_COS_KILL_SWITCH`: optional emergency stop; truthy values fail closed.
+- `MESH_COS_PYTHON_BIN`: optional Python executable override.
 
-No `MESH_COS_MCP_SERVER_URL` is required for the ChatGPT runtime.
+No remote MCP URL is required for ChatGPT-local operation.
 
-## Shared capability boundaries
+## Roster and shared Skill boundary
 
-The former `devils-advocate` and `message-ops` agent IDs are not valid MCP principals in `v3.0.0`.
+The runtime contains exactly 10 registered agent principals, including Message Operations. Mesh Devil's Advocate remains an external shared Skill and is not a valid MCP principal.
 
-**Mesh Devil's Advocate** is an external shared Skill available only to Chief of Staff and CRO. Those two principals may reach it through `skills.invoke_governed` under their existing identities. The shared capability has no independent MCP identity, task ownership, canonical-state authority, approval authority, or external-action authority.
+## Human-only boundary
 
-**Mesh Message Operations** is an external shared Skill available only to Chief of Staff, CRO, and CMO. It is approval-bound execution only. VP Content remains drafting/editorial-production only and receives no execution entitlement. The Skill cannot create strategy/copy, select recipients, set pricing, make commitments, establish consent/legal conclusions, or define publishing policy.
+The protocol contract contains `approval.record_decision` and `reliability.human_override` so the same serialized runtime can service authenticated human actions, but neither operation appears in any agent tool catalog. Agent callers are denied. The human path requires a separately authenticated principal.
 
-Message execution requires explicit current approval bound to the exact payload hash/version, sender, immutable audience, channel, purpose, jurisdiction, consent basis, suppressions/frequency controls, test result, approvers, and execution window. Material changes invalidate approval. Preflight, cancellation/kill-switch checks, documented connector actions, idempotency, per-attempt receipts, and observed provider-state verification remain mandatory. Requested, scheduled, sent, delivered, and replied are distinct states.
+## Completion and verification
 
-For commercial work, Mesh Revenue Intelligence remains authoritative for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Neither shared Skill may overwrite canonical facts.
+`task.complete` is the canonical owner completion operation and requires outcome plus evidence. It does not verify work. `task.verify` is separate and is exposed only to CoS in the Phase 1 agent catalogs. Passing verification requires explicit acceptance evidence.
 
-## Security and governance
+## Security
 
-The local server loads `chatgpt/mcp/mesh-cos-mcp.v1.json`, projects only the tool allowlist for the bound agent, and never exposes human-only `approval.record_decision` or `reliability.human_override` to an agent stdio process. The Python runtime independently re-authorizes the agent and tool. This gives two fail-closed enforcement layers.
-
-Client-supplied code, import paths, callables, shell commands, and replay functions are not executable inputs. Tool arguments and bridge responses are size bounded. Errors returned to the MCP client use safe categories and do not echo raw payloads.
-
-`TaskLedger` remains canonical. ChatGPT conversation state, Slack, connector output, shared-Skill packets/receipts, and governance Sheets are interaction or mirror surfaces.
+Agent identity is process-bound. Tool arguments, prompt text, retrieved content, task content, delegated instructions, or shared-Skill output cannot select a different principal or widen the tool catalog. Tool payload sizes are bounded, errors are sanitized, and client-supplied code/import/shell execution is not supported.
 
 ## Development and certification
 
@@ -64,6 +57,4 @@ npm ci
 npm run check
 ```
 
-`npm run check` performs strict TypeScript compilation, Node unit tests, a real MCP stdio smoke certification using the official MCP client and transport, and the npm security audit. The smoke test proves exact CoS tool projection, the **9-agent roster**, local canonical persistence across calls, human-only tool exclusion, shared-capability principal exclusion, and safe denial behavior.
-
-The repository CI runs this MCP gate in addition to the Python release gates, including 100% branch-aware `mesh_cos` coverage.
+`npm run check` performs strict TypeScript compilation, Node tests, a real local stdio smoke certification, and high-severity npm audit. The smoke certification proves exact CoS tool projection, the 10-agent roster, Message Operations registration, Devil's Advocate principal exclusion, human-only tool exclusion, local canonical persistence, and safe denial behavior.

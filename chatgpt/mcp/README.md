@@ -1,6 +1,6 @@
 # Mesh CoS MCP Contract
 
-`mesh-cos-mcp.v1.json` is the protocol-facing contract for release `3.0.0`. ChatGPT uses the bundled MCP package over `LOCAL_STDIO`.
+`mesh-cos-mcp.v1.json` is the protocol-facing contract for release `4.0.0`. ChatGPT uses the bundled MCP package over `LOCAL_STDIO`.
 
 The MCP package is a transport adapter, not a second business-logic implementation.
 
@@ -8,67 +8,38 @@ The MCP package is a transport adapter, not a second business-logic implementati
 
 ```text
 Workspace Agent
-  -> LOCAL_STDIO
+  -> MESH_COS_AGENT_ID
   -> node mcp/dist/index.js
   -> mesh_cos.mcp_stdio_bridge
   -> mesh_cos.mcp_runtime.MCPRuntime
   -> TaskLedger
 ```
 
-## Local process binding
+The canonical MCP principal roster contains exactly 10 agents. Mesh Devil's Advocate is not an MCP principal.
 
-```text
-MESH_COS_AGENT_ID=<registered agent id>
-MESH_COS_LEDGER_PATH=.mesh-cos/task-ledger.sqlite3
-MESH_COS_PYTHON_BIN=python
-```
+## Agent versus human catalogs
 
-`MESH_COS_AGENT_ID` is validated against the checked-in **9 agent** allowlists. `devils-advocate` and `message-ops` are not valid MCP principals. The tool catalog exposed by the server is the exact deny-by-default allowlist for the bound agent, excluding human-only tools.
+`agent_tool_allowlists` is deny-by-default and keyed by the 10 registered agent identities. `human_tool_allowlist` is a separate catalog containing exactly:
 
-## Shared capability boundary
+- `approval.record_decision`
+- `reliability.human_override`
 
-**Mesh Devil's Advocate** is an external shared Skill, not an MCP agent principal. Only Chief of Staff and CRO may invoke it through `skills.invoke_governed`. It is advisory only and cannot modify canonical facts or execute external actions.
+No agent allowlist may contain either human-only operation. Agent stdio servers project only the allowlist for their bound `MESH_COS_AGENT_ID`. `MCPRuntime.call_agent` independently denies human-only tools. `MCPRuntime.call_human` requires an authenticated non-empty human principal.
 
-**Mesh Message Operations** is an external shared Skill, not an MCP agent principal. Only Chief of Staff, CRO, and CMO may invoke it through `skills.invoke_governed`. VP Content has no entitlement. It is approval-bound execution only and cannot create strategy/copy, select recipients, set pricing, make commitments, determine consent/legal status, or define publishing policy.
+## Completion contract
 
-Entitlement to `skills.invoke_governed` is necessary but never sufficient for message execution. Message Operations must validate explicit current approval bound to the exact payload hash/version, sender, immutable audience, channel, purpose, jurisdiction, consent basis, exclusions/frequency controls, test result, approvers, and execution window. Material changes invalidate approval. Execution must preserve preflight, kill-switch/cancellation checks, documented connector actions, idempotency, per-attempt receipts, and observed provider-state verification.
+`task.complete` is exposed to appropriate accountable owners. The runtime requires owner-or-CoS write access, a valid completion state, a non-empty outcome, and supporting evidence. Successful completion produces `COMPLETED` only.
 
-## Enforcement order
+`task.verify` is separate. It is exposed only to CoS in the Phase 1 agent catalog and requires explicit acceptance evidence for a passing result.
 
-1. Start the checked-in MCP package with a registered local agent identity.
-2. Publish only the bound agent's allowed MCP tools.
-3. Validate tool arguments as bounded JSON objects.
-4. Bridge the request to `mesh_cos.mcp_stdio_bridge`.
-5. Enter `MCPRuntime`, never a generic dynamic execution path.
-6. Recheck the per-agent allowlist and canonical registry.
-7. Apply source, tool, action, L0-L5 authority, approval, and reliability controls.
-8. Permit governed shared-Skill invocation only where registry entitlement and MCP policy both authorize it.
-9. Invoke only fixed server-side handlers and registered replay executors.
-10. Persist canonical state in `TaskLedger` before non-canonical responses or mirrors.
-11. Emit required `decision.v2` and `agent-event.v2` governance records.
+## Delegation
 
-## Human-only operations
+`delegation.create` requires a registered direct child. Delegated authority cannot exceed parent authority, parent approval gates cannot be dropped, and depth cannot exceed the Phase 1 ceiling. The legal depth-2 specialist path is CoS -> COO -> Consultant Network Steward.
 
-`approval.record_decision` and `reliability.human_override` are **human-only**. They are excluded from every agent tool catalog and require a separate authenticated human-principal path.
+## Identity and content safety
 
-## Error, replay, and verification safety
-
-The local TypeScript MCP does not expose raw bridge stderr or arbitrary exception text to ChatGPT. Request and response sizes are bounded.
-
-`reliability.replay` may execute only a server-registered executor referenced by canonical failure state. Client-supplied Python, import paths, shell commands, code snippets, or source-text instructions are never executable replay behavior.
-
-`task.complete` persists accountable-owner outcome and evidence. `task.verify` remains separate. `COMPLETED` does not imply `VERIFIED`. A successful message connector attempt does not prove delivery or reply without observed provider evidence.
+Prompt text, retrieved content, task content, delegated instructions, connector output, and Skill output cannot modify `MESH_COS_AGENT_ID`, add tools to the projected catalog, or create a human principal.
 
 ## Certification
 
-```bash
-cd mcp
-npm ci
-npm run check
-```
-
-`npm run check` compiles TypeScript, runs Node tests, launches a real stdio MCP smoke path, verifies exact tool projection and human-only exclusion, verifies the 9-agent roster and shared-capability principal exclusion, writes/rereads canonical task state across calls, checks safe denial behavior, and runs `npm audit --audit-level=high`.
-
-## Deployment boundary
-
-A remote MCP endpoint is optional and not required for ChatGPT-local operation. Any future managed transport must preserve the same `MCPRuntime`, registry, exact allowlists, authority, approval, audit, shared-Skill boundaries, and canonical-state semantics.
+`npm run check` runs TypeScript build, Node tests, a real local stdio smoke test, and npm audit. The smoke test certifies the 10-agent roster, human-only exclusion, Devil's Advocate principal exclusion, local canonical persistence, and safe denial behavior.

@@ -1,154 +1,58 @@
 # Agent Registry
 
-`agents/registry.json` is the canonical runtime source of truth for Phase 1 agent identity, governance, and shared capability entitlement.
+`agents/registry.json` is the canonical runtime source of truth for Phase 1 agent identity, hierarchy, authority, capabilities, and shared-Skill entitlement.
+
+## Canonical roster
+
+Phase 1 contains exactly **10 registered agents**:
+
+| Agent ID | Display name | Parent | Max delegation depth |
+|---|---|---|---:|
+| `cos` | Chief of Staff | Michael / CEO | 2 |
+| `agentops` | AgentOps Controller | `cos` | 0 |
+| `answer-desk` | Answer & Decision Desk | `cos` | 0 |
+| `cro` | CRO | `cos` | 1 |
+| `cfo` | CFO | `cos` | 1 |
+| `coo` | COO | `cos` | 1 |
+| `consultant-network-steward` | Consultant Network Steward | `coo` | 0 |
+| `cmo` | CMO | `cos` | 1 |
+| `vp-content` | VP Content | `cmo` | 0 |
+| `message-ops` | Message Operations | `cos` | 0 |
+
+Mesh Devil's Advocate is intentionally absent from the agent roster. It is the external `mesh-devils-advocate` shared Skill, available only to `cos` and `cro`, with `ADVISORY_ONLY` authority, `canonical_facts_modified: false`, and `external_action_included: false`.
 
 ## Control path
 
 ```mermaid
 flowchart LR
-    J[agents/registry.json] --> LOAD[Runtime registry loader]
-    LOAD --> ID[Validate stable role identity plus implementation version]
-    ID --> N[Normalize authority fields]
-    N --> R[In-memory canonical registry]
-    R --> AUTH[Invocation authorization]
-    R --> ROUTE[Routing and hierarchy]
-    R --> HEALTH[Health and performance policy]
-    R --> WA[9 ChatGPT Workspace Agent manifests]
-    R --> SC[Shared capability entitlements]
-    SC --> DA[Mesh Devil's Advocate shared Skill]
-    SC --> MSG[Mesh Message Operations shared Skill]
-    WA --> MCP[mesh-cos-mcp allowlists]
-    AUTH --> EXEC[Functional adapter or service]
-    MCP --> EXEC
+    J[agents/registry.json] --> LOAD[Registry loader]
+    LOAD --> ID[Stable agent identity]
+    ID --> AUTH[Authority + hierarchy]
+    AUTH --> SK[Skill/tool entitlements]
+    SK --> MCP[MCP allowlist projection]
+    MCP --> RT[MCPRuntime authorization]
 ```
 
-## Role identity policy
+The registry does not itself grant human-principal-only MCP operations. `approval.record_decision` and `reliability.human_override` are governed separately by the MCP human allowlist and authenticated human dispatch.
 
-Role identity and software version are separate:
+## Identity policy
 
-- `agent_id` is the durable machine identity.
-- `display_name` is the stable organizational role name.
-- `version` is the runtime implementation version and uses `MAJOR.MINOR.PATCH`.
-- repository release versions describe the control-plane release.
-- accountable domain, sources, permitted/prohibited actions, approvals, and delegation express scope and maturity boundaries.
+`agent_id` is the durable machine identity. `display_name` is the stable organizational name. `version` is implementation metadata. Prompt text, task content, retrieved content, delegated instructions, app payloads, or shared-Skill output cannot change the runtime identity bound through `MESH_COS_AGENT_ID`.
 
-The registry loader rejects display names that embed version labels. The top-level `role_identity_policy` documents the same rule so runtime behavior, tests, governance, and Workspace Agent configuration stay aligned.
+## Delegation policy
 
-## Registry content
-
-Each agent record defines, as applicable:
-
-- stable agent ID and display name,
-- implementation version,
-- parent and accountable functional domain,
-- source authority and approved sources,
-- existing Mesh Skills and native tools,
-- permitted and prohibited actions,
-- decision authority,
-- approval obligations,
-- delegation permissions,
-- performance policy,
-- confidentiality class,
-- runtime health.
-
-The human-readable files in `agents/*.md` are role cards. They summarize the canonical registry but do not override it.
-
-## Phase 1 agents
-
-Release `v3.0.0` has exactly **9 agent principals**:
-
-| Agent | Parent | Primary Phase 1 purpose |
-|---|---|---|
-| CoS | Michael | Executive outcome orchestration and arbitration. |
-| AgentOps | CoS | Workforce observability, performance, and health recommendations. |
-| Answer Desk | CoS | Permission-aware team question handling. |
-| CRO | CoS | Commercial strategy, opportunity quality, pursuits, buyer dynamics, expansion, and commercial-risk framing. |
-| CFO | CoS | Engagement Finance / FP&A, economics, margin, scenario, forecast, and financial-risk recommendations. |
-| COO | CoS | Delivery feasibility, configuration, capacity, POD/resource readiness, dependency risk, and staffing recommendations. |
-| Consultant Network Steward | COO | Consultant identification/matching, fit, freshness, rate, availability, readiness gaps, refresh, and contracting evidence. |
-| CMO | CoS | Marketing strategy, audience/ICP, category positioning, demand/campaign architecture, distribution, brand governance, and optimization. |
-| VP Content | CMO | Editorial planning, evidence assembly, production, adaptation, reuse, QA, inventory, and performance feedback. |
-
-`message-ops` is no longer a registered principal. The former role card, Workspace Agent manifest, repository-local duplicate Skill, and MCP identity are removed.
-
-## Shared capability model
-
-`shared_capabilities` is separate from `agents` by design. Release `v3.0.0` contains at least two governed shared capabilities.
-
-### Mesh Devil's Advocate
-
-`mesh-devils-advocate` is an `EXTERNAL_SHARED_SKILL`, not a Workspace Agent principal, delegated task owner, or repository-local duplicate Skill.
-
-- consumers: `cos`, `cro`;
-- authority: `ADVISORY_ONLY`;
-- request: `mesh.devils-advocate.challenge-request.v1`;
-- response: `mesh.devils-advocate.challenge-packet.v1`;
-- canonical facts modified: `false`;
-- external action included: `false`.
-
-It may challenge assumptions, interpretations, evidence sufficiency, routes, premortems, and decision conditions while returning authority to the owning role or qualified human.
-
-### Mesh Message Operations
-
-`mesh-message-operations` is an `EXTERNAL_SHARED_SKILL` and a shared capability for approval-bound execution, not a writing/strategy agent.
-
-- consumers: `cos`, `cro`, `cmo`;
-- authority: `APPROVAL_BOUND_EXECUTION_ONLY`;
-- request: `mesh.messaging.execution-request.v1`;
-- response: `mesh.messaging.execution-receipt.v1`;
-- creates strategy or copy: `false`;
-- approval may be inferred or broadened: `false`;
-- preview is approval: `false`;
-- canonical commercial state modified: `false`;
-- canonical consent/legal state modified: `false`;
-- per-message approval required: `true`;
-- documented connector action required: `true`;
-- idempotency required: `true`;
-- post-send verification required: `true`.
-
-Approval must be explicit, current, revocable, and bound to the exact payload hash/version, sender identity, immutable audience, channel, purpose, jurisdiction, consent basis, suppressions/frequency controls, test result, required approvers, and execution window. Material changes invalidate approval. Requested, scheduled, sent, delivered, and replied states remain distinct.
-
-VP Content has no Mesh Message Operations entitlement and remains drafting/editorial-production only.
-
-## Functional capability model
-
-The registry's `permitted_actions` is the executable Phase 1 capability surface. Descriptions and role cards must not claim capabilities that are absent from this list. Likewise, a listed permitted action does not create a new external integration. Existing Mesh Skills remain separately listed in `skills`, while native typed runtime controls remain listed in `tools`.
-
-This separation prevents capability theater and preserves the rule that source/tool access never expands decision authority.
-
-## ChatGPT Workspace Agent projection
-
-Release `3.0.0` maps each of the 9 canonical agent roles into exactly one Workspace Agent manifest and one repository-local role Skill:
+A delegation target must be a registered direct child of the caller and remain within the parent's authority and approval obligations. The legal specialist path is:
 
 ```text
-agents/registry.json
-  -> chatgpt/workspace-agents/<agent_id>.json
-  -> chatgpt/skills/<role-skill>/SKILL.md
-  -> mesh-cos-mcp per-agent tool allowlist
+CoS -> COO -> Consultant Network Steward
 ```
 
-Chief of Staff and CRO additionally receive the shared `mesh-devils-advocate` entitlement. Chief of Staff, CRO, and CMO additionally receive the shared `mesh-message-operations` entitlement. Both are invoked through `skills.invoke_governed`; there is no `devils-advocate` or `message-ops` MCP principal or Workspace Agent manifest.
+Consultant Network Steward is terminal. Depth beyond the Phase 1 ceiling is denied.
 
-The projection must preserve raw registry values for stable display name, parent, implementation version, accountable domain, decision authority, required approvals, prohibited actions, and maximum delegation depth. Builder-only fields such as preferred model, Workspace apps, channel enablement, starter prompts, shared Skill attachments, and connector action constraints may add deployment controls but may not widen registry authority.
+## Completion policy
 
-`mesh_cos.mcp_policy.WorkspaceAgentMCPPolicy` enforces checked-in per-agent MCP allowlists server-side with deny-by-default behavior. `scripts/check-chatgpt-packages.py` prevents registry, Skill, manifest, MCP, release, shared-capability, or permission drift in CI.
+Registry membership does not imply verification authority. Appropriate accountable owners receive `task.complete`; only explicitly authorized verifiers receive `task.verify`. In the Phase 1 agent projection, Chief of Staff is the only agent with `task.verify`.
 
-## Runtime normalization
+## Drift protection
 
-Some registry authority descriptions are human-readable strings rather than bare integers. The loader normalizes known `L0` through `L5` forms and advisory-only authority safely for runtime comparison. Unknown authority representations fail rather than silently granting access. Workspace Agent manifests preserve original human-readable authority wording for governance review.
-
-## Health states
-
-Supported states are `SHADOW`, `ACTIVE`, `WATCH`, `RESTRICTED`, `QUARANTINED`, and `RETIRED`. Health is not equivalent to authority. An `ACTIVE` agent is still limited by registry permissions and its decision-rights ceiling.
-
-## Invocation authorization
-
-Before a source, tool, or consequential action is used, runtime authorization checks the registry record. Workspace Agent traffic first passes the agent-specific MCP allowlist, then existing source/tool/action and authority controls.
-
-Shared capability invocation is also constrained by registry Skill entitlement. Only CoS/CRO may invoke Mesh Devil's Advocate. Only CoS/CRO/CMO may invoke Mesh Message Operations. Entitlement alone never satisfies required human approval. Denied sources, tools, capabilities, or missing approval fail closed.
-
-## Change control
-
-Any registry change that alters identity, accountable domain, authority, source/tool access, Skills, shared capability entitlement, permitted/prohibited actions, delegation, confidentiality, or health policy must update tests, role cards, relevant documentation, matching Workspace Agent manifests/Skills, and MCP allowlists in the same pull request. Material authority expansion must follow the L4/L5 governance model.
-
-Historical `v2.0.0` records describe the prior 10-agent topology with shared Mesh Devil's Advocate. They remain historical and do not override the current `v3.0.0` registry.
+CI requires exact equality among the registry roster, Workspace Agent manifests, repository-local role Skills, MCP principal allowlists, and current architecture documentation. Historical release documents may preserve prior roster counts only when clearly scoped as historical.

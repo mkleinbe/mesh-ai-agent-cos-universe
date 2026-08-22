@@ -22,12 +22,14 @@ def test_contract_and_registry_are_single_runtime_source_of_truth():
     assert registry["cro"]["decision_authority"] == 3
     assert "mesh-devils-advocate" in registry["cro"]["skills"]
     assert "mesh-devils-advocate" in registry["cos"]["skills"]
-    assert "mesh-message-operations" in registry["cos"]["skills"]
-    assert "mesh-message-operations" in registry["cro"]["skills"]
-    assert "mesh-message-operations" in registry["cmo"]["skills"]
     assert "devils-advocate" not in registry
-    assert "message-ops" not in registry
-    assert len(registry) == 9
+    assert "message-ops" in registry
+    assert registry["message-ops"]["parent_agent_id"] == "cos"
+    assert "mesh-message-operations" in registry["message-ops"]["skills"]
+    assert "mesh-message-operations" not in registry["cos"]["skills"]
+    assert "mesh-message-operations" not in registry["cro"]["skills"]
+    assert "mesh-message-operations" not in registry["cmo"]["skills"]
+    assert len(registry) == 10
 
 
 def test_ledger_persists_all_consequential_record_types():

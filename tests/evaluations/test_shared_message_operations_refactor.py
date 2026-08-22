@@ -18,73 +18,85 @@ def _raw_registry() -> dict:
     return json.loads(REGISTRY.read_text())
 
 
-def test_message_operations_is_shared_capability_not_agent_principal() -> None:
+def test_message_operations_is_registered_agent_principal() -> None:
     registry = load_registry(REGISTRY)
-    assert len(registry) == 9
-    assert "message-ops" not in registry
-    assert not ROLE_CARD.exists()
-    assert not (WORKSPACE_AGENTS / "message-ops.json").exists()
-    assert not ROLE_SKILL.exists()
+    assert len(registry) == 10
+    assert "message-ops" in registry
+    assert ROLE_CARD.exists()
+    assert (WORKSPACE_AGENTS / "message-ops.json").exists()
+    assert ROLE_SKILL.exists()
+    assert registry["message-ops"]["parent_agent_id"] == "cos"
+    assert registry["message-ops"]["max_delegation_depth"] == 0
 
 
-def test_shared_message_operations_contract_is_exact_and_least_privilege() -> None:
+def test_message_operations_contract_is_exact_and_least_privilege() -> None:
     raw = _raw_registry()
     capabilities = {item["capability"]: item for item in raw["shared_capabilities"]}
-    capability = capabilities["mesh-message-operations"]
-    assert capability["display_name"] == "Mesh Message Operations"
-    assert capability["type"] == "shared_skill"
-    assert capability["deployment"] == "EXTERNAL_SHARED_SKILL"
-    assert capability["consumers"] == ["cos", "cro", "cmo"]
-    assert capability["authority"] == "APPROVAL_BOUND_EXECUTION_ONLY"
-    assert capability["creates_strategy_or_copy"] is False
-    assert capability["approval_may_be_inferred_or_broadened"] is False
-    assert capability["preview_is_approval"] is False
-    assert capability["canonical_commercial_state_modified"] is False
-    assert capability["canonical_consent_or_legal_state_modified"] is False
-    assert capability["requires_per_message_approval"] is True
-    assert capability["requires_documented_connector_action"] is True
-    assert capability["requires_idempotency"] is True
-    assert capability["requires_post_send_verification"] is True
-    assert capability["request_contract"] == "mesh.messaging.execution-request.v1"
-    assert capability["response_contract"] == "mesh.messaging.execution-receipt.v1"
+    assert "mesh-message-operations" not in capabilities
+
+    registry = load_registry(REGISTRY)
+    message = registry["message-ops"]
+    assert message["display_name"] == "Message Operations"
+    assert message["accountable_domain"] == "controlled approved communication execution"
+    assert message["authoritative_sources"] == ["recorded approval state"]
+    assert message["allowed_sources"] == ["approved outbound message artifact"]
+    assert message["skills"] == ["mesh-message-operations"]
+    assert set(message["permitted_actions"]) == {"prepare_execution", "execute_approved_message"}
+    assert "consequential_external_send_without_approval" in message["prohibited_actions"]
+    assert "fabricate_approval" in message["prohibited_actions"]
+    assert "modify_approved_message_materially_without_reapproval" in message["prohibited_actions"]
+    assert message["required_approvals"] == ["qualified human approval for consequential external send"]
 
 
-def test_only_cos_cro_cmo_receive_shared_message_operations_entitlement() -> None:
+def test_message_operations_entitlement_is_owned_only_by_message_ops_agent() -> None:
     registry = load_registry(REGISTRY)
     entitled = {agent_id for agent_id, record in registry.items() if "mesh-message-operations" in record["skills"]}
-    assert entitled == {"cos", "cro", "cmo"}
+    assert entitled == {"message-ops"}
     assert "mesh-message-operations" not in registry["vp-content"]["skills"]
+    assert "mesh-message-operations" not in registry["cos"]["skills"]
+    assert "mesh-message-operations" not in registry["cro"]["skills"]
+    assert "mesh-message-operations" not in registry["cmo"]["skills"]
 
 
-def test_workspace_projection_is_nine_agents_and_shared_skill_attached_only_to_consumers() -> None:
+def test_workspace_projection_is_ten_agents_with_message_ops_principal() -> None:
     manifests = sorted(WORKSPACE_AGENTS.glob("*.json"))
-    assert len(manifests) == 9
+    assert len(manifests) == 10
     seen = set()
     for path in manifests:
         manifest = json.loads(path.read_text())
         seen.add(manifest["agent_id"])
-        assert manifest["repository_release"] == "3.0.0"
-        shared = set(manifest.get("shared_skills", []))
-        if manifest["agent_id"] in {"cos", "cro", "cmo"}:
-            assert "mesh-message-operations" in shared
-        else:
-            assert "mesh-message-operations" not in shared
-    assert "message-ops" not in seen
+        assert manifest["repository_release"] == "4.0.0"
+        if manifest["agent_id"] == "message-ops":
+            assert manifest["skill"] == "mesh-message-operations"
+            assert manifest.get("shared_skills", []) == []
+    assert "message-ops" in seen
+    assert "devils-advocate" not in seen
 
 
-def test_mcp_has_no_message_ops_principal_and_consumers_retain_governed_skill_invocation() -> None:
+def test_mcp_has_message_ops_principal_and_human_only_tools_remain_excluded() -> None:
     contract = json.loads(MCP.read_text())
     allowlists = contract["agent_tool_allowlists"]
-    assert "message-ops" not in allowlists
-    assert contract["runtime_release"] == "3.0.0"
-    for agent_id in ("cos", "cro", "cmo"):
-        assert "skills.invoke_governed" in allowlists[agent_id]
+    assert "message-ops" in allowlists
+    assert contract["runtime_release"] == "4.0.0"
+    message_allowlist = set(allowlists["message-ops"])
+    assert {
+        "approval.get",
+        "governance.record_event",
+        "registry.get_agent",
+        "skills.invoke_governed",
+        "task.complete",
+        "task.get",
+    } <= message_allowlist
+    assert "task.verify" not in message_allowlist
+    assert "approval.record_decision" not in message_allowlist
+    assert "reliability.human_override" not in message_allowlist
 
 
-def test_release_identity_is_v3() -> None:
-    assert __version__ == "3.0.0"
-    assert 'version = "3.0.0"' in (ROOT / "pyproject.toml").read_text()
-    assert '"version": "3.0.0"' in (ROOT / "mcp" / "package.json").read_text()
+def test_release_identity_is_v4() -> None:
+    assert __version__ == "4.0.0"
+    assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
+    assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    assert "v3.0.0" in release
-    assert "Shared Mesh Message Operations" in release
+    assert "v4.0.0" in release
+    assert "Chief of Staff Delegation Contract Remediation" in release
+    assert "Message Operations" in release

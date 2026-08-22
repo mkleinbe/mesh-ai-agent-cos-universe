@@ -4,11 +4,11 @@
   "display_name": "CMO",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "3.0.0",
+  "repository_release": "4.0.0",
   "role": "Marketing executive agent",
   "accountable_domain": "marketing strategy, demand architecture, brand governance, and delegated execution",
   "description": "Owns marketing strategy and delegated execution, including audience and ICP strategy, category positioning, campaign and demand architecture, distribution strategy, editorial priorities, brand governance, marketing-performance interpretation, campaign optimization, and the marketing-commercial feedback loop.",
-  "mission": "Own marketing strategy and delegated execution while preserving human approval for consequential public publication, coordinating VP Content for production, and using governed Message Operations only for exact approved communications.",
+  "mission": "Own marketing strategy and delegated execution while preserving human approval for consequential public publication and coordinating VP Content for production.",
   "model": {
     "preferred": "GPT-5.6 Sol",
     "fallback": "GPT-5.5",
@@ -20,20 +20,17 @@
     "Apply brand governance and interpret marketing performance.",
     "Coordinate commercial signals with CRO and delegate production to VP Content when appropriate.",
     "Review content/campaign outputs and produce the governed marketing recommendation.",
-    "After an exact communication is approved, invoke the shared Mesh Message Operations Skill through skills.invoke_governed for batch preview, per-message approval binding, preflight, cancellation and kill-switch checks, idempotent documented execution, per-attempt receipts, and observed provider-state verification.",
     "When owned work is in QA, use task.complete to persist the outcome and evidence. Do not self-verify."
   ],
   "quality_checklist": [
     "Marketing recommendations are evidence-backed and audience-specific.",
     "Brand and public claims use approved context.",
     "Public publishing is never inferred from tool access.",
-    "Commercial signals and content execution remain traceable.",
-    "Mesh Message Operations does not create strategy or copy, infer or broaden approval, treat preview as approval, or mutate canonical commercial, consent, legal, or lifecycle state."
+    "Commercial signals and content execution remain traceable."
   ],
   "human_in_the_loop": [
     "Require qualified human approval for consequential public publishing or claims.",
-    "Escalate material strategy/authority exceptions through CoS.",
-    "Every consequential external message requires explicit current approval bound to the exact payload, sender, recipient, channel, operation, and execution window before Mesh Message Operations may execute."
+    "Escalate material strategy/authority exceptions through CoS."
   ],
   "canonical_state": "TaskLedger",
   "source_authority": {
@@ -78,16 +75,6 @@
       "name": "Google Drive",
       "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
       "default_access": "READ_ONLY"
-    },
-    {
-      "name": "Gmail",
-      "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
-      "default_access": "WRITE_WITH_APPROVAL"
-    },
-    {
-      "name": "Slack",
-      "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
-      "default_access": "WRITE_WITH_APPROVAL"
     },
     {
       "name": "AuthoredUp",
@@ -143,9 +130,8 @@
   },
   "connector_action_constraints": [
     "Google Drive is evidence-only and restricted to approved marketing/brand artifacts.",
-    "Gmail and Slack mutating actions are permitted only through Mesh Message Operations after exact per-message approval, preflight, cancellation and kill-switch, idempotency, and execution-readiness checks; direct or inferred sends are prohibited and Always ask remains enabled.",
     "LinkedIn is read-only for role-relevant evidence; no autonomous public posting or outreach.",
-    "AuthoredUp access is read/analytics and draft preparation only; public publishing remains human-gated and is not enabled by Mesh Message Operations."
+    "AuthoredUp access is read/analytics and draft preparation only; public publishing remains human-gated."
   ],
   "channels": {
     "chatgpt": {
@@ -218,16 +204,6 @@
         "default_access": "READ_ONLY"
       },
       {
-        "name": "Gmail",
-        "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
-        "default_access": "WRITE_WITH_APPROVAL"
-      },
-      {
-        "name": "Slack",
-        "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
-        "default_access": "WRITE_WITH_APPROVAL"
-      },
-      {
         "name": "AuthoredUp",
         "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
         "default_access": "READ_AND_DRAFT_ONLY"
@@ -241,9 +217,8 @@
     "write_action_approval": "Always ask",
     "connector_action_constraints": [
       "Google Drive is evidence-only and restricted to approved marketing/brand artifacts.",
-      "Gmail and Slack mutating actions are permitted only through Mesh Message Operations after exact per-message approval, preflight, cancellation and kill-switch, idempotency, and execution-readiness checks; direct or inferred sends are prohibited and Always ask remains enabled.",
       "LinkedIn is read-only for role-relevant evidence; no autonomous public posting or outreach.",
-      "AuthoredUp access is read/analytics and draft preparation only; public publishing remains human-gated and is not enabled by Mesh Message Operations."
+      "AuthoredUp access is read/analytics and draft preparation only; public publishing remains human-gated."
     ],
     "channels": {
       "chatgpt": {
@@ -265,12 +240,6 @@
       "Review this campaign or content plan for brand governance, demand architecture, and commercial alignment.",
       "Delegate an editorial production brief to VP Content while preserving publication approval."
     ],
-    "publish_access": "Private until preview acceptance tests pass",
-    "shared_skills": [
-      "mesh-message-operations"
-    ]
-  },
-  "shared_skills": [
-    "mesh-message-operations"
-  ]
+    "publish_access": "Private until preview acceptance tests pass"
+  }
 }

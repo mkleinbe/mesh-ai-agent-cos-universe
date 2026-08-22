@@ -25,8 +25,13 @@ ALLOWED_TRANSITIONS: dict[TaskStatus, set[TaskStatus]] = {
 def transition(task: TaskRecord, target: TaskStatus) -> TaskRecord:
     if target not in ALLOWED_TRANSITIONS[task.status]:
         raise ValueError(f"Invalid transition: {task.status} -> {target}")
-    if target == TaskStatus.COMPLETED and not task.acceptance_test:
-        raise ValueError("Cannot complete a task without an acceptance test")
+    if target == TaskStatus.COMPLETED:
+        if not task.acceptance_test:
+            raise ValueError("Cannot complete a task without an acceptance test")
+        if not (task.outcome or "").strip():
+            raise ValueError("Completion requires a non-empty outcome")
+        if not task.outcome_evidence:
+            raise ValueError("Completion requires outcome evidence")
     if target == TaskStatus.VERIFIED and not task.outcome_evidence:
         raise ValueError("Verification requires outcome evidence")
     task.status = target

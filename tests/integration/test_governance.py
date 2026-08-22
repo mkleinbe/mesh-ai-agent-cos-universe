@@ -147,9 +147,9 @@ def test_governance_journal_persists_decision_and_tamper_evident_audit_chain():
 
 def test_all_registered_agents_require_governance_journal_and_v2_outputs():
     registry = load_registry(ROOT / "agents" / "registry.json")
-    assert len(registry) == 9
+    assert len(registry) == 10
     assert "devils-advocate" not in registry
-    assert "message-ops" not in registry
+    assert "message-ops" in registry
     for agent_id, record in registry.items():
         assert "governance-journal" in record["tools"], agent_id
         assert "agent-event.v2" in record["output_contracts"], agent_id

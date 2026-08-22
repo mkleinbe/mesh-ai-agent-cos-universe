@@ -99,6 +99,8 @@ A separately deployed remote MCP service remains optional. ChatGPT-local operati
 - Semantic version: `3.0.0`
 - Semantic Tag: `v3.0.0`
 - Release title: `v3.0.0 Shared Mesh Message Operations`
+- Source pull request: `#29`
+- Tracking issue: `#28` (closed by merge)
 - Canonical workforce: 9 agent principals
 - Shared challenge capability: `mesh-devils-advocate`
 - Shared execution capability: `mesh-message-operations`

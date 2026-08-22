@@ -32,6 +32,7 @@ For each agent:
 - configure the bundled `mesh-cos-mcp` with local stdio entry point `node mcp/dist/index.js`;
 - bind `MESH_COS_AGENT_ID` exactly to that agent's canonical ID;
 - point every agent in the same operating universe to the same approved `MESH_COS_LEDGER_PATH`;
+- treat `TaskLedger` as the canonical operating state for that shared ledger path;
 - expose exactly the manifest/MCP allowlisted tools, no more;
 - keep the default Workspace write policy at **Always ask**;
 - preserve all Connector Action Constraints.

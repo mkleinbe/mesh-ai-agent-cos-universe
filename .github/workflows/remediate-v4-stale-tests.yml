@@ -1,0 +1,33 @@
+name: remediate-v4-stale-tests
+
+on:
+  push:
+    branches: [remediation/cos-delegation-contract-v4]
+    paths:
+      - scripts/remediate-v4-stale-tests.py
+
+permissions:
+  contents: write
+
+jobs:
+  remediate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: remediation/cos-delegation-contract-v4
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: python scripts/remediate-v4-stale-tests.py
+      - name: Commit stale-test remediation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/integration/test_governance.py tests/unit/test_mcp_runtime_handlers.py tests/unit/test_mcp_stdio_bridge.py tests/evaluations/test_phase1_scenarios.py tests/unit/test_control_plane.py tests/unit/test_production_hardening.py
+          if git diff --cached --quiet; then
+            echo "No stale-test changes required."
+          else
+            git commit -m "test: close remaining v4 stale-test defects"
+            git push origin HEAD:remediation/cos-delegation-contract-v4
+          fi

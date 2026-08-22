@@ -87,9 +87,9 @@ def test_registry_and_task_read_handlers_cover_present_and_missing_records() -> 
     with pytest.raises(KeyError):
         runtime._registry_get_agent("cro", {"agent_id": "missing"})
     agents = runtime._registry_list_agents("cos", {})
-    assert len(agents) == 9
+    assert len(agents) == 10
     assert all(record["agent_id"] != "devils-advocate" for record in agents)
-    assert all(record["agent_id"] != "message-ops" for record in agents)
+    assert any(record["agent_id"] == "message-ops" for record in agents)
     assert runtime._task_get("cro", {"task_id": "missing"}) is None
     ledger.save_task(make_task())
     assert runtime._task_get("cro", {"task_id": "T1"})["task_id"] == "T1"

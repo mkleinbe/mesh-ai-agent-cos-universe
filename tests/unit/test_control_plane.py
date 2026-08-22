@@ -15,7 +15,9 @@ def task():return TaskRecord(task_id='T1',objective='x',expected_outcome='y',req
 def test_lifecycle_verification_and_invalid_transition():
     t=task()
     with pytest.raises(ValueError):transition(t,TaskStatus.COMPLETED)
+    t.outcome='done';t.outcome_evidence=['evidence://completion']
     for s in [TaskStatus.TRIAGED,TaskStatus.PLANNED,TaskStatus.ASSIGNED,TaskStatus.IN_PROGRESS,TaskStatus.QA,TaskStatus.COMPLETED]:transition(t,s)
+    t.outcome_evidence=[]
     with pytest.raises(ValueError):transition(t,TaskStatus.VERIFIED)
     t.outcome_evidence=['evidence://1'];transition(t,TaskStatus.VERIFIED);transition(t,TaskStatus.CLOSED);assert t.status==TaskStatus.CLOSED
 def test_authority_and_delegation():

@@ -54,9 +54,10 @@ def test_shared_mesh_message_operations_is_external_not_duplicated_role_skill() 
     assert execution["deployment"] == "EXTERNAL_SHARED_SKILL"
     assert set(execution["consumers"]) == {"cos", "cro", "cmo"}
     assert execution["authority"] == "APPROVAL_BOUND_EXECUTION_ONLY"
-    assert execution["per_message_approval_required"] is True
-    assert execution["idempotency_required"] is True
-    assert execution["post_send_verification_required"] is True
+    assert execution["requires_per_message_approval"] is True
+    assert execution["requires_documented_connector_action"] is True
+    assert execution["requires_idempotency"] is True
+    assert execution["requires_post_send_verification"] is True
 
 
 def test_builder_prompt_requires_skill_production_readiness_contract() -> None:

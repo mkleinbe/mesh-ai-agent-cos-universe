@@ -13,7 +13,8 @@ def test_devils_advocate_is_shared_capability_not_workspace_agent() -> None:
     registry = load_registry()
 
     assert "devils-advocate" not in registry
-    assert len(registry) == 10
+    assert "message-ops" not in registry
+    assert len(registry) == 9
     assert "mesh-devils-advocate" in registry["cos"]["skills"]
     assert "mesh-devils-advocate" in registry["cro"]["skills"]
 
@@ -49,19 +50,22 @@ def test_mcp_projects_shared_challenge_without_agent_principal() -> None:
     allowlists = contract["agent_tool_allowlists"]
 
     assert "devils-advocate" not in allowlists
+    assert "message-ops" not in allowlists
     assert "skills.invoke_governed" in allowlists["cos"]
     assert "skills.invoke_governed" in allowlists["cro"]
 
 
 def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() -> None:
-    for agent_id in ("cos", "cro"):
+    expected_shared = {
+        "cos": ["mesh-devils-advocate", "mesh-message-operations"],
+        "cro": ["mesh-devils-advocate", "mesh-message-operations"],
+    }
+    for agent_id, expected in expected_shared.items():
         manifest = json.loads(
             (ROOT / "chatgpt" / "workspace-agents" / f"{agent_id}.json").read_text()
         )
-        assert manifest["shared_skills"] == ["mesh-devils-advocate"]
-        assert manifest["builder_configuration"]["shared_skills"] == [
-            "mesh-devils-advocate"
-        ]
+        assert manifest["shared_skills"] == expected
+        assert manifest["builder_configuration"]["shared_skills"] == expected
 
     for path in (ROOT / "chatgpt" / "workspace-agents").glob("*.json"):
         if path.stem in {"cos", "cro"}:
@@ -70,16 +74,17 @@ def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() ->
         assert "mesh-devils-advocate" not in manifest.get("shared_skills", [])
 
 
-def test_breaking_roster_change_is_released_as_v2() -> None:
-    assert __version__ == "2.0.0"
-    assert 'version = "2.0.0"' in (ROOT / "pyproject.toml").read_text()
+def test_breaking_roster_change_is_released_as_v3() -> None:
+    assert __version__ == "3.0.0"
+    assert 'version = "3.0.0"' in (ROOT / "pyproject.toml").read_text()
 
     release_workflow = (
         ROOT / ".github" / "workflows" / "release-production-readiness.yml"
     ).read_text()
-    assert "TAG: v2.0.0" in release_workflow
-    assert 'title "v2.0.0' in release_workflow
+    assert "TAG: v3.0.0" in release_workflow
+    assert 'title "v3.0.0' in release_workflow
 
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v2.0.0" in release_notes
+    assert "v3.0.0" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
+    assert "Mesh Message Operations" in release_notes

@@ -4,7 +4,7 @@
   "protocol": "MCP",
   "transport": "LOCAL_STDIO",
   "canonical_state": "TaskLedger",
-  "runtime_release": "2.0.0",
+  "runtime_release": "3.0.0",
   "purpose": "Expose the governed Mesh CoS control plane to ChatGPT through a bundled local stdio MCP runtime while preserving TaskLedger as canonical state and keeping managed remote transport optional.",
   "authentication": {
     "mode": "LOCAL_RUNTIME_BOUND_AGENT_IDENTITY",
@@ -79,8 +79,7 @@
     "coo": ["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
     "consultant-network-steward": ["governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
     "cmo": ["approval.request","conflict.open","delegation.create","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "vp-content": ["approval.request","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"],
-    "message-ops": ["approval.get","governance.record_event","registry.get_agent","skills.invoke_governed","task.complete","task.get"]
+    "vp-content": ["approval.request","governance.record_decision","governance.record_event","registry.get_agent","skills.invoke_governed","task.check_in","task.complete","task.get","task.list","task.transition"]
   },
   "human_tool_allowlist": ["approval.record_decision","reliability.human_override"],
   "deployment": {

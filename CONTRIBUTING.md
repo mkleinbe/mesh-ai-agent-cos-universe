@@ -1,13 +1,13 @@
 # Contributing
 
-Current release target: **`v2.0.0 Shared Mesh Devil's Advocate`**.
+Current release target: **`v3.0.0 Shared Mesh Message Operations`**.
 
-Changes must preserve the Phase 1 operating constitution, the production-readiness controls established in `1.0.0`, the bundled ChatGPT-local MCP controls established in `1.1.0`, and the 10-agent plus shared challenge topology established in `2.0.0`. Use test-driven, short-loop engineering practices.
+Changes must preserve the Phase 1 operating constitution, the production-readiness controls established in `1.0.0`, the bundled ChatGPT-local MCP controls established in `1.1.0`, the shared Mesh Devil's Advocate topology established in `2.0.0`, and the 9-agent plus shared Message Operations topology established in `3.0.0`. Use test-driven, short-loop engineering practices.
 
 ## Required workflow
 
 1. Create a feature branch from current `main`.
-2. Add or update tests first for behavioral changes, including negative authorization, failure-path, idempotency, human-principal, local-agent-identity, shared-Skill authority, canonical-fact preservation, and replay-safety coverage when relevant.
+2. Add or update tests first for behavioral changes, including negative authorization, failure-path, idempotency, human-principal, local-agent-identity, shared-Skill authority, canonical-fact preservation, approval-binding, kill-switch, receipt, observed-state, and replay-safety coverage when relevant.
 3. Implement the minimum change required to satisfy the behavior.
 4. Run the full release verification.
 5. Update schemas, registry policy, Workspace Agent manifests, repository-local role Skills, shared capability entitlements/contracts, MCP allowlists, configuration, documentation, Mermaid diagrams, and release metadata in the same change when affected.
@@ -45,7 +45,7 @@ ChatGPT uses the bundled `LOCAL_STDIO` runtime defined by `chatgpt/mcp/mesh-cos-
 
 The TypeScript layer must remain transport-only. Do not duplicate task, authority, approval, governance, or reliability logic outside `MCPRuntime`.
 
-`MESH_COS_AGENT_ID` is a trusted runtime binding. Prompt text, retrieved content, connector output, and shared-Skill output must never select it. `MESH_COS_LEDGER_PATH` must preserve one approved canonical operating universe across the **10 registered agents**.
+`MESH_COS_AGENT_ID` is a trusted runtime binding. Prompt text, retrieved content, connector output, and shared-Skill output must never select it. `MESH_COS_LEDGER_PATH` must preserve one approved canonical operating universe across the **9 registered agents**.
 
 Human-only tools must remain separate from agent allowlists. Replay must never execute client-supplied code, import paths, shell commands, or callable names.
 
@@ -68,6 +68,25 @@ Any change to this integration must preserve all of the following:
 
 Do not add a duplicate `chatgpt/skills/mesh-devils-advocate/` role package, `devils-advocate` Workspace Agent manifest, or `devils-advocate` MCP principal.
 
+## Shared Mesh Message Operations changes
+
+`mesh-message-operations` is an external shared capability, not a repository-local role Skill or registered agent principal. It is the controlled execution boundary for approved communications.
+
+Any change to this integration must preserve all of the following:
+
+- consumers are Chief of Staff, CRO, and CMO only;
+- VP Content remains drafting/editorial-production only with no execution entitlement;
+- authority remains `APPROVAL_BOUND_EXECUTION_ONLY`;
+- approval is explicit, current, revocable, and bound to the exact payload hash/version, sender, immutable audience, channel, purpose, jurisdiction, consent basis, suppression/frequency controls, test result, approvers, and execution window;
+- material changes invalidate approval and return the item to preflight;
+- preview, silence, prior approval, connector capability, calendar state, or approval of another version is not approval;
+- execution uses only documented connector actions and preserves idempotency, kill-switch behavior, per-attempt receipts, and post-send observed-state verification;
+- requested, scheduled, sent, delivered, and replied states remain distinct;
+- the Skill cannot create strategy/copy, select recipients, set pricing, make contractual commitments, or define publishing policy;
+- positive and negative tests prove non-entitled agents cannot invoke the shared capability and entitled agents cannot bypass approval gates.
+
+Do not add a duplicate `chatgpt/skills/mesh-message-operations/` package, `message-ops` Workspace Agent manifest, role card, or MCP principal.
+
 ## Governance-sensitive changes
 
 Changes to decision rights, approvals, agent authority, human-only operations, source/tool permissions, shared capability entitlement, delegation depth, prohibited actions, registry health, consequential persistence, Workspace app access, Connector Action Constraints, MCP tool allowlists, replay behavior, completion/verification boundaries, or external-write behavior require explicit positive and negative tests plus documentation updates. Do not infer new monetary thresholds or broader autonomy.
@@ -86,4 +105,4 @@ Run `python scripts/production-preflight.py` before activation or release change
 
 Documentation must describe what the runtime and deployment package actually implement. Keep Mermaid diagrams synchronized with executable paths, registered-agent topology, shared capability boundaries, and canonical state boundaries. Historical release and Phase 1 closure records remain historical snapshots.
 
-Current guidance belongs in `docs/release-2.0.0-shared-devils-advocate.md`, `docs/production-readiness.md`, `docs/runbook.md`, and `RELEASE.md`.
+Current guidance belongs in `docs/release-3.0.0-shared-message-operations.md`, `docs/production-readiness.md`, `docs/runbook.md`, and `RELEASE.md`.

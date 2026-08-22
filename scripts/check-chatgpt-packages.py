@@ -25,9 +25,9 @@ EXPECTED = {
     "consultant-network-steward": ("Consultant Network Steward", "coo", "mesh-consultant-network-steward"),
     "cmo": ("CMO", "cos", "mesh-cmo"),
     "vp-content": ("VP Content", "cmo", "mesh-vp-content"),
-    "message-ops": ("Message Operations", "cos", "mesh-message-operations"),
 }
 SHARED_CHALLENGE_CONSUMERS = {"cos", "cro"}
+SHARED_MESSAGE_CONSUMERS = {"cos", "cro", "cmo"}
 
 
 def require(condition: bool, message: str) -> None:
@@ -49,7 +49,7 @@ def parse_frontmatter(text: str) -> dict[str, str]:
 registry_source = json.loads((ROOT / "agents" / "registry.json").read_text())
 registry = {record["agent_id"]: record for record in registry_source["agents"]}
 require(set(registry) == set(EXPECTED), "Workspace Agent roster drifted from canonical registry")
-require(__version__ == "2.0.0", "Workspace Agent release must be 2.0.0")
+require(__version__ == "3.0.0", "Workspace Agent release must be 3.0.0")
 require(f'version = "{__version__}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
 
 shared = {item["capability"]: item for item in registry_source.get("shared_capabilities", [])}
@@ -63,6 +63,24 @@ require(challenge["external_action_included"] is False, "Shared challenge cannot
 require(not (ROOT / "agents" / "devils-advocate.md").exists(), "Duplicate Devil's Advocate role card remains")
 require(not (AGENTS / "devils-advocate.json").exists(), "Duplicate Devil's Advocate Workspace Agent remains")
 require(not (SKILLS / "mesh-devils-advocate").exists(), "Duplicate repository-local Mesh Devil's Advocate Skill remains")
+
+message_ops = shared.get("mesh-message-operations")
+require(message_ops is not None, "Shared Mesh Message Operations capability missing")
+require(message_ops["deployment"] == "EXTERNAL_SHARED_SKILL", "Shared Message Operations deployment drifted")
+require(set(message_ops["consumers"]) == SHARED_MESSAGE_CONSUMERS, "Shared Message Operations consumer set drifted")
+require(message_ops["authority"] == "APPROVAL_BOUND_EXECUTION_ONLY", "Shared Message Operations authority drifted")
+require(message_ops["creates_strategy_or_copy"] is False, "Message Operations cannot create strategy or copy")
+require(message_ops["approval_may_be_inferred_or_broadened"] is False, "Message Operations cannot infer or broaden approval")
+require(message_ops["preview_is_approval"] is False, "Message Operations preview cannot become approval")
+require(message_ops["canonical_commercial_state_modified"] is False, "Message Operations cannot modify canonical commercial state")
+require(message_ops["canonical_consent_or_legal_state_modified"] is False, "Message Operations cannot modify canonical consent/legal state")
+require(message_ops["requires_per_message_approval"] is True, "Message Operations must require per-message approval")
+require(message_ops["requires_documented_connector_action"] is True, "Message Operations must use documented connector actions")
+require(message_ops["requires_idempotency"] is True, "Message Operations must require idempotency")
+require(message_ops["requires_post_send_verification"] is True, "Message Operations must require post-send verification")
+require(not (ROOT / "agents" / "message-ops.md").exists(), "Duplicate Message Operations role card remains")
+require(not (AGENTS / "message-ops.json").exists(), "Duplicate Message Operations Workspace Agent remains")
+require(not (SKILLS / "mesh-message-operations").exists(), "Duplicate repository-local Mesh Message Operations Skill remains")
 
 contract = json.loads(MCP.read_text())
 require(contract["runtime_release"] == __version__, "MCP contract release drifted")
@@ -79,6 +97,7 @@ require(policy.validate_runtime_bindings() == [], "MCP runtime binding is unreso
 contract_allowlists = contract["agent_tool_allowlists"]
 require(set(contract_allowlists) == set(EXPECTED), "MCP agent principal roster drifted")
 require("devils-advocate" not in contract_allowlists, "Devil's Advocate must not be an MCP agent principal")
+require("message-ops" not in contract_allowlists, "Message Operations must not be an MCP agent principal")
 
 for relative in (
     "README.md",
@@ -136,14 +155,23 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(config["governance"]["audit_logging"] == "REQUIRED", f"{agent_id}: audit policy weakened")
     require(config["governance"]["decision_logging"] == "REQUIRED_WHEN_DECIDING_OR_RECOMMENDING", f"{agent_id}: decision logging weakened")
     require(config["governance"]["private_chain_of_thought"] == "PROHIBITED", f"{agent_id}: reasoning persistence drifted")
-    expected_shared = ["mesh-devils-advocate"] if agent_id in SHARED_CHALLENGE_CONSUMERS else []
+    expected_shared: list[str] = []
+    if agent_id in SHARED_CHALLENGE_CONSUMERS:
+        expected_shared.append("mesh-devils-advocate")
+    if agent_id in SHARED_MESSAGE_CONSUMERS:
+        expected_shared.append("mesh-message-operations")
     require(config.get("shared_skills", []) == expected_shared, f"{agent_id}: shared Skill projection drifted")
     require(config["builder_configuration"].get("shared_skills", []) == expected_shared, f"{agent_id}: builder shared Skill projection drifted")
     if agent_id in SHARED_CHALLENGE_CONSUMERS:
-        require("mesh-devils-advocate" in record.get("skills", []), f"{agent_id}: registry shared Skill entitlement missing")
-        require("skills.invoke_governed" in contract_allowlists[agent_id], f"{agent_id}: governed Skill invocation missing")
+        require("mesh-devils-advocate" in record.get("skills", []), f"{agent_id}: registry shared challenge entitlement missing")
+        require("skills.invoke_governed" in contract_allowlists[agent_id], f"{agent_id}: governed challenge invocation missing")
     else:
         require("mesh-devils-advocate" not in record.get("skills", []), f"{agent_id}: unauthorized shared challenge entitlement")
+    if agent_id in SHARED_MESSAGE_CONSUMERS:
+        require("mesh-message-operations" in record.get("skills", []), f"{agent_id}: registry shared Message Operations entitlement missing")
+        require("skills.invoke_governed" in contract_allowlists[agent_id], f"{agent_id}: governed Message Operations invocation missing")
+    else:
+        require("mesh-message-operations" not in record.get("skills", []), f"{agent_id}: unauthorized shared Message Operations entitlement")
 
     mcp = config["mcp"]
     require(mcp["transport"] == "LOCAL_STDIO", f"{agent_id}: MCP transport drifted")
@@ -169,8 +197,6 @@ require("task.reassign" in contract_allowlists["cos"], "CoS reassignment capabil
 for agent_id, allowed in contract_allowlists.items():
     if agent_id != "cos":
         require("task.reassign" not in allowed, f"{agent_id}: unauthorized task reassignment")
-require("approval.get" in contract_allowlists["message-ops"], "Message Operations approval read missing")
-require("approval.record_decision" not in contract_allowlists["message-ops"], "Message Operations cannot decide approval")
 require("approval.record_decision" not in contract_allowlists["cos"], "Agent allowlists cannot include human approval decisions")
 require("reliability.human_override" not in contract_allowlists["cos"], "Agent allowlists cannot include human reliability override")
 require(set(contract["human_tool_allowlist"]) == {"approval.record_decision", "reliability.human_override"}, "Human-only MCP allowlist drifted")
@@ -182,17 +208,20 @@ require(answer_desk["channels"]["slack"]["channel_id"] is None, "Answer Desk Sla
 cmo = json.loads((AGENTS / "cmo.json").read_text())
 vp_content = json.loads((AGENTS / "vp-content.json").read_text())
 cro = json.loads((AGENTS / "cro.json").read_text())
-message_ops = json.loads((AGENTS / "message-ops.json").read_text())
+cos = json.loads((AGENTS / "cos.json").read_text())
 require(any("no autonomous public posting" in rule for rule in cmo["connector_action_constraints"]), "CMO LinkedIn constraint missing")
 require(any("public publishing remains human-gated" in rule for rule in vp_content["connector_action_constraints"]), "VP Content publishing constraint missing")
 require(any("research/enrichment only" in rule for rule in cro["connector_action_constraints"]), "CRO Apollo research-only constraint missing")
-require(any("approval" in rule.lower() for rule in message_ops["connector_action_constraints"]), "Message Operations approval constraint missing")
+for agent_id, config in (("cos", cos), ("cro", cro), ("cmo", cmo)):
+    require(any("Mesh Message Operations" in rule for rule in config["connector_action_constraints"]), f"{agent_id}: shared Message Operations execution constraint missing")
+require("mesh-message-operations" not in vp_content.get("shared_skills", []), "VP Content must remain drafting-only")
 
 prompt = (CHATGPT / "workspace-agent-builder-prompt.md").read_text()
 for token in (
-    "10 agents",
-    "v2.0.0",
+    "9 agents",
+    "v3.0.0",
     "Mesh Devil's Advocate",
+    "Mesh Message Operations",
     "shared Skill",
     "mesh-cos-mcp",
     "local stdio",

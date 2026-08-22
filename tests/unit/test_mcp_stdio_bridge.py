@@ -95,15 +95,17 @@ def test_bridge_calls_real_mcp_runtime_with_canonical_policy(tmp_path: Path) -> 
         runtime_factory=MCPRuntime,
     )
     assert result["ok"] is True
-    assert len(result["result"]) == 10
+    assert len(result["result"]) == 9
     assert all(record["agent_id"] != "devils-advocate" for record in result["result"])
+    assert all(record["agent_id"] != "message-ops" for record in result["result"])
 
 
-def test_bridge_rejects_removed_devils_advocate_agent_identity(tmp_path: Path) -> None:
-    with pytest.raises(PermissionError, match="Unknown or unconfigured Workspace Agent: devils-advocate"):
+@pytest.mark.parametrize("removed_agent", ["devils-advocate", "message-ops"])
+def test_bridge_rejects_removed_shared_capability_agent_identities(tmp_path: Path, removed_agent: str) -> None:
+    with pytest.raises(PermissionError, match=f"Unknown or unconfigured Workspace Agent: {removed_agent}"):
         bridge.execute_request(
             {"tool_name": "registry.list_agents", "arguments": {}},
-            env=env(tmp_path, agent_id="devils-advocate"),
+            env=env(tmp_path, agent_id=removed_agent),
             runtime_factory=MCPRuntime,
         )
 

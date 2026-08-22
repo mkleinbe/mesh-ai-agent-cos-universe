@@ -42,7 +42,7 @@ def test_runtime_rejects_role_names_that_embed_implementation_version(tmp_path: 
 
 def test_runtime_and_package_release_versions_are_aligned() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text()
-    assert __version__ == "2.0.0"
+    assert __version__ == "3.0.0"
     assert f'version = "{__version__}"' in pyproject
 
 
@@ -163,5 +163,7 @@ def test_registry_source_preserves_role_boundaries() -> None:
     assert "public_publish" in records["vp-content"]["prohibited_actions"]
 
     assert "devils-advocate" not in records
+    assert "message-ops" not in records
     shared = {item["capability"]: item for item in raw["shared_capabilities"]}
     assert shared["mesh-devils-advocate"]["authority"] == "ADVISORY_ONLY"
+    assert shared["mesh-message-operations"]["authority"] == "APPROVAL_BOUND_EXECUTION_ONLY"

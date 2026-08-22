@@ -15,13 +15,14 @@ const contract = loadContract();
 
 test('contract loads local stdio release metadata', () => {
   assert.equal(contract.name, 'mesh-cos-mcp');
-  assert.equal(contract.runtime_release, '2.0.0');
+  assert.equal(contract.runtime_release, '3.0.0');
   assert.equal(contract.transport, 'LOCAL_STDIO');
 });
 
 test('agent identity is required and must be registered', () => {
   assert.throws(() => requireAgentId(contract, {}), /MESH_COS_AGENT_ID/);
   assert.throws(() => requireAgentId(contract, { MESH_COS_AGENT_ID: 'unknown' }), /registered/);
+  assert.throws(() => requireAgentId(contract, { MESH_COS_AGENT_ID: 'message-ops' }), /registered/);
   assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: 'cro' }), 'cro');
 });
 
@@ -30,9 +31,8 @@ test('tool projection is exact and excludes human-only tools', () => {
   assert.deepEqual(cos, contract.agent_tool_allowlists.cos);
   assert.equal(cos.includes('approval.record_decision'), false);
   assert.equal(cos.includes('reliability.human_override'), false);
-
-  const messageOps = toolsForAgent(contract, 'message-ops').map((tool) => tool.name);
-  assert.deepEqual(messageOps, contract.agent_tool_allowlists['message-ops']);
+  assert.equal(contract.agent_tool_allowlists['message-ops'], undefined);
+  assert.deepEqual(toolsForAgent(contract, 'message-ops'), []);
 });
 
 test('argument validation is object-only and size bounded', () => {

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Release `v2.0.0` preserves the governed Mesh AI Chief of Staff control plane, keeps ChatGPT execution on the bundled `LOCAL_STDIO` MCP path, and changes the workforce topology from 11 agent principals to a **10-agent** organization plus the shared **Mesh Devil's Advocate** Skill.
+Release `v3.0.0` preserves the governed Mesh AI Chief of Staff control plane, keeps ChatGPT execution on the bundled `LOCAL_STDIO` MCP path, and changes the workforce topology from 10 agent principals to a **9-agent** organization plus two governed external shared Skills: **Mesh Devil's Advocate** and **Mesh Message Operations**.
 
 The control plane remains a Python modular monolith with SQLite behind the `TaskLedger` persistence boundary. Material recommendations use `decision.v2`; consequential actions use `agent-event.v2`.
 
@@ -20,8 +20,8 @@ flowchart TD
     CNS[Consultant Network Steward]
     CMO[CMO]
     VPC[VP Content]
-    MSG[Message Operations]
-    DA[[Shared Mesh Devil's Advocate Skill]]
+    DA[[Mesh Devil's Advocate\nShared Skill]]
+    MSG[[Mesh Message Operations\nShared Skill]]
 
     M --> COS
     COS --> AO
@@ -32,32 +32,43 @@ flowchart TD
     COO --> CNS
     COS --> CMO
     CMO --> VPC
-    COS --> MSG
+
     COS -. governed challenge .-> DA
     CRO -. governed challenge .-> DA
-    DA -. advisory challenge packet .-> COS
-    DA -. advisory challenge packet .-> CRO
+    DA -. advisory packet .-> COS
+    DA -. advisory packet .-> CRO
+
+    COS -. exact approved communication .-> MSG
+    CRO -. exact approved communication .-> MSG
+    CMO -. exact approved communication .-> MSG
+    MSG -. execution receipt + observed state .-> COS
+    MSG -. execution receipt + observed state .-> CRO
+    MSG -. execution receipt + observed state .-> CMO
 ```
 
-`mesh-devils-advocate` is a shared capability, not a separately registered agent, delegated owner, Workspace Agent, or repository-local role Skill. Chief of Staff and CRO may invoke it through `skills.invoke_governed`. Its request contract is `mesh.devils-advocate.challenge-request.v1`; its response contract is `mesh.devils-advocate.challenge-packet.v1`.
+Neither shared Skill is a registered agent, delegated owner, Workspace Agent, repository-local duplicate Skill, or MCP principal. Both are invoked through `skills.invoke_governed` and remain subordinate to caller authority and canonical registry policy.
 
-The shared challenge function is **advisory**. It cannot change canonical facts, scores, stages, diagnoses, task ownership, commitments, approvals, or external actions. It returns decision authority to the owning agent or qualified human.
+`mesh-devils-advocate` is advisory only and available to Chief of Staff and CRO. It cannot change canonical facts, scores, stages, diagnoses, task ownership, commitments, approvals, or external actions.
+
+`mesh-message-operations` is approval-bound execution only and available to Chief of Staff, CRO, and CMO. It cannot create strategy or copy, select recipients, set pricing, make contractual commitments, make consent/legal determinations, or define publishing policy. VP Content remains drafting/editorial-production only.
 
 ## End-to-end execution topology
 
 ```mermaid
 flowchart TB
-    EXEC[User / Executive] --> WA[10 ChatGPT Workspace Agents]
+    EXEC[User / Executive] --> WA[9 ChatGPT Workspace Agents]
 
     subgraph CHATGPT[ChatGPT Deployment Layer]
-      ROLE[Repository-local Role Skills]
-      SHARED[Shared Mesh Devil's Advocate Skill]
+      ROLE[9 Repository-local Role Skills]
+      DA[Mesh Devil's Advocate Shared Skill]
+      MSG[Mesh Message Operations Shared Skill]
       APPS[Approved Workspace Apps]
       MCP[Bundled mesh-cos-mcp LOCAL_STDIO]
       WA --> ROLE
       WA --> APPS
       WA --> MCP
-      WA -. CoS and CRO only .-> SHARED
+      WA -. CoS and CRO .-> DA
+      WA -. CoS CRO CMO .-> MSG
     end
 
     MCP --> NODE[node mcp/dist/index.js]
@@ -94,9 +105,9 @@ MESH_COS_LEDGER_PATH=.mesh-cos/task-ledger.sqlite3
 MESH_COS_PYTHON_BIN=python
 ```
 
-`MESH_COS_AGENT_ID` must match one of the 10 registered agents. Prompt text, retrieved documents, connector output, and MCP arguments cannot select or modify agent identity. All 10 agents in one operating universe use the same approved ledger path so tasks, decisions, approvals, audit events, and performance state remain coherent.
+`MESH_COS_AGENT_ID` must match one of the 9 registered agents. Prompt text, retrieved documents, connector output, shared-Skill output, and MCP arguments cannot select or modify agent identity. All 9 agents in one operating universe use the same approved ledger path so tasks, decisions, approvals, audit events, and performance state remain coherent.
 
-The shared Mesh Devil's Advocate does not receive its own `MESH_COS_AGENT_ID` because it is not an agent principal.
+Neither shared Skill receives its own `MESH_COS_AGENT_ID`.
 
 ## Serialized execution boundary
 
@@ -109,7 +120,8 @@ sequenceDiagram
     participant M as MCPRuntime
     participant R as Agent Registry
     participant L as TaskLedger
-    participant D as Shared Mesh Devil's Advocate
+    participant D as Mesh Devil's Advocate
+    participant X as Mesh Message Operations
 
     U->>W: Outcome request
     W->>S: MCP tool call
@@ -120,6 +132,10 @@ sequenceDiagram
         M->>D: challenge request
         D-->>M: advisory challenge packet
     end
+    alt CoS CRO or CMO requests approved communication execution
+        M->>X: governed execution request
+        X-->>M: receipt + observed state
+    end
     M->>L: Read or mutate canonical state
     L-->>M: Canonical result
     M-->>B: Structured result
@@ -129,17 +145,34 @@ sequenceDiagram
 
 Human-only tools are not projected into agent catalogs. `approval.record_decision` and `reliability.human_override` require a separately authenticated human-principal path. L4 fails closed without qualified approval; L5 remains Michael-exclusive.
 
+## Message Operations execution contract
+
+Mesh Message Operations receives only an approved draft packet and preserves the controlled execution boundary:
+
+1. verify packet version and immutable payload hash;
+2. preflight sender, recipients, purpose, channel, jurisdiction, consent, suppressions, links, attachments, merge fields, reply-to, unsubscribe, authentication, and delivery window;
+3. render the exact preview and surface any differences;
+4. run seed/test send when required;
+5. bind explicit current approval to exact payload, audience, sender, channel, purpose, jurisdiction, consent basis, suppression/frequency controls, test result, approvers, and execution window;
+6. immediately recheck cancellation and kill-switch state;
+7. execute only through a documented connector action with a unique idempotency key;
+8. capture provider result, identifiers, timestamps, counts, errors, and per-attempt receipts;
+9. re-read provider state and record observed delivery/response evidence;
+10. invalidate approval and return to preflight for any material change.
+
+Preview, silence, previous approval, a draft request, a calendar event, connector capability, or approval of a different version is not approval. Requested, scheduled, sent, delivered, and replied are distinct states.
+
 ## Workspace packaging model
 
-Release `2.0.0` maps each canonical agent role into coordinated artifacts:
+Release `3.0.0` maps each canonical agent role into coordinated artifacts:
 
-1. `chatgpt/skills/<skill>/SKILL.md` defines the repository-local role workflow.
+1. `chatgpt/skills/<skill>/SKILL.md` defines one of 9 repository-local role workflows.
 2. `chatgpt/skills/<skill>/references/production-readiness.md` defines local-MCP readiness for that agent role.
-3. `chatgpt/workspace-agents/<agent_id>.json` defines exact ChatGPT configuration and local MCP launch settings.
-4. `chatgpt/mcp/mesh-cos-mcp.v1.json` defines tool contracts, 10 per-agent allowlists, local runtime metadata, human-only operations, and deployment mode.
+3. `chatgpt/workspace-agents/<agent_id>.json` defines one of 9 exact ChatGPT configurations and local MCP launch settings.
+4. `chatgpt/mcp/mesh-cos-mcp.v1.json` defines tool contracts, 9 per-agent allowlists, local runtime metadata, human-only operations, and deployment mode.
 5. `mcp/` is the bundled stdio transport package.
 6. `mesh_cos.mcp_stdio_bridge` bridges bounded JSON into `MCPRuntime`.
-7. `agents/registry.json` separately declares `mesh-devils-advocate` as an `EXTERNAL_SHARED_SKILL` entitled only to `cos` and `cro`.
+7. `agents/registry.json` declares `mesh-devils-advocate` and `mesh-message-operations` as `EXTERNAL_SHARED_SKILL` capabilities with governed consumer sets.
 
 ## Canonical source-of-truth map
 
@@ -150,6 +183,7 @@ Release `2.0.0` maps each canonical agent role into coordinated artifacts:
 | Workspace Agent deployment settings | `chatgpt/workspace-agents/*.json`, subordinate to registry |
 | Repository-local role workflows | `chatgpt/skills/*/SKILL.md`, subordinate to registry |
 | Mesh Devil's Advocate challenge logic | installed shared `mesh-devils-advocate` Skill, advisory only |
+| Mesh Message Operations execution logic | installed shared `mesh-message-operations` Skill, approval-bound execution only |
 | MCP permissions and human-only tools | `chatgpt/mcp/mesh-cos-mcp.v1.json` plus `WorkspaceAgentMCPPolicy` |
 | ChatGPT MCP transport | `mcp/` using `LOCAL_STDIO` |
 | Serialized business/governance execution | `mesh_cos.mcp_runtime.MCPRuntime` |
@@ -161,13 +195,15 @@ Release `2.0.0` maps each canonical agent role into coordinated artifacts:
 
 ## Functional accountability boundaries
 
-CRO remains commercial and owns Revenue Intelligence interpretation within its bounded authority. CFO remains Engagement Finance / FP&A only. COO remains delivery feasibility and resource readiness. Consultant Network Steward remains a COO specialist. CMO owns marketing strategy. VP Content owns editorial production under CMO. Message Operations remains controlled approved communication execution. AgentOps remains operational governance. Answer & Decision Desk remains permission-aware knowledge/routing. Chief of Staff remains the orchestration control plane.
+CRO remains commercial and owns Revenue Intelligence interpretation within its bounded authority. CFO remains Engagement Finance / FP&A only. COO remains delivery feasibility and resource readiness. Consultant Network Steward remains a COO specialist. CMO owns marketing strategy. VP Content owns editorial production under CMO. AgentOps remains operational governance. Answer & Decision Desk remains permission-aware knowledge/routing. Chief of Staff remains the orchestration control plane.
 
-Mesh Devil's Advocate supplies independent challenge but is not accountable for any functional outcome. For Revenue Intelligence, it preserves account IDs, evidence classes, scores, stage, lifecycle, queue state, and activation readiness while challenging interpretation, route, assumptions, capacity, evidence sufficiency, and decision logic.
+Chief of Staff, CRO, and CMO may invoke Mesh Message Operations only for exact approved communications inside their existing authority boundaries. CRO cannot use it to bypass pricing, scope, contractual, or commercial approval gates. CMO cannot use it to bypass strategy, consent, policy, or publication approval gates. CoS cannot infer approval or mutate the approved payload.
 
 ## Completion, verification, and reliability
 
 `task.complete` persists accountable-owner outcome evidence. `task.verify` remains a separate acceptance action. `COMPLETED` never implies `VERIFIED`.
+
+A successful connector attempt also does not prove business outcome or delivery. Message Operations must first record observed provider state, then the owning workflow applies normal TaskLedger acceptance rules.
 
 Runtime reliability continues to include idempotent intake, bounded retries, execution leases, durable failure records, server-owned replay executors, explicit human override, stalled-work remediation, kill switch, and acceptance verification. The local MCP layer cannot introduce client-supplied code execution, import paths, replay callables, shell commands, or source-text instructions.
 
@@ -177,8 +213,6 @@ The ChatGPT-local path does not require an HTTPS MCP service or `MESH_COS_MCP_SE
 
 SQLite should be revisited before multi-instance or high-availability deployment.
 
-<!-- mesh-cos-v2-shared-da -->
-## v2.0.0 current architecture
+## Historical release note
 
-The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
-
+Release `v2.0.0` established the prior 10-agent architecture and moved Mesh Devil's Advocate to the external shared-Skill model. Those references are historical. The current architecture is `v3.0.0`, with a 9-agent workforce and Mesh Message Operations also externalized as a governed shared Skill.

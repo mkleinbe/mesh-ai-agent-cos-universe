@@ -9,10 +9,10 @@ ROOT = Path(__file__).resolve().parents[2]
 MCP_CONTRACT = ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
 MANIFESTS = ROOT / "chatgpt" / "workspace-agents"
 MCP_DIR = ROOT / "mcp"
-RELEASE = "2.0.0"
+RELEASE = "3.0.0"
 
 
-def test_release_moves_to_v2_0_0_for_shared_mesh_devils_advocate() -> None:
+def test_release_moves_to_v3_0_0_for_shared_mesh_message_operations() -> None:
     assert __version__ == RELEASE
     assert f'version = "{RELEASE}"' in (ROOT / "pyproject.toml").read_text()
 
@@ -28,14 +28,16 @@ def test_mcp_contract_makes_bundled_stdio_primary_and_remote_optional() -> None:
     assert "server_url_env" not in contract
     assert contract["deployment"]["chatgpt_runtime"] == "BUNDLED_LOCAL_STDIO"
     assert contract["deployment"]["managed_remote"] == "OPTIONAL_NOT_REQUIRED"
-    assert len(contract["agent_tool_allowlists"]) == 10
+    assert len(contract["agent_tool_allowlists"]) == 9
     assert "devils-advocate" not in contract["agent_tool_allowlists"]
+    assert "message-ops" not in contract["agent_tool_allowlists"]
 
 
 def test_all_workspace_agents_use_local_stdio_without_remote_url_dependency() -> None:
     manifests = sorted(MANIFESTS.glob("*.json"))
-    assert len(manifests) == 10
+    assert len(manifests) == 9
     assert not (MANIFESTS / "devils-advocate.json").exists()
+    assert not (MANIFESTS / "message-ops.json").exists()
     for path in manifests:
         manifest = json.loads(path.read_text())
         assert manifest["repository_release"] == RELEASE, path.name
@@ -50,7 +52,11 @@ def test_all_workspace_agents_use_local_stdio_without_remote_url_dependency() ->
         assert builder["mcp_transport"] == "LOCAL_STDIO", path.name
         assert builder["mcp_command"] == "node", path.name
         assert builder["mcp_args"] == ["mcp/dist/index.js"], path.name
-        expected_shared = ["mesh-devils-advocate"] if manifest["agent_id"] in {"cos", "cro"} else []
+        expected_shared: list[str] = []
+        if manifest["agent_id"] in {"cos", "cro"}:
+            expected_shared.append("mesh-devils-advocate")
+        if manifest["agent_id"] in {"cos", "cro", "cmo"}:
+            expected_shared.append("mesh-message-operations")
         assert manifest.get("shared_skills", []) == expected_shared, path.name
         assert builder.get("shared_skills", []) == expected_shared, path.name
 
@@ -87,8 +93,9 @@ def test_builder_and_skill_docs_require_local_stdio_not_remote_https() -> None:
     assert "MESH_COS_AGENT_ID" in prompt
     assert "MESH_COS_LEDGER_PATH" in prompt
     assert "MESH_COS_MCP_SERVER_URL" not in prompt
-    assert "10 agents" in prompt
+    assert "9 agents" in prompt
     assert "Mesh Devil's Advocate" in prompt
+    assert "Mesh Message Operations" in prompt
 
     for skill_dir in (ROOT / "chatgpt" / "skills").iterdir():
         if not skill_dir.is_dir():

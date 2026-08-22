@@ -13,9 +13,10 @@ flowchart LR
     R --> AUTH[Invocation authorization]
     R --> ROUTE[Routing and hierarchy]
     R --> HEALTH[Health and performance policy]
-    R --> WA[10 ChatGPT Workspace Agent manifests]
+    R --> WA[9 ChatGPT Workspace Agent manifests]
     R --> SC[Shared capability entitlements]
     SC --> DA[Mesh Devil's Advocate shared Skill]
+    SC --> MSG[Mesh Message Operations shared Skill]
     WA --> MCP[mesh-cos-mcp allowlists]
     AUTH --> EXEC[Functional adapter or service]
     MCP --> EXEC
@@ -54,7 +55,7 @@ The human-readable files in `agents/*.md` are role cards. They summarize the can
 
 ## Phase 1 agents
 
-Release `v2.0.0` has exactly **10 agent principals**:
+Release `v3.0.0` has exactly **9 agent principals**:
 
 | Agent | Parent | Primary Phase 1 purpose |
 |---|---|---|
@@ -67,22 +68,47 @@ Release `v2.0.0` has exactly **10 agent principals**:
 | Consultant Network Steward | COO | Consultant identification/matching, fit, freshness, rate, availability, readiness gaps, refresh, and contracting evidence. |
 | CMO | CoS | Marketing strategy, audience/ICP, category positioning, demand/campaign architecture, distribution, brand governance, and optimization. |
 | VP Content | CMO | Editorial planning, evidence assembly, production, adaptation, reuse, QA, inventory, and performance feedback. |
-| Message Operations | CoS | Controlled execution of approved communications. |
+
+`message-ops` is no longer a registered principal. The former role card, Workspace Agent manifest, repository-local duplicate Skill, and MCP identity are removed.
 
 ## Shared capability model
 
-`shared_capabilities` is separate from `agents` by design. The first governed shared capability is **Mesh Devil's Advocate** (`mesh-devils-advocate`). It is an `EXTERNAL_SHARED_SKILL`, not a Workspace Agent principal, not a delegated task owner, and not a repository-local duplicate Skill.
+`shared_capabilities` is separate from `agents` by design. Release `v3.0.0` contains at least two governed shared capabilities.
 
-Its contract is:
+### Mesh Devil's Advocate
 
-- consumers: `cos` and `cro` only;
+`mesh-devils-advocate` is an `EXTERNAL_SHARED_SKILL`, not a Workspace Agent principal, delegated task owner, or repository-local duplicate Skill.
+
+- consumers: `cos`, `cro`;
 - authority: `ADVISORY_ONLY`;
 - request: `mesh.devils-advocate.challenge-request.v1`;
 - response: `mesh.devils-advocate.challenge-packet.v1`;
 - canonical facts modified: `false`;
 - external action included: `false`.
 
-The shared Skill may challenge assumptions, interpretations, evidence sufficiency, routes, premortems, and decision conditions. It returns authority to the owning agent or qualified human. For Revenue Intelligence, canonical account IDs, evidence classes, scores, stage, lifecycle, queue state, and activation readiness remain owned by Revenue Intelligence.
+It may challenge assumptions, interpretations, evidence sufficiency, routes, premortems, and decision conditions while returning authority to the owning role or qualified human.
+
+### Mesh Message Operations
+
+`mesh-message-operations` is an `EXTERNAL_SHARED_SKILL` and a shared capability for approval-bound execution, not a writing/strategy agent.
+
+- consumers: `cos`, `cro`, `cmo`;
+- authority: `APPROVAL_BOUND_EXECUTION_ONLY`;
+- request: `mesh.messaging.execution-request.v1`;
+- response: `mesh.messaging.execution-receipt.v1`;
+- creates strategy or copy: `false`;
+- approval may be inferred or broadened: `false`;
+- preview is approval: `false`;
+- canonical commercial state modified: `false`;
+- canonical consent/legal state modified: `false`;
+- per-message approval required: `true`;
+- documented connector action required: `true`;
+- idempotency required: `true`;
+- post-send verification required: `true`.
+
+Approval must be explicit, current, revocable, and bound to the exact payload hash/version, sender identity, immutable audience, channel, purpose, jurisdiction, consent basis, suppressions/frequency controls, test result, required approvers, and execution window. Material changes invalidate approval. Requested, scheduled, sent, delivered, and replied states remain distinct.
+
+VP Content has no Mesh Message Operations entitlement and remains drafting/editorial-production only.
 
 ## Functional capability model
 
@@ -92,7 +118,7 @@ This separation prevents capability theater and preserves the rule that source/t
 
 ## ChatGPT Workspace Agent projection
 
-Release `2.0.0` maps each of the 10 canonical agent roles into exactly one Workspace Agent manifest and one repository-local role Skill:
+Release `3.0.0` maps each of the 9 canonical agent roles into exactly one Workspace Agent manifest and one repository-local role Skill:
 
 ```text
 agents/registry.json
@@ -101,7 +127,7 @@ agents/registry.json
   -> mesh-cos-mcp per-agent tool allowlist
 ```
 
-Chief of Staff and CRO additionally receive the shared `mesh-devils-advocate` entitlement. They invoke it through `skills.invoke_governed`; there is no `devils-advocate` MCP principal or Workspace Agent manifest.
+Chief of Staff and CRO additionally receive the shared `mesh-devils-advocate` entitlement. Chief of Staff, CRO, and CMO additionally receive the shared `mesh-message-operations` entitlement. Both are invoked through `skills.invoke_governed`; there is no `devils-advocate` or `message-ops` MCP principal or Workspace Agent manifest.
 
 The projection must preserve raw registry values for stable display name, parent, implementation version, accountable domain, decision authority, required approvals, prohibited actions, and maximum delegation depth. Builder-only fields such as preferred model, Workspace apps, channel enablement, starter prompts, shared Skill attachments, and connector action constraints may add deployment controls but may not widen registry authority.
 
@@ -117,14 +143,12 @@ Supported states are `SHADOW`, `ACTIVE`, `WATCH`, `RESTRICTED`, `QUARANTINED`, a
 
 ## Invocation authorization
 
-Before a source, tool, or consequential action is used, runtime authorization checks the registry record. Workspace Agent traffic first passes the agent-specific MCP allowlist, then existing source/tool/action and authority controls. Shared Mesh Devil's Advocate invocation is also constrained by registry Skill entitlement, so only CoS and CRO can invoke it. Denied sources, tools, or capabilities fail closed.
+Before a source, tool, or consequential action is used, runtime authorization checks the registry record. Workspace Agent traffic first passes the agent-specific MCP allowlist, then existing source/tool/action and authority controls.
+
+Shared capability invocation is also constrained by registry Skill entitlement. Only CoS/CRO may invoke Mesh Devil's Advocate. Only CoS/CRO/CMO may invoke Mesh Message Operations. Entitlement alone never satisfies required human approval. Denied sources, tools, capabilities, or missing approval fail closed.
 
 ## Change control
 
 Any registry change that alters identity, accountable domain, authority, source/tool access, Skills, shared capability entitlement, permitted/prohibited actions, delegation, confidentiality, or health policy must update tests, role cards, relevant documentation, matching Workspace Agent manifests/Skills, and MCP allowlists in the same pull request. Material authority expansion must follow the L4/L5 governance model.
 
-<!-- mesh-cos-v2-shared-da -->
-## v2.0.0 current architecture
-
-The live Phase 1 runtime is a **10-agent** organization. The former repository-local Devil's Advocate agent and duplicate role Skill are removed. **Mesh Devil's Advocate** is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is **advisory** only, cannot overwrite **canonical facts**, cannot execute external actions, and returns decision authority to the owning role or qualified human. `TaskLedger` remains canonical state; ChatGPT uses `LOCAL_STDIO` through `MCPRuntime` with deny-by-default allowlists, human-only approval/override paths, `check-chatgpt-packages.py` drift enforcement, and the 100% branch-aware coverage gate. Historical references to an 11-agent roster or a local Devil's Advocate role describe superseded releases only.
-
+Historical `v2.0.0` records describe the prior 10-agent topology with shared Mesh Devil's Advocate. They remain historical and do not override the current `v3.0.0` registry.

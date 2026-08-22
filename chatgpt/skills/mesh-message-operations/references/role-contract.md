@@ -29,4 +29,5 @@ Use `task.complete` to persist an owned execution outcome and evidence after it 
 ## MCP allowlist
 `approval.get`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.complete`, `task.get`.
 
+## Human-principal-only operations
 `approval.record_decision` and `reliability.human_override` are human-principal-only runtime operations and are not agent-executable.

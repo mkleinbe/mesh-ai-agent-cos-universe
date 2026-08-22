@@ -22,8 +22,9 @@ def test_canonical_role_names_are_stable_and_version_is_metadata() -> None:
     assert registry["consultant-network-steward"]["display_name"] == "Consultant Network Steward"
     assert registry["cmo"]["display_name"] == "CMO"
     assert registry["vp-content"]["display_name"] == "VP Content"
+    assert registry["message-ops"]["display_name"] == "Message Operations"
 
-    for agent_id in ("cro", "cfo", "coo", "consultant-network-steward", "cmo", "vp-content"):
+    for agent_id in ("cro", "cfo", "coo", "consultant-network-steward", "cmo", "vp-content", "message-ops"):
         record = registry[agent_id]
         assert re.fullmatch(r"\d+\.\d+\.\d+", record["version"])
         assert not re.search(r"\bv\d+(?:\.\d+)*\b", record["display_name"], re.IGNORECASE)
@@ -42,7 +43,7 @@ def test_runtime_rejects_role_names_that_embed_implementation_version(tmp_path: 
 
 def test_runtime_and_package_release_versions_are_aligned() -> None:
     pyproject = (ROOT / "pyproject.toml").read_text()
-    assert __version__ == "3.0.0"
+    assert __version__ == "4.0.0"
     assert f'version = "{__version__}"' in pyproject
 
 
@@ -140,6 +141,10 @@ def test_phase1_role_capabilities_cover_canonical_accountabilities() -> None:
             "performance_feedback",
             "prepare_for_cmo_review",
         },
+        "message-ops": {
+            "prepare_execution",
+            "execute_approved_message",
+        },
     }
     for agent_id, required_actions in required.items():
         assert required_actions <= set(registry[agent_id]["permitted_actions"]), agent_id
@@ -163,7 +168,12 @@ def test_registry_source_preserves_role_boundaries() -> None:
     assert "public_publish" in records["vp-content"]["prohibited_actions"]
 
     assert "devils-advocate" not in records
-    assert "message-ops" not in records
+    assert "message-ops" in records
+    assert records["message-ops"]["parent_agent_id"] == "cos"
+    assert records["message-ops"]["decision_authority"] == 1
+    assert "mesh-message-operations" in records["message-ops"]["skills"]
+    assert "consequential_external_send_without_approval" in records["message-ops"]["prohibited_actions"]
+
     shared = {item["capability"]: item for item in raw["shared_capabilities"]}
+    assert set(shared) == {"mesh-devils-advocate"}
     assert shared["mesh-devils-advocate"]["authority"] == "ADVISORY_ONLY"
-    assert shared["mesh-message-operations"]["authority"] == "APPROVAL_BOUND_EXECUTION_ONLY"

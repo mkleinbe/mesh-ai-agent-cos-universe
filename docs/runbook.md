@@ -1,6 +1,6 @@
 # Operations Runbook
 
-Current repository release target: **`v2.0.0 Shared Mesh Devil's Advocate`**.
+Current repository release target: **`v3.0.0 Shared Mesh Message Operations`**.
 
 This runbook distinguishes repository readiness from target-environment activation. ChatGPT operation uses the bundled local stdio MCP. A separately deployed HTTPS MCP service is not required.
 
@@ -32,33 +32,23 @@ MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A
 MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID=
 ```
 
-Each Workspace Agent gets its own registered `MESH_COS_AGENT_ID`. All **10 agents** in the same CoS operating universe use the same approved `MESH_COS_LEDGER_PATH`.
+Each Workspace Agent gets its own registered `MESH_COS_AGENT_ID`. All **9 agents** in the same CoS operating universe use the same approved `MESH_COS_LEDGER_PATH`. Shared Skills receive no agent identity.
 
-Authentication credentials, OAuth tokens, Slack secrets, API keys, service-account credentials, and source credentials remain outside source control.
+Authentication credentials, OAuth tokens, Slack secrets, API keys, service-account credentials, and source credentials remain outside source control. Governance Sheets are mirrors; `TaskLedger` remains canonical.
 
-Governance Sheet identifiers:
+## Workforce and shared capability model
 
-```text
-CoS Decision Log = 1IJcwPuulqsNAa1lCW2MsmNgH6Vm5INPqTlcH4NR0xpw
-CoS Audit Log    = 1T8vKx4gaUJdeG8kSc18MsBbXpY4EbDF3exZ0RGpvND0
-```
+The registered workforce contains exactly 9 agents: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, and VP Content.
 
-The Sheets are mirrors. `TaskLedger` remains canonical.
+**Mesh Devil's Advocate** is an external shared Skill for Chief of Staff and CRO only. It is advisory only.
 
-## Workforce and shared challenge model
+**Mesh Message Operations** is an external shared Skill for Chief of Staff, CRO, and CMO only. It is approval-bound execution only. VP Content remains drafting/editorial-production only.
 
-The runtime contains 10 registered agent principals: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations.
-
-**Mesh Devil's Advocate** is not a registered agent principal. It is an external **shared Skill** available only to Chief of Staff and CRO through governed Skill invocation. It is advisory-only, cannot own tasks, cannot modify canonical facts, cannot execute external actions, and returns decision authority to the owning role or qualified human.
-
-For commercial work, Revenue Intelligence remains canonical for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. The shared challenge Skill may test reasoning, assumptions, sufficiency, route, capacity, and decision conditions without rewriting those facts.
+Message Operations requires an approved packet with immutable payload hash/version; full preflight; exact preview; seed/test delivery where required; explicit current approval bound to payload, sender, immutable audience, channel, purpose, jurisdiction, consent, suppressions/frequency controls, test result, approvers, and execution window; cancellation/kill-switch recheck; documented connector action; idempotency key; per-attempt receipt; and observed provider-state verification. Material changes invalidate approval and return the item to preflight.
 
 ## Release verification
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
 python -m pip check
 cd mcp
 npm ci
@@ -79,24 +69,9 @@ Do not activate or publish a known failing build.
 
 ## Local MCP certification
 
-`npm run check` must pass before Workspace Agent activation. It verifies:
+`npm run check` must pass before Workspace Agent activation. It verifies TypeScript compilation, Node unit tests, a real stdio MCP handshake/tool listing, exact 9-agent tool projection, human-only exclusion, canonical persistence across MCP calls, safe denial behavior, and npm audit at high severity.
 
-- TypeScript compilation;
-- Node MCP unit tests;
-- a real stdio MCP handshake and tool listing;
-- exact per-agent tool projection;
-- exclusion of human-only tools;
-- a canonical task write/read across separate MCP calls;
-- safe denial behavior;
-- npm audit at high severity.
-
-The checked-in entry point is:
-
-```text
-node mcp/dist/index.js
-```
-
-The TypeScript runtime bridges to `mesh_cos.mcp_stdio_bridge`, which dispatches through `mesh_cos.mcp_runtime.MCPRuntime`.
+The checked-in entry point is `node mcp/dist/index.js`, bridging to `mesh_cos.mcp_stdio_bridge` and `mesh_cos.mcp_runtime.MCPRuntime`.
 
 ## Production preflight
 
@@ -116,60 +91,47 @@ A failed preflight is a blocker. Do not bypass it by weakening a test or policy.
 
 ## Workspace Agent package preflight
 
-Before configuring the 10 Workspace Agents:
+Before configuring the 9 Workspace Agents:
 
-1. Confirm release `2.0.0` is aligned in `pyproject.toml`, `mesh_cos.__version__`, all Workspace Agent manifests, and `mesh-cos-mcp.v1.json`.
+1. Confirm release `3.0.0` is aligned in Python package/runtime, MCP package/lock metadata, MCP contract, all manifests, release docs, and workflows.
 2. Confirm every manifest declares `LOCAL_STDIO`, `node`, `mcp/dist/index.js`, the correct `MESH_COS_AGENT_ID`, and the shared approved `MESH_COS_LEDGER_PATH`.
-3. Confirm each repository-local role Skill contains `SKILL.md`, `agents/openai.yaml`, `references/role-contract.md`, and `references/production-readiness.md`.
-4. Confirm the repository-local `devils-advocate` role card, Workspace Agent manifest, MCP principal, and duplicate `chatgpt/skills/mesh-devils-advocate/` package are absent.
-5. Confirm Chief of Staff and CRO alone carry the `mesh-devils-advocate` shared capability entitlement and `skills.invoke_governed` permission.
-6. Run `python scripts/check-chatgpt-packages.py` and require `ChatGPT Workspace Agent package drift check: OK`.
-7. Confirm `WorkspaceAgentMCPPolicy.validate_runtime_bindings()` returns no unresolved bindings.
-8. Confirm `approval.record_decision` and `reliability.human_override` are human-only and excluded from all agent allowlists.
-9. Confirm only CoS has `task.reassign`.
-10. Confirm Answer Desk Slack remains disabled until a dedicated channel ID exists.
-11. Confirm existing connector constraints remain intact.
+3. Confirm each repository-local role Skill includes its required package files.
+4. Confirm `devils-advocate` and `message-ops` role cards, Workspace Agent manifests, MCP principals, and duplicate local shared Skill packages are absent.
+5. Confirm CoS/CRO alone carry `mesh-devils-advocate` and CoS/CRO/CMO alone carry `mesh-message-operations`.
+6. Confirm VP Content has no Message Operations entitlement.
+7. Run `python scripts/check-chatgpt-packages.py` and require success.
+8. Confirm `WorkspaceAgentMCPPolicy.validate_runtime_bindings()` returns no unresolved bindings.
+9. Confirm `approval.record_decision` and `reliability.human_override` are human-only and excluded from all agent allowlists.
+10. Confirm existing connector constraints remain intact.
 
 ## Workspace Agent procedure
 
-Use `chatgpt/workspace-agent-builder-prompt.md`. For each agent:
+Use `chatgpt/workspace-agent-builder-prompt.md`. For each agent, apply the manifest exactly, attach only listed role/shared Skills, configure the bundled `LOCAL_STDIO` MCP, enable only declared tools/apps, keep write actions at **Always ask** unless explicitly reviewed, and keep the agent private until preview tests pass.
 
-1. Apply `builder_configuration` exactly.
-2. Attach the matching repository-local role Skill and only listed knowledge files.
-3. Attach the shared Mesh Devil's Advocate Skill only to Chief of Staff and CRO.
-4. Configure `mesh-cos-mcp` as the bundled `LOCAL_STDIO` runtime.
-5. Launch `node mcp/dist/index.js` with the manifest's MCP environment.
-6. Enable only the declared MCP tools.
-7. Connect only manifest-listed Workspace apps with least privilege.
-8. Keep Workspace write approval at **Always ask** unless an explicit reviewed exception exists.
-9. Apply every Connector Action Constraint exactly.
-10. Keep the agent Private while preview tests run.
-11. Do not enable Answer Desk Slack without its dedicated channel ID.
+Attach Mesh Devil's Advocate only to Chief of Staff and CRO. Attach Mesh Message Operations only to Chief of Staff, CRO, and CMO.
 
 Do not invent `MESH_COS_MCP_SERVER_URL`. It is not required by the local runtime.
 
 ## Preview acceptance tests
 
-For every agent, run all three starter prompts plus one positive in-scope execution, negative authority, missing-evidence, MCP permission-denial, human-approval spoofing, connector constraint where applicable, kill-switch denial, replay-safety, and completion-versus-verification test where applicable.
+For every agent, run starter prompts plus positive in-scope execution, negative authority, missing-evidence, MCP permission-denial, human-approval spoofing, connector constraint where applicable, kill-switch denial, replay-safety, and completion-versus-verification tests.
 
-For Chief of Staff and CRO, also test governed invocation of Mesh Devil's Advocate, confirm the challenge output is advisory, confirm canonical facts remain unchanged, and confirm no external action can be taken by the shared Skill.
+For CoS/CRO, test Mesh Devil's Advocate as advisory-only with canonical facts unchanged.
 
-For CoS, additionally test decomposition, dependency gating, reassignment, stalled-work remediation, L4 approval, L5 escalation, human-only tool denial, and evidence-backed verification.
-
-For Message Operations, verify missing or mismatched approval blocks execution and that valid Mesh approval still encounters Workspace **Always ask** before a consequential send.
+For CoS/CRO/CMO, test Mesh Message Operations with missing approval, mismatched payload hash, mutated audience/sender/channel/window, cancellation, kill switch, duplicate idempotency key, connector failure, receipt capture, and unobserved delivery/reply. Every invalid case must fail closed. A valid approved send must still respect Workspace **Always ask** and all caller authority gates.
 
 ## Completion and verification
 
-`task.complete` persists accountable-owner outcome evidence. `task.verify` remains a separate acceptance action. `COMPLETED` is not `VERIFIED`.
+`task.complete` persists accountable-owner outcome evidence. `task.verify` remains a separate acceptance action. `COMPLETED` is not `VERIFIED`. Successful connector execution is not proof of delivery or business outcome.
 
 ## Failure and incident path
 
-A critical defect, MCP allowlist bypass, local identity-binding failure, human-principal spoofing attempt, governance hash failure, L4/L5 breach, unsafe replay attempt, or shared-Skill authority violation should stop execution, preserve canonical evidence, enable the kill switch if needed, restrict the affected agent, fix through tests first, rerun full CI and MCP certification, rerun private-preview tests, and restore only under controlled approval.
+A critical defect, MCP allowlist bypass, identity-binding failure, human-principal spoofing attempt, governance hash failure, L4/L5 breach, unsafe replay attempt, approval-binding defect, idempotency defect, false delivery claim, or shared-Skill authority violation should stop execution, preserve canonical evidence, enable the kill switch if needed, restrict the affected role/capability, fix through tests first, rerun full CI, rerun private-preview tests, and restore only under controlled approval.
 
 ## Release and activation
 
-`v2.0.0` is the semantic release for the 10-agent plus shared Mesh Devil's Advocate architecture. See `release-2.0.0-shared-devils-advocate.md` and `../RELEASE.md`.
+`v3.0.0` is the semantic major release for the 9-agent plus shared Mesh Devil's Advocate and Mesh Message Operations architecture. See `release-3.0.0-shared-message-operations.md` and `../RELEASE.md`.
 
-Production activation dependencies still include Workspace authentication and least-privilege app permissions, applicable Slack credentials, a separate Answer Desk Slack channel, production approval-owner mapping, approved source/Skill credentials, secrets management, monitoring, authenticated Google Sheets access if automatic mirroring is enabled, and target-workspace publication/RBAC configuration.
+Production activation dependencies still include Workspace authentication and least-privilege app permissions, applicable Gmail/Slack credentials, Answer Desk channel configuration, production approval-owner mapping, consent/jurisdiction decisions, approved source/shared-Skill credentials, secrets management, monitoring, and target-workspace publication/RBAC configuration.
 
-A remote MCP service is optional, not required.
+A remote MCP service remains optional, not required.

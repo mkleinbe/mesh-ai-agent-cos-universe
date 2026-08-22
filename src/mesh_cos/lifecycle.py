@@ -28,7 +28,7 @@ def transition(task: TaskRecord, target: TaskStatus) -> TaskRecord:
     if target == TaskStatus.COMPLETED:
         if not task.acceptance_test:
             raise ValueError("Cannot complete a task without an acceptance test")
-        if not task.outcome.strip():
+        if not (task.outcome or "").strip():
             raise ValueError("Completion requires a non-empty outcome")
         if not task.outcome_evidence:
             raise ValueError("Completion requires outcome evidence")

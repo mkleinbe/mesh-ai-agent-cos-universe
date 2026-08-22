@@ -23,6 +23,8 @@ Create exactly these Workspace Agents with these exact display names:
 
 Do **not** create a Devil's Advocate Workspace Agent. **Mesh Devil's Advocate** (`mesh-devils-advocate`) is an external governed **shared Skill** attached only to Chief of Staff and CRO. It is advisory only and receives no MCP principal identity.
 
+Message Operations is a repository-local registered Workspace Agent with its own `mesh-message-operations` role Skill and MCP principal. It is not a shared Skill in v4. Its execution authority remains approval-bound and may not infer, fabricate, broaden, or replace human approval.
+
 For each agent:
 
 - use its checked-in `chatgpt/workspace-agents/<agent-id>.json` manifest;
@@ -73,6 +75,7 @@ Keep all agents Private until the target Workspace passes at least:
 - Mesh Devil's Advocate shared-Skill authority test;
 - Message Operations approval-bound execution test;
 - local stdio MCP smoke certification;
-- production preflight.
+- production preflight;
+- the repository's full CI release gate, including **100% branch-aware** `mesh_cos` coverage.
 
 Do not publish or activate an agent when any test or required dependency fails. Record the failure and remediate before retrying.

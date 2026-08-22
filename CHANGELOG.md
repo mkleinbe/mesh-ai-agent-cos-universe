@@ -2,6 +2,47 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 3.0.0 - 2026-08-21 - Shared Mesh Message Operations
+
+### Breaking workforce topology
+
+- Reduced the canonical Phase 1 runtime from 10 registered agent principals to **9** by removing the repository-local Message Operations principal.
+- Removed `agents/message-ops.md`, `chatgpt/workspace-agents/message-ops.json`, the `message-ops` MCP principal, and the duplicate `chatgpt/skills/mesh-message-operations/` role Skill package.
+- Added **Mesh Message Operations** as an external `EXTERNAL_SHARED_SKILL` capability available only to Chief of Staff, CRO, and CMO through `skills.invoke_governed`.
+- Preserved VP Content as drafting/editorial-production only, with no message execution entitlement.
+- Preserved the existing external Mesh Devil's Advocate capability for Chief of Staff and CRO only.
+
+### Approval-bound execution and governance
+
+- Defined Mesh Message Operations as `APPROVAL_BOUND_EXECUTION_ONLY` and explicitly separated it from strategy, copy creation, recipient selection, pricing, commitments, consent/legal decisions, and publishing policy.
+- Required explicit current approval bound to exact payload hash/version, sender identity and monitored reply path, immutable audience definition/count, channel, purpose, jurisdiction, consent basis, suppressions/exclusions/frequency controls, test result, required approvers, and execution window.
+- Made any material payload or execution-context change invalidate approval and return the item to preflight.
+- Preserved full sender/recipient/purpose/channel/jurisdiction/consent/suppression/link/attachment/merge-field/reply-to/unsubscribe/authentication/delivery-window preflight, exact preview, seed/test send where required, cancellation and kill-switch recheck, documented connector actions, idempotency, per-attempt receipts, and observed provider-state verification.
+- Preserved distinct requested, scheduled, sent, delivered, and replied states. Delivery/reply claims require observed evidence.
+- Preserved L4 qualified-human approval, Michael-exclusive L5 authority, human-only `approval.record_decision` / `reliability.human_override`, `TaskLedger` canonical state, and completion-versus-verification separation.
+
+### Runtime, ChatGPT, and MCP
+
+- Reconciled the Agent Registry, 9 Workspace Agent manifests, 9 repository-local role Skills, MCP allowlists, local stdio certification, production preflight, Builder handoff, and runtime/documentation drift controls to the new topology.
+- Removed `message-ops` from `agent_tool_allowlists`; no separate Message Operations MCP principal exists.
+- Preserved `LOCAL_STDIO`, `node mcp/dist/index.js`, `mesh_cos.mcp_stdio_bridge`, and `mesh_cos.mcp_runtime.MCPRuntime` as the ChatGPT execution path.
+- Updated Python, MCP package/package-lock, runtime contract, Workspace manifest, release workflow, and documentation release identity to `3.0.0` / `v3.0.0`.
+
+### TDD, loop engineering, and documentation
+
+- Started with intentionally failing acceptance tests against the former 10-agent model, then iterated through registry, package, manifest, MCP, test, documentation, release, and coverage defects without weakening quality gates.
+- Added shared Message Operations integration acceptance coverage and updated stale 10-agent/v2 test expectations to the 9-agent/v3 architecture.
+- Reconciled README, AGENTS, security policy, architecture, registry, decision rights, delegation model, Phase 1 operating contract, production readiness, testing/evaluation, runbook, ChatGPT/MCP documentation, Builder handoff, release notes, and Mermaid architecture diagrams.
+- Kept release acceptance at dependency integrity, TypeScript build and Node tests, local stdio MCP smoke certification, npm audit, contract validation, runtime/documentation drift, Workspace Agent package drift, strict source Ruff, mypy, **100% branch-aware `mesh_cos` coverage**, high-severity Bandit, and compileall.
+
+### Release identity
+
+- Semantic version: `3.0.0`
+- Semantic tag: `v3.0.0`
+- Release title: `v3.0.0 Shared Mesh Message Operations`
+- Canonical workforce: 9 registered agents
+- Shared execution consumers: Chief of Staff, CRO, CMO
+
 ## 2.0.0 - 2026-08-21 - Shared Mesh Devil's Advocate
 
 ### Breaking workforce topology

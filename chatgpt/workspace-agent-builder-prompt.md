@@ -46,7 +46,7 @@ Never expose these operations in an agent tool catalog:
 - `approval.record_decision`
 - `reliability.human_override`
 
-They are available only through the separately authenticated human-principal path. Test both negative agent access and positive human access.
+They are available only through the separately authenticated human-principal path. Test both negative agent access and positive human access. Preserve the authority ladder: **L4** requires qualified-human approval, and **L5** remains Michael-exclusive.
 
 ### Task lifecycle
 

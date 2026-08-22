@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -19,11 +20,17 @@ OWNER_ROLE_SKILLS = {
     "consultant-network-steward": "mesh-consultant-network-steward",
     "cmo": "mesh-cmo",
     "vp-content": "mesh-vp-content",
+    "message-ops": "mesh-message-operations",
 }
 
 
 def _role_contract(skill_name: str) -> str:
     return (ROOT / "chatgpt" / "skills" / skill_name / "references" / "role-contract.md").read_text()
+
+
+def _role_allowlist(text: str) -> set[str]:
+    section = text.split("## MCP allowlist", 1)[1].split("\n## ", 1)[0]
+    return {token for token in re.findall(r"`([^`]+)`", section) if "." in token}
 
 
 def test_current_phase1_roster_is_exactly_ten_and_devils_advocate_is_shared() -> None:
@@ -54,9 +61,8 @@ def test_role_contracts_do_not_expose_human_only_tools_to_agents() -> None:
     for agent_id, allowlist in policy.contract["agent_tool_allowlists"].items():
         assert HUMAN_ONLY.isdisjoint(allowlist), agent_id
 
-    cos_contract = _role_contract("mesh-chief-of-staff")
-    for tool in HUMAN_ONLY:
-        assert f"- `{tool}`" not in cos_contract
+    cos_allowlist = _role_allowlist(_role_contract("mesh-chief-of-staff"))
+    assert HUMAN_ONLY.isdisjoint(cos_allowlist)
 
 
 def test_accountable_owner_role_contracts_use_task_complete_and_keep_verify_separate() -> None:

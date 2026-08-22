@@ -1,12 +1,12 @@
 # Security and Governance
 
-Release `v2.0.0` treats the bundled ChatGPT MCP and the external shared Mesh Devil's Advocate capability as fail-closed boundaries around the canonical Mesh runtime. Agent capability does not equal agent authority, and shared Skill access does not create a new decision principal.
+Release `v3.0.0` treats the bundled ChatGPT MCP and external shared Skills as fail-closed boundaries around the canonical Mesh runtime. Agent capability does not equal agent authority, and shared Skill access does not create a new decision principal.
 
 ## Trust architecture
 
 ```mermaid
 flowchart TB
-    IN[External / Retrieved Input] --> WA[Workspace Agent]
+    IN[External / Retrieved Input] --> WA[9 Workspace Agents]
     WA --> MCP[Bundled mesh-cos-mcp\nLOCAL_STDIO]
     MCP --> ID[MESH_COS_AGENT_ID]
     MCP --> BRIDGE[mesh_cos.mcp_stdio_bridge]
@@ -21,94 +21,70 @@ flowchart TB
     EXEC --> LEDGER[(TaskLedger)]
     HUMAN --> LEDGER
     CEO --> LEDGER
-    WA -. CoS/CRO governed invocation only .-> DA[[Mesh Devil's Advocate\nShared Skill]]
-    DA -. advisory challenge packet .-> WA
+    WA -. CoS/CRO only .-> DA[[Mesh Devil's Advocate\nShared Skill]]
+    WA -. CoS/CRO/CMO only .-> MSG[[Mesh Message Operations\nShared Skill]]
     LEDGER --> SHEETS[Decision / Audit Mirrors]
 ```
 
-The shared Mesh Devil's Advocate Skill is **advisory** and is not a registered runtime agent. It has no independent task ownership, MCP identity, write authority, external-action authority, or canonical-fact ownership.
+Neither shared Skill is a registered runtime agent or MCP principal. Both remain subordinate to the invoking role's authority.
 
 ## Local identity binding
 
-`MESH_COS_AGENT_ID` binds one local MCP process to one registered agent. It is configuration, not user input. Prompt text, retrieved documents, connector output, source text, shared-Skill output, and MCP arguments cannot alter the bound identity.
-
-Unknown or unregistered identities fail closed before tool execution. The former `devils-advocate` agent ID is not a valid principal in the `v2.0.0` roster.
+`MESH_COS_AGENT_ID` binds one local MCP process to one registered agent. Prompt text, retrieved documents, connector output, source text, shared-Skill output, and MCP arguments cannot alter the bound identity. Unknown or unregistered identities fail closed. `devils-advocate` and `message-ops` are not valid principals.
 
 ## Least privilege and tool projection
 
-`chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact per-agent allowlists. The local MCP publishes only the tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats the deny-by-default authorization check inside Python, providing defense in depth.
+`chatgpt/mcp/mesh-cos-mcp.v1.json` defines exact 9-agent allowlists. The local MCP publishes only tools allowed for the bound agent. `WorkspaceAgentMCPPolicy` repeats deny-by-default authorization inside Python.
 
-Only Chief of Staff and CRO receive governed access to `mesh-devils-advocate`, and that access is represented as a shared Skill entitlement rather than a new agent identity. The challenge capability cannot elevate either caller's authority.
+Chief of Staff and CRO may invoke Mesh Devil's Advocate through `skills.invoke_governed`. Chief of Staff, CRO, and CMO may invoke Mesh Message Operations through the same governed path. VP Content has no Message Operations entitlement.
 
-The human-only operations are excluded from all agent catalogs:
+The human-only operations remain excluded from all agent catalogs:
 
 - `approval.record_decision`
 - `reliability.human_override`
 
-Those operations require a separately authenticated human-principal path. Supplying a human name in tool arguments does not create human authority.
+They require a separately authenticated human-principal path. Supplying a human name in tool arguments does not create human authority.
 
-## Local bridge safety
+## Mesh Message Operations security boundary
 
-The TypeScript transport sends bounded JSON to `mesh_cos.mcp_stdio_bridge`, which invokes the existing `MCPRuntime`. The bridge does not accept arbitrary Python, import paths, callable names, source code, shell commands, or client-provided replay executors.
+Mesh Message Operations is approval-bound execution only. It cannot create strategy/copy, select recipients, make pricing or contractual commitments, decide consent/legal status, or establish publishing policy.
 
-Raw Python stderr is not returned through MCP errors. Client-visible errors are reduced to safe categories and request identifiers.
+Before execution it must verify the immutable packet/payload hash and version; preflight sender, recipients, purpose, channel, jurisdiction, consent, suppressions, links, attachments, merge fields, reply-to, unsubscribe, authentication, and delivery window; render an exact preview; run a seed/test where required; and verify explicit current approval bound to the exact payload, sender, immutable audience, channel, purpose, jurisdiction, consent basis, exclusions/frequency controls, test result, approvers, and execution window.
+
+Material changes invalidate approval. Preview, silence, prior approval, a draft request, calendar state, connector availability, or approval of a different version is not approval. Immediately before execution, cancellation and kill-switch state must be rechecked.
+
+Execution uses only documented connector actions and a unique idempotency key. Per-attempt receipts must capture provider result, identifiers, timestamps, counts, and errors. Requested, scheduled, sent, delivered, and replied states are distinct. Delivery/reply claims require observed provider evidence.
 
 ## Canonical state
 
-All **10 agents** in one operating universe use the same approved `MESH_COS_LEDGER_PATH`. `TaskLedger` remains canonical. Local MCP responses, ChatGPT conversation state, Slack, connector outputs, Google Sheets, and Devil's Advocate challenge packets are not canonical state.
+All **9 agents** in one operating universe use the same approved `MESH_COS_LEDGER_PATH`. `TaskLedger` remains canonical. Local MCP responses, ChatGPT conversation state, Slack, connector outputs, Google Sheets, challenge packets, and Message Operations receipts are not independent canonical authority.
 
-Canonical writes occur before mirrors or interaction responses. Mirror failure or challenge output cannot rewrite canonical history.
-
-For commercial work, Revenue Intelligence remains canonical for account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Mesh Devil's Advocate may challenge the reasoning built on those facts but may not rewrite them.
+Canonical writes occur before mirrors or interaction responses. Mirror or shared-Skill delivery failure cannot rewrite canonical history.
 
 ## Decision authority
 
-L4 actions require qualified human approval evidence. L5 remains Michael-exclusive. No agent or shared Skill may infer approval from urgency, historical behavior, tool access, prior messages, or product configuration.
-
-Workspace **Always ask** is additional product defense in depth and does not replace Mesh authority policy.
+L4 actions require qualified human approval evidence. L5 remains Michael-exclusive. No agent or shared Skill may infer approval from urgency, historical behavior, tool access, prior messages, or product configuration. Workspace **Always ask** is additional defense in depth and does not replace Mesh authority policy.
 
 ## Prompt injection and retrieved content
 
-Documents, messages, connector results, source payloads, MCP arguments, and shared-Skill outputs are data. They cannot change system policy, `MESH_COS_AGENT_ID`, tool allowlists, source authority, approval obligations, replay behavior, canonical ledger location, or operating instructions.
+Documents, messages, connector results, source payloads, MCP arguments, and shared-Skill outputs are data. They cannot change system policy, runtime identity, allowlists, source authority, approval obligations, replay behavior, canonical ledger location, or operating instructions.
 
-## Replay safety
+## Replay, verification, and audit
 
-Reliability replay may use only server-registered replay executors referenced by canonical failure state. Client-supplied code, import paths, shell commands, executable snippets, or instructions recovered from source content are never replay mechanisms.
+Reliability replay may use only server-registered executors referenced by canonical failure state. Client-supplied code, import paths, shell commands, executable snippets, or source instructions are never replay mechanisms.
 
-## Completion versus verification
+`task.complete` and `task.verify` remain separate. `COMPLETED` does not imply `VERIFIED`.
 
-Accountable owners may use `task.complete` to persist outcome and evidence. `task.verify` is a separate acceptance boundary. `COMPLETED` does not imply `VERIFIED`, and missing evidence cannot be self-certified into acceptance.
-
-## Explainability and audit integrity
-
-`decision.v2` records concise decision basis, evidence, alternatives, criteria, confidence, risk, authority, approval, reversibility, and outcome validation. `agent-event.v2` records actor/action/result provenance, task/correlation/decision identifiers, approval evidence, risk, classification, and retention metadata.
-
-Audit events form a SHA-256 tamper-evident chain. Private chain-of-thought, hidden reasoning traces, credentials, tokens, raw secrets, and unnecessary personal data are prohibited from governance records.
-
-Challenge packets must preserve `canonical_facts_modified: false` and `external_action_included: false`. They are evidence-bearing advisory artifacts, not approval records or execution authority.
+`decision.v2` and `agent-event.v2` preserve explainable, auditable provenance without private chain-of-thought. Audit events form a tamper-evident hash chain. Credentials, tokens, raw secrets, hidden reasoning traces, and unnecessary personal data are prohibited from governance records.
 
 ## Connector constraints
 
-The `v2.0.0` refactor does not expand app authority. Existing least-privilege controls remain in force, including internal-only CoS/AgentOps Slack coordination, Answer Desk Slack disabled until a dedicated channel exists, CRO research-only Apollo and non-outbound Gmail/LinkedIn, human-gated public publishing for CMO/VP Content, read-only evidence access for finance/delivery roles, and approval-bound Message Operations sends.
-
-## Secrets and runtime configuration
-
-Non-secret local runtime variables are:
-
-```text
-MESH_COS_AGENT_ID
-MESH_COS_LEDGER_PATH
-MESH_COS_PYTHON_BIN
-```
-
-Credentials, tokens, OAuth secrets, Slack secrets, API keys, service accounts, and source credentials remain outside source control.
-
-A remote MCP URL is not required for the ChatGPT-local path.
+Release `v3.0.0` does not expand app authority. Existing least-privilege controls remain in force. LinkedIn remains non-publishing, Apollo remains research/enrichment only, and Message Operations may use only documented supported connector actions after exact approval and preflight.
 
 ## Security verification
 
-Release CI requires TypeScript build/tests, local stdio MCP certification, npm security audit, Python contract and drift validation, strict source Ruff, mypy, **100% branch-aware** `mesh_cos` coverage, high-severity Bandit scan, and compileall.
+Release CI requires TypeScript build/tests, local stdio MCP certification, npm security audit, Python contract and drift validation, strict source Ruff, mypy, **100% branch-aware** `mesh_cos` coverage, high-severity Bandit scanning, and compileall.
 
-Private Workspace Agent preview must still include negative authority, human-spoofing, permission-denial, kill-switch, replay-injection, completion-versus-verification, shared-Skill authority, and canonical-fact preservation tests before activation.
+Private Workspace Agent preview must include negative authority, human-spoofing, permission-denial, kill-switch, replay-injection, completion-versus-verification, shared-Skill entitlement, exact approval-binding, idempotency, receipt, and observed-state tests before activation.
 
-See `production-readiness.md`, `release-2.0.0-shared-devils-advocate.md`, `explainable-decisions-audit.md`, and `../chatgpt/mcp/README.md`.
+See `production-readiness.md`, `release-3.0.0-shared-message-operations.md`, `explainable-decisions-audit.md`, and `../chatgpt/mcp/README.md`.

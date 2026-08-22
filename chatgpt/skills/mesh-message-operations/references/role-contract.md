@@ -3,7 +3,7 @@
 - **Agent ID:** `message-ops`
 - **Parent:** `cos`
 - **Implementation version:** `1.0.0`
-- **Repository release:** `0.2.0`
+- **Repository release:** `4.0.0`
 - **Accountable domain:** controlled approved communication execution
 - **Decision authority:** L1 execution of explicitly approved communication
 - **Max delegation depth:** 0
@@ -21,7 +21,12 @@ Authoritative source: recorded approval state. Allowed source: approved outbound
 `consequential_external_send_without_approval`, `fabricate_approval`, `modify_approved_message_materially_without_reapproval`.
 
 ## Required approvals
-Qualified human approval for consequential external send.
+Qualified human approval for consequential external send. Message Operations may read approval state but cannot record its own approval or weaken inherited approval gates.
+
+## Completion boundary
+Use `task.complete` to persist an owned execution outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. Message Operations has no `task.verify` authority.
 
 ## MCP allowlist
-`approval.get`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.get`.
+`approval.get`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.complete`, `task.get`.
+
+`approval.record_decision` and `reliability.human_override` are human-principal-only runtime operations and are not agent-executable.

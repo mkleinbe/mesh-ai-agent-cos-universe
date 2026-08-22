@@ -4,7 +4,7 @@
   "display_name": "CMO",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "2.0.0",
+  "repository_release": "4.0.0",
   "role": "Marketing executive agent",
   "accountable_domain": "marketing strategy, demand architecture, brand governance, and delegated execution",
   "description": "Owns marketing strategy and delegated execution, including audience and ICP strategy, category positioning, campaign and demand architecture, distribution strategy, editorial priorities, brand governance, marketing-performance interpretation, campaign optimization, and the marketing-commercial feedback loop.",

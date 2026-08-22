@@ -4,7 +4,7 @@
   "display_name": "Message Operations",
   "parent_agent_id": "cos",
   "implementation_version": "1.0.0",
-  "repository_release": "2.0.0",
+  "repository_release": "4.0.0",
   "role": "Controlled communication execution operations agent",
   "accountable_domain": "controlled approved communication execution",
   "description": "Executes approved communications through a controlled boundary while preserving separation between drafting, approval, and execution and never fabricating approval.",

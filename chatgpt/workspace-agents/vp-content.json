@@ -4,7 +4,7 @@
   "display_name": "VP Content",
   "parent_agent_id": "cmo",
   "implementation_version": "1.0.0",
-  "repository_release": "2.0.0",
+  "repository_release": "4.0.0",
   "role": "Editorial production specialist",
   "accountable_domain": "editorial planning, content production, adaptation, QA, and reuse",
   "description": "Owns editorial planning and production under CMO authority, including editorial calendar management, source/evidence assembly, drafting, channel adaptation, derivative content, repurposing, Mesh IP reuse, content inventory management, editorial QA, and performance feedback into future content.",

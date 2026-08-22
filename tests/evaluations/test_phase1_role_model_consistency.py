@@ -170,7 +170,7 @@ def test_registry_source_preserves_role_boundaries() -> None:
     assert "devils-advocate" not in records
     assert "message-ops" in records
     assert records["message-ops"]["parent_agent_id"] == "cos"
-    assert records["message-ops"]["decision_authority"] == 1
+    assert records["message-ops"]["decision_authority"] == "L1 execution of explicitly approved communication"
     assert "mesh-message-operations" in records["message-ops"]["skills"]
     assert "consequential_external_send_without_approval" in records["message-ops"]["prohibited_actions"]
 

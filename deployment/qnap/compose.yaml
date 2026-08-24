@@ -1,7 +1,7 @@
 name: mesh-cos-mcp
 services:
   mesh-cos-mcp:
-    image: ${MESH_COS_IMAGE:?set immutable image tag or digest}
+    image: ${MESH_COS_IMAGE:?set immutable image digest}
     container_name: mesh-cos-mcp
     restart: unless-stopped
     user: "${MESH_UID:?}:${MESH_GID:?}"
@@ -45,7 +45,7 @@ services:
         max-file: ${MESH_LOG_MAX_FILES:-5}
 
   tunnel-client:
-    image: ${TUNNEL_IMAGE:-ghcr.io/openai/tunnel-client:v0.0.12}
+    image: ${TUNNEL_IMAGE:?set exact tunnel-client image digest}
     container_name: mesh-cos-tunnel
     restart: unless-stopped
     user: "65532:65532"

@@ -1,0 +1,86 @@
+name: mesh-cos-mcp
+services:
+  mesh-cos-mcp:
+    image: ${MESH_COS_IMAGE:?set immutable image tag or digest}
+    container_name: mesh-cos-mcp
+    restart: unless-stopped
+    user: "${MESH_UID:?}:${MESH_GID:?}"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: ${MESH_PIDS_LIMIT:-128}
+    cpus: ${MESH_CPU_LIMIT:-1.0}
+    mem_limit: ${MESH_MEMORY_LIMIT:-1g}
+    mem_reservation: ${MESH_MEMORY_RESERVATION:-512m}
+    environment:
+      MESH_COS_AGENT_ID: cos
+      MESH_COS_LEDGER_PATH: /var/lib/mesh/ledger/taskledger.sqlite3
+      MESH_COS_REQUIRE_EXISTING_LEDGER: "true"
+      MESH_COS_KILL_SWITCH: "false"
+      MESH_COS_BRIDGE_TIMEOUT_MS: ${MESH_COS_BRIDGE_TIMEOUT_MS:-30000}
+      MESH_COS_MAX_BRIDGE_QUEUE: ${MESH_COS_MAX_BRIDGE_QUEUE:-32}
+      MCP_BIND_HOST: 0.0.0.0
+      MCP_PORT: 8080
+      MCP_AUTH_MODE: tunnel
+      MCP_TRUSTED_CLIENT_IP: 172.30.60.3
+    volumes:
+      - ${QNAP_MESH_ROOT:?verified QNAP state root required}:/var/lib/mesh:rw
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    networks:
+      mesh-cos-private:
+        ipv4_address: 172.30.60.2
+      lan7:
+        ipv4_address: 192.168.7.60
+    healthcheck:
+      test: [CMD,"node","-e","fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: ${MESH_LOG_MAX_SIZE:-10m}
+        max-file: ${MESH_LOG_MAX_FILES:-5}
+
+  tunnel-client:
+    image: ${TUNNEL_IMAGE:-ghcr.io/openai/tunnel-client:v0.0.12}
+    container_name: mesh-cos-tunnel
+    restart: unless-stopped
+    user: "65532:65532"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 64
+    mem_limit: 256m
+    environment:
+      CONTROL_PLANE_API_KEY: ${CONTROL_PLANE_API_KEY:?runtime API key required}
+      CONTROL_PLANE_TUNNEL_ID: ${CONTROL_PLANE_TUNNEL_ID:?tunnel id required}
+      MCP_SERVER_URL: http://mesh-cos-mcp:8080/mcp
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      HEALTH_LISTEN_ADDR: 127.0.0.1:8080
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m
+    networks:
+      mesh-cos-private:
+        ipv4_address: 172.30.60.3
+    depends_on:
+      mesh-cos-mcp:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+
+networks:
+  mesh-cos-private:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.60.0/29
+  lan7:
+    external: true
+    name: lan7

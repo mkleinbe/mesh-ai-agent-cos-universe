@@ -1,0 +1,21 @@
+# QNAP Installation Checklist
+- [ ] Fresh QNAP environment evidence captured
+- [ ] x86_64 architecture reconfirmed
+- [ ] Container Station and Compose versions reconfirmed
+- [ ] `lan7` exists and `192.168.7.60` is free
+- [ ] Private subnet `172.30.60.0/29` does not overlap existing Docker/VPN networks
+- [ ] QNAP state root and UID/GID verified
+- [ ] Canonical SQLite ledger staged and backed up
+- [ ] Image built/tested for linux/amd64 and immutable digest recorded
+- [ ] OpenAI tunnel-client exact release/digest verified
+- [ ] Real `.env` created outside Git and access restricted
+- [ ] Container Station Application validates Compose YAML
+- [ ] No privileged mode, host networking, Docker socket, devices, or broad NAS mounts
+- [ ] Application deployed by authorized human
+- [ ] `/healthz` and `/readyz` healthy
+- [ ] Tunnel doctor/readiness healthy
+- [ ] ChatGPT tool scan matches canonical CoS allowlist
+- [ ] Human-only tools absent
+- [ ] Read-only MCP operation succeeds
+- [ ] Governed write succeeds with canonical audit evidence
+- [ ] Deployed image digests recorded

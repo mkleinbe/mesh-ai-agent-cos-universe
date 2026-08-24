@@ -1,0 +1,4 @@
+# QNAP Production Preflight
+Mandatory blockers before release: fresh QNAP architecture/resources/version evidence; verified non-overlapping networks; `192.168.7.60` free; verified narrow shared-folder path and UID/GID; existing readable/writable canonical SQLite ledger; audit-chain verification; active `cos` registry identity; real secrets present but not world-readable; outbound DNS and HTTPS to `api.openai.com:443`; sane system time; immutable image digests; no privileged mode, host network, Docker socket, devices, or broad NAS mounts; Compose validation; healthy `/readyz`; healthy tunnel-client; verified backup point; and human release approval.
+
+The deployment is fail-closed if the ledger is absent, agent identity is invalid/inactive, audit integrity fails, tunnel auth values are absent, or `MCP_AUTH_MODE` is not `tunnel`.

@@ -5,6 +5,7 @@ import {
   createServer,
   loadContract,
   requireAgentId,
+  requireLocalStdioContract,
   safeErrorPayload,
   toolsForAgent,
   validateArgumentsSize,
@@ -17,6 +18,8 @@ test('contract loads local stdio release metadata', () => {
   assert.equal(contract.name, 'mesh-cos-mcp');
   assert.equal(contract.runtime_release, '4.0.0');
   assert.equal(contract.transport, 'LOCAL_STDIO');
+  assert.doesNotThrow(() => requireLocalStdioContract(contract));
+  assert.throws(() => requireLocalStdioContract({ ...contract, transport: 'REMOTE_HTTPS' }), /LOCAL_STDIO/);
 });
 
 test('agent identity is required and must be registered', () => {
@@ -32,14 +35,9 @@ test('tool projection is exact and excludes human-only tools', () => {
   for (const agentId of Object.keys(contract.agent_tool_allowlists)) {
     const projected = toolsForAgent(contract, agentId).map((tool) => tool.name);
     assert.deepEqual(projected, contract.agent_tool_allowlists[agentId]);
-    for (const tool of projected) {
-      assert.equal(humanOnly.has(tool), false, `${agentId} unexpectedly exposes human-only tool ${tool}`);
-    }
+    for (const tool of projected) assert.equal(humanOnly.has(tool), false, `${agentId} unexpectedly exposes human-only tool ${tool}`);
   }
-  assert.deepEqual(
-    toolsForAgent(contract, 'message-ops').map((tool) => tool.name),
-    contract.agent_tool_allowlists['message-ops'],
-  );
+  assert.deepEqual(toolsForAgent(contract, 'message-ops').map((tool) => tool.name), contract.agent_tool_allowlists['message-ops']);
   assert.deepEqual(toolsForAgent(contract, 'devils-advocate'), []);
 });
 
@@ -47,10 +45,7 @@ test('argument validation is object-only and size bounded', () => {
   assert.deepEqual(validateArgumentsSize(undefined), {});
   assert.deepEqual(validateArgumentsSize({ value: 1 }), { value: 1 });
   assert.throws(() => validateArgumentsSize([]), /object/);
-  assert.throws(
-    () => validateArgumentsSize({ value: 'x'.repeat(MAX_ARGUMENT_BYTES + 1) }),
-    /maximum size/,
-  );
+  assert.throws(() => validateArgumentsSize({ value: 'x'.repeat(MAX_ARGUMENT_BYTES + 1) }), /maximum size/);
 });
 
 test('safe errors never return raw bridge error messages', () => {
@@ -71,9 +66,9 @@ test('python environment always makes repository src importable', () => {
   assert.ok(existing.PYTHONPATH?.includes(`${root}/src`));
 });
 
-test('server creation rejects transport drift and accepts registered agents', () => {
+test('server factory is transport-neutral while stdio entrypoint remains strict', () => {
   const drifted = { ...contract, transport: 'REMOTE_HTTPS' };
-  assert.throws(() => createServer({ MESH_COS_AGENT_ID: 'cos' }, drifted), /LOCAL_STDIO/);
+  assert.ok(createServer({ MESH_COS_AGENT_ID: 'cos' }, drifted));
   assert.ok(createServer({ MESH_COS_AGENT_ID: 'cos' }, contract));
   assert.ok(createServer({ MESH_COS_AGENT_ID: 'message-ops' }, contract));
 });

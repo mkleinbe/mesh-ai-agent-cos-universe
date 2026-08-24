@@ -34,6 +34,7 @@ jobs:
       - name: Validate QNAP Compose candidate
         env:
           MESH_COS_IMAGE: mesh-cos-mcp:ci
+          TUNNEL_IMAGE: ghcr.io/openai/tunnel-client:v0.0.12
           QNAP_MESH_ROOT: /tmp/mesh-state
           QNAP_TUNNEL_API_KEY_FILE: /tmp/tunnel-runtime-key
           MESH_UID: '65532'

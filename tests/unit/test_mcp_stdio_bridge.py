@@ -25,6 +25,26 @@ def test_bridge_requires_bound_agent_and_canonical_ledger(tmp_path: Path) -> Non
         bridge.execute_request({"tool_name": "task.list"}, env={"MESH_COS_AGENT_ID": "cos"})
 
 
+def test_production_bridge_requires_preexisting_disk_ledger(tmp_path: Path) -> None:
+    values = env(tmp_path)
+    values["MESH_COS_REQUIRE_EXISTING_LEDGER"] = "true"
+    with pytest.raises(RuntimeError, match="missing"):
+        bridge.execute_request({"tool_name": "task.list"}, env=values)
+    assert not Path(values["MESH_COS_LEDGER_PATH"]).exists()
+
+    values["MESH_COS_LEDGER_PATH"] = ":memory:"
+    with pytest.raises(RuntimeError, match="in-memory"):
+        bridge.execute_request({"tool_name": "task.list"}, env=values)
+
+
+def test_production_bridge_accepts_existing_canonical_ledger(tmp_path: Path) -> None:
+    values = env(tmp_path)
+    bridge.execute_request({"tool_name": "task.list"}, env=values)
+    values["MESH_COS_REQUIRE_EXISTING_LEDGER"] = "yes"
+    response = bridge.execute_request({"tool_name": "task.list"}, env=values)
+    assert response["ok"] is True
+
+
 def test_bridge_validates_request_shape_and_blocks_human_tools(tmp_path: Path) -> None:
     values = env(tmp_path)
     with pytest.raises(TypeError, match="JSON object"):

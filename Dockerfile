@@ -21,6 +21,8 @@ COPY --chown=65532:65532 chatgpt ./chatgpt
 COPY --chown=65532:65532 config ./config
 COPY --chown=65532:65532 contracts ./contracts
 COPY --chown=65532:65532 src ./src
+COPY --chown=65532:65532 deployment/qnap/runtime_preflight.py ./deployment/qnap/runtime_preflight.py
+COPY --chown=65532:65532 deployment/qnap/sqlite_backup.py ./deployment/qnap/sqlite_backup.py
 COPY --from=build --chown=65532:65532 /build/mcp/dist ./mcp/dist
 COPY --from=build --chown=65532:65532 /build/mcp/node_modules ./mcp/node_modules
 ENV NODE_ENV=production PYTHONPATH=/opt/mesh/src PYTHONDONTWRITEBYTECODE=1 MESH_COS_PYTHON_BIN=python3 MCP_BIND_HOST=0.0.0.0 MCP_PORT=8080 HOME=/tmp

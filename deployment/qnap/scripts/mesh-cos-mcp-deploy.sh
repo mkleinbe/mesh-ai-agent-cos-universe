@@ -98,8 +98,10 @@ cd "$SCRIPT_ROOT" || fail "cannot return to $SCRIPT_ROOT"
 run_child verify "$SCRIPT_ROOT/mesh-cos-mcp-verify.sh" || fail "post-deploy verification failed"
 run_child post_backup "$SCRIPT_ROOT/mesh-cos-mcp-backup.sh" post-deploy || fail "post-deploy backup failed"
 
+DEPLOYMENT_RELEASE=$(sed -n 's/^MESH_COS_DEPLOYMENT_RELEASE=//p' "$APP_ROOT/.env" 2>/dev/null | tail -n 1)
+[ -n "$DEPLOYMENT_RELEASE" ] || DEPLOYMENT_RELEASE=unknown
 mesh_set_stage complete
 info "deployment, verification, and post-deploy backup complete"
-mesh_log INFO deployment_complete "release=${MESH_COS_DEPLOYMENT_RELEASE:-unknown} log=$MESH_COS_LOG_FILE"
+mesh_log INFO deployment_complete "release=$DEPLOYMENT_RELEASE log=$MESH_COS_LOG_FILE"
 echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
-echo "NEXT: create/select the OpenAI Secure MCP Tunnel app in ChatGPT, Scan Tools, and run CHATGPT-ACCEPTANCE.md."
+echo "NEXT: create or refresh the ChatGPT Secure MCP Tunnel app and run CHATGPT-ACCEPTANCE.md."

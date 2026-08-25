@@ -11,7 +11,7 @@ RUN cd mcp && npm run build && npm prune --omit=dev
 FROM ${NODE_IMAGE} AS runtime
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
-ARG IMAGE_VERSION=4.0.0-qnap-candidate
+ARG IMAGE_VERSION=4.1.0-qnap
 LABEL org.opencontainers.image.title="mesh-cos-mcp" org.opencontainers.image.version="${IMAGE_VERSION}" org.opencontainers.image.revision="${VCS_REF}" org.opencontainers.image.created="${BUILD_DATE}" org.opencontainers.image.source="https://github.com/mkleinbe/mesh-ai-agent-cos-universe"
 RUN apt-get update && apt-get install -y --no-install-recommends python3 ca-certificates && rm -rf /var/lib/apt/lists/* && groupadd --gid 65532 mesh && useradd --uid 65532 --gid 65532 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin mesh
 WORKDIR /opt/mesh

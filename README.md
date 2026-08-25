@@ -2,74 +2,55 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current release target: `v4.0.0 Chief of Staff Delegation Contract Remediation`.**
+**Current repository/deployment release: `v4.1.0 QNAP Secure MCP Transport`.**
+
+The Phase 1 agent authority/runtime contract remains release `4.0.0`; v4.1.0 adds the governed production container, remote MCP transport, QNAP deployment system, and Secure MCP Tunnel packaging without changing the 10-agent authority model or tool allowlists.
 
 ## Canonical Phase 1 architecture
 
-Phase 1 contains exactly **10 registered agents**:
+Phase 1 contains exactly **10 registered agents**: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations.
 
-1. Chief of Staff
-2. AgentOps Controller
-3. Answer & Decision Desk
-4. CRO
-5. CFO
-6. COO
-7. Consultant Network Steward
-8. CMO
-9. VP Content
-10. Message Operations
+**Mesh Devil's Advocate is not an eleventh agent.** It remains an external governed shared Skill, advisory only, available to Chief of Staff and CRO. It cannot own tasks, decide approvals, overwrite canonical facts, or execute external actions.
 
-**Mesh Devil's Advocate is not an eleventh agent.** It is an external governed shared Skill, advisory only, available to Chief of Staff and CRO. It cannot own tasks, decide approvals, overwrite canonical facts, or execute external actions.
-
-`TaskLedger` remains canonical state. ChatGPT, Slack, connectors, Workspace app state, governance Sheets, and shared-Skill packets are interaction, evidence, or mirror surfaces.
+`TaskLedger` remains canonical state. ChatGPT, Slack, connectors, Workspace app state, governance Sheets, and shared-Skill packets remain interaction, evidence, or mirror surfaces.
 
 ## Runtime topology
 
+Local engineering and certification retain stdio:
+
 ```text
-ChatGPT Workspace Agent
-        |
-        | LOCAL_STDIO
-        v
-node mcp/dist/index.js
-        |
-        v
-mesh_cos.mcp_stdio_bridge
-        |
-        v
-mesh_cos.mcp_runtime.MCPRuntime
-        |
-        v
-TaskLedger SQLite
+ChatGPT / local engineering
+  -> node mcp/dist/index.js
+  -> mesh_cos.mcp_stdio_bridge
+  -> mesh_cos.mcp_runtime.MCPRuntime
+  -> TaskLedger SQLite
 ```
 
-Every local MCP process is immutably bound to one registered identity through `MESH_COS_AGENT_ID`. All 10 agents in the same operating universe use the same approved `MESH_COS_LEDGER_PATH`. Prompt text, retrieved content, task content, delegated instructions, connectors, and shared-Skill output cannot alter identity or tool authority.
+QNAP production uses Streamable HTTP behind OpenAI Secure MCP Tunnel:
+
+```text
+ChatGPT
+  -> OpenAI Secure MCP Tunnel
+  -> mesh-cos-tunnel 172.30.60.3
+  -> mesh-cos-mcp 172.30.60.2 + 192.168.7.60
+  -> canonical MCPRuntime
+  -> TaskLedger SQLite
+```
+
+The QNAP application lives at `/share/Docker/cos-mcp`, uses the verified external QNAP `lan7` qnet, and is deployed with scripts run from `/share/Docker`. The MCP protocol port is not published to the host or public internet. Direct LAN access to `/mcp` is denied in tunnel mode.
 
 ## Authority boundary
 
-`approval.record_decision` and `reliability.human_override` exist in the MCP runtime but are **human-principal-only**. They are excluded from every agent catalog and dispatched only through the authenticated human path.
+Every MCP process is immutably bound through `MESH_COS_AGENT_ID`. Prompt text, retrieved content, task content, delegated instructions, connector content, and shared-Skill output cannot change identity or widen the tool catalog.
 
-L4 requires qualified-human approval. L5 remains Michael-exclusive. Delegation preserves or narrows authority and inherited approvals, never widens or weakens them.
+`approval.record_decision` and `reliability.human_override` are human-principal-only. L4 requires qualified-human approval and L5 remains Michael-exclusive.
 
 ## Completion and verification
 
-The canonical lifecycle separates work production from acceptance:
+`task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate CoS verifier operation requiring acceptance evidence. **COMPLETED != VERIFIED.**
 
-```text
-... -> IN_PROGRESS -> QA -> COMPLETED -> VERIFIED -> CLOSED
-```
+## QNAP release
 
-`task.complete` is the accountable-owner completion operation. It requires a non-empty outcome and supporting evidence and moves eligible work to `COMPLETED` only.
+See `deployment/qnap/README-QNAP.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, `deployment/qnap-environment.md`, `docs/qnap-production-preflight.md`, and `docs/release-4.1.0-qnap-secure-mcp.md`.
 
-`task.verify` is separate. In Phase 1 only Chief of Staff is expressly exposed that verifier operation. Passing verification requires acceptance evidence. **COMPLETED != VERIFIED.**
-
-## Delegation model
-
-Normal depth is CoS -> functional executive -> specialist. The governed path `Michael -> CoS -> COO -> Consultant Network Steward` is legal. Consultant Network Steward is terminal with max delegation depth 0, so any further delegation fails closed.
-
-## Quality and release gates
-
-The release path requires dependency integrity, TypeScript build and Node tests, local stdio MCP smoke certification, npm audit, schema validation, runtime/documentation drift validation, Workspace Agent package validation, Ruff, mypy, 100% branch-aware Python coverage, Bandit, compileall, synthetic end-to-end delegation certification, negative authority tests, and production preflight.
-
-Historical release records remain historical. In particular, v3.0.0 documented the temporary 9-agent plus shared Message Operations architecture and must not be interpreted as current state.
-
-See `docs/phase-1-operating-contract.md`, `docs/architecture.md`, `docs/production-readiness.md`, `docs/testing-evaluation.md`, and `RELEASE.md` for the current operational contract.
+The v4.1.0 release does not publish a container image automatically. Production images must be built from the verified tag/commit, recorded by immutable digest, and activated only by the human operator.

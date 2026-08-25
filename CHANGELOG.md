@@ -2,6 +2,40 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.0 - 2026-08-25 - QNAP Secure MCP Transport
+
+### Production transport and containerization
+
+- Added MCP SDK Streamable HTTP production transport with `/mcp`, `/healthz`, and `/readyz` while preserving the existing local stdio certification path.
+- Packaged the canonical Node/Python MCP runtime in a deterministic non-root Docker image for QNAP Container Station.
+- Added the official OpenAI Secure MCP Tunnel client as a least-privilege sidecar on a dedicated private Docker bridge; no public MCP port, router forwarding, UPnP, or QNAP administration exposure is required.
+- Fixed the production CoS identity to `MESH_COS_AGENT_ID=cos` and retained canonical registry-derived tool authority.
+
+### Verified QNAP configuration
+
+- Bound the deployment to the 2026-08-25 probe of `mdk-qnap6782xt`: x86_64/linux-amd64, 4 CPU cores, approximately 62.7 GiB RAM, QTS 5.2.10 build 20260731, Docker 27.1.2-qnap8, Compose 2.29.1-qnap2, and QNAP `lan7` qnet on `eth1`.
+- Set service IP `192.168.7.60`, private subnet `172.30.60.0/29`, application root `/share/Docker/cos-mcp`, and deployment script root `/share/Docker`.
+- Set the main container limit to 2 CPUs and 24 GiB RAM with no PID limit; the tunnel sidecar is separately constrained to 0.25 CPU and 256 MiB RAM.
+- Added explicit high-utilization storage warning while retaining a 20-GiB absolute free-space preflight threshold.
+
+### Persistence, backup, and recovery
+
+- Production now refuses a missing or in-memory TaskLedger and serializes the Node-to-Python bridge at the single writable SQLite boundary.
+- Added SQLite online backup tooling and a QNAP backup wrapper targeting the safely quoted path `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`.
+- Added upgrade, rollback, restore, restart, application-recreation, and NAS-reboot acceptance procedures.
+- Preserved existing permissions on the operator-managed backup share rather than modifying the share root during application preparation.
+
+### Security and verification
+
+- Added non-root, read-only root filesystem, all-capabilities-dropped, no-new-privileges, no-Docker-socket, no-host-network, bounded request/session/bridge controls, and log rotation.
+- Added QNAP BDD scenarios through QNAP-030, including fixed deployment roots, 2-CPU/24-GiB/no-PID resource policy, and safe handling of backup paths containing spaces.
+- Extended CI to render Compose, build the production image, test container security/readiness/restart/backup, verify resource controls, and syntax-check QNAP BusyBox-compatible scripts.
+
+### Version boundary
+
+- Repository/QNAP deployment and container-image release: `4.1.0` / tag `v4.1.0`.
+- The Phase 1 agent authority/runtime package contract remains `4.0.0` because this release does not alter the 10-agent roster, role authority, or tool allowlists.
+
 ## 4.0.0 - 2026-08-21 - Chief of Staff Delegation Contract Remediation
 
 ### Breaking topology correction
@@ -45,7 +79,7 @@ All notable changes to the Mesh AI Chief of Staff Agent Universe are documented 
 
 ## 3.0.0 - 2026-08-21 - Shared Mesh Message Operations
 
-Historical release. Reduced the then-current workforce from 10 registered agents to 9 and externalized Mesh Message Operations as a shared approval-bound execution Skill. Preserved human-only approval/reliability operations, TaskLedger canonical state, completion/verification separation, local stdio MCP, TDD loop engineering, and release gates. This topology is superseded by v4.0.0.
+Historical release. Reduced the then-current workforce from 10 registered agents to 9 and externalized Mesh Message Operations as a shared approval-bound execution Skill. Preserved human-only approval/reliability operations, TaskLedger canonical state, completion/verification separation, local stdio MCP, TDD/loop engineering, and release gates. This topology is superseded by v4.0.0.
 
 ## 2.0.0 - 2026-08-21 - Shared Mesh Devil's Advocate
 

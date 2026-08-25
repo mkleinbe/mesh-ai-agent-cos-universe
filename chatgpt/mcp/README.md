@@ -1,45 +1,33 @@
 # Mesh CoS MCP Contract
 
-`mesh-cos-mcp.v1.json` is the protocol-facing contract for release `4.0.0`. ChatGPT uses the bundled MCP package over `LOCAL_STDIO`.
+`mesh-cos-mcp.v1.json` remains the canonical Phase 1 **4.0.0 authority contract**. It defines the 10 registered agent principals, deny-by-default tool allowlists, immutable agent identity, human-only catalog, delegation rules, and completion/verification boundary.
 
-The MCP package is a transport adapter, not a second business-logic implementation.
+Repository release **v4.1.0** adds the production QNAP transport without changing those authority semantics.
 
-## Runtime path
+## Transport model
+
+Local Workspace engineering/certification retains `LOCAL_STDIO`:
 
 ```text
-Workspace Agent
-  -> MESH_COS_AGENT_ID
-  -> node mcp/dist/index.js
-  -> mesh_cos.mcp_stdio_bridge
-  -> mesh_cos.mcp_runtime.MCPRuntime
-  -> TaskLedger
+Workspace Agent -> node mcp/dist/index.js -> canonical MCPRuntime -> TaskLedger
 ```
 
-The canonical MCP principal roster contains exactly 10 agents. Mesh Devil's Advocate is not an MCP principal.
+The QNAP deployment packages the same MCP server logic behind the MCP SDK Streamable HTTP transport:
+
+```text
+ChatGPT -> OpenAI Secure MCP Tunnel -> /mcp -> canonical MCPRuntime -> TaskLedger
+```
+
+The production HTTP transport does not accept caller-selected agent identity and does not expand the contract's tool allowlist. In the initial Phase 1 QNAP deployment the immutable process identity is `cos`.
 
 ## Agent versus human catalogs
 
-`agent_tool_allowlists` is deny-by-default and keyed by the 10 registered agent identities. `human_tool_allowlist` is a separate catalog containing exactly:
-
-- `approval.record_decision`
-- `reliability.human_override`
-
-No agent allowlist may contain either human-only operation. Agent stdio servers project only the allowlist for their bound `MESH_COS_AGENT_ID`. `MCPRuntime.call_agent` independently denies human-only tools. `MCPRuntime.call_human` requires an authenticated non-empty human principal.
+`agent_tool_allowlists` is deny-by-default. `human_tool_allowlist` contains exactly `approval.record_decision` and `reliability.human_override`; neither may appear in an agent catalog.
 
 ## Completion contract
 
-`task.complete` is exposed to appropriate accountable owners. The runtime requires owner-or-CoS write access, a valid completion state, a non-empty outcome, and supporting evidence. Successful completion produces `COMPLETED` only.
-
-`task.verify` is separate. It is exposed only to CoS in the Phase 1 agent catalog and requires explicit acceptance evidence for a passing result.
-
-## Delegation
-
-`delegation.create` requires a registered direct child. Delegated authority cannot exceed parent authority, parent approval gates cannot be dropped, and depth cannot exceed the Phase 1 ceiling. The legal depth-2 specialist path is CoS -> COO -> Consultant Network Steward.
-
-## Identity and content safety
-
-Prompt text, retrieved content, task content, delegated instructions, connector output, and Skill output cannot modify `MESH_COS_AGENT_ID`, add tools to the projected catalog, or create a human principal.
+`task.complete` produces `COMPLETED` only and requires outcome plus evidence. `task.verify` is separate, exposed only to CoS in Phase 1, and requires explicit acceptance evidence.
 
 ## Certification
 
-`npm run check` runs TypeScript build, Node tests, a real local stdio smoke test, and npm audit. The smoke test certifies the 10-agent roster, human-only exclusion, Devil's Advocate principal exclusion, local canonical persistence, and safe denial behavior.
+Local stdio certification remains part of `npm run check`. QNAP production acceptance adds container, persistence, tunnel, backup/restore, restart, and ChatGPT end-to-end verification before production activation.

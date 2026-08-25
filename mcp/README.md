@@ -1,6 +1,6 @@
 # Mesh CoS MCP
 
-This package is the transport adapter for the governed Mesh Chief of Staff operating core. The current QNAP deployment release is **v4.1.6**, while the unchanged canonical Phase 1 authority/runtime contract remains **4.0.0**.
+This package is the transport adapter for the governed Mesh Chief of Staff operating core. The current QNAP deployment release is **v4.1.7**, while the unchanged canonical Phase 1 authority/runtime contract remains **4.0.0**.
 
 ## Supported transports
 
@@ -20,20 +20,20 @@ Mesh CoS MCP ChatGPT app
   -> TaskLedger SQLite
 ```
 
-`mesh-cos-mcp` also has LAN identity `192.168.7.60` on QNAP `lan7` qnet for operator health/readiness access. `/mcp` accepts only the tunnel-sidecar private source address in tunnel mode. No host MCP port is published by the production Compose model.
+`mesh-cos-mcp` also has LAN identity `192.168.7.60` on QNAP `lan7` qnet. `/mcp` accepts only the tunnel-sidecar private source address in tunnel mode. No host MCP port is published by the production Compose model.
 
 ## Dual release identity
 
 The MCP protocol/authority contract and the QNAP deployment release are intentionally versioned separately.
 
-Successful governed tool calls return an envelope containing:
+Successful governed tool calls must return an envelope containing:
 
 ```json
 {
   "ok": true,
   "request_id": "...",
   "mcp_version": "4.0.0",
-  "deployment_release": "4.1.6",
+  "deployment_release": "4.1.7",
   "agent_id": "cos",
   "result": {}
 }
@@ -43,11 +43,17 @@ Production `/healthz` and successful `/readyz` return non-secret identity metada
 
 Remote production startup requires `MESH_COS_DEPLOYMENT_RELEASE`. Missing or blank release identity fails closed before the process listens. Local stdio remains transport-neutral and can omit deployment identity when no deployment release is being certified.
 
+## v4.1.7 deployment integrity
+
+The final v4.1.6 source and release artifact already included `deployment_release`, but hosted acceptance observed a serving instance whose governed envelopes omitted it. v4.1.7 closes the deployment integrity path that could allow an older local image to survive under a reused release tag.
+
+QNAP preparation now qualifies any existing local Mesh image by OCI version and revision against the extracted release metadata and rebuilds on mismatch. Post-deploy verification also executes a real read-only `registry.get_agent` `tools/call` against the running service through the tunnel network namespace. Deployment cannot report PASS unless that actual governed envelope contains `mcp_version=4.0.0`, `deployment_release=4.1.7`, and `agent_id=cos`.
+
 ## Identity and authority
 
 `MESH_COS_AGENT_ID` is validated at process startup and cannot be selected from MCP requests, HTTP headers, prompts, connector content, Skills, or task text. Human-only operations remain absent from agent catalogs.
 
-The production CoS catalog remains 27 governed tools. The canonical roster remains 10 registered agents. v4.1.6 does not change these authority surfaces.
+The production CoS catalog remains 27 governed tools. The canonical roster remains 10 registered agents. v4.1.7 does not change these authority surfaces.
 
 ## State safety
 
@@ -55,6 +61,6 @@ QNAP production requires the configured SQLite ledger to pre-exist and serialize
 
 ## Development and certification
 
-From `mcp/`, run `npm ci && npm run check`. Repository CI additionally builds the v4.1.6 production image and verifies Compose rendering, deployment-release propagation, non-root execution, read-only root filesystem, zero capabilities, no Docker socket, dual-identity health/readiness, modern MCP discovery, sequential MCP requests, direct-ingress denial, SQLite backup integrity, restart recovery, and QNAP resource-policy assertions.
+From `mcp/`, run `npm ci && npm run check`. Repository CI additionally builds the v4.1.7 production image and verifies release-image OCI provenance, Compose rendering, deployment-release propagation, non-root execution, read-only root filesystem, zero capabilities, no Docker socket, dual-identity health/readiness, modern MCP discovery, sequential MCP requests, governed tool-envelope identity, direct-ingress denial, SQLite backup integrity, restart recovery, and QNAP resource-policy assertions.
 
-The published ChatGPT app acceptance record is `docs/chatgpt-published-app-production-acceptance-v4.1.6.md`.
+Current hosted acceptance is defined in `deployment/qnap/CHATGPT-ACCEPTANCE.md`. The historical v4.1.6 acceptance record remains `docs/chatgpt-published-app-production-acceptance-v4.1.6.md`.

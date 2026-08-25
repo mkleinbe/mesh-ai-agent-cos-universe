@@ -73,10 +73,10 @@ READY_OUT="$ROOT/ready.json"
 curl -fsS "http://127.0.0.1:$PORT/healthz" > "$HEALTH_OUT"
 curl -fsS "http://127.0.0.1:$PORT/readyz" > "$READY_OUT"
 for OUT in "$HEALTH_OUT" "$READY_OUT"; do
-  grep -q '"mcp_version":"4.0.0"' "$OUT" || { echo 'FAIL status response missing canonical mcp_version' >&2; cat "$OUT" >&2; exit 1; }
-  grep -q "\"deployment_release\":\"$DEPLOYMENT_RELEASE\"" "$OUT" || { echo 'FAIL status response missing deployment_release' >&2; cat "$OUT" >&2; exit 1; }
-  grep -q '"agent_id":"cos"' "$OUT" || { echo 'FAIL status response missing cos identity' >&2; cat "$OUT" >&2; exit 1; }
-  grep -q '"transport":"SECURE_MCP_TUNNEL"' "$OUT" || { echo 'FAIL status response missing tunnel transport identity' >&2; cat "$OUT" >&2; exit 1; }
+  grep -Fq '"mcp_version":"4.0.0"' "$OUT" || { echo 'FAIL status response missing canonical mcp_version' >&2; cat "$OUT" >&2; exit 1; }
+  grep -Fq "\"deployment_release\":\"$DEPLOYMENT_RELEASE\"" "$OUT" || { echo 'FAIL status response missing deployment_release' >&2; cat "$OUT" >&2; exit 1; }
+  grep -Fq '"agent_id":"cos"' "$OUT" || { echo 'FAIL status response missing cos identity' >&2; cat "$OUT" >&2; exit 1; }
+  grep -Fq '"transport":"SECURE_MCP_TUNNEL"' "$OUT" || { echo 'FAIL status response missing tunnel transport identity' >&2; cat "$OUT" >&2; exit 1; }
 done
 
 META="{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{},\"io.modelcontextprotocol/clientInfo\":{\"name\":\"mesh-ci\",\"version\":\"$DEPLOYMENT_RELEASE\"}}"
@@ -91,7 +91,7 @@ STATUS=$(curl -sS -o "$DISCOVER_OUT" -w '%{http_code}' \
   --data "$DISCOVER_BODY" \
   "http://127.0.0.1:$PORT/mcp")
 [ "$STATUS" = 200 ] || { echo "FAIL server/discover expected HTTP 200, got $STATUS" >&2; cat "$DISCOVER_OUT" >&2 || true; exit 1; }
-grep -q '2026-07-28' "$DISCOVER_OUT" || { echo 'FAIL discovery response did not advertise 2026-07-28' >&2; cat "$DISCOVER_OUT" >&2; exit 1; }
+grep -Fq '2026-07-28' "$DISCOVER_OUT" || { echo 'FAIL discovery response did not advertise 2026-07-28' >&2; cat "$DISCOVER_OUT" >&2; exit 1; }
 
 n=1
 while [ "$n" -le 10 ]; do
@@ -106,7 +106,7 @@ while [ "$n" -le 10 ]; do
     --data "$BODY" \
     "http://127.0.0.1:$PORT/mcp")
   [ "$STATUS" = 200 ] || { echo "FAIL sequential tools/list #$n expected HTTP 200, got $STATUS" >&2; cat "$OUT" >&2 || true; exit 1; }
-  grep -q 'registry.list_agents' "$OUT" || { echo "FAIL tools/list #$n missing canonical tool catalog" >&2; cat "$OUT" >&2; exit 1; }
+  grep -Fq 'registry.list_agents' "$OUT" || { echo "FAIL tools/list #$n missing canonical tool catalog" >&2; cat "$OUT" >&2; exit 1; }
   n=$((n + 1))
 done
 
@@ -122,9 +122,9 @@ STATUS=$(curl -sS -o "$CALL_OUT" -w '%{http_code}' \
   --data "$CALL_BODY" \
   "http://127.0.0.1:$PORT/mcp")
 [ "$STATUS" = 200 ] || { echo "FAIL registry.list_agents expected HTTP 200, got $STATUS" >&2; cat "$CALL_OUT" >&2 || true; exit 1; }
-grep -q '\\"agent_id\\":\\"cos\\"' "$CALL_OUT" || { echo 'FAIL modern tool response did not preserve cos identity' >&2; cat "$CALL_OUT" >&2; exit 1; }
-grep -q '\\"mcp_version\\":\\"4.0.0\\"' "$CALL_OUT" || { echo 'FAIL modern tool response missing canonical mcp_version' >&2; cat "$CALL_OUT" >&2; exit 1; }
-grep -q "\\\"deployment_release\\\":\\\"$DEPLOYMENT_RELEASE\\\"" "$CALL_OUT" || { echo 'FAIL modern tool response missing deployment_release' >&2; cat "$CALL_OUT" >&2; exit 1; }
+grep -Fq '\"agent_id\":\"cos\"' "$CALL_OUT" || { echo 'FAIL modern tool response did not preserve cos identity' >&2; cat "$CALL_OUT" >&2; exit 1; }
+grep -Fq '\"mcp_version\":\"4.0.0\"' "$CALL_OUT" || { echo 'FAIL modern tool response missing canonical mcp_version' >&2; cat "$CALL_OUT" >&2; exit 1; }
+grep -Fq "\\\"deployment_release\\\":\\\"$DEPLOYMENT_RELEASE\\\"" "$CALL_OUT" || { echo 'FAIL modern tool response missing deployment_release' >&2; cat "$CALL_OUT" >&2; exit 1; }
 
 # Security regression: the same endpoint must reject an untrusted source identity.
 docker rm -f "$NAME" >/dev/null 2>&1 || true

@@ -89,6 +89,6 @@ def test_qnap_release_identity_preserves_v4_runtime() -> None:
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.3 QNAP Non-Root Deployment Reliability" in release
-    assert "Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged" in release
+    assert "v4.1.4 QNAP Modern MCP Transport Reliability" in release
+    assert "Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged" in release
     assert "Message Operations remains the tenth registered agent" in release

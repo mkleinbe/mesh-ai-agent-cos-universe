@@ -6,6 +6,7 @@ APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 STATE_ROOT=${QNAP_MESH_ROOT:-/share/Docker/cos-mcp/state}
 BACKUP_ROOT=${QNAP_BACKUP_ROOT:-/share/QNAP NAS/Mike Home/MCP/CoS/Backups}
 SECRET_FILE=${QNAP_TUNNEL_API_KEY_FILE:-/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key}
+RELEASE_METADATA="$APP_ROOT/release-metadata.txt"
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
 COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
@@ -71,6 +72,7 @@ mesh_set_stage paths
 [ -d "$STATE_ROOT" ] && pass "state root exists" || fail_check "$STATE_ROOT missing"
 [ -d "$BACKUP_ROOT" ] && [ -w "$BACKUP_ROOT" ] && pass "quoted backup root exists and is writable" || fail_check "backup root unavailable: $BACKUP_ROOT"
 [ -d "$APP_ROOT/.docker-cli" ] && [ -w "$APP_ROOT/.docker-cli" ] && pass "deployment-local Docker config exists and is writable" || fail_check "deployment-local Docker config unavailable"
+[ -f "$RELEASE_METADATA" ] && pass "bundle release metadata exists" || fail_check "bundle release metadata missing: $RELEASE_METADATA"
 
 LEDGER="$STATE_ROOT/ledger/taskledger.sqlite3"
 [ -f "$LEDGER" ] && pass "canonical ledger exists" || fail_check "canonical ledger missing: $LEDGER"
@@ -98,7 +100,12 @@ if [ -f "$APP_ROOT/.env" ]; then
   set -a
   . "$APP_ROOT/.env"
   set +a
-  [ "${MESH_COS_DEPLOYMENT_RELEASE:-}" = "4.1.3" ] && pass "deployment release 4.1.3" || fail_check "MESH_COS_DEPLOYMENT_RELEASE must be 4.1.3"
+  EXPECTED_RELEASE=$(awk -F= '$1 == "version" {print $2; exit}' "$RELEASE_METADATA" 2>/dev/null || true)
+  if [ -n "$EXPECTED_RELEASE" ]; then
+    [ "${MESH_COS_DEPLOYMENT_RELEASE:-}" = "$EXPECTED_RELEASE" ] && pass "deployment release $EXPECTED_RELEASE" || fail_check "MESH_COS_DEPLOYMENT_RELEASE must match bundle release $EXPECTED_RELEASE"
+  else
+    fail_check "bundle release metadata version missing"
+  fi
   [ "${MESH_CPU_LIMIT:-}" = "2.0" ] && pass "2-CPU limit configured" || fail_check "MESH_CPU_LIMIT must be 2.0"
   [ "${MESH_MEMORY_LIMIT:-}" = "24g" ] && pass "24-GiB memory limit configured" || fail_check "MESH_MEMORY_LIMIT must be 24g"
   grep -q '^MESH_PIDS_LIMIT=' "$APP_ROOT/.env" && fail_check "PID limit must not be configured" || pass "no PID limit configured"

@@ -149,12 +149,15 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_observability_permission_helpers_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_v414_docs_helpers_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.3}' in builder
+    assert 'VERSION=${1:-4.1.4}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
+    assert "qnap-security-review-v4.1.4.md" in builder
+    assert "qnap-mcp-502-debugging-v4.1.4.md" in builder
+    assert "release-4.1.4-qnap-modern-mcp-transport.md" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-compose.sh"' in builder
@@ -162,12 +165,13 @@ def test_release_bundle_contains_observability_permission_helpers_and_no_runtime
     assert 'test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"' in builder
 
 
-def test_deployment_steps_contain_subshell_session_guard_and_log_receipt() -> None:
+def test_deployment_steps_contain_v414_subshell_sudo_and_log_receipt() -> None:
     steps = text(QNAP / "DEPLOYMENT-STEPS.md")
-    assert "The deployment executes inside a subshell" in steps
+    assert "installer executes inside a subshell" in steps
     assert "SSH session remains active" in steps
     assert "DIAGNOSTIC_LOG" in steps
-    assert "v4.1.3" in steps
+    assert "v4.1.4" in steps
+    assert "sudo sh /share/Docker/mesh-cos-mcp-deploy.sh" in steps
     assert "exit \"$RC\"" not in steps
 
 
@@ -175,4 +179,11 @@ def test_bdd_covers_ownership_observability_docker_config_and_backup_remediation
     feature = text(ROOT / "specs" / "qnap-deployment-remediation-v4.1.3.feature")
     assert "@ready" in feature
     for scenario_id in ["QNAP-038", "QNAP-039", "QNAP-040", "QNAP-041"]:
+        assert f"Scenario: {scenario_id}" in feature
+
+
+def test_v414_transport_bdd_is_ready_and_covers_502_regression() -> None:
+    feature = text(ROOT / "specs" / "qnap-mcp-modern-transport-v4.1.4.feature")
+    assert "@ready" in feature
+    for scenario_id in ["QNAP-042", "QNAP-043", "QNAP-044", "QNAP-045", "QNAP-046", "QNAP-047"]:
         assert f"Scenario: {scenario_id}" in feature

@@ -8,6 +8,8 @@ on:
       - CHANGELOG.md
       - deployment/qnap/**
       - docs/qnap-**
+      - docs/chatgpt-**
+      - specs/qnap-**
       - Dockerfile
       - scripts/build-qnap-release-bundle.sh
       - .github/workflows/release-production-readiness.yml
@@ -21,19 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build v4.1.5 QNAP deployment bundle
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.5
+      - name: Build v4.1.6 QNAP deployment bundle
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.6
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.5
+          name: mesh-cos-mcp-qnap-v4.1.6
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.5.zip
-            dist/mesh-cos-mcp-qnap-v4.1.5.zip.sha256
-      - name: Create or update v4.1.5 release and semantic tag
+            dist/mesh-cos-mcp-qnap-v4.1.6.zip
+            dist/mesh-cos-mcp-qnap-v4.1.6.zip.sha256
+      - name: Create or update v4.1.6 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.1.5
-          ASSET: dist/mesh-cos-mcp-qnap-v4.1.5.zip
+          TAG: v4.1.6
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.6.zip
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -41,7 +43,7 @@ jobs:
           else
             gh release create "$TAG" \
               --target "$GITHUB_SHA" \
-              --title "v4.1.5 QNAP Release Identity Preflight Reliability" \
+              --title "v4.1.6 Secure MCP Published App Production Identity" \
               --notes-file RELEASE.md \
               "$ASSET" "$ASSET.sha256"
           fi

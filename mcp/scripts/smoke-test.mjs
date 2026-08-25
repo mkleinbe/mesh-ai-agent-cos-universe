@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const mcpDir = path.resolve(scriptDir, '..');
@@ -26,10 +26,7 @@ const transport = new StdioClientTransport({
   env,
   stderr: 'pipe',
 });
-const client = new Client(
-  { name: 'mesh-cos-local-smoke', version: contract.runtime_release },
-  { capabilities: {} },
-);
+const client = new Client({ name: 'mesh-cos-local-smoke', version: contract.runtime_release });
 
 async function call(name, args = {}) {
   const response = await client.callTool({ name, arguments: args });

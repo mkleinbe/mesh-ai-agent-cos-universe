@@ -2,11 +2,28 @@
 
 The 2026-08-25 probe establishes linux/amd64, 4 cores, approximately 62.7 GiB RAM, QTS 5.2.10 build 20260731, Docker 27.1.2-qnap8, Compose 2.29.1-qnap2, `lan7` qnet on `eth1`, `192.168.7.0/24`, gateway `192.168.7.1`, ext4 storage, and no observed overlap with `172.30.60.0/29`.
 
-## v4.1.5 release identity boundary
+## v4.1.6 serving-release identity boundary
 
-v4.1.5 removes the stale patch-release literal that caused the v4.1.4 upgrade to fail closed during host preflight. The expected QNAP deployment release is now derived from the extracted bundle's `release-metadata.txt` `version=` record and compared to generated `MESH_COS_DEPLOYMENT_RELEASE`.
+v4.1.6 makes the QNAP deployment release observable from the running application and the published ChatGPT app without changing the canonical Phase 1 authority/runtime contract.
 
-Preflight fails when release metadata is absent, has no version value, or disagrees with `.env`. The expected patch release is no longer duplicated as an independent constant in preflight.
+The extracted bundle and generated `.env` identify QNAP deployment release `4.1.6`. Compose passes that value into the application container as `MESH_COS_DEPLOYMENT_RELEASE`. The remote MCP process requires a non-empty deployment release before it listens for traffic.
+
+Successful runtime status must distinguish:
+
+```text
+mcp_version: 4.0.0
+deployment_release: 4.1.6
+agent_id: cos
+transport: SECURE_MCP_TUNNEL
+```
+
+The first value is the canonical authority/runtime contract. The second is the serving QNAP deployment release. Neither value can widen authority.
+
+## v4.1.5 release-identity boundary retained
+
+v4.1.5 removed the stale patch-release literal that caused the v4.1.4 upgrade to fail closed during host preflight. The expected QNAP deployment release is derived from the extracted bundle's `release-metadata.txt` `version=` record and compared to generated `MESH_COS_DEPLOYMENT_RELEASE`.
+
+Preflight fails when release metadata is absent, has no version value, or disagrees with `.env`. The expected patch release is not duplicated as an independent constant in the preflight gate.
 
 ## v4.1.4 transport boundary retained
 
@@ -16,7 +33,7 @@ The 10-agent roster, 27-tool CoS catalog, human-only operations, canonical TaskL
 
 ## QNAP filesystem correction retained
 
-The v4.1.2 operator trace proved that QNAP shared-folder ownership cannot be inferred from Docker authority. The v4.1.3 constrained helper design remains in v4.1.5: a short-lived Docker helper performs ownership/mode normalization on only the explicit state or secrets mount, with no network, no Docker socket, read-only root filesystem, validated numeric UID/GID, and a bounded capability set. The long-running application runtime remains UID/GID 65532.
+The v4.1.2 operator trace proved that QNAP shared-folder ownership cannot be inferred from Docker authority. The v4.1.3 constrained helper design remains in v4.1.6: a short-lived Docker helper performs ownership/mode normalization on only the explicit state or secrets mount, with no network, no Docker socket, read-only root filesystem, validated numeric UID/GID, and a bounded capability set. The long-running application runtime remains UID/GID 65532.
 
 ## QNAP Docker operator privilege
 
@@ -28,7 +45,7 @@ Deployment initializes `/share/Docker/cos-mcp/.docker-cli` as `DOCKER_CONFIG`. T
 
 ## Automated preparation
 
-`mesh-cos-mcp-prepare.sh` resolves Compose V2, initializes durable logging, builds or reuses `mesh-cos-mcp:qnap-v4.1.5`, records its image ID, normalizes runtime state through the constrained helper, preserves or explicitly streams the approved canonical TaskLedger, validates canonical runtime/SQLite integrity as UID 65532, pins the tunnel RepoDigest/image ID, preserves or captures the tunnel runtime key, applies file-only secret ownership/mode, generates non-secret `.env`, and invokes host preflight.
+`mesh-cos-mcp-prepare.sh` resolves Compose V2, initializes durable logging, builds or reuses `mesh-cos-mcp:qnap-v4.1.6`, records its image ID, normalizes runtime state through the constrained helper, preserves or explicitly streams the approved canonical TaskLedger, validates canonical runtime/SQLite integrity as UID 65532, pins the tunnel RepoDigest/image ID, preserves or captures the tunnel runtime key, applies file-only secret ownership/mode, generates non-secret `.env`, and invokes host preflight.
 
 ## Host preflight
 
@@ -36,6 +53,10 @@ Preflight validates architecture, CPU/RAM headroom, Docker, Compose V2, qnet sha
 
 Runtime preflight independently validates amd64, non-root execution, immutable `cos`, tunnel auth mode, system time, no Docker socket, existing readable/writable canonical SQLite ledger, free-space threshold, SQLite integrity, active registry identity, canonical runtime availability, and governance audit-chain integrity.
 
-`/readyz` additionally proves modern MCP discovery serviceability so the service cannot report ready while rejecting the current ChatGPT MCP protocol path.
+`/readyz` additionally proves modern MCP discovery serviceability so the service cannot report ready while rejecting the current ChatGPT MCP protocol path. v4.1.6 also requires `/healthz` and `/readyz` to expose the same non-secret dual release identity used by governed tool envelopes.
+
+## Published ChatGPT acceptance
+
+After local preflight and deployment pass, the installed **Mesh CoS MCP** app must execute the ten-call sequential read-only acceptance path through the OpenAI Secure MCP Tunnel without 502, `invalid_session`, reconnect, or container restart. Every successful governed tool response must report `mcp_version=4.0.0`, `deployment_release=4.1.6`, and `agent_id=cos`.
 
 Any mandatory failure returns nonzero, appends bounded diagnostics to the run log, and prints the diagnostic log path. High filesystem utilization remains an advisory while the absolute free-space gate passes.

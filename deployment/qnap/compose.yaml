@@ -13,6 +13,7 @@ services:
     mem_limit: ${MESH_MEMORY_LIMIT:-24g}
     environment:
       MESH_COS_AGENT_ID: cos
+      MESH_COS_DEPLOYMENT_RELEASE: ${MESH_COS_DEPLOYMENT_RELEASE:?deployment release required}
       MESH_COS_LEDGER_PATH: /var/lib/mesh/ledger/taskledger.sqlite3
       MESH_COS_REQUIRE_EXISTING_LEDGER: "true"
       MESH_COS_KILL_SWITCH: "false"

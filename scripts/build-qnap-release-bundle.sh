@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION=${1:-4.1.5}
+VERSION=${1:-4.1.6}
 TAG="v${VERSION}"
 BUNDLE=${BUNDLE_DIR:-dist/qnap-bundle}
 ASSET=${ASSET_PATH:-dist/mesh-cos-mcp-qnap-v${VERSION}.zip}
@@ -28,11 +28,15 @@ cp docs/qnap-production-preflight.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review-v4.1.4.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review-v4.1.5.md "$BUNDLE/cos-mcp/"
+cp docs/qnap-security-review-v4.1.6.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-deployment-observability-standard.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-mcp-502-debugging-v4.1.4.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-release-identity-debugging-v4.1.5.md "$BUNDLE/cos-mcp/"
+cp docs/chatgpt-published-app-production-acceptance-v4.1.6.md "$BUNDLE/cos-mcp/"
 cp docs/release-4.1.4-qnap-modern-mcp-transport.md "$BUNDLE/cos-mcp/"
 cp docs/release-4.1.5-qnap-release-identity.md "$BUNDLE/cos-mcp/"
+cp docs/release-4.1.6-secure-mcp-published-app-identity.md "$BUNDLE/cos-mcp/"
+cp specs/qnap-published-chatgpt-app-v4.1.6.feature "$BUNDLE/cos-mcp/"
 cp RELEASE.md "$BUNDLE/cos-mcp/"
 printf 'tag=%s\nversion=%s\ncommit=%s\n' "$TAG" "$VERSION" "$COMMIT" > "$BUNDLE/cos-mcp/release-metadata.txt"
 
@@ -54,8 +58,11 @@ test -f "$BUNDLE/mesh-cos-qnap-compose.sh"
 test -f "$BUNDLE/mesh-cos-qnap-observability.sh"
 test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"
 test -f "$BUNDLE/cos-mcp/qnap-security-review-v4.1.5.md"
+test -f "$BUNDLE/cos-mcp/qnap-security-review-v4.1.6.md"
 test -f "$BUNDLE/cos-mcp/qnap-release-identity-debugging-v4.1.5.md"
-test -f "$BUNDLE/cos-mcp/release-4.1.5-qnap-release-identity.md"
+test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.6.md"
+test -f "$BUNDLE/cos-mcp/release-4.1.6-secure-mcp-published-app-identity.md"
+test -f "$BUNDLE/cos-mcp/qnap-published-chatgpt-app-v4.1.6.feature"
 test -f "$BUNDLE/cos-mcp/release-metadata.txt"
 
 chmod +x "$BUNDLE"/*.sh "$BUNDLE/cos-mcp/qnap-environment-probe.sh"

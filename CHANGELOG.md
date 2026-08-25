@@ -2,6 +2,34 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.6 - 2026-08-25 - Secure MCP Published App Production Identity
+
+### Published ChatGPT production evidence
+
+- Executed the documented ten-call sequential read-only acceptance sequence through the installed `Mesh CoS MCP` ChatGPT app and OpenAI Secure MCP Tunnel with no HTTP 502, `invalid_session`, reconnect, or container restart.
+- Confirmed the hosted path returns the canonical 10-agent roster, valid governance audit-chain checks, metrics, CoS and Message Operations registry records, and TaskLedger reads.
+- Identified the remaining observability gap: hosted responses exposed canonical `mcp_version=4.0.0` but not the QNAP deployment release serving the request.
+
+### Production identity hardening
+
+- Added fail-closed `MESH_COS_DEPLOYMENT_RELEASE` validation for the remote production runtime and propagated the value explicitly through QNAP Compose.
+- Added `deployment_release` to governed MCP tool response envelopes while preserving `mcp_version=4.0.0` semantics and existing result payloads.
+- Extended `/healthz` and `/readyz` to report non-secret `mcp_version`, `deployment_release`, bound `agent_id`, and `SECURE_MCP_TUNNEL` transport identity.
+- Removed the stale hardcoded readiness-discovery client patch version and derive it from the current deployment release.
+
+### TDD, CI, documentation, and security
+
+- Added RED-first Node regression coverage for missing deployment identity, then expanded stdio smoke and production-image transport tests for dual release identity.
+- Added QNAP-051 through QNAP-055 behavior scenarios for fail-closed startup, health/readiness identity, tool-envelope identity, hosted sequential stability, and unchanged authority projection.
+- Advanced active QNAP image, bundle, environment, deployment, acceptance, and release assets to `4.1.6` / `v4.1.6`.
+- Upgraded repository CI to `actions/setup-node@v7` and retained the full build, test, security, 100% branch-aware coverage, container-hardening, persistence, backup, restart, and ingress-denial gates.
+- Added the hosted acceptance record, targeted v4.1.6 security review, release requirements trace, and updated operator documentation.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
 ## 4.1.5 - 2026-08-25 - QNAP Release Identity Preflight Reliability
 
 ### Live QNAP causal remediation

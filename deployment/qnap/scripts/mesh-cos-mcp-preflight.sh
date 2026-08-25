@@ -29,11 +29,20 @@ LAN7=$(docker network inspect lan7 2>/dev/null || true)
 echo "$LAN7" | grep -q '"Driver": "qnet"' && pass "lan7 uses qnet" || fail "lan7 is missing or not qnet"
 echo "$LAN7" | grep -q '"Subnet": "192.168.7.0/24"' && pass "lan7 subnet" || fail "lan7 subnet mismatch"
 echo "$LAN7" | grep -q '"Gateway": "192.168.7.1"' && pass "lan7 gateway" || fail "lan7 gateway mismatch"
-echo "$LAN7" | grep -q '192.168.7.60' && fail "192.168.7.60 already attached to a Docker endpoint" || pass "192.168.7.60 not attached to Docker"
+IP_OWNER=$(docker network inspect lan7 --format '{{range .Containers}}{{println .Name .IPv4Address}}{{end}}' 2>/dev/null | awk '$2 ~ /^192\.168\.7\.60\// {print $1; exit}')
+case "$IP_OWNER" in
+  "") pass "192.168.7.60 not attached to Docker" ;;
+  mesh-cos-mcp) pass "192.168.7.60 belongs to the existing mesh-cos-mcp endpoint" ;;
+  *) fail "192.168.7.60 belongs to another Docker endpoint: $IP_OWNER" ;;
+esac
 if ping -c 1 -W 1 192.168.7.60 >/dev/null 2>&1; then
-  fail "192.168.7.60 answered ping; investigate LAN conflict"
+  if [ "$IP_OWNER" = "mesh-cos-mcp" ]; then
+    pass "192.168.7.60 responds as the existing Mesh service"
+  else
+    fail "192.168.7.60 answered ping without the expected Mesh endpoint; investigate LAN conflict"
+  fi
 else
-  warn "192.168.7.60 did not answer ping; this reduces but does not eliminate LAN-conflict risk"
+  [ -z "$IP_OWNER" ] && warn "192.168.7.60 did not answer ping; this reduces but does not eliminate non-Docker LAN-conflict risk" || true
 fi
 
 [ -d "$APP_ROOT" ] && pass "application root exists" || fail "$APP_ROOT missing"
@@ -42,31 +51,40 @@ fi
 LEDGER="$STATE_ROOT/ledger/taskledger.sqlite3"
 [ -f "$LEDGER" ] && pass "canonical ledger exists" || fail "canonical ledger missing: $LEDGER"
 [ -r "$LEDGER" ] && [ -w "$LEDGER" ] && pass "canonical ledger read/write" || fail "canonical ledger permissions"
-[ -f "$SECRET_FILE" ] && pass "tunnel secret file exists" || fail "tunnel secret file missing"
+[ -f "$SECRET_FILE" ] && [ -s "$SECRET_FILE" ] && pass "tunnel secret file exists and is non-empty" || fail "tunnel secret file missing or empty"
 
 if command -v stat >/dev/null 2>&1 && [ -f "$SECRET_FILE" ]; then
   SECRET_UID=$(stat -c '%u' "$SECRET_FILE" 2>/dev/null || echo unknown)
   SECRET_GID=$(stat -c '%g' "$SECRET_FILE" 2>/dev/null || echo unknown)
   SECRET_MODE=$(stat -c '%a' "$SECRET_FILE" 2>/dev/null || echo unknown)
   [ "$SECRET_UID" = "$MESH_UID" ] && [ "$SECRET_GID" = "$MESH_GID" ] && pass "tunnel secret ownership" || fail "tunnel secret must be $MESH_UID:$MESH_GID"
-  case "$SECRET_MODE" in 400|440|600|640) pass "tunnel secret mode $SECRET_MODE" ;; *) fail "tunnel secret mode too broad: $SECRET_MODE" ;; esac
+  [ "$SECRET_MODE" = "400" ] && pass "tunnel secret mode 400" || fail "tunnel secret mode must be 400, got $SECRET_MODE"
 fi
 
 [ -f "$APP_ROOT/.env" ] && pass ".env exists" || fail ".env missing"
 [ -f "$APP_ROOT/compose.yaml" ] && pass "compose.yaml exists" || fail "compose.yaml missing"
 if [ -f "$APP_ROOT/.env" ]; then
-  grep -q '^MESH_CPU_LIMIT=2\.0$' "$APP_ROOT/.env" && pass "2-CPU limit configured" || fail "MESH_CPU_LIMIT must be 2.0"
-  grep -q '^MESH_MEMORY_LIMIT=24g$' "$APP_ROOT/.env" && pass "24-GiB memory limit configured" || fail "MESH_MEMORY_LIMIT must be 24g"
+  set -a
+  . "$APP_ROOT/.env"
+  set +a
+  [ "${MESH_COS_DEPLOYMENT_RELEASE:-}" = "4.1.1" ] && pass "deployment release 4.1.1" || fail "MESH_COS_DEPLOYMENT_RELEASE must be 4.1.1"
+  [ "${MESH_CPU_LIMIT:-}" = "2.0" ] && pass "2-CPU limit configured" || fail "MESH_CPU_LIMIT must be 2.0"
+  [ "${MESH_MEMORY_LIMIT:-}" = "24g" ] && pass "24-GiB memory limit configured" || fail "MESH_MEMORY_LIMIT must be 24g"
   grep -q '^MESH_PIDS_LIMIT=' "$APP_ROOT/.env" && fail "PID limit must not be configured" || pass "no PID limit configured"
-  grep -q '^MESH_COS_IMAGE=.*@sha256:' "$APP_ROOT/.env" && pass "Mesh image uses digest" || fail "Mesh image must use immutable digest"
-  grep -q '^TUNNEL_IMAGE=.*@sha256:' "$APP_ROOT/.env" && pass "tunnel image uses digest" || fail "tunnel image must use immutable digest"
+  case "${MESH_COS_IMAGE_ID:-}" in sha256:*) pass "Mesh image ID recorded" ;; *) fail "MESH_COS_IMAGE_ID must be recorded" ;; esac
+  ACTUAL_MESH_ID=$(docker image inspect --format '{{.Id}}' "${MESH_COS_IMAGE:-missing}" 2>/dev/null || true)
+  [ -n "$ACTUAL_MESH_ID" ] && [ "$ACTUAL_MESH_ID" = "${MESH_COS_IMAGE_ID:-}" ] && pass "local Mesh tag resolves to recorded immutable image ID" || fail "Mesh image identity mismatch"
+  printf '%s' "${TUNNEL_IMAGE:-}" | grep -Eq '^ghcr\.io/openai/tunnel-client@sha256:[0-9a-fA-F]{64}$' && pass "tunnel image uses RepoDigest" || fail "tunnel image must use immutable ghcr.io/openai/tunnel-client RepoDigest"
+  ACTUAL_TUNNEL_ID=$(docker image inspect --format '{{.Id}}' "${TUNNEL_IMAGE:-missing}" 2>/dev/null || true)
+  [ -n "$ACTUAL_TUNNEL_ID" ] && [ "$ACTUAL_TUNNEL_ID" = "${TUNNEL_IMAGE_ID:-}" ] && pass "tunnel RepoDigest resolves to recorded image ID" || fail "tunnel image identity mismatch"
+  printf '%s' "${CONTROL_PLANE_TUNNEL_ID:-}" | grep -Eq '^tunnel_[0-9a-fA-F]{32}$' && pass "tunnel_id format" || fail "invalid CONTROL_PLANE_TUNNEL_ID"
 fi
 
 if [ -d "$APP_ROOT" ]; then
   FREE_KB=$(df -Pk "$APP_ROOT" 2>/dev/null | awk 'NR==2 {print $4}')
   USED_PCT=$(df -Pk "$APP_ROOT" 2>/dev/null | awk 'NR==2 {gsub(/%/,"",$5); print $5}')
   [ "${FREE_KB:-0}" -ge 20971520 ] && pass "at least 20 GiB free on application filesystem" || fail "less than 20 GiB free"
-  [ "${USED_PCT:-100}" -ge 95 ] && warn "application filesystem is ${USED_PCT}% used; probe showed large absolute free space but QNAP capacity/snapshot headroom should be monitored" || true
+  [ "${USED_PCT:-100}" -ge 95 ] && warn "application filesystem is ${USED_PCT}% used; absolute free-space gate passes but QNAP capacity/snapshot headroom should be monitored" || true
 fi
 
 if [ -f "$APP_ROOT/compose.yaml" ] && [ -f "$APP_ROOT/.env" ]; then

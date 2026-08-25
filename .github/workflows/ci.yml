@@ -35,10 +35,24 @@ jobs:
         run: |
           sh -n deployment/qnap/qnap-environment-probe.sh
           for f in deployment/qnap/scripts/*.sh; do sh -n "$f"; done
+          bash -n scripts/build-qnap-release-bundle.sh
+      - name: Build and inspect v4.1.1 release bundle
+        run: |
+          bash scripts/build-qnap-release-bundle.sh 4.1.1
+          test -f dist/mesh-cos-mcp-qnap-v4.1.1.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.1.zip.sha256
+          test -f dist/qnap-bundle/cos-mcp/build-context/Dockerfile
+          test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
+          test ! -e dist/qnap-bundle/cos-mcp/.env
+          test ! -e dist/qnap-bundle/cos-mcp/secrets
+          sha256sum -c dist/mesh-cos-mcp-qnap-v4.1.1.zip.sha256
       - name: Validate QNAP Compose candidate
         env:
-          MESH_COS_IMAGE: mesh-cos-mcp:ci
-          TUNNEL_IMAGE: ghcr.io/openai/tunnel-client:v0.0.12
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.1'
+          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.1
+          MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
+          TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
           QNAP_MESH_ROOT: /tmp/mesh-state
           QNAP_TUNNEL_API_KEY_FILE: /tmp/tunnel-runtime-key
           MESH_UID: '65532'
@@ -52,15 +66,18 @@ jobs:
           import yaml
           data = yaml.safe_load(open('/tmp/mesh-cos-compose.rendered.yaml'))
           svc = data['services']['mesh-cos-mcp']
+          tun = data['services']['tunnel-client']
           assert float(svc['cpus']) == 2.0
           assert int(svc['mem_limit']) == 25769803776
           assert 'pids_limit' not in svc
           assert 'ports' not in svc
+          assert svc['pull_policy'] == 'never'
+          assert tun['pull_policy'] == 'never'
           assert data['networks']['mesh-cos-private']['driver'] == 'bridge'
           assert data['networks']['lan7']['external'] is True
           PY
-      - name: Build production container candidate
-        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" -t mesh-cos-mcp:ci .
+      - name: Build production container from release bundle context
+        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.1-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
       - name: Verify container security, readiness, restart, resource limits, and backup
         run: |
           set -euo pipefail

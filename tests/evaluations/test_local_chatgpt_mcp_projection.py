@@ -79,7 +79,11 @@ def test_mcp_package_matches_mesh_local_stdio_pattern() -> None:
     assert package_lock["packages"][""]["version"] == RELEASE
     assert package["scripts"]["check"]
     assert package["scripts"]["smoke"]
-    assert package["dependencies"]["@modelcontextprotocol/sdk"]
+    dependencies = package["dependencies"]
+    assert dependencies["@modelcontextprotocol/client"] == "2.0.0"
+    assert dependencies["@modelcontextprotocol/node"] == "2.0.0"
+    assert dependencies["@modelcontextprotocol/server"] == "2.0.0"
+    assert "@modelcontextprotocol/sdk" not in dependencies
 
 
 def test_builder_and_skill_docs_require_local_stdio_not_remote_https() -> None:

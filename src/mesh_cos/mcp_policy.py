@@ -73,9 +73,9 @@ class WorkspaceAgentMCPPolicy:
         if not tools:
             raise ValueError("MCP contract requires tools")
         if strict_contract:
-            registry_ref = self.contract.get("input_schema_registry")
+            registry_ref = self.contract.get("input_schema_registry", "chatgpt/mcp/tool-input-schemas.v1.json")
             if not isinstance(registry_ref, str) or not registry_ref.strip():
-                raise ValueError("MCP contract requires an input schema registry")
+                raise ValueError("MCP input schema registry reference must be non-empty")
             schema_path = Path(__file__).resolve().parents[2] / registry_ref
             schema_payload = json.loads(schema_path.read_text(encoding="utf-8"))
             if schema_payload.get("schema_version") != "mesh.cos.mcp-tool-input-schemas.v1":

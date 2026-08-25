@@ -34,12 +34,17 @@ Probe captured **2026-08-25 07:31:39 EDT** from `mdk-qnap6782xt`.
 | Application deployment root | operator-authorized | `/share/Docker/cos-mcp/` |
 | Script execution root | operator-authorized | `/share/Docker` |
 | Backup destination | operator-authorized | `/share/QNAP NAS/Mike Home/MCP/CoS/Backups` |
+| Docker CLI privilege | operator-confirmed | current SSH operator uses `sudo` for Docker commands |
 
 ## Important QNAP path behavior
 
 `/share` itself is a small tmpfs namespace and is not the capacity-bearing filesystem. Shared-folder paths below `/share/...` resolve to the QNAP data volumes. Deployment and preflight must evaluate the resolved target path, not `df /share`.
 
 The application uses the stable operator path `/share/Docker/cos-mcp/`, with canonical runtime state under `/share/Docker/cos-mcp/state/`. The backup path contains spaces and must always be shell-quoted exactly as `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"` or passed as one quoted argument.
+
+## Docker operator boundary
+
+For this operator account, run Docker-bearing deployment, verification, backup, and restore wrappers with `sudo`. That host-side privilege is not propagated into the application identity: `mesh-cos-mcp` remains UID/GID 65532 with a read-only root filesystem, all capabilities dropped, no-new-privileges, and no Docker socket.
 
 ## Resource decision
 

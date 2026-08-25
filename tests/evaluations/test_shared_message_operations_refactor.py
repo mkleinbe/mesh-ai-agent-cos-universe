@@ -33,7 +33,6 @@ def test_message_operations_contract_is_exact_and_least_privilege() -> None:
     raw = _raw_registry()
     capabilities = {item["capability"]: item for item in raw["shared_capabilities"]}
     assert "mesh-message-operations" not in capabilities
-
     registry = load_registry(REGISTRY)
     message = registry["message-ops"]
     assert message["display_name"] == "Message Operations"
@@ -90,6 +89,6 @@ def test_qnap_release_identity_preserves_v4_runtime() -> None:
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.2 QNAP Compose Discovery Fix" in release
+    assert "v4.1.3 QNAP Non-Root Deployment Reliability" in release
     assert "Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged" in release
     assert "Message Operations remains the tenth registered agent" in release

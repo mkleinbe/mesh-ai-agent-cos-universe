@@ -31,27 +31,33 @@ jobs:
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
-      - name: Validate QNAP shell scripts and Compose discovery regression
+      - name: Validate QNAP shell and regression contracts
         run: |
+          set -euo pipefail
           sh -n deployment/qnap/qnap-environment-probe.sh
           for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
           sh deployment/qnap/tests/test-compose-discovery.sh
+          sh deployment/qnap/tests/test-observability.sh
+          sh deployment/qnap/tests/test-runtime-permissions.sh
           bash -n scripts/build-qnap-release-bundle.sh
-      - name: Build and inspect v4.1.2 release bundle
+      - name: Build and inspect v4.1.3 release bundle
         run: |
-          bash scripts/build-qnap-release-bundle.sh 4.1.2
-          test -f dist/mesh-cos-mcp-qnap-v4.1.2.zip
-          test -f dist/mesh-cos-mcp-qnap-v4.1.2.zip.sha256
+          set -euo pipefail
+          bash scripts/build-qnap-release-bundle.sh 4.1.3
+          test -f dist/mesh-cos-mcp-qnap-v4.1.3.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.3.zip.sha256
           test -f dist/qnap-bundle/mesh-cos-qnap-compose.sh
+          test -f dist/qnap-bundle/mesh-cos-qnap-observability.sh
+          test -f dist/qnap-bundle/mesh-cos-qnap-permissions.sh
           test -f dist/qnap-bundle/cos-mcp/build-context/Dockerfile
           test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
           test ! -e dist/qnap-bundle/cos-mcp/.env
           test ! -e dist/qnap-bundle/cos-mcp/secrets
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.2.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.3.zip.sha256)
       - name: Validate QNAP Compose candidate
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.2'
-          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.2
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.3'
+          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.3
           MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -79,18 +85,60 @@ jobs:
           assert data['networks']['lan7']['external'] is True
           PY
       - name: Build production container from release bundle context
-        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.2-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
-      - name: Verify container security, readiness, restart, resource limits, and backup
+        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.3-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
+      - name: Verify non-root QNAP ownership handoff with real Docker bind mounts
         run: |
           set -euo pipefail
-          rm -rf /tmp/mesh-state /tmp/mesh-backups
-          mkdir -p /tmp/mesh-state/ledger /tmp/mesh-backups
-          chmod 0777 /tmp/mesh-state/ledger /tmp/mesh-backups
-          docker run --rm --user 65532:65532 \
-            -v /tmp/mesh-state:/var/lib/mesh \
-            --entrypoint python3 mesh-cos-mcp:ci \
+          ROOT=/tmp/mesh-qnap-permission-integration
+          rm -rf "$ROOT"
+          mkdir -p "$ROOT/app/state/ledger" "$ROOT/app/state/governance" "$ROOT/app/state/audit" "$ROOT/app/state/runtime" "$ROOT/app/secrets" "$ROOT/app/logs/deployment"
+          export QNAP_SCRIPT_ROOT="$GITHUB_WORKSPACE/dist/qnap-bundle"
+          export QNAP_APP_ROOT="$ROOT/app"
+          export QNAP_MESH_ROOT="$ROOT/app/state"
+          export MESH_COS_LOG_ROOT="$ROOT/app/logs/deployment"
+          export MESH_COS_SCRIPT=ci-permission-integration
+          . "$QNAP_SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
+          . "$QNAP_SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
+          mesh_obs_init ci-permission-integration
+          mesh_apply_state_permissions mesh-cos-mcp:ci 65532 65532 "$QNAP_MESH_ROOT"
+          test "$(stat -c '%u:%g' "$QNAP_MESH_ROOT")" = '65532:65532'
+          test "$(stat -c '%a' "$QNAP_MESH_ROOT")" = '711'
+          test "$(stat -c '%u:%g' "$QNAP_MESH_ROOT/ledger")" = '65532:65532'
+          test "$(stat -c '%a' "$QNAP_MESH_ROOT/ledger")" = '711'
+          printf 'ledger-stream-regression\n' > "$ROOT/source.sqlite3"
+          mesh_stage_ledger mesh-cos-mcp:ci 65532 65532 "$QNAP_MESH_ROOT" "$ROOT/source.sqlite3"
+          test "$(stat -c '%u:%g' "$QNAP_MESH_ROOT/ledger/taskledger.sqlite3")" = '65532:65532'
+          test "$(stat -c '%a' "$QNAP_MESH_ROOT/ledger/taskledger.sqlite3")" = '660'
+          docker run --rm --network none --user 65532:65532 --cap-drop ALL --security-opt no-new-privileges \
+            -v "$QNAP_MESH_ROOT:/var/lib/mesh:rw" --entrypoint /bin/sh mesh-cos-mcp:ci \
+            -c "grep -q ledger-stream-regression /var/lib/mesh/ledger/taskledger.sqlite3 && test -w /var/lib/mesh/ledger/taskledger.sqlite3"
+          printf 'not-a-real-runtime-key\n' > "$QNAP_APP_ROOT/secrets/openai-tunnel-runtime-key"
+          mesh_apply_secret_permissions mesh-cos-mcp:ci 65532 65532 "$QNAP_APP_ROOT/secrets"
+          test "$(stat -c '%u:%g' "$QNAP_APP_ROOT/secrets/openai-tunnel-runtime-key")" = '65532:65532'
+          test "$(stat -c '%a' "$QNAP_APP_ROOT/secrets/openai-tunnel-runtime-key")" = '400'
+          ! grep -R -q 'not-a-real-runtime-key' "$MESH_COS_LOG_ROOT"
+      - name: Verify hardened runtime, readiness, restart, and Docker-mediated backup
+        run: |
+          set -euo pipefail
+          APP=/tmp/mesh-runtime-app
+          STATE="$APP/state"
+          BACKUPS=/tmp/mesh-backups
+          rm -rf "$APP" "$BACKUPS"
+          mkdir -p "$STATE/ledger" "$STATE/governance" "$STATE/audit" "$STATE/runtime" "$APP/logs/deployment" "$BACKUPS"
+          export QNAP_SCRIPT_ROOT="$GITHUB_WORKSPACE/dist/qnap-bundle"
+          export QNAP_APP_ROOT="$APP"
+          export QNAP_MESH_ROOT="$STATE"
+          export QNAP_BACKUP_ROOT="$BACKUPS"
+          export MESH_COS_LOG_ROOT="$APP/logs/deployment"
+          export MESH_COS_SCRIPT=ci-runtime-integration
+          . "$QNAP_SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
+          . "$QNAP_SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
+          mesh_obs_init ci-runtime-integration
+          mesh_apply_state_permissions mesh-cos-mcp:ci 65532 65532 "$STATE"
+          docker run --rm --network none --user 65532:65532 --cap-drop ALL --security-opt no-new-privileges \
+            -v "$STATE:/var/lib/mesh:rw" --entrypoint python3 mesh-cos-mcp:ci \
             -c "from mesh_cos.ledger import TaskLedger; x=TaskLedger('/var/lib/mesh/ledger/taskledger.sqlite3'); x.conn.close()"
-          docker run -d --name mesh-cos-test \
+          docker run -d --name mesh-cos-mcp \
             --user 65532:65532 --read-only --cap-drop ALL --security-opt no-new-privileges \
             --cpus 2 --memory 24g \
             -e MESH_COS_AGENT_ID=cos \
@@ -100,25 +148,32 @@ jobs:
             -e MESH_MIN_FREE_BYTES=1048576 \
             -e MCP_AUTH_MODE=tunnel \
             -e MCP_TRUSTED_CLIENT_IP=172.30.60.3 \
-            -v /tmp/mesh-state:/var/lib/mesh \
+            -v "$STATE:/var/lib/mesh:rw" \
             --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m \
             -p 127.0.0.1:18080:8080 mesh-cos-mcp:ci
-          cleanup() { docker rm -f mesh-cos-test >/dev/null 2>&1 || true; }
+          cleanup() { docker rm -f mesh-cos-mcp >/dev/null 2>&1 || true; }
           trap cleanup EXIT
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/readyz >/dev/null && break; sleep 1; done
           curl -fsS http://127.0.0.1:18080/healthz >/dev/null
           curl -fsS http://127.0.0.1:18080/readyz >/dev/null
-          test "$(docker exec mesh-cos-test id -u)" = "65532"
-          test "$(docker inspect -f '{{.HostConfig.Privileged}}' mesh-cos-test)" = "false"
-          test "$(docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' mesh-cos-test)" = "true"
-          test "$(docker inspect -f '{{.HostConfig.NanoCpus}}' mesh-cos-test)" = "2000000000"
-          test "$(docker inspect -f '{{.HostConfig.Memory}}' mesh-cos-test)" = "25769803776"
-          test "$(docker exec mesh-cos-test sh -c "grep '^CapEff:' /proc/1/status | awk '{print \$2}'")" = "0000000000000000"
-          docker exec mesh-cos-test test ! -S /var/run/docker.sock
+          test "$(docker exec mesh-cos-mcp id -u)" = "65532"
+          test "$(docker inspect -f '{{.HostConfig.Privileged}}' mesh-cos-mcp)" = "false"
+          test "$(docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' mesh-cos-mcp)" = "true"
+          test "$(docker inspect -f '{{.HostConfig.NanoCpus}}' mesh-cos-mcp)" = "2000000000"
+          test "$(docker inspect -f '{{.HostConfig.Memory}}' mesh-cos-mcp)" = "25769803776"
+          test "$(docker exec mesh-cos-mcp sh -c "grep '^CapEff:' /proc/1/status | awk '{print \$2}'")" = "0000000000000000"
+          docker exec mesh-cos-mcp test ! -S /var/run/docker.sock
           test "$(curl -sS -o /tmp/mcp-denied.json -w '%{http_code}' -X POST -H 'content-type: application/json' -d '{}' http://127.0.0.1:18080/mcp)" = "403"
-          docker exec mesh-cos-test python3 deployment/qnap/runtime_preflight.py
-          docker exec mesh-cos-test python3 deployment/qnap/sqlite_backup.py --source /var/lib/mesh/ledger/taskledger.sqlite3 --destination /var/lib/mesh/ledger/ci-backup.sqlite3
-          docker exec mesh-cos-test python3 -c "import sqlite3; c=sqlite3.connect('/var/lib/mesh/ledger/ci-backup.sqlite3'); assert c.execute('pragma integrity_check').fetchone()[0]=='ok'; c.close()"
-          docker restart mesh-cos-test >/dev/null
+          docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py
+          sh "$QNAP_SCRIPT_ROOT/mesh-cos-mcp-backup.sh" ci
+          BACKUP=$(find "$BACKUPS" -mindepth 1 -maxdepth 2 -name taskledger.sqlite3 -print | head -n 1)
+          test -n "$BACKUP"
+          python - "$BACKUP" <<'PY'
+          import sqlite3, sys
+          c = sqlite3.connect(sys.argv[1])
+          assert c.execute('pragma integrity_check').fetchone()[0] == 'ok'
+          c.close()
+          PY
+          docker restart mesh-cos-mcp >/dev/null
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/readyz >/dev/null && break; sleep 1; done
           curl -fsS http://127.0.0.1:18080/readyz >/dev/null

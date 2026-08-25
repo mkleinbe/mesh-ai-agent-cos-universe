@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION=${1:-4.1.2}
+VERSION=${1:-4.1.3}
 TAG="v${VERSION}"
 BUNDLE=${BUNDLE_DIR:-dist/qnap-bundle}
 ASSET=${ASSET_PATH:-dist/mesh-cos-mcp-qnap-v${VERSION}.zip}
@@ -23,9 +23,11 @@ cp deployment/qnap/backup-restore.md "$BUNDLE/cos-mcp/"
 cp deployment/qnap/qnap-environment-probe.sh "$BUNDLE/cos-mcp/"
 cp deployment/qnap/scripts/*.sh "$BUNDLE/"
 cp deployment/qnap-environment.md "$BUNDLE/cos-mcp/"
+cp deployment/qnap/DEBUGGING-NOTES-v4.1.3.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-production-preflight.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review.md "$BUNDLE/cos-mcp/"
-cp docs/release-4.1.2-qnap-compose-discovery-fix.md "$BUNDLE/cos-mcp/"
+cp docs/qnap-deployment-observability-standard.md "$BUNDLE/cos-mcp/"
+cp docs/release-4.1.3-qnap-nonroot-observability.md "$BUNDLE/cos-mcp/"
 cp RELEASE.md "$BUNDLE/cos-mcp/"
 printf 'tag=%s\nversion=%s\ncommit=%s\n' "$TAG" "$VERSION" "$COMMIT" > "$BUNDLE/cos-mcp/release-metadata.txt"
 
@@ -44,6 +46,8 @@ test -f "$BUILD_CONTEXT/mcp/package-lock.json"
 test -f "$BUILD_CONTEXT/src/mesh_cos/mcp_runtime.py"
 test -f "$BUILD_CONTEXT/deployment/qnap/runtime_preflight.py"
 test -f "$BUNDLE/mesh-cos-qnap-compose.sh"
+test -f "$BUNDLE/mesh-cos-qnap-observability.sh"
+test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"
 
 chmod +x "$BUNDLE"/*.sh "$BUNDLE/cos-mcp/qnap-environment-probe.sh"
 mkdir -p "$(dirname "$ASSET")"

@@ -1,7 +1,8 @@
 name: mesh-cos-mcp
 services:
   mesh-cos-mcp:
-    image: ${MESH_COS_IMAGE:?set immutable image digest}
+    image: ${MESH_COS_IMAGE:?prepared local Mesh image required}
+    pull_policy: never
     container_name: mesh-cos-mcp
     restart: unless-stopped
     user: "${MESH_UID:-65532}:${MESH_GID:-65532}"
@@ -44,7 +45,8 @@ services:
         max-file: ${MESH_LOG_MAX_FILES:-5}
 
   tunnel-client:
-    image: ${TUNNEL_IMAGE:?set exact tunnel-client image digest}
+    image: ${TUNNEL_IMAGE:?prepared immutable tunnel RepoDigest required}
+    pull_policy: never
     container_name: mesh-cos-tunnel
     restart: unless-stopped
     user: "65532:65532"

@@ -158,3 +158,39 @@ Feature: QNAP production boundary for mesh-cos-mcp
     When the backup script creates a canonical-state backup
     Then the path is passed as one quoted shell argument
     And the copied backup SHA-256 matches the completed online SQLite backup
+
+  Scenario: QNAP-031 Prepare creates a release-bound local image identity
+    Given the release bundle contains the minimal Docker build context
+    When mesh-cos-mcp-prepare.sh runs
+    Then it builds or reuses the versioned local Mesh image
+    And it records the content-addressed Mesh image ID in generated .env
+    And Compose is configured with pull policy never
+
+  Scenario: QNAP-032 Tunnel secret is captured outside configuration
+    When the tunnel runtime key does not already exist
+    Then prepare reads it with terminal echo disabled
+    And writes it only to the approved secret file
+    And sets owner 65532:65532 and mode 0400
+    And the runtime key is absent from .env and backups
+
+  Scenario: QNAP-033 Canonical ledger staging is automated without replacement
+    Given the canonical target ledger is absent
+    When prepare receives an explicitly selected existing TaskLedger source
+    Then it stages the database atomically at the canonical target
+    And sets owner 65532:65532
+    And runs canonical runtime and SQLite integrity preflight
+    But when the canonical target already exists prepare preserves it
+
+  Scenario: QNAP-034 Deploy orchestrates the safe lifecycle
+    When mesh-cos-mcp-deploy.sh runs
+    Then an existing running service is backed up before changes
+    And prepare and preflight run before Compose deployment
+    And both containers must become healthy
+    And verification runs automatically
+    And a post-deploy online backup is created automatically
+
+  Scenario: QNAP-035 Configuration backup excludes secret material
+    When a deployment backup is created
+    Then the online TaskLedger backup and non-secret Compose environment release metadata and image IDs are captured
+    And SHA-256 verification passes
+    And the secrets directory and tunnel runtime key are never copied

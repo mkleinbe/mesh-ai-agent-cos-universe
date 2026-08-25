@@ -140,3 +140,21 @@ Feature: QNAP production boundary for mesh-cos-mcp
     When they cross the Node to Python bridge
     Then at most one Python bridge invocation owns the canonical SQLite write path at a time
     And excess queued work is bounded and fails closed
+
+  Scenario: QNAP-028 Deployment uses the approved QNAP roots
+    When the QNAP deployment bundle is staged
+    Then the application root is /share/Docker/cos-mcp
+    And deployment scripts are invoked from /share/Docker
+    And canonical state is below /share/Docker/cos-mcp/state
+
+  Scenario: QNAP-029 Main container uses approved resource limits
+    When Compose is rendered
+    Then mesh-cos-mcp is limited to 2 CPUs
+    And mesh-cos-mcp is limited to 24 GiB memory
+    And mesh-cos-mcp has no PID limit
+
+  Scenario: QNAP-030 Backup path with spaces is handled safely
+    Given the backup root is /share/QNAP NAS/Mike Home/MCP/CoS/Backups
+    When the backup script creates a canonical-state backup
+    Then the path is passed as one quoted shell argument
+    And the copied backup SHA-256 matches the completed online SQLite backup

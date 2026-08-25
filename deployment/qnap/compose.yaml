@@ -4,14 +4,12 @@ services:
     image: ${MESH_COS_IMAGE:?set immutable image digest}
     container_name: mesh-cos-mcp
     restart: unless-stopped
-    user: "${MESH_UID:?}:${MESH_GID:?}"
+    user: "${MESH_UID:-65532}:${MESH_GID:-65532}"
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    pids_limit: ${MESH_PIDS_LIMIT:-128}
-    cpus: ${MESH_CPU_LIMIT:-1.0}
-    mem_limit: ${MESH_MEMORY_LIMIT:-1g}
-    mem_reservation: ${MESH_MEMORY_RESERVATION:-512m}
+    cpus: ${MESH_CPU_LIMIT:-2.0}
+    mem_limit: ${MESH_MEMORY_LIMIT:-24g}
     environment:
       MESH_COS_AGENT_ID: cos
       MESH_COS_LEDGER_PATH: /var/lib/mesh/ledger/taskledger.sqlite3
@@ -19,12 +17,13 @@ services:
       MESH_COS_KILL_SWITCH: "false"
       MESH_COS_BRIDGE_TIMEOUT_MS: ${MESH_COS_BRIDGE_TIMEOUT_MS:-30000}
       MESH_COS_MAX_BRIDGE_QUEUE: ${MESH_COS_MAX_BRIDGE_QUEUE:-32}
+      MESH_MIN_FREE_BYTES: ${MESH_MIN_FREE_BYTES:-21474836480}
       MCP_BIND_HOST: 0.0.0.0
       MCP_PORT: 8080
       MCP_AUTH_MODE: tunnel
       MCP_TRUSTED_CLIENT_IP: 172.30.60.3
     volumes:
-      - ${QNAP_MESH_ROOT:?verified QNAP state root required}:/var/lib/mesh:rw
+      - ${QNAP_MESH_ROOT:-/share/Docker/cos-mcp/state}:/var/lib/mesh:rw
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=64m
     networks:
@@ -52,7 +51,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    pids_limit: 64
+    cpus: 0.25
     mem_limit: 256m
     command: ["--control-plane.api-key=file:/run/secrets/openai_tunnel_api_key"]
     environment:
@@ -62,7 +61,7 @@ services:
       LOG_FORMAT: json
       HEALTH_LISTEN_ADDR: 127.0.0.1:8080
     volumes:
-      - ${QNAP_TUNNEL_API_KEY_FILE:?verified runtime key file required}:/run/secrets/openai_tunnel_api_key:ro
+      - ${QNAP_TUNNEL_API_KEY_FILE:-/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key}:/run/secrets/openai_tunnel_api_key:ro
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=32m
     networks:

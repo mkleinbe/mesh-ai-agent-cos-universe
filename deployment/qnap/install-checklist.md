@@ -1,21 +1,30 @@
 # QNAP Installation Checklist
-- [ ] Fresh QNAP environment evidence captured
-- [ ] x86_64 architecture reconfirmed
-- [ ] Container Station and Compose versions reconfirmed
-- [ ] `lan7` exists and `192.168.7.60` is free
-- [ ] Private subnet `172.30.60.0/29` does not overlap existing Docker/VPN networks
-- [ ] QNAP state root and UID/GID verified
-- [ ] Canonical SQLite ledger staged and backed up
-- [ ] Image built/tested for linux/amd64 and immutable digest recorded
-- [ ] OpenAI tunnel-client exact release/digest verified
-- [ ] Real `.env` created outside Git and access restricted
-- [ ] Container Station Application validates Compose YAML
+- [x] QNAP probe captured on 2026-08-25
+- [x] linux/amd64 confirmed
+- [x] 4 CPU cores and approximately 62.7 GiB RAM confirmed
+- [x] QTS 5.2.10 build 20260731 confirmed
+- [x] Docker 27.1.2-qnap8 and Compose 2.29.1-qnap2 confirmed
+- [x] `lan7` verified as QNAP qnet on `eth1`, subnet `192.168.7.0/24`
+- [x] `172.30.60.0/29` confirmed non-overlapping with probed Docker/LXC/LXD networks
+- [ ] Confirm no non-Docker LAN device is using `192.168.7.60`
+- [ ] Confirm Container Station application-package version in QTS UI
+- [ ] Application staged at `/share/Docker/cos-mcp`
+- [ ] Scripts staged/run from `/share/Docker`
+- [ ] State tree prepared and owned by runtime UID/GID `65532:65532`
+- [ ] Canonical SQLite ledger staged at `/share/Docker/cos-mcp/state/ledger/taskledger.sqlite3`
+- [ ] Backup directory `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"` exists and is writable
+- [ ] Mesh and tunnel images resolved to immutable digests
+- [ ] Tunnel runtime secret file exists, owner `65532:65532`, mode `0400`
+- [ ] `.env` created from `.env.example`
+- [ ] Host preflight passes
+- [ ] Container Station accepts rendered Compose
+- [ ] Main container shows 2 CPU / 24 GiB limit and no PID limit
 - [ ] No privileged mode, host networking, Docker socket, devices, or broad NAS mounts
-- [ ] Application deployed by authorized human
 - [ ] `/healthz` and `/readyz` healthy
-- [ ] Tunnel doctor/readiness healthy
+- [ ] Direct non-tunnel `/mcp` request is denied
+- [ ] Tunnel is healthy
 - [ ] ChatGPT tool scan matches canonical CoS allowlist
 - [ ] Human-only tools absent
-- [ ] Read-only MCP operation succeeds
-- [ ] Governed write succeeds with canonical audit evidence
-- [ ] Deployed image digests recorded
+- [ ] Read-only and governed-write acceptance operations succeed
+- [ ] Backup test succeeds
+- [ ] Deployed image digests and audit evidence recorded

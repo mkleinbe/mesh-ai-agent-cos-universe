@@ -18,6 +18,7 @@ RELEASE_METADATA="$APP_ROOT/release-metadata.txt"
 COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
+IMAGE_PROVENANCE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"
 MESH_COS_SCRIPT=mesh-cos-mcp-prepare.sh
 export QNAP_SCRIPT_ROOT APP_ROOT STATE_ROOT BACKUP_ROOT SECRET_FILE MESH_UID MESH_GID MESH_COS_SCRIPT
 
@@ -28,6 +29,8 @@ mesh_init_docker_config || mesh_fail 1 bootstrap "unable to initialize deploymen
 
 [ -r "$PERM_LIB" ] || mesh_fail 1 bootstrap "runtime permission helper missing: $PERM_LIB"
 . "$PERM_LIB"
+[ -r "$IMAGE_PROVENANCE_LIB" ] || mesh_fail 1 bootstrap "image provenance helper missing: $IMAGE_PROVENANCE_LIB"
+. "$IMAGE_PROVENANCE_LIB"
 
 fail() { mesh_fail 1 "${MESH_COS_STAGE:-prepare}" "$1"; }
 info() { mesh_log INFO info "$1"; }
@@ -65,8 +68,8 @@ cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 [ -d "$BUILD_CONTEXT" ] || fail "$BUILD_CONTEXT is missing from the release bundle"
 [ -f "$BUILD_CONTEXT/Dockerfile" ] || fail "$BUILD_CONTEXT/Dockerfile is missing"
 [ -r "$RELEASE_METADATA" ] || fail "release metadata is missing: $RELEASE_METADATA"
-EXPECTED_RELEASE=$(sed -n 's/^version=//p' "$RELEASE_METADATA" | head -n 1)
-EXPECTED_COMMIT=$(sed -n 's/^commit=//p' "$RELEASE_METADATA" | head -n 1)
+EXPECTED_RELEASE=$(mesh_release_metadata_value version "$RELEASE_METADATA")
+EXPECTED_COMMIT=$(mesh_release_metadata_value commit "$RELEASE_METADATA")
 [ -n "$EXPECTED_RELEASE" ] || fail "release metadata has no version"
 [ -n "$EXPECTED_COMMIT" ] || fail "release metadata has no commit"
 printf '%s' "$EXPECTED_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$' || fail "release metadata commit is not a 40-character Git SHA"
@@ -92,9 +95,9 @@ if [ "${MESH_COS_FORCE_REBUILD:-0}" = "1" ]; then
   REBUILD_IMAGE=1
   info "forced Mesh image rebuild requested"
 elif docker image inspect "$MESH_IMAGE_TAG" >/dev/null 2>&1; then
-  EXISTING_IMAGE_VERSION=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$MESH_IMAGE_TAG" 2>/dev/null || true)
-  EXISTING_IMAGE_REVISION=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$MESH_IMAGE_TAG" 2>/dev/null || true)
-  if [ "$EXISTING_IMAGE_VERSION" != "$EXPECTED_IMAGE_VERSION" ] || [ "$EXISTING_IMAGE_REVISION" != "$EXPECTED_COMMIT" ]; then
+  EXISTING_IMAGE_VERSION=$(mesh_image_label "$MESH_IMAGE_TAG" org.opencontainers.image.version)
+  EXISTING_IMAGE_REVISION=$(mesh_image_label "$MESH_IMAGE_TAG" org.opencontainers.image.revision)
+  if ! mesh_image_provenance_matches "$MESH_IMAGE_TAG" "$EXPECTED_IMAGE_VERSION" "$EXPECTED_COMMIT"; then
     mesh_log WARN image_provenance_mismatch "mesh_image=$MESH_IMAGE_TAG expected_version=$EXPECTED_IMAGE_VERSION actual_version=$EXISTING_IMAGE_VERSION expected_revision=$EXPECTED_COMMIT actual_revision=$EXISTING_IMAGE_REVISION"
     info "existing local Mesh image provenance mismatch; rebuilding $MESH_IMAGE_TAG"
     REBUILD_IMAGE=1
@@ -115,8 +118,8 @@ if [ "$REBUILD_IMAGE" -eq 1 ]; then
       -t "$MESH_IMAGE_TAG" "$BUILD_CONTEXT" || fail "release-bound Mesh image build failed"
 fi
 
-BUILT_IMAGE_VERSION=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' "$MESH_IMAGE_TAG" 2>/dev/null || true)
-BUILT_IMAGE_REVISION=$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$MESH_IMAGE_TAG" 2>/dev/null || true)
+BUILT_IMAGE_VERSION=$(mesh_image_label "$MESH_IMAGE_TAG" org.opencontainers.image.version)
+BUILT_IMAGE_REVISION=$(mesh_image_label "$MESH_IMAGE_TAG" org.opencontainers.image.revision)
 [ "$BUILT_IMAGE_VERSION" = "$EXPECTED_IMAGE_VERSION" ] || fail "built Mesh image version label mismatch"
 [ "$BUILT_IMAGE_REVISION" = "$EXPECTED_COMMIT" ] || fail "built Mesh image revision label mismatch"
 MESH_IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$MESH_IMAGE_TAG" 2>/dev/null || true)

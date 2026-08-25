@@ -6,7 +6,7 @@ The canonical Mesh CoS authority/runtime contract remains `4.0.0`. The exact 10-
 
 ## Root cause fixed
 
-v4.1.3 served remote MCP with the v1 monolithic SDK and a server-managed Streamable HTTP session map. It created a transport only for legacy `initialize` and required `Mcp-Session-Id` afterward. Current MCP 2026-07-28 clients can begin with `server/discover` and do not depend on that legacy protocol-session lifecycle.
+v4.1.3 served remote MCP with the v1 monolithic SDK and a server-managed Streamable HTTP session map. It created a transport only for legacy `initialize` and required `Mcp-Session-Id` afterward. Current MCP clients can begin with `server/discover` and do not depend on that legacy protocol-session lifecycle.
 
 The regression test proved the exact failure against the old implementation:
 
@@ -22,10 +22,10 @@ The request was rejected in `mesh-cos-mcp` before governed tool dispatch, the Py
 v4.1.4:
 
 - migrates from `@modelcontextprotocol/sdk` v1 to pinned stable v2 split packages;
-- serves remote MCP using `createMcpHandler(() => createServer(...))` with the Node HTTP adapter;
+- serves remote MCP using the v2 Node/server HTTP adapter and stateless request handling;
 - removes the manual eight-entry protocol-session map;
-- supports MCP 2026-07-28 `server/discover` without legacy `initialize` or `Mcp-Session-Id`;
-- retains the SDK v2 stateless compatibility path for legacy 2025-era clients;
+- supports current `server/discover` without requiring legacy `initialize` or `Mcp-Session-Id`;
+- retains the SDK v2 compatibility path for older clients;
 - preserves `MCP_AUTH_MODE=tunnel` and the private `MCP_TRUSTED_CLIENT_IP` gate before dispatch;
 - strengthens `/readyz` so readiness now requires a successful modern MCP discovery probe as well as bound-agent and audit-chain health;
 - migrates local stdio certification to the v2 client/server package split.
@@ -50,6 +50,10 @@ The v4.1.4 candidate requires:
 - hardened non-root runtime controls, restart recovery, and Docker-mediated SQLite backup integrity.
 
 Security applicability is **TARGETED**. See `docs/qnap-security-review-v4.1.4.md`.
+
+## QNAP operator privilege
+
+On the current QNAP operator account, Docker access requires `sudo`. The supported upgrade command therefore invokes the deployment orchestrator with `sudo`, which provides host-side Docker/Container Station authority for the deployment process. This does not change the runtime identity: the long-running `mesh-cos-mcp` container still runs as UID/GID `65532:65532` with read-only root filesystem, dropped capabilities, no-new-privileges, and no Docker socket.
 
 ## Resource policy
 
@@ -85,4 +89,5 @@ See:
 - `docs/qnap-mcp-502-debugging-v4.1.4.md`
 - `docs/release-4.1.4-qnap-modern-mcp-transport.md`
 - `docs/qnap-security-review-v4.1.4.md`
+- `deployment/qnap/DEPLOYMENT-STEPS.md`
 - `deployment/qnap/CHATGPT-ACCEPTANCE.md`

@@ -11,11 +11,13 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const mcpDir = path.resolve(scriptDir, '..');
 const repoRoot = path.resolve(mcpDir, '..');
 const contract = JSON.parse(fs.readFileSync(path.join(repoRoot, 'chatgpt', 'mcp', 'mesh-cos-mcp.v1.json'), 'utf8'));
+const deploymentRelease = '4.1.6';
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mesh-cos-mcp-'));
 const ledgerPath = path.join(tempDir, 'ledger.sqlite3');
 const env = {
   ...process.env,
   MESH_COS_AGENT_ID: 'cos',
+  MESH_COS_DEPLOYMENT_RELEASE: deploymentRelease,
   MESH_COS_LEDGER_PATH: ledgerPath,
   MESH_COS_KILL_SWITCH: 'false',
 };
@@ -35,6 +37,7 @@ async function call(name, args = {}) {
   const payload = JSON.parse(textItem.text);
   assert.notEqual(response.isError, true, `${name} failed: ${textItem.text}`);
   assert.equal(payload.mcp_version, contract.runtime_release);
+  assert.equal(payload.deployment_release, deploymentRelease);
   assert.equal(payload.agent_id, 'cos');
   assert.ok(payload.request_id);
   return payload.result;
@@ -77,7 +80,7 @@ try {
   assert.ok(deniedText && 'text' in deniedText);
   assert.equal(deniedText.text.includes('do-not-leak'), false);
 
-  console.log(`CoS MCP stdio certification passed: ${names.length} CoS tools, 10-agent roster, local canonical persistence, human-only exclusion, Devil's Advocate shared-capability principal exclusion, and safe denial behavior.`);
+  console.log(`CoS MCP stdio certification passed: ${names.length} CoS tools, 10-agent roster, deployment release ${deploymentRelease}, local canonical persistence, human-only exclusion, Devil's Advocate shared-capability principal exclusion, and safe denial behavior.`);
 } finally {
   await client.close();
   fs.rmSync(tempDir, { recursive: true, force: true });

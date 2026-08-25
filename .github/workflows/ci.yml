@@ -45,7 +45,7 @@ jobs:
           test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
           test ! -e dist/qnap-bundle/cos-mcp/.env
           test ! -e dist/qnap-bundle/cos-mcp/secrets
-          sha256sum -c dist/mesh-cos-mcp-qnap-v4.1.1.zip.sha256
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.1.zip.sha256)
       - name: Validate QNAP Compose candidate
         env:
           MESH_COS_DEPLOYMENT_RELEASE: '4.1.1'

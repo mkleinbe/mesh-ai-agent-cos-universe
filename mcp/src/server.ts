@@ -1,8 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { Server } from '@modelcontextprotocol/server';
 import { callPythonBridge, PythonBridgeError, repositoryRoot } from './python-bridge.js';
 
 export const MAX_ARGUMENT_BYTES = 1_000_000;
@@ -44,8 +43,8 @@ export function createServer(env:NodeJS.ProcessEnv=process.env,contract:MCPContr
   const tools=toolsForAgent(contract,agentId);
   const names=new Set(tools.map(t=>t.name));
   const server=new Server({name:contract.name,version:contract.runtime_release},{capabilities:{tools:{}}});
-  server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:tools.map(t=>({name:t.name,description:t.description??t.name,inputSchema:{type:'object' as const,additionalProperties:true}}))}));
-  server.setRequestHandler(CallToolRequestSchema,async request=>{
+  server.setRequestHandler('tools/list',async()=>({tools:tools.map(t=>({name:t.name,description:t.description??t.name,inputSchema:{type:'object' as const,additionalProperties:true}}))}));
+  server.setRequestHandler('tools/call',async request=>{
     const requestId=randomUUID();
     const started=Date.now();
     const toolName=request.params.name;

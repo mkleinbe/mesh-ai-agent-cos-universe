@@ -1,73 +1,94 @@
-# v4.1.3 QNAP Non-Root Deployment Reliability
+# v4.1.4 QNAP Modern MCP Transport Reliability
 
-`v4.1.3` is a corrective QNAP deployment release driven by the second live operator run. It fixes the QTS shared-folder ownership failure and the coupled permission/backup assumptions that would have failed later, and it establishes a durable observability standard for Mesh deployment and update tooling.
+`v4.1.4` is a corrective QNAP production release for the `502 Upstream or external service errors` observed through the published `Mesh CoS MCP` ChatGPT app after an initially successful Secure MCP Tunnel invocation.
 
-The governed Mesh Chief of Staff runtime, authority model, network boundary, canonical TaskLedger semantics, Secure MCP Tunnel, resource policy, and 10-agent workforce are unchanged.
+The canonical Mesh CoS authority/runtime contract remains `4.0.0`. The exact 10-agent roster, 27 governed tools, human-only operations, canonical TaskLedger, `COMPLETED != VERIFIED`, resource policy, and Secure MCP Tunnel trust boundary are unchanged.
 
 ## Root cause fixed
 
-The live v4.1.2 run proved that a normal QNAP SSH operator may have Container Station/Docker authority while lacking host `chown` authority over shared-folder paths. v4.1.2 incorrectly attempted host-side `chown -R 65532:65532` during preparation, causing `Operation not permitted` before image build or service creation.
+v4.1.3 served remote MCP with the v1 monolithic SDK and a server-managed Streamable HTTP session map. It created a transport only for legacy `initialize` and required `Mcp-Session-Id` afterward. Current MCP clients can begin with `server/discover` and do not depend on that legacy protocol-session lifecycle.
 
-v4.1.3 removes that host-privilege assumption. It builds/reuses the release-bound image first, then uses a short-lived Docker helper with network disabled, read-only root filesystem, all capabilities dropped before adding only ownership/mode capabilities, and only the explicit state or secrets bind mount. The long-running application runtime remains UID/GID `65532:65532` and retains its existing least-privilege controls.
+The regression test proved the exact failure against the old implementation:
 
-## Coupled defects fixed
+```text
+FAIL server/discover expected HTTP 200, got 400
+{"error":"invalid_session"}
+```
 
-- **Host ownership handoff:** no QNAP host `chown` to UID/GID 65532 is required.
-- **Runtime permission verification:** host preflight validates owner/mode plus actual read/write access from a UID-65532 container instead of incorrectly requiring the SSH user to read/write canonical state.
-- **Backup export:** SQLite online backups are exported with `docker cp` and temporary state is removed from inside the runtime container, so the SSH operator does not need direct ownership of runtime-created files.
-- **Docker client configuration:** deployment uses `/share/Docker/cos-mcp/.docker-cli` as a writable `DOCKER_CONFIG`, avoiding the inaccessible Container Station QPKG home warning observed in the live trace.
+The request was rejected in `mesh-cos-mcp` before governed tool dispatch, the Python bridge, or canonical SQLite access. The hosted tunnel path then surfaced the upstream target failure as a 502.
 
-## Deployment observability
+## Causal correction
 
-All QNAP deploy, prepare, preflight, verify, and backup scripts now share a structured run log. The default log root is:
+v4.1.4:
 
-`/share/Docker/cos-mcp/logs/deployment`
+- migrates from `@modelcontextprotocol/sdk` v1 to pinned stable v2 split packages;
+- serves remote MCP using the v2 Node/server HTTP adapter and stateless request handling;
+- removes the manual eight-entry protocol-session map;
+- supports current `server/discover` without requiring legacy `initialize` or `Mcp-Session-Id`;
+- retains the SDK v2 compatibility path for older clients;
+- preserves `MCP_AUTH_MODE=tunnel` and the private `MCP_TRUSTED_CLIENT_IP` gate before dispatch;
+- strengthens `/readyz` so readiness now requires a successful modern MCP discovery probe as well as bound-agent and audit-chain health;
+- migrates local stdio certification to the v2 client/server package split.
 
-Every run records a run ID, timestamps, stages, safe command classifications, return codes, component/script identity, and bounded platform/filesystem/container evidence. Failure output includes `DIAGNOSTIC_LOG=<path>`.
-
-Diagnostics explicitly do not collect secret-file contents, `.env` contents, process environments, credential-bearing command arguments, or tunnel-client logs. Bounded application log tails are defensively redacted.
-
-`docs/qnap-deployment-observability-standard.md` makes this instrumentation contract reusable for future Mesh QNAP deployment, update, rollback, backup, migration, and maintenance scripts.
-
-## Security boundary
-
-The permission helper is operator-side deployment infrastructure, not part of the MCP callable surface. It is short lived, has no Docker socket, uses `--network none`, a read-only root filesystem, `--cap-drop ALL`, validated numeric UID/GID, explicit bind mounts, and only the ownership/mode capabilities required for QNAP shared-folder remediation. Ledger staging runs as UID/GID 65532 and streams the approved source through stdin rather than placing canonical data in command arguments.
-
-No MCP tools, agent authority, human-only operations, ingress paths, published ports, or secret-handling authority are expanded.
+The fix does not add retry masking, resource inflation, timeout inflation, direct ingress, or authorization bypasses.
 
 ## Regression and verification gates
 
-The release gate includes:
+The v4.1.4 candidate requires:
 
-- QNAP-038 through QNAP-041 ready BDD scenarios;
-- shell regressions for Compose discovery, structured observability, return-code preservation, secret non-collection, numeric UID/GID validation, and constrained permission-helper arguments;
-- actual Docker bind-mount ownership handoff to UID/GID 65532;
-- runtime-identity state read/write evidence;
-- Docker-mediated SQLite backup export and integrity verification;
-- full Node/MCP certification, Python tests with 100% branch-aware coverage, Ruff, mypy, Bandit, contract/doc drift checks, release-bundle checksum validation, Compose/resource validation, production image build, hardened runtime controls, readiness, direct MCP denial, restart recovery, and backup integrity.
+- QNAP-042 through QNAP-047 ready BDD scenarios;
+- production-image modern `server/discover` acceptance;
+- at least ten consecutive stateless MCP requests without session loss or restart;
+- bound `cos` identity preservation;
+- exact 27-tool CoS catalog and 10-agent roster certification;
+- human-only tool exclusion;
+- direct untrusted MCP ingress HTTP 403;
+- npm build/tests/smoke/audit;
+- Python contracts, drift checks, Ruff, mypy, Bandit, compileall, and 100% branch-aware coverage;
+- deterministic QNAP bundle/checksum generation;
+- real Docker bind-mount ownership handoff;
+- hardened non-root runtime controls, restart recovery, and Docker-mediated SQLite backup integrity.
+
+Security applicability is **TARGETED**. See `docs/qnap-security-review-v4.1.4.md`.
+
+## QNAP operator privilege
+
+On the current QNAP operator account, Docker access requires `sudo`. The supported upgrade command therefore invokes the deployment orchestrator with `sudo`, which provides host-side Docker/Container Station authority for the deployment process. This does not change the runtime identity: the long-running `mesh-cos-mcp` container still runs as UID/GID `65532:65532` with read-only root filesystem, dropped capabilities, no-new-privileges, and no Docker socket.
 
 ## Resource policy
 
-`mesh-cos-mcp` remains limited to 2 CPUs and 24 GiB RAM with no PID limit. `mesh-cos-tunnel` remains limited to 0.25 CPU and 256 MiB RAM with no PID limit.
+- `mesh-cos-mcp`: 2 CPUs, 24 GiB RAM, no PID limit.
+- `mesh-cos-tunnel`: 0.25 CPU, 256 MiB RAM, no PID limit.
+
+No resource increase is part of the remediation.
 
 ## Release assets
 
-- `mesh-cos-mcp-qnap-v4.1.3.zip`
-- `mesh-cos-mcp-qnap-v4.1.3.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.1.4.zip`
+- `mesh-cos-mcp-qnap-v4.1.4.zip.sha256`
 
-The bundle contains the release-bound build context, operator scripts, observability and permission helpers, debugging record, runbooks, and ChatGPT acceptance instructions. It contains no runtime secrets and no canonical TaskLedger data.
+The release bundle contains the release-bound build context and QNAP operator tooling. It contains no runtime tunnel secret and no canonical TaskLedger data.
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.1.3`
-- Semantic tag: `v4.1.3`
-- Container image label default: `4.1.3-qnap`
-- Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged
-- Canonical workforce: exactly 10 registered agents
-- Message Operations remains the tenth registered agent.
-- Mesh Devil's Advocate remains the external governed shared Skill, not an agent principal.
-- Human-only operations remain `approval.record_decision` and `reliability.human_override`.
-- `COMPLETED != VERIFIED` remains unchanged.
-- Production connectivity remains OpenAI Secure MCP Tunnel.
+- Repository/QNAP deployment release: `4.1.4`
+- Semantic tag: `v4.1.4`
+- Container image label default: `4.1.4-qnap`
+- Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
+- Canonical workforce: exactly 10 agents
+- Message Operations remains the tenth registered agent
+- Mesh Devil's Advocate remains a governed shared Skill, not agent 11
+- Human-only operations remain `approval.record_decision` and `reliability.human_override`
+- Production transport remains OpenAI Secure MCP Tunnel
 
-See `docs/release-4.1.3-qnap-nonroot-observability.md`, `docs/qnap-deployment-observability-standard.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, and `deployment/qnap/CHATGPT-ACCEPTANCE.md`.
+## Production acceptance boundary
+
+Repository/container verification cannot prove the hosted ChatGPT path after an on-premises upgrade. After deploying the v4.1.4 bundle to QNAP, the operator must run the published-app sequential acceptance suite before the production 502 blocker is closed.
+
+See:
+
+- `docs/qnap-mcp-502-debugging-v4.1.4.md`
+- `docs/release-4.1.4-qnap-modern-mcp-transport.md`
+- `docs/qnap-security-review-v4.1.4.md`
+- `deployment/qnap/DEPLOYMENT-STEPS.md`
+- `deployment/qnap/CHATGPT-ACCEPTANCE.md`

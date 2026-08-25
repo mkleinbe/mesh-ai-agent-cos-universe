@@ -1,6 +1,6 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this only after `mesh-cos-mcp-deploy.sh` reports successful deployment, verification, and post-deploy backup.
+Run this only after the v4.1.4 `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
 
 ## 1. OpenAI tunnel prerequisites
 
@@ -14,22 +14,16 @@ In OpenAI Platform tunnel settings:
 
 The QNAP tunnel client needs outbound HTTPS to `api.openai.com:443` and local private reachability to `mesh-cos-mcp`. It does not need inbound internet exposure.
 
-Official guide: https://developers.openai.com/api/docs/guides/secure-mcp-tunnels
+## 2. Select or refresh the ChatGPT app
 
-## 2. Create the ChatGPT developer-mode app
+Use ChatGPT on the web with a workspace/account allowed to use the custom MCP app.
 
-Use ChatGPT on the web with a workspace/account that is allowed to create custom MCP apps.
+1. Open the existing `Mesh CoS MCP` app or its developer-mode configuration.
+2. Confirm the connection still points to the same Secure MCP Tunnel used by the QNAP deployment.
+3. Run **Scan Tools** again after the v4.1.4 upgrade.
+4. Keep `mesh-cos-tunnel` healthy until the scan completes.
 
-1. Enable Developer Mode for your account according to the workspace policy.
-2. Open the custom app creation surface from Workspace Settings -> Apps -> Create, or Settings -> Apps -> Create when your role exposes it.
-3. Name the draft app `Mesh CoS MCP`.
-4. Under **Connection**, choose **Tunnel**.
-5. Select the associated tunnel when listed, or paste the exact `tunnel_id` used by the QNAP deployment.
-6. This Mesh deployment has no separate MCP-layer OAuth flow. If the app form asks for an additional authentication mechanism, select the no-additional-auth option appropriate to the current UI. The Secure MCP Tunnel remains the transport authentication boundary.
-7. Click **Scan Tools** and keep `mesh-cos-tunnel` healthy until the scan finishes.
-8. Keep the app as a **draft** until all acceptance checks pass.
-
-Official developer-mode guide: https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt
+The production transport remains Secure MCP Tunnel. No additional MCP-layer OAuth flow is introduced by v4.1.4.
 
 ## 3. Tool-catalog acceptance
 
@@ -74,9 +68,26 @@ reliability.human_override
 
 Mesh Devil's Advocate must not appear as an agent principal. It remains a governed shared Skill.
 
-## 4. Read-only acceptance
+## 4. Sequential transport acceptance
 
-Open a new chat with only the `Mesh CoS MCP` draft app selected and run:
+v4.1.4 specifically remediates the prior session-loss/502 behavior. Open a new chat with only `Mesh CoS MCP` selected and execute these calls sequentially in the same conversation without restarting the QNAP containers between calls:
+
+1. `registry.list_agents`
+2. `governance.verify_audit_chain`
+3. `metrics.snapshot`
+4. `registry.get_agent` for `cos`
+5. `task.list`
+6. `registry.list_agents`
+7. `governance.verify_audit_chain`
+8. `metrics.snapshot`
+9. `registry.get_agent` for `message-ops`
+10. `task.list`
+
+PASS requires all ten calls to return successfully with no `502`, `invalid_session`, reconnect requirement, or container restart. The roster calls must continue to show exactly 10 agents.
+
+## 5. Read-only authority acceptance
+
+Run:
 
 ```text
 Using only the Mesh CoS MCP app, call registry.list_agents. Return only agent_id, display_name, and parent_agent_id. Do not invoke any write tool.
@@ -92,41 +103,31 @@ Using only the Mesh CoS MCP app, call governance.verify_audit_chain, then metric
 
 PASS requires a valid audit-chain result and a successful metrics response.
 
-## 5. Governed-write acceptance
+## 6. Governed-write acceptance
 
-Use a deliberately low-authority, idempotent acceptance task. Ask ChatGPT:
+Use the low-authority, idempotent acceptance task below:
 
 ```text
 Using only the Mesh CoS MCP app, invoke task.intake with exactly these values:
-objective: QNAP Secure MCP acceptance v4.1.1
-expected_outcome: Confirm the governed write path persists to the canonical TaskLedger
+objective: QNAP Secure MCP acceptance v4.1.4
+expected_outcome: Confirm the governed write path persists to the canonical TaskLedger after the v4.1.4 transport upgrade
 requested_by: michael
 executive_sponsor: michael
 accountable_agent: cos
 decision_owner: michael
 authority_level: 0
 acceptance_test: Read the task back through task.get and confirm it exists in canonical state without treating completion as verification
-idempotency_key: qnap-secure-mcp-v4.1.1
+idempotency_key: qnap-secure-mcp-v4.1.4
 
 Return the created or existing task_id. Do not call task.complete or task.verify.
 ```
 
-Then run:
+Then call `task.get` for the returned task ID and confirm the objective, accountable agent, authority level, and acceptance test match. Finally call `governance.verify_audit_chain` again.
 
-```text
-Using only the Mesh CoS MCP app, call task.get for the task_id returned by the acceptance task. Confirm the objective, accountable_agent, authority_level, and acceptance_test match. Do not transition, complete, or verify the task.
-```
+PASS requires successful canonical readback and a valid audit chain. Re-running the acceptance task with the same idempotency key must resolve to the same canonical task rather than creating a duplicate.
 
-Finally run:
+## 7. Acceptance boundary
 
-```text
-Using only the Mesh CoS MCP app, call governance.verify_audit_chain. Do not invoke any other write tool.
-```
+Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial v4.1.4 acceptance. The purpose is to prove transport reliability, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
 
-PASS requires successful readback from the canonical TaskLedger and a valid audit chain. Re-running the write acceptance must return the same canonical task because the idempotency key is fixed.
-
-## 6. Acceptance boundary
-
-Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial connection acceptance. The purpose is to prove transport, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
-
-After the checks pass, retain the app as draft until the human release owner chooses to publish/enable it for broader use.
+The production 502 defect is considered closed only after the upgraded QNAP runtime passes the sequential hosted-path acceptance above without a restart between calls.

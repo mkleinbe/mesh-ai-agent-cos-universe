@@ -26,7 +26,7 @@ chmod 0755 "$BIN/docker"
 PATH="$BIN:$PATH"
 export PATH
 
-SCRIPT_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../scripts" && pwd)
+SCRIPT_ROOT=$(CDPATH= cd "$(dirname "$0")/../scripts" && pwd)
 . "$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"
 
 test "$(mesh_release_metadata_value version "$META")" = 4.1.7

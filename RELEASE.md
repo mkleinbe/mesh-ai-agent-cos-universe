@@ -59,7 +59,8 @@ The bundle contains deployment configuration, runbooks, and operator scripts. It
 - Container image label default: `4.1.0-qnap`
 - Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged
 - Canonical workforce: exactly 10 registered agents
-- Shared challenge capability: `mesh-devils-advocate`, not an agent
+- Message Operations remains the tenth registered agent.
+- Mesh Devil's Advocate remains the external governed shared Skill, not an agent principal.
 - Production connectivity: OpenAI Secure MCP Tunnel
 - Local engineering transport: stdio retained
 

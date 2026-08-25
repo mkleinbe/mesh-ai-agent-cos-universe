@@ -74,17 +74,18 @@ def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() ->
         assert "mesh-devils-advocate" not in manifest.get("shared_skills", [])
 
 
-def test_v4_release_preserves_external_devils_advocate() -> None:
+def test_qnap_release_preserves_v4_authority_contract() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
 
     release_workflow = (
         ROOT / ".github" / "workflows" / "release-production-readiness.yml"
     ).read_text()
-    assert "TAG: v4.0.0" in release_workflow
-    assert 'title "v4.0.0' in release_workflow
+    assert "TAG: v4.1.0" in release_workflow
+    assert '--title "v4.1.0 QNAP Secure MCP Transport"' in release_workflow
 
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.0.0" in release_notes
+    assert "v4.1.0 QNAP Secure MCP Transport" in release_notes
+    assert "Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
     assert "Message Operations" in release_notes

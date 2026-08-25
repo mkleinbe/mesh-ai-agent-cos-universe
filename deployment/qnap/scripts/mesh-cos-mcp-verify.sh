@@ -22,6 +22,7 @@ cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 set -a
 . "$APP_ROOT/.env"
 set +a
+[ -n "${MESH_COS_DEPLOYMENT_RELEASE:-}" ] || fail "MESH_COS_DEPLOYMENT_RELEASE missing from .env"
 
 mesh_set_stage container_health
 for name in mesh-cos-mcp mesh-cos-tunnel; do
@@ -31,10 +32,11 @@ done
 pass "both containers healthy"
 
 mesh_set_stage runtime_readiness
-mesh_run runtime_readiness healthz docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)})" || fail "healthz failed"
-mesh_run runtime_readiness readyz docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)})" || fail "readyz failed"
+IDENTITY_CHECK="fetch('http://127.0.0.1:8080/STATUS').then(async r=>{const j=await r.json();if(!r.ok||j.ok!==true||j.mcp_version!=='4.0.0'||j.deployment_release!==process.env.EXPECTED_RELEASE||j.agent_id!=='cos'||j.transport!=='SECURE_MCP_TUNNEL')process.exit(1)})"
+mesh_run runtime_readiness healthz docker exec -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" mesh-cos-mcp node -e "$(printf '%s' "$IDENTITY_CHECK" | sed 's/STATUS/healthz/g')" || fail "healthz identity check failed"
+mesh_run runtime_readiness readyz docker exec -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" mesh-cos-mcp node -e "$(printf '%s' "$IDENTITY_CHECK" | sed 's/STATUS/readyz/g')" || fail "readyz identity check failed"
 mesh_run runtime_readiness runtime-preflight docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py || fail "canonical runtime preflight failed"
-pass "runtime health, readiness, and canonical preflight"
+pass "runtime health, readiness, dual release identity, and canonical preflight"
 
 mesh_set_stage runtime_controls
 test "$(docker exec mesh-cos-mcp id -u)" = "65532" || fail "runtime UID"
@@ -75,7 +77,9 @@ fi
 
 mesh_set_stage complete
 pass "local container verification complete"
-mesh_log INFO verify_complete "mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID"
+mesh_log INFO verify_complete "deployment_release=$MESH_COS_DEPLOYMENT_RELEASE mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID"
+echo "Deployment release: $MESH_COS_DEPLOYMENT_RELEASE"
+echo "Canonical MCP contract: 4.0.0"
 echo "Mesh image ID: $RUNNING_MESH_ID"
 echo "Tunnel image ID: $RUNNING_TUNNEL_ID"
 docker network inspect lan7 --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || true

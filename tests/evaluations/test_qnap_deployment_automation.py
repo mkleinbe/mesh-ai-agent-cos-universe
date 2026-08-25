@@ -28,6 +28,8 @@ def test_prepare_automates_configuration_without_leaking_secret() -> None:
     assert 'sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"' in prepare
     assert "chown -R" not in prepare
     assert 'chown "$MESH_UID:$MESH_GID"' not in prepare
+    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.6" in prepare
+    assert "mesh-cos-mcp:qnap-v4.1.6" in prepare
 
 
 def test_deploy_is_single_orchestrated_operator_path_with_diagnostics() -> None:
@@ -131,6 +133,7 @@ def test_compose_never_pulls_after_prepare_and_preserves_resource_policy() -> No
     assert compose.count("pull_policy: never") == 2
     assert "cpus: ${MESH_CPU_LIMIT:-2.0}" in compose
     assert "mem_limit: ${MESH_MEMORY_LIMIT:-24g}" in compose
+    assert "MESH_COS_DEPLOYMENT_RELEASE: ${MESH_COS_DEPLOYMENT_RELEASE:?deployment release required}" in compose
     assert "pids_limit" not in compose
     assert "ports:" not in compose
 
@@ -149,14 +152,16 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_v415_docs_helpers_metadata_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_v416_docs_helpers_metadata_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.5}' in builder
+    assert 'VERSION=${1:-4.1.6}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
-    assert "qnap-security-review-v4.1.5.md" in builder
-    assert "qnap-release-identity-debugging-v4.1.5.md" in builder
+    assert "qnap-security-review-v4.1.6.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.6.md" in builder
+    assert "release-4.1.6-secure-mcp-published-app-identity.md" in builder
+    assert "qnap-published-chatgpt-app-v4.1.6.feature" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-compose.sh"' in builder
@@ -165,12 +170,12 @@ def test_release_bundle_contains_v415_docs_helpers_metadata_and_no_runtime_secre
     assert 'test -f "$BUNDLE/cos-mcp/release-metadata.txt"' in builder
 
 
-def test_deployment_steps_contain_v415_subshell_sudo_and_log_receipt() -> None:
+def test_deployment_steps_contain_v416_subshell_sudo_and_log_receipt() -> None:
     steps = text(QNAP / "DEPLOYMENT-STEPS.md")
     assert "installer executes inside a subshell" in steps
     assert "SSH session remains active" in steps
     assert "DIAGNOSTIC_LOG" in steps
-    assert "v4.1.5" in steps
+    assert "v4.1.6" in steps
     assert "sudo sh /share/Docker/mesh-cos-mcp-deploy.sh" in steps
     assert "exit \"$RC\"" not in steps
 
@@ -194,3 +199,11 @@ def test_v415_release_identity_bdd_is_ready() -> None:
     assert "@ready" in feature
     for scenario_id in ["QNAP-048", "QNAP-049", "QNAP-050"]:
         assert f"Scenario: {scenario_id}" in feature
+
+
+def test_v416_published_app_bdd_covers_identity_and_hosted_acceptance() -> None:
+    feature = text(ROOT / "specs" / "qnap-published-chatgpt-app-v4.1.6.feature")
+    for scenario_id in ["QNAP-051", "QNAP-052", "QNAP-053", "QNAP-054", "QNAP-055"]:
+        assert f"Scenario: {scenario_id}" in feature
+    for token in ["deployment_release", "SECURE_MCP_TUNNEL", "exactly 27", "exactly 10", "HTTP 502"]:
+        assert token in feature

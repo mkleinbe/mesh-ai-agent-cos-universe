@@ -50,12 +50,12 @@ PATH="$TMP/bin:/bin:/usr/bin" MOCK_DOCKER_COMPOSE_OK=0 MOCK_COMPOSE_PLUGIN="$TMP
   mesh_compose version | grep -q "v2.29.1-qnap2"
 ' sh "$LIB" "$TMP/plugin/docker-compose"
 
-if PATH="$TMP/bin:/bin:/usr/bin" MOCK_DOCKER_COMPOSE_OK=0 MOCK_COMPOSE_PLUGIN="$TMP/plugin/docker-compose" MOCK_PLUGIN_VERSION=v1.29.2 sh -c '
+if MOCK_PLUGIN_VERSION=v1.29.2 sh -c '
   . "$1"
-  mesh_resolve_compose
-' sh "$LIB"; then
-  echo 'FAIL Compose V1 was accepted' >&2
+  mesh_compose_v2 "$2"
+' sh "$LIB" "$TMP/plugin/docker-compose"; then
+  echo 'FAIL Compose V1 validator accepted a V1 plugin' >&2
   exit 1
 fi
 
-echo 'PASS QNAP Compose V2 subcommand and direct-plugin discovery'
+echo 'PASS QNAP Compose V2 subcommand, direct-plugin fallback, and V1 rejection'

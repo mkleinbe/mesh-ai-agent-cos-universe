@@ -17,7 +17,7 @@ export type MCPContract = {
   name: string;
   runtime_release: string;
   transport: string;
-  input_schema_registry: string;
+  input_schema_registry?: string;
   tools: ToolContract[];
   agent_tool_allowlists: Record<string, string[]>;
   human_tool_allowlist: string[];
@@ -30,7 +30,7 @@ export function loadContract(): MCPContract {
 }
 
 export function loadInputSchemas(contract: MCPContract = loadContract()): InputSchemaRegistry {
-  const target = path.resolve(repositoryRoot(), contract.input_schema_registry);
+  const target = path.resolve(repositoryRoot(), contract.input_schema_registry ?? 'chatgpt/mcp/tool-input-schemas.v1.json');
   const payload = JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, unknown>;
   if (payload.schema_version !== 'mesh.cos.mcp-tool-input-schemas.v1') {
     throw new Error('Unsupported MCP input-schema registry version');

@@ -24,11 +24,19 @@ Production uses **OpenAI Secure MCP Tunnel**. `mesh-cos-mcp` receives `192.168.7
 - `mesh-cos-tunnel`: 0.25 CPU, 256 MiB RAM, no PID limit
 - Long-running containers: non-root, read-only root filesystem, all capabilities dropped, no-new-privileges, no Docker socket, no host networking
 
-## v4.1.4 transport correction
+## v4.1.5 release identity correction
 
-v4.1.4 corrects the production MCP transport defect that caused valid current ChatGPT requests to fail after an initially successful call. The former v4.1.3 HTTP router relied on a legacy server-managed `Mcp-Session-Id` lifecycle. v4.1.4 uses the stable MCP v2 Node/server packages and stateless HTTP handling, supports current `server/discover`, and preserves compatibility with older client flows.
+v4.1.5 corrects the QNAP host-preflight drift exposed by the v4.1.4 upgrade attempt. The v4.1.4 bundle generated release `4.1.4`, but preflight still carried an independent hardcoded `4.1.3` comparison and therefore stopped before Compose replacement.
 
-`/readyz` now verifies that modern MCP discovery is actually serviceable in addition to bound-agent and audit-chain health. The 10-agent roster, 27-tool CoS catalog, human-only operations, canonical TaskLedger, and Secure MCP Tunnel authority boundary are unchanged.
+Preflight now requires `release-metadata.txt`, derives the expected release from its `version=` record, and compares that value with generated `MESH_COS_DEPLOYMENT_RELEASE`. Missing metadata, missing version, or a mismatch fails closed before service replacement. No patch-release literal is duplicated in the preflight gate.
+
+The v4.1.4 failed upgrade did not require rollback because the existing v4.1.3 containers remained healthy and Compose replacement never began.
+
+## v4.1.4 transport correction retained
+
+The v4.1.4 modern MCP transport correction is carried forward unchanged. The former v4.1.3 HTTP router relied on a legacy server-managed `Mcp-Session-Id` lifecycle. Current releases use the stable MCP v2 Node/server packages and stateless HTTP handling, support current `server/discover`, and preserve compatibility with older client flows.
+
+`/readyz` verifies that modern MCP discovery is actually serviceable in addition to bound-agent and audit-chain health. The 10-agent roster, 27-tool CoS catalog, human-only operations, canonical TaskLedger, and Secure MCP Tunnel authority boundary are unchanged.
 
 ## v4.1.3 QNAP filesystem correction retained
 
@@ -56,6 +64,6 @@ Compose V2 discovery remains QNAP-aware: `docker compose` first, then Docker plu
 
 ## Operator flow
 
-Use the complete SSH-safe v4.1.4 upgrade block in `DEPLOYMENT-STEPS.md`. After local deployment/verification passes, run `CHATGPT-ACCEPTANCE.md`, including the ten-call sequential regression, before closing the former production 502 defect.
+Use the complete SSH-safe v4.1.5 upgrade block in `DEPLOYMENT-STEPS.md`. After local deployment/verification passes, run `CHATGPT-ACCEPTANCE.md`, including release-identity confirmation and the ten-call sequential MCP regression, before closing the production deployment blocker.
 
 Controlled HTTPS remains unimplemented and requires separate explicit approval.

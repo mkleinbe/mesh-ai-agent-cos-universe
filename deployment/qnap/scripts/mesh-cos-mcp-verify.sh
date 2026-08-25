@@ -1,30 +1,42 @@
 #!/bin/sh
-set -eu
+set -u
 
 SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-/share/Docker}
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
-cd "$SCRIPT_ROOT"
+OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
+MESH_COS_SCRIPT=mesh-cos-mcp-verify.sh
+export QNAP_SCRIPT_ROOT QNAP_APP_ROOT MESH_COS_SCRIPT
 
-fail() { echo "FAIL $1" >&2; exit 1; }
-pass() { echo "PASS $1"; }
-warn() { echo "WARN $1" >&2; }
+[ -r "$OBS_LIB" ] || { echo "ERROR: observability helper missing: $OBS_LIB" >&2; exit 1; }
+. "$OBS_LIB"
+mesh_obs_init verify || { echo "ERROR: unable to initialize deployment logging" >&2; exit 1; }
+mesh_init_docker_config || mesh_fail 1 bootstrap "unable to initialize deployment-local Docker config"
 
+fail() { mesh_fail 1 "${MESH_COS_STAGE:-verify}" "$1"; }
+pass() { echo "PASS $1"; mesh_log INFO verify_pass "check=$1"; }
+warn() { echo "WARN $1" >&2; mesh_log WARN verify_warn "check=$1"; }
+
+mesh_set_stage verify_environment
+cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 [ -f "$APP_ROOT/.env" ] || fail "$APP_ROOT/.env missing"
 set -a
 . "$APP_ROOT/.env"
 set +a
 
+mesh_set_stage container_health
 for name in mesh-cos-mcp mesh-cos-tunnel; do
   docker inspect "$name" >/dev/null 2>&1 || fail "missing container: $name"
   [ "$(docker inspect -f '{{.State.Health.Status}}' "$name" 2>/dev/null || echo unknown)" = "healthy" ] || fail "$name is not healthy"
 done
 pass "both containers healthy"
 
-docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)})"
-docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)})"
-docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py
+mesh_set_stage runtime_readiness
+mesh_run runtime_readiness healthz docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>{if(!r.ok)process.exit(1)})" || fail "healthz failed"
+mesh_run runtime_readiness readyz docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>{if(!r.ok)process.exit(1)})" || fail "readyz failed"
+mesh_run runtime_readiness runtime-preflight docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py || fail "canonical runtime preflight failed"
 pass "runtime health, readiness, and canonical preflight"
 
+mesh_set_stage runtime_controls
 test "$(docker exec mesh-cos-mcp id -u)" = "65532" || fail "runtime UID"
 test "$(docker inspect -f '{{.HostConfig.Privileged}}' mesh-cos-mcp)" = "false" || fail "privileged mode"
 test "$(docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' mesh-cos-mcp)" = "true" || fail "read-only root filesystem"
@@ -36,21 +48,21 @@ pass "least-privilege and resource controls"
 PIDS=$(docker inspect -f '{{.HostConfig.PidsLimit}}' mesh-cos-mcp 2>/dev/null || echo unknown)
 case "$PIDS" in 0|'<nil>'|-1) pass "no PID limit" ;; *) fail "unexpected PID limit: $PIDS" ;; esac
 
+mesh_set_stage image_identity
 RUNNING_MESH_ID=$(docker inspect -f '{{.Image}}' mesh-cos-mcp)
 [ "$RUNNING_MESH_ID" = "$MESH_COS_IMAGE_ID" ] || fail "running Mesh image differs from prepared image ID"
 RUNNING_TUNNEL_ID=$(docker inspect -f '{{.Image}}' mesh-cos-tunnel)
 [ "$RUNNING_TUNNEL_ID" = "$TUNNEL_IMAGE_ID" ] || fail "running tunnel image differs from prepared image ID"
 pass "running containers match pinned image identities"
 
+mesh_set_stage ingress_denial
 DIRECT_CODE=$(docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/mcp',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).then(r=>process.stdout.write(String(r.status))).catch(()=>process.exit(2))")
 [ "$DIRECT_CODE" = "403" ] || fail "non-tunnel direct MCP request returned $DIRECT_CODE instead of 403"
 pass "non-tunnel direct MCP request denied"
 
 if command -v curl >/dev/null 2>&1; then
-  set +e
-  LAN_CODE=$(curl -sS --connect-timeout 3 --max-time 5 -o /tmp/mesh-cos-mcp-lan-denied.json -w '%{http_code}' -X POST -H 'content-type: application/json' -d '{}' http://192.168.7.60:8080/mcp)
+  LAN_CODE=$(curl -sS --connect-timeout 3 --max-time 5 -o /tmp/mesh-cos-mcp-lan-denied.json -w '%{http_code}' -X POST -H 'content-type: application/json' -d '{}' http://192.168.7.60:8080/mcp 2>/dev/null)
   CURL_RC=$?
-  set -e
   if [ "$CURL_RC" -eq 0 ]; then
     [ "$LAN_CODE" = "403" ] || fail "LAN MCP request returned $LAN_CODE instead of 403"
     pass "LAN MCP request denied with 403"
@@ -61,8 +73,11 @@ else
   warn "curl is unavailable on the QNAP host; direct non-tunnel denial already passed"
 fi
 
+mesh_set_stage complete
 pass "local container verification complete"
+mesh_log INFO verify_complete "mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID"
 echo "Mesh image ID: $RUNNING_MESH_ID"
 echo "Tunnel image ID: $RUNNING_TUNNEL_ID"
 docker network inspect lan7 --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || true
+echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
 echo "NEXT: complete CHATGPT-ACCEPTANCE.md through the Secure MCP Tunnel."

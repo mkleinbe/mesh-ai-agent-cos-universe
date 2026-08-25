@@ -2,6 +2,36 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.3 - 2026-08-25 - QNAP Non-Root Deployment Reliability
+
+### Live QNAP root-cause remediation
+
+- Removed the invalid assumption that a Docker-authorized QNAP SSH user can host-`chown` shared-folder state to UID/GID 65532.
+- Added constrained one-shot Docker helpers for runtime state and tunnel-secret ownership/mode handoff while preserving the long-running UID/GID 65532 runtime.
+- Changed missing-ledger staging to stdin streaming through the runtime identity with atomic installation.
+- Changed host preflight to validate canonical-state permissions as runtime UID/GID 65532 instead of the SSH user.
+- Changed online backup export to `docker cp` plus in-container cleanup so host ownership of runtime-created state is unnecessary.
+- Added deployment-local Docker CLI configuration to eliminate dependency on the unreadable Container Station QPKG-home config.
+
+### Deployment and update observability
+
+- Added a shared POSIX-shell observability library with a durable run ID, timestamped structured logs, stage and safe command labels, exact return-code preservation, bounded retention, and `DIAGNOSTIC_LOG` receipts.
+- Added bounded failure diagnostics for operator/platform identity, Docker/Compose resolution, filesystem ownership/modes, capacity, relevant mounts, and Mesh container state.
+- Explicitly excluded tunnel-secret contents, `.env` contents, process environments, credential-bearing argv, and tunnel-client logs from automated diagnostics; bounded Mesh application log tails are defensively redacted.
+- Added a reusable QNAP Deployment and Update Script Observability Standard for future deployment, upgrade, rollback, backup, migration, and maintenance tooling.
+
+### Verification and security
+
+- Added ready BDD scenarios QNAP-038 through QNAP-041.
+- Added shell regressions for observability, return-code preservation, secret non-collection, numeric UID/GID validation, and constrained Docker permission-helper arguments.
+- Extended CI to require actual Docker bind-mount ownership handoff, runtime-identity state access, Docker-mediated backup export, SQLite integrity, release-bundle construction, production image/runtime security, readiness, direct MCP denial, and restart recovery.
+- Classified the remediation TARGETED for Docker/filesystem/persistence/secret/logging security review without expanding MCP or network authority.
+
+### Version boundary
+
+- Repository/QNAP deployment release: `4.1.3` / tag `v4.1.3`.
+- Canonical Phase 1 agent/runtime authority contract remains `4.0.0`; the 10-agent roster, human-only operations, tool allowlists, Secure MCP Tunnel, resource policy, and `COMPLETED != VERIFIED` semantics are unchanged.
+
 ## 4.1.2 - 2026-08-25 - QNAP Compose Discovery Fix
 
 ### Live deployment defect remediation

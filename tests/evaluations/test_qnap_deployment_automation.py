@@ -19,14 +19,18 @@ def test_prepare_automates_configuration_without_leaking_secret() -> None:
     assert "TUNNEL_IMAGE=$(docker image inspect" in prepare
     assert "MESH_COS_LEDGER_SOURCE" in prepare
     assert 'stty -echo < /dev/tty' in prepare
-    assert 'chmod 0400 "$SECRET_FILE"' in prepare
     assert "OPENAI_TUNNEL_RUNTIME_KEY=" not in prepare
     assert "CONTROL_PLANE_API_KEY=" not in prepare
     assert "mesh_resolve_compose" in prepare
+    assert "mesh_apply_state_permissions" in prepare
+    assert "mesh_stage_ledger" in prepare
+    assert "mesh_apply_secret_permissions" in prepare
     assert 'sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"' in prepare
+    assert "chown -R" not in prepare
+    assert 'chown "$MESH_UID:$MESH_GID"' not in prepare
 
 
-def test_deploy_is_single_orchestrated_operator_path() -> None:
+def test_deploy_is_single_orchestrated_operator_path_with_diagnostics() -> None:
     deploy = text(SCRIPTS / "mesh-cos-mcp-deploy.sh")
     required_order = [
         "mesh-cos-mcp-backup.sh\" pre-deploy",
@@ -40,6 +44,9 @@ def test_deploy_is_single_orchestrated_operator_path() -> None:
     ]
     positions = [deploy.index(token) for token in required_order]
     assert positions == sorted(positions)
+    assert "mesh_obs_init deploy" in deploy
+    assert "mesh_collect_diagnostics" in deploy
+    assert 'echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"' in deploy
 
 
 def test_compose_discovery_is_qnap_aware_and_v2_only() -> None:
@@ -54,6 +61,59 @@ def test_compose_discovery_is_qnap_aware_and_v2_only() -> None:
     assert "MOCK_PLUGIN_VERSION=v1.29.2" in regression
 
 
+def test_observability_is_structured_redaction_safe_and_posix_sh() -> None:
+    obs = text(SCRIPTS / "mesh-cos-qnap-observability.sh")
+    regression = text(QNAP / "tests" / "test-observability.sh")
+    for token in [
+        "MESH_COS_RUN_ID",
+        "MESH_COS_LOG_FILE",
+        "command_start",
+        "command_end",
+        "mesh_collect_diagnostics",
+        "DIAGNOSTIC_LOG",
+        "secret_contents_collected=false",
+        "env_contents_collected=false",
+        "tunnel_logs_collected=false",
+        "mesh_init_docker_config",
+    ]:
+        assert token in obs
+    assert "PIPESTATUS" not in obs
+    assert ">(" not in obs
+    assert "set -e" not in obs
+    assert "OPENAI_API_KEY='sk-supersecret-never-log'" in regression
+    assert "! grep -q 'supersecret'" in regression
+
+
+def test_permission_helper_is_constrained_and_host_chown_is_not_required() -> None:
+    helper = text(SCRIPTS / "mesh-cos-qnap-permissions.sh")
+    regression = text(QNAP / "tests" / "test-runtime-permissions.sh")
+    for token in [
+        "--network none",
+        "--read-only",
+        "--user 0:0",
+        "--cap-drop ALL",
+        "--cap-add CHOWN",
+        "--cap-add FOWNER",
+        "--cap-add DAC_OVERRIDE",
+        "--security-opt no-new-privileges",
+        "--user \"$uid:$gid\"",
+        "mesh_run_stdin_file",
+    ]:
+        assert token in helper
+    assert "mesh_validate_runtime_identity" in helper
+    assert "nonnumeric UID" in regression
+    assert "nonnumeric GID" in regression
+
+
+def test_preflight_validates_runtime_access_not_host_user_rw() -> None:
+    preflight = text(SCRIPTS / "mesh-cos-mcp-preflight.sh")
+    assert "runtime-state-access" in preflight
+    assert '--user "$MESH_UID:$MESH_GID"' in preflight
+    assert "canonical ledger is read/write for runtime UID/GID" in preflight
+    assert '[ -r "$LEDGER" ] && [ -w "$LEDGER" ]' not in preflight
+    assert "deployment-local Docker config exists and is writable" in preflight
+
+
 def test_preflight_and_verify_bind_running_images_to_recorded_ids() -> None:
     preflight = text(SCRIPTS / "mesh-cos-mcp-preflight.sh")
     verify = text(SCRIPTS / "mesh-cos-mcp-verify.sh")
@@ -63,6 +123,7 @@ def test_preflight_and_verify_bind_running_images_to_recorded_ids() -> None:
     assert 'RUNNING_MESH_ID=$(docker inspect -f' in verify
     assert 'RUNNING_TUNNEL_ID=$(docker inspect -f' in verify
     assert "non-tunnel direct MCP request denied" in verify
+    assert "mesh_obs_init verify" in verify
 
 
 def test_compose_never_pulls_after_prepare_and_preserves_resource_policy() -> None:
@@ -74,43 +135,44 @@ def test_compose_never_pulls_after_prepare_and_preserves_resource_policy() -> No
     assert "ports:" not in compose
 
 
-def test_backup_captures_nonsecret_configuration_only() -> None:
+def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None:
     backup = text(SCRIPTS / "mesh-cos-mcp-backup.sh")
+    assert "docker cp" in backup
+    assert "remove-container-temp" in backup
     assert 'cp "$APP_ROOT/.env" "$DEST/.env"' in backup
     assert 'cp "$APP_ROOT/compose.yaml" "$DEST/compose.yaml"' in backup
     assert "release-metadata.txt" in backup
     assert "SHA256SUMS" in backup
     assert "secrets_included=false" in backup
+    assert "state_export_method=docker_cp" in backup
+    assert 'cp "$TMP_HOST"' not in backup
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_build_context_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_observability_permission_helpers_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.2}' in builder
+    assert 'VERSION=${1:-4.1.3}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-compose.sh"' in builder
+    assert 'test -f "$BUNDLE/mesh-cos-qnap-observability.sh"' in builder
+    assert 'test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"' in builder
 
 
-def test_deployment_steps_contain_subshell_session_guard() -> None:
+def test_deployment_steps_contain_subshell_session_guard_and_log_receipt() -> None:
     steps = text(QNAP / "DEPLOYMENT-STEPS.md")
     assert "The deployment executes inside a subshell" in steps
     assert "SSH session remains active" in steps
+    assert "DIAGNOSTIC_LOG" in steps
+    assert "v4.1.3" in steps
     assert "exit \"$RC\"" not in steps
 
 
-def test_bdd_covers_automated_qnap_lifecycle_and_cli_regression() -> None:
-    feature = text(ROOT / "specs" / "mesh-cos-mcp.feature")
-    for scenario_id in [
-        "QNAP-031",
-        "QNAP-032",
-        "QNAP-033",
-        "QNAP-034",
-        "QNAP-035",
-        "QNAP-036",
-        "QNAP-037",
-    ]:
+def test_bdd_covers_ownership_observability_docker_config_and_backup_remediation() -> None:
+    feature = text(ROOT / "specs" / "qnap-deployment-remediation-v4.1.3.feature")
+    assert "@ready" in feature
+    for scenario_id in ["QNAP-038", "QNAP-039", "QNAP-040", "QNAP-041"]:
         assert f"Scenario: {scenario_id}" in feature

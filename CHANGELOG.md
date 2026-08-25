@@ -2,6 +2,37 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.7 - 2026-08-25 - QNAP Image Provenance and Hosted Envelope Verification
+
+### Hosted acceptance defect and causal evidence
+
+- Reproduced the v4.1.6 published-app blocker: successful governed responses returned `mcp_version=4.0.0` and `agent_id=cos` but omitted the required `deployment_release` field.
+- Verified that the final tagged v4.1.6 repository and exact release ZIP already contain the correct `deployment_release` response-envelope implementation and Compose propagation.
+- Isolated a QNAP deployment-integrity gap: preparation could reuse any existing local image under the requested mutable release tag without proving the image version/revision matched the extracted release metadata.
+- Isolated a verification gap: local post-deploy checks exercised health/readiness identity but not the governed `tools/call` response envelope that failed hosted acceptance.
+
+### Causal correction
+
+- Added release-image provenance validation against the extracted `release-metadata.txt` version and commit.
+- Reuse of a same-tag local Mesh image now requires exact OCI `org.opencontainers.image.version` and `org.opencontainers.image.revision` matches; any mismatch forces a rebuild from the extracted release build context.
+- Revalidate image provenance after build or reuse before recording the content-addressed image ID.
+- Added a post-deploy modern MCP read-only `registry.get_agent` `tools/call` from an ephemeral verifier sharing the tunnel-client network namespace.
+- Deployment now fails unless the actual governed tool envelope returns `mcp_version=4.0.0`, `deployment_release=4.1.7`, and `agent_id=cos`.
+
+### BDD, TDD, CI, documentation, and security
+
+- Added ready scenarios QNAP-056 through QNAP-058 for stale-image rebuild, provenance-qualified reuse, and running governed-envelope verification.
+- Added RED-first regression assertions for the previously absent provenance and governed-envelope gates, plus a POSIX-shell image-provenance helper regression.
+- Advanced the active QNAP image, bundle, generated environment, deployment instructions, acceptance procedure, and release automation to `4.1.7` / `v4.1.7`.
+- Extended CI to inspect v4.1.7 release metadata, OCI image version/revision labels, deterministic bundle/checksum output, modern MCP responses, runtime hardening, persistence, backup, restart, and ingress denial.
+- Added the v4.1.7 debugging record, targeted security review, and release handoff.
+- Security applicability remains TARGETED. SEC-QNAP-027 and SEC-QNAP-028 document the deployment integrity and verification gaps; SEC-QNAP-029 constrains the ephemeral tunnel-network verifier so it does not become a persistent alternate ingress path.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
 ## 4.1.6 - 2026-08-25 - Secure MCP Published App Production Identity
 
 ### Published ChatGPT production evidence

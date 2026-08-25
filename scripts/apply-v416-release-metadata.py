@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# One-shot deterministic migration for active v4.1.6 release surfaces.
 ROOT = Path(__file__).resolve().parents[1]
 
 ACTIVE_RELEASE_FILES = [

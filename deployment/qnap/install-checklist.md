@@ -30,22 +30,25 @@ Invoke from the QNAP operator account as `sudo sh /share/Docker/mesh-cos-mcp-dep
 - [ ] Canonical ledger staged only if missing and validated before deployment
 - [ ] Tunnel runtime key written outside `.env`, owner `65532:65532`, mode `0400`
 - [ ] Deterministic `.env` generated with no secret values
+- [ ] Bundle `release-metadata.txt` exists and its version matches generated `MESH_COS_DEPLOYMENT_RELEASE`
 - [ ] 2 CPU / 24 GiB / no PID limit policy validated
-- [ ] Host preflight passes
+- [ ] Host preflight passes without a stale patch-release literal
 - [ ] Compose renders with `pull_policy: never`
 - [ ] Containers become healthy
 - [ ] `mesh-cos-mcp` remains non-root UID/GID 65532, read-only, no-new-privileges, no Docker socket
 - [ ] Direct non-tunnel MCP request is denied
 - [ ] Post-deploy state/configuration backup and SHA-256 verification pass
 
-## v4.1.4 ChatGPT acceptance
+## v4.1.5 ChatGPT acceptance
 
+- [ ] Local image is `mesh-cos-mcp:qnap-v4.1.5`, running and healthy
+- [ ] `.env` and bundle metadata both report release `4.1.5`
 - [ ] ChatGPT app connects through the associated Secure MCP Tunnel
 - [ ] Scan Tools returns exactly 27 canonical CoS tools
 - [ ] Human-only tools are absent
 - [ ] 10-agent roster is returned and Devil's Advocate is not an agent principal
 - [ ] Ten sequential read-only MCP calls complete with no 502, `invalid_session`, reconnect, or container restart
 - [ ] Read-only audit/metrics acceptance passes
-- [ ] Idempotent L0 `task.intake` acceptance with key `qnap-secure-mcp-v4.1.4` persists and reads back successfully
+- [ ] Idempotent L0 `task.intake` acceptance with key `qnap-secure-mcp-v4.1.5` persists and reads back successfully
 - [ ] Audit chain remains valid after acceptance write
 - [ ] Deployment image IDs and acceptance evidence retained

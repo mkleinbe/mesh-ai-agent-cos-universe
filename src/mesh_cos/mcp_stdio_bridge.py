@@ -10,6 +10,7 @@ from typing import Any
 from . import __version__
 from .ledger import TaskLedger
 from .mcp_runtime import HUMAN_ONLY_TOOLS, MCPRuntime
+from .mcp_validation import RequestValidationError, validate_tool_arguments
 from .reliability import assert_runtime_enabled
 
 MAX_REQUEST_BYTES = 1_000_000
@@ -72,6 +73,7 @@ def execute_request(
     assert_runtime_enabled(environment)
     agent_id = _bound_agent_id(environment)
     tool_name, arguments = _validate_request(payload)
+    arguments = validate_tool_arguments(tool_name, arguments)
     ledger = TaskLedger(_ledger_target(environment))
     try:
         runtime = runtime_factory(ledger)
@@ -88,22 +90,48 @@ def execute_request(
 
 
 def _safe_error(exc: BaseException) -> dict[str, Any]:
-    if isinstance(exc, PermissionError):
-        category = "permission_denied"
+    details: list[dict[str, str]] | None = None
+    message = str(exc).lower()
+    if isinstance(exc, RequestValidationError):
+        category = "validation_failed"
+        details = list(exc.details)
+    elif isinstance(exc, PermissionError):
+        if "approval" in message:
+            category = "approval_required"
+        elif "authenticated" in message or "principal" in message:
+            category = "unauthorized"
+        else:
+            category = "forbidden"
     elif isinstance(exc, KeyError):
         category = "not_found"
-    elif isinstance(exc, (TypeError, ValueError)):
+    elif isinstance(exc, json.JSONDecodeError):
         category = "invalid_request"
+    elif isinstance(exc, TypeError):
+        category = "invalid_request"
+    elif isinstance(exc, ValueError):
+        if (
+            "mcp bridge request" in message
+            or "tool_name" in message
+            or "request body" in message
+            or "maximum size" in message
+        ):
+            category = "invalid_request"
+        elif "current accountable owner" in message or "already decided" in message:
+            category = "conflict"
+        else:
+            category = "invalid_state"
     elif isinstance(exc, RuntimeError):
-        category = "runtime_blocked"
+        category = "dependency_unavailable" if "dependenc" in message or "unavailable" in message else "execution_failed"
     else:
-        category = "runtime_error"
-    return {
+        category = "execution_failed"
+    payload: dict[str, Any] = {
         "ok": False,
         "runtime_version": __version__,
         "error": category,
-        "error_type": type(exc).__name__,
     }
+    if details:
+        payload["details"] = details
+    return payload
 
 
 def _read_stdin() -> Any:

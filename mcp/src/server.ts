@@ -17,6 +17,15 @@ export function requireAgentId(contract:MCPContract, env:NodeJS.ProcessEnv=proce
   if(!(id in contract.agent_tool_allowlists)) throw new Error('MESH_COS_AGENT_ID is not a registered Workspace Agent');
   return id;
 }
+export function deploymentRelease(env:NodeJS.ProcessEnv=process.env):string|null {
+  const value=env.MESH_COS_DEPLOYMENT_RELEASE?.trim();
+  return value||null;
+}
+export function requireDeploymentRelease(env:NodeJS.ProcessEnv=process.env):string {
+  const value=deploymentRelease(env);
+  if(!value) throw new Error('MESH_COS_DEPLOYMENT_RELEASE is required for remote production runtime');
+  return value;
+}
 export function requireLocalStdioContract(contract:MCPContract):void {
   if(contract.transport!=='LOCAL_STDIO') throw new Error('Local entrypoint requires LOCAL_STDIO transport');
 }
@@ -40,6 +49,7 @@ function logToolEvent(event: Record<string, unknown>): void {
 }
 export function createServer(env:NodeJS.ProcessEnv=process.env,contract:MCPContract=loadContract()):Server {
   const agentId=requireAgentId(contract,env);
+  const deploymentReleaseId=deploymentRelease(env);
   const tools=toolsForAgent(contract,agentId);
   const names=new Set(tools.map(t=>t.name));
   const server=new Server({name:contract.name,version:contract.runtime_release},{capabilities:{tools:{}}});
@@ -53,11 +63,11 @@ export function createServer(env:NodeJS.ProcessEnv=process.env,contract:MCPContr
       const args=validateArgumentsSize(request.params.arguments);
       const response=await callPythonBridge({tool_name:toolName,arguments:args},env);
       logToolEvent({event:'mcp_tool',request_id:requestId,agent_id:agentId,tool_name:toolName,result_classification:'success',latency_ms:Date.now()-started});
-      return {content:[{type:'text' as const,text:JSON.stringify({ok:true,request_id:requestId,mcp_version:contract.runtime_release,agent_id:agentId,result:response.result})}]};
+      return {content:[{type:'text' as const,text:JSON.stringify({ok:true,request_id:requestId,mcp_version:contract.runtime_release,deployment_release:deploymentReleaseId,agent_id:agentId,result:response.result})}]};
     } catch(error){
       const safe=safeErrorPayload(error,requestId);
       logToolEvent({event:'mcp_tool',request_id:requestId,agent_id:agentId,tool_name:toolName,result_classification:safe.error,latency_ms:Date.now()-started});
-      return {isError:true,content:[{type:'text' as const,text:JSON.stringify(safe)}]};
+      return {isError:true,content:[{type:'text' as const,text:JSON.stringify({...safe,mcp_version:contract.runtime_release,deployment_release:deploymentReleaseId,agent_id:agentId})}]};
     }
   });
   return server;

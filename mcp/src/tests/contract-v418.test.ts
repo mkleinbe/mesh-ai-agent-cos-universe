@@ -44,12 +44,14 @@ test('all ten registered agent processes receive their exact allowlist and canno
   const agents = Object.keys(contract.agent_tool_allowlists);
   assert.equal(agents.length, 10);
   for (const agentId of agents) {
+    const allowed = contract.agent_tool_allowlists[agentId];
+    assert.ok(allowed);
     assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: agentId }), agentId);
     assert.deepEqual(
       toolsForAgent(contract, agentId).map((tool) => tool.name),
-      contract.agent_tool_allowlists[agentId],
+      allowed,
     );
-    assert.equal(contract.agent_tool_allowlists[agentId].includes('approval.record_decision'), false);
-    assert.equal(contract.agent_tool_allowlists[agentId].includes('reliability.human_override'), false);
+    assert.equal(allowed.includes('approval.record_decision'), false);
+    assert.equal(allowed.includes('reliability.human_override'), false);
   }
 });

@@ -26,14 +26,25 @@ def _bound_agent_id(env: Mapping[str, str]) -> str:
     return agent_id
 
 
+def _truthy(value: object) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _ledger_target(env: Mapping[str, str]) -> str:
     value = str(env.get("MESH_COS_LEDGER_PATH", "")).strip()
     if not value:
         raise RuntimeError("MESH_COS_LEDGER_PATH is required for canonical local persistence")
+    require_existing = _truthy(env.get("MESH_COS_REQUIRE_EXISTING_LEDGER"))
     if value == ":memory:":
+        if require_existing:
+            raise RuntimeError("Production runtime forbids in-memory TaskLedger")
         return value
     path = Path(value).expanduser()
-    path.parent.mkdir(parents=True, exist_ok=True)
+    if require_existing:
+        if not path.is_file():
+            raise RuntimeError("Canonical TaskLedger is missing")
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
     return str(path)
 
 
@@ -107,7 +118,7 @@ def _read_stdin() -> Any:
 def main() -> int:
     try:
         response = execute_request(_read_stdin())
-    except BaseException as exc:  # noqa: BLE001 - bridge must emit structured fail-closed errors
+    except BaseException as exc:  # noqa: BLE001 - bridge must always emit a structured fail-closed response
         response = _safe_error(exc)
     sys.stdout.write(json.dumps(response, separators=(",", ":"), sort_keys=True))
     sys.stdout.write("\n")

@@ -1,93 +1,67 @@
-# v4.0.0 Chief of Staff Delegation Contract Remediation
+# v4.1.0 QNAP Secure MCP Transport
 
-`v4.0.0` remediates live delegation-test defects in the Mesh AI Chief of Staff operating universe and restores one authoritative Phase 1 contract across agent roster, MCP authority, task completion, verification, delegation, Skills, Workspace manifests, documentation, and certification.
+`v4.1.0` packages the existing governed Mesh Chief of Staff operating core for persistent QNAP Container Station production use through OpenAI Secure MCP Tunnel. It adds the production remote MCP transport, deterministic container, verified QNAP configuration, deployment automation, backup/restore, security controls, and acceptance evidence without changing Phase 1 role authority.
 
-## Breaking topology correction
+## Verified target environment
 
-The current Phase 1 organization contains exactly **10 registered agents**. Message Operations is restored as the tenth registered agent and controlled approved-communication execution boundary. **Mesh Devil's Advocate remains external** as the sole governed shared Skill and is not counted as an agent.
+The 2026-08-25 probe of `mdk-qnap6782xt` verified x86_64/linux-amd64, 4 CPU cores, approximately 62.7 GiB RAM, QTS 5.2.10 build 20260731, Docker 27.1.2-qnap8, Compose 2.29.1-qnap2, and `lan7` as QNAP `qnet` on `eth1` with subnet `192.168.7.0/24` and gateway `192.168.7.1`.
 
-The v3.0.0 9-agent topology remains a historical release record but is superseded by this release.
+The production service is assigned `192.168.7.60`. Internal tunnel traffic uses non-overlapping bridge `172.30.60.0/29`.
 
-## Defects remediated
+## Fixed QNAP layout
 
-### Phase 1 roster drift
+- Scripts run from `/share/Docker`.
+- Application root: `/share/Docker/cos-mcp`.
+- Canonical state root: `/share/Docker/cos-mcp/state`.
+- Ledger: `/share/Docker/cos-mcp/state/ledger/taskledger.sqlite3`.
+- Tunnel runtime secret: `/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key`.
+- Backup root: `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`.
 
-Current role-Skill production-readiness documentation no longer states the obsolete 11-agent architecture. Current runtime, registry, Skills, Workspace manifests, MCP principals, smoke certification, and documentation agree on exactly 10 agents. CI now treats roster/documentation drift as a release defect while preserving clearly historical release records.
+The backup path contains spaces and all release scripts pass it as one quoted shell argument.
 
-### Human-only MCP authority leakage
+## Resource policy
 
-`approval.record_decision` and `reliability.human_override` remain available in the serialized MCP runtime but are isolated to the authenticated human-principal path. They are excluded from every agent allowlist and role contract. Tests prove denial for Chief of Staff and every other agent, positive human execution where permitted, and immutable agent identity despite spoofed prompt/task content.
+`mesh-cos-mcp` is limited to 2 CPUs and 24 GiB RAM with no PID limit. The OpenAI tunnel sidecar is separately limited to 0.25 CPU and 256 MiB RAM with no PID limit.
 
-### Completion contract mismatch
+## Security boundary
 
-Runtime tracing established `task.complete` as the canonical accountable-owner completion operation. Appropriate owners receive it through MCP and role contracts. Completion now requires a non-empty outcome and supporting evidence and results only in `COMPLETED`.
+The application runs non-root with a read-only application filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, no host networking, no broad NAS mounts, and no published MCP host port. `/mcp` accepts only the tunnel sidecar's private address in tunnel mode. The service remains immutably bound to `MESH_COS_AGENT_ID=cos`.
 
-`task.verify` remains separate. In the Phase 1 agent projection only Chief of Staff is exposed that verifier operation. Passing verification requires explicit acceptance evidence. **COMPLETED != VERIFIED.**
+Production refuses to create a missing TaskLedger and serializes Node-to-Python runtime calls at the single SQLite write boundary. Human-only functions remain absent from the CoS catalog and `COMPLETED != VERIFIED` remains enforced by the unchanged 4.0.0 authority/runtime contract.
 
-## Delegation certification
+## Persistence and recovery
 
-The release preserves direct-child delegation, authority monotonicity, inherited approval gates, one accountable owner, and the Phase 1 depth ceiling. The legal path `Michael -> CoS -> COO -> Consultant Network Steward` is certified. Consultant Network Steward is terminal and any further delegation fails closed.
+SQLite online backup is used rather than copying an actively written database. The release bundle includes prepare, preflight, deploy, verify, and backup scripts plus installation, upgrade, rollback, and restore checklists.
 
-## End-to-end synthetic certification
+The configured backup target is on the same NAS, so it protects against application/configuration failure but not total NAS loss. QNAP snapshots and an independent second copy remain recommended defense in depth.
 
-Automated integration coverage exercises:
+## Storage observation
 
-- Michael-requested outcome establishment;
-- CoS intake and decomposition;
-- CoS delegation to CRO, CFO, and COO;
-- COO delegation to Consultant Network Steward;
-- governed Mesh Devil's Advocate invocation;
-- evidence-backed sub-agent completion;
-- AgentOps observation without authority expansion;
-- CoS synthesis;
-- separate CoS acceptance verification;
-- governance audit-chain verification.
-
-Negative coverage proves missing evidence, duplicate completion, unauthorized self-verification, human-only tool requests, excessive delegation depth, authority widening, approval-gate weakening, stale consultant readiness, Devil's Advocate mutation/execution, and child-failure parent bypass all fail closed.
-
-## Security and governance preserved
-
-- L0-L5 authority is unchanged.
-- L4 requires qualified-human approval.
-- L5 remains Michael-exclusive.
-- `TaskLedger` remains canonical state.
-- `MESH_COS_AGENT_ID` remains immutable runtime identity binding.
-- Prompt/retrieved/task/delegated content cannot expand authority or tool catalogs.
-- Functional-source authority is preserved.
-- Mesh Devil's Advocate remains `ADVISORY_ONLY`, unable to mutate canonical facts or execute external actions.
-- Message Operations cannot record its own approval.
-- Workspace **Always ask** remains defense in depth.
+The primary Docker data filesystem was 96% utilized at probe time but retained approximately 1.92 TiB free. The release treats this as an operational capacity warning, not an immediate absolute-capacity blocker. Preflight requires at least 20 GiB free.
 
 ## Release quality gates
 
-Release acceptance requires:
+The candidate must pass Python package integrity, TypeScript build, Node MCP tests, stdio smoke certification, npm audit, schema validation, runtime/document drift validation, Workspace package validation, Ruff, mypy, 100% branch-aware Python coverage, Bandit, compileall, QNAP shell syntax checks, Compose rendering, production image build, container least-privilege assertions, resource-limit assertions, health/readiness, LAN `/mcp` denial, SQLite online-backup integrity, and restart recovery.
 
-- dependency integrity;
-- TypeScript build and Node MCP tests;
-- local stdio MCP smoke certification against the 10-agent roster;
-- npm audit at high severity;
-- contract/schema validation;
-- runtime/documentation drift certification;
-- Workspace Agent package/role-contract drift certification;
-- strict Ruff checks;
-- mypy;
-- 100% branch-aware Python coverage;
-- Bandit high-severity scan;
-- compileall;
-- synthetic end-to-end delegation certification;
-- independent requirements verification with zero known defects.
+## Release assets
 
-## Release identity
+The release workflow creates:
 
-- Semantic version: `4.0.0`
-- Semantic tag: `v4.0.0`
-- Release title: `v4.0.0 Chief of Staff Delegation Contract Remediation`
-- Canonical workforce: 10 registered agents
-- Shared challenge capability: `mesh-devils-advocate`
-- ChatGPT MCP transport: `LOCAL_STDIO`
-- Canonical runtime: `mesh_cos.mcp_runtime.MCPRuntime`
-- Canonical state: `TaskLedger`
-- Remediation issue: #30
-- Remediation PR: #31
+- `mesh-cos-mcp-qnap-v4.1.0.zip`, designed to be unpacked into `/share/Docker`;
+- `mesh-cos-mcp-qnap-v4.1.0.zip.sha256`.
 
-See `docs/release-4.0.0-cos-delegation-remediation.md` for the detailed requirements trace and verification record.
+The bundle contains deployment configuration, runbooks, and operator scripts. It does not contain secrets and does not publish a container image. Build/pull the approved Mesh image separately and record its immutable digest in `.env`.
+
+## Version identity
+
+- Repository/QNAP deployment release: `4.1.0`
+- Semantic tag: `v4.1.0`
+- Container image label default: `4.1.0-qnap`
+- Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged
+- Canonical workforce: exactly 10 registered agents
+- Message Operations remains the tenth registered agent.
+- Mesh Devil's Advocate remains the external governed shared Skill, not an agent principal.
+- Production connectivity: OpenAI Secure MCP Tunnel
+- Local engineering transport: stdio retained
+
+See `docs/release-4.1.0-qnap-secure-mcp.md` and `deployment/qnap/README-QNAP.md` for the detailed deployment and evidence record.

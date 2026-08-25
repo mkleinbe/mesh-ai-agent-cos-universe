@@ -92,11 +92,11 @@ def test_mcp_has_message_ops_principal_and_human_only_tools_remain_excluded() ->
     assert "reliability.human_override" not in message_allowlist
 
 
-def test_release_identity_is_v4() -> None:
+def test_qnap_release_identity_preserves_v4_runtime() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    assert "v4.0.0" in release
-    assert "Chief of Staff Delegation Contract Remediation" in release
-    assert "Message Operations" in release
+    assert "v4.1.0 QNAP Secure MCP Transport" in release
+    assert "Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged" in release
+    assert "Message Operations remains the tenth registered agent" in release

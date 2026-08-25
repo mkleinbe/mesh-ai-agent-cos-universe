@@ -1,7 +1,3 @@
-#!/usr/bin/env node
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createServer } from './server.js';
-
-const server = createServer();
-const transport = new StdioServerTransport();
-await server.connect(transport);
+import { createServer, loadContract, requireLocalStdioContract } from './server.js';
+const contract=loadContract(); requireLocalStdioContract(contract); const server=createServer(process.env,contract); const transport=new StdioServerTransport(); await server.connect(transport);

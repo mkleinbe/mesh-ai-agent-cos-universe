@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - RELEASE.md
+      - deployment/qnap/**
+      - Dockerfile
 
 permissions:
   contents: write
@@ -15,16 +17,52 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Create v4.0.0 Chief of Staff Delegation Contract Remediation release
+      - name: Build v4.1.0 QNAP deployment bundle
+        run: |
+          set -euo pipefail
+          TAG=v4.1.0
+          BUNDLE=dist/qnap-bundle
+          ASSET=dist/mesh-cos-mcp-qnap-v4.1.0.zip
+          rm -rf dist
+          mkdir -p "$BUNDLE/cos-mcp"
+          cp deployment/qnap/compose.yaml "$BUNDLE/cos-mcp/compose.yaml"
+          cp deployment/qnap/.env.example "$BUNDLE/cos-mcp/.env.example"
+          cp deployment/qnap/README-QNAP.md "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/DEPLOYMENT-STEPS.md "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/install-checklist.md "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/upgrade-checklist.md "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/rollback-checklist.md "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/backup-restore.md "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/qnap-environment-probe.sh "$BUNDLE/cos-mcp/"
+          cp deployment/qnap/scripts/*.sh "$BUNDLE/"
+          cp deployment/qnap-environment.md "$BUNDLE/cos-mcp/"
+          cp docs/qnap-production-preflight.md "$BUNDLE/cos-mcp/"
+          cp docs/qnap-security-review.md "$BUNDLE/cos-mcp/"
+          cp docs/release-4.1.0-qnap-secure-mcp.md "$BUNDLE/cos-mcp/"
+          cp RELEASE.md "$BUNDLE/cos-mcp/"
+          printf 'tag=%s\ncommit=%s\n' "$TAG" "$GITHUB_SHA" > "$BUNDLE/cos-mcp/release-metadata.txt"
+          chmod +x "$BUNDLE"/*.sh "$BUNDLE/cos-mcp/qnap-environment-probe.sh"
+          (cd "$BUNDLE" && zip -qr "$GITHUB_WORKSPACE/$ASSET" .)
+          sha256sum "$ASSET" > "$ASSET.sha256"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mesh-cos-mcp-qnap-v4.1.0
+          path: |
+            dist/mesh-cos-mcp-qnap-v4.1.0.zip
+            dist/mesh-cos-mcp-qnap-v4.1.0.zip.sha256
+      - name: Create or update v4.1.0 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.0.0
+          TAG: v4.1.0
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.0.zip
         run: |
+          set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; no action."
+            gh release upload "$TAG" "$ASSET" "$ASSET.sha256" --clobber
           else
             gh release create "$TAG" \
               --target "$GITHUB_SHA" \
-              --title "v4.0.0 Chief of Staff Delegation Contract Remediation" \
-              --notes-file RELEASE.md
+              --title "v4.1.0 QNAP Secure MCP Transport" \
+              --notes-file RELEASE.md \
+              "$ASSET" "$ASSET.sha256"
           fi

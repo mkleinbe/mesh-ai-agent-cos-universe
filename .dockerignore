@@ -1,0 +1,17 @@
+.git
+.github
+.env
+.venv
+.pytest_cache
+__pycache__
+*.pyc
+*.db
+*.sqlite*
+node_modules
+mcp/node_modules
+mcp/dist
+tests
+specs
+docs
+RELEASE.md
+CHANGELOG.md

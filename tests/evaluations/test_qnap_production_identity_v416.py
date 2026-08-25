@@ -37,7 +37,7 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     assert "MESH_COS_DEPLOYMENT_RELEASE: ${MESH_COS_DEPLOYMENT_RELEASE:?deployment release required}" in compose
 
 
-def test_release_train_is_v416_and_ci_uses_setup_node_v7() -> None:
+def test_active_release_train_is_v417_and_ci_uses_setup_node_v7() -> None:
     dockerfile = read("Dockerfile")
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
@@ -45,33 +45,37 @@ def test_release_train_is_v416_and_ci_uses_setup_node_v7() -> None:
     ci = read(".github/workflows/ci.yml")
     release = read(".github/workflows/release-production-readiness.yml")
 
-    assert "IMAGE_VERSION=4.1.6-qnap" in dockerfile
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.6" in env_example
-    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.6" in prepare
-    assert "VERSION=${1:-4.1.6}" in builder
+    assert "IMAGE_VERSION=4.1.7-qnap" in dockerfile
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.7" in env_example
+    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.7" in prepare
+    assert "VERSION=${1:-4.1.7}" in builder
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "v4.1.6" in ci
-    assert "TAG: v4.1.6" in release
-    assert "v4.1.6 Secure MCP Published App Production Identity" in release
+    assert "v4.1.7" in ci
+    assert "TAG: v4.1.7" in release
+    assert "v4.1.7 QNAP Image Provenance and Hosted Envelope Verification" in release
 
 
-def test_v416_acceptance_and_security_docs_are_packaged() -> None:
+def test_v416_historical_docs_and_v417_current_docs_are_packaged() -> None:
     builder = read("scripts/build-qnap-release-bundle.sh")
     for path in [
         "docs/qnap-security-review-v4.1.6.md",
         "docs/chatgpt-published-app-production-acceptance-v4.1.6.md",
         "docs/release-4.1.6-secure-mcp-published-app-identity.md",
         "specs/qnap-published-chatgpt-app-v4.1.6.feature",
+        "docs/qnap-security-review-v4.1.7.md",
+        "docs/qnap-image-provenance-envelope-debugging-v4.1.7.md",
+        "docs/release-4.1.7-qnap-image-provenance-envelope.md",
+        "specs/qnap-image-provenance-envelope-v4.1.7.feature",
     ]:
         assert (ROOT / path).is_file()
         assert Path(path).name in builder
 
 
-def test_chatgpt_acceptance_requires_dual_identity_after_v416_deploy() -> None:
+def test_chatgpt_acceptance_requires_dual_identity_after_v417_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.1.6",
+        "v4.1.7",
         "mcp_version",
         "4.0.0",
         "deployment_release",

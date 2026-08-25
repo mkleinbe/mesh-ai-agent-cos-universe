@@ -2,7 +2,7 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository/QNAP deployment release: `v4.1.6 Secure MCP Published App Production Identity`.**
+**Current repository/QNAP deployment release: `v4.1.7 QNAP Image Provenance and Hosted Envelope Verification`.**
 
 The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, and release evidence without widening the Phase 1 agent authority model or tool allowlists.
 
@@ -39,21 +39,24 @@ local MCP client
 
 The QNAP application lives at `/share/Docker/cos-mcp`, uses the verified external QNAP `lan7` qnet, and is deployed with scripts run from `/share/Docker`. The MCP protocol port is not published to the host or public internet. Production `/mcp` requests are accepted only from the Secure MCP Tunnel sidecar private source address.
 
-## Dual release identity
+## Dual release identity and v4.1.7 deployment integrity
 
-`v4.1.6` makes the production serving release observable without changing the canonical authority contract.
-
-Successful governed tool envelopes report:
+Successful governed tool envelopes must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.6
+deployment_release: 4.1.7
 agent_id: cos
 ```
 
 Production `/healthz` and `/readyz` additionally report `transport: SECURE_MCP_TUNNEL`.
 
 `mcp_version` identifies the canonical Phase 1 authority/runtime contract. `deployment_release` identifies the QNAP deployment release serving the request. Remote production startup fails closed if `MESH_COS_DEPLOYMENT_RELEASE` is absent.
+
+v4.1.7 adds two release-integrity controls after hosted v4.1.6 testing found responses that omitted `deployment_release` even though the final tagged v4.1.6 source and release package contained the correct envelope implementation:
+
+1. A local same-tag Mesh image is reusable only when its OCI version and revision labels match the extracted release metadata. A mismatch forces a rebuild from the extracted build context.
+2. Post-deploy verification executes a real read-only governed `registry.get_agent` MCP `tools/call` from the tunnel network namespace and refuses PASS unless the actual running response envelope contains the canonical/runtime/deployment identities above.
 
 ## Authority boundary
 
@@ -67,9 +70,9 @@ The CoS production projection remains exactly **27 governed tools**. `approval.r
 
 ## Production acceptance
 
-The published ChatGPT app has passed the ten-call sequential read-only acceptance sequence through the OpenAI Secure MCP Tunnel without HTTP 502, `invalid_session`, reconnect, or container restart. That baseline established hosted transport stability and identified the missing deployment-release observability now addressed by v4.1.6.
+The published ChatGPT app previously passed the ten-call sequential read-only acceptance sequence through the OpenAI Secure MCP Tunnel without HTTP 502, `invalid_session`, reconnect, or container restart. The remaining v4.1.6 acceptance blocker was serving-release projection in the governed response envelope.
 
-After deploying v4.1.6, repeat hosted acceptance and require the dual release identity above on every successful governed tool response.
+After deploying v4.1.7, repeat hosted acceptance and require `deployment_release: 4.1.7` on every successful governed tool response. The release is not accepted until the local provenance/tool-envelope gate and hosted acceptance are both green.
 
 Current operator and release references:
 
@@ -77,8 +80,8 @@ Current operator and release references:
 - `deployment/qnap/DEPLOYMENT-STEPS.md`
 - `deployment/qnap/CHATGPT-ACCEPTANCE.md`
 - `docs/qnap-production-preflight.md`
-- `docs/chatgpt-published-app-production-acceptance-v4.1.6.md`
-- `docs/qnap-security-review-v4.1.6.md`
-- `docs/release-4.1.6-secure-mcp-published-app-identity.md`
+- `docs/qnap-image-provenance-envelope-debugging-v4.1.7.md`
+- `docs/qnap-security-review-v4.1.7.md`
+- `docs/release-4.1.7-qnap-image-provenance-envelope.md`
 
-Production images are built from the verified release bundle/tag, recorded by immutable image identity, and activated through the governed QNAP deployment path.
+Production images are built or provenance-qualified from the verified release bundle/tag, recorded by immutable image identity, and activated through the governed QNAP deployment path.

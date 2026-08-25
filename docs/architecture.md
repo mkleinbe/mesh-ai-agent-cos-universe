@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The canonical Phase 1 authority/runtime contract remains release **`4.0.0`**, defining **10 registered agents** plus one external governed shared Skill, Mesh Devil's Advocate. Repository/QNAP deployment release **`v4.1.6`** packages that authority model for the published **Mesh CoS MCP** ChatGPT app through the **OpenAI Secure MCP Tunnel** and adds serving-release observability without changing authority.
+The canonical Phase 1 authority/runtime contract remains release **`4.0.0`**, defining **10 registered agents** plus one external governed shared Skill, Mesh Devil's Advocate. Repository/QNAP deployment release **`v4.1.7`** packages that authority model for the published **Mesh CoS MCP** ChatGPT app through the **OpenAI Secure MCP Tunnel**, makes serving-release identity observable, and binds QNAP image reuse to verified release provenance without changing authority.
 
 `TaskLedger` remains canonical state.
 
@@ -58,7 +58,25 @@ flowchart LR
 
 The QNAP application also has LAN identity `192.168.7.60` for operator health/readiness access, but the production Compose model publishes no host MCP port. `/mcp` accepts only the configured tunnel-sidecar private source identity while `MCP_AUTH_MODE=tunnel` is active.
 
-The production MCP process is immutably bound to `MESH_COS_AGENT_ID=cos`. `MESH_COS_DEPLOYMENT_RELEASE=4.1.6` is required before the remote process listens. Prompt content, MCP request content, headers, retrieved data, task text, delegated instructions, connectors, and Skill output cannot change these bindings or widen the tool catalog.
+The production MCP process is immutably bound to `MESH_COS_AGENT_ID=cos`. `MESH_COS_DEPLOYMENT_RELEASE=4.1.7` is required before the remote process listens. Prompt content, MCP request content, headers, retrieved data, task text, delegated instructions, connectors, and Skill output cannot change these bindings or widen the tool catalog.
+
+## Release-image provenance boundary
+
+```mermaid
+flowchart LR
+    ZIP[Verified v4.1.7 release ZIP] --> META[release-metadata.txt\nversion + commit]
+    META --> CHECK{Existing local image\nOCI labels match?}
+    CHECK -->|Yes| REUSE[Reuse exact-provenance image]
+    CHECK -->|No| BUILD[Rebuild from extracted\nbuild context]
+    BUILD --> VERIFY[Revalidate OCI version + revision]
+    REUSE --> VERIFY
+    VERIFY --> ENV[Record image ID in .env]
+    ENV --> COMPOSE[Compose service replacement]
+    COMPOSE --> TOOL[Governed registry.get_agent\ntools/call verification]
+    TOOL --> HOSTED[Published ChatGPT acceptance]
+```
+
+The local image tag is not release authority. The extracted bundle metadata is used as the release identity input, and an existing image is reusable only when its OCI version and revision labels match that metadata. A mismatch forces rebuild. Post-deploy verification exercises the actual governed response envelope before local deployment is considered successful.
 
 ## Local certification topology
 
@@ -78,12 +96,12 @@ The deployment train and authority contract are separate version domains:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.6
+deployment_release: 4.1.7
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
-Successful governed production tool envelopes report `mcp_version`, `deployment_release`, and `agent_id`. `/healthz` and `/readyz` additionally report the transport. Release metadata is observability only; it cannot select identity, tools, approval, delegation, or canonical state.
+Successful governed production tool envelopes report `mcp_version`, `deployment_release`, and `agent_id`. `/healthz` and `/readyz` additionally report the transport. Release metadata is observability and deployment-integrity evidence only; it cannot select identity, tools, approval, delegation, or canonical state.
 
 ## Authority projection
 
@@ -136,7 +154,7 @@ Message Operations is the tenth registered agent. It is a controlled execution b
 
 ## Production readiness
 
-`/readyz` requires active bound-agent state, valid governance audit chain, and successful current MCP `server/discover`. The published ChatGPT app is then verified independently through the documented ten-call sequential hosted acceptance path.
+`/readyz` requires active bound-agent state, valid governance audit chain, and successful current MCP `server/discover`. v4.1.7 local post-deploy verification additionally requires a successful read-only governed `tools/call` whose response envelope reports `mcp_version=4.0.0`, `deployment_release=4.1.7`, and `agent_id=cos`. The published ChatGPT app is then verified independently through the documented sequential hosted acceptance path.
 
 ## Historical architecture
 

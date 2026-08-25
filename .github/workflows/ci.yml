@@ -39,32 +39,38 @@ jobs:
           sh deployment/qnap/tests/test-compose-discovery.sh
           sh deployment/qnap/tests/test-observability.sh
           sh deployment/qnap/tests/test-runtime-permissions.sh
+          sh deployment/qnap/tests/test-image-provenance.sh
           bash -n scripts/build-qnap-release-bundle.sh
-      - name: Build and inspect v4.1.6 release bundle
+      - name: Build and inspect v4.1.7 release bundle
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh 4.1.6
-          test -f dist/mesh-cos-mcp-qnap-v4.1.6.zip
-          test -f dist/mesh-cos-mcp-qnap-v4.1.6.zip.sha256
+          bash scripts/build-qnap-release-bundle.sh 4.1.7
+          test -f dist/mesh-cos-mcp-qnap-v4.1.7.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.7.zip.sha256
           test -f dist/qnap-bundle/mesh-cos-qnap-compose.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-observability.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-permissions.sh
+          test -f dist/qnap-bundle/mesh-cos-qnap-image-provenance.sh
           test -f dist/qnap-bundle/cos-mcp/build-context/Dockerfile
           test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
           test -f dist/qnap-bundle/cos-mcp/release-metadata.txt
-          grep -q '^version=4.1.6$' dist/qnap-bundle/cos-mcp/release-metadata.txt
-          grep -q 'RELEASE_METADATA="$APP_ROOT/release-metadata.txt"' dist/qnap-bundle/mesh-cos-mcp-preflight.sh
-          ! grep -q 'MESH_COS_DEPLOYMENT_RELEASE must be 4.1.3' dist/qnap-bundle/mesh-cos-mcp-preflight.sh
-          test -f dist/qnap-bundle/cos-mcp/qnap-security-review-v4.1.6.md
-          test -f dist/qnap-bundle/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.6.md
-          test -f dist/qnap-bundle/cos-mcp/qnap-published-chatgpt-app-v4.1.6.feature
+          grep -q '^version=4.1.7$' dist/qnap-bundle/cos-mcp/release-metadata.txt
+          grep -q "^commit=$GITHUB_SHA$" dist/qnap-bundle/cos-mcp/release-metadata.txt
+          grep -q 'RELEASE_METADATA="$APP_ROOT/release-metadata.txt"' dist/qnap-bundle/mesh-cos-mcp-prepare.sh
+          grep -q 'mesh_image_provenance_matches' dist/qnap-bundle/mesh-cos-mcp-prepare.sh
+          grep -q -- '--network container:mesh-cos-tunnel' dist/qnap-bundle/mesh-cos-mcp-verify.sh
+          grep -q 'governed tool envelope dual release identity' dist/qnap-bundle/mesh-cos-mcp-verify.sh
+          test -f dist/qnap-bundle/cos-mcp/qnap-security-review-v4.1.7.md
+          test -f dist/qnap-bundle/cos-mcp/qnap-image-provenance-envelope-debugging-v4.1.7.md
+          test -f dist/qnap-bundle/cos-mcp/release-4.1.7-qnap-image-provenance-envelope.md
+          test -f dist/qnap-bundle/cos-mcp/qnap-image-provenance-envelope-v4.1.7.feature
           test ! -e dist/qnap-bundle/cos-mcp/.env
           test ! -e dist/qnap-bundle/cos-mcp/secrets
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.6.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.7.zip.sha256)
       - name: Validate QNAP Compose candidate
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.6'
-          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.6
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.7'
+          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.7
           MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -87,16 +93,24 @@ jobs:
           assert 'pids_limit' not in svc
           assert 'ports' not in svc
           assert svc['pull_policy'] == 'never'
-          assert svc['environment']['MESH_COS_DEPLOYMENT_RELEASE'] == '4.1.6'
+          assert svc['environment']['MESH_COS_DEPLOYMENT_RELEASE'] == '4.1.7'
           assert tun['pull_policy'] == 'never'
           assert data['networks']['mesh-cos-private']['driver'] == 'bridge'
           assert data['networks']['lan7']['external'] is True
           PY
-      - name: Build production container from release bundle context
-        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.6-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
+      - name: Build and inspect production container from release bundle context
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg VCS_REF="$GITHUB_SHA" \
+            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --build-arg IMAGE_VERSION=4.1.7-qnap \
+            -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci)" = '4.1.7-qnap'
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci)" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and sequential requests
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.6'
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.7'
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci
       - name: Verify non-root QNAP ownership handoff with real Docker bind mounts
         run: |
@@ -154,7 +168,7 @@ jobs:
             --user 65532:65532 --read-only --cap-drop ALL --security-opt no-new-privileges \
             --cpus 2 --memory 24g \
             -e MESH_COS_AGENT_ID=cos \
-            -e MESH_COS_DEPLOYMENT_RELEASE=4.1.6 \
+            -e MESH_COS_DEPLOYMENT_RELEASE=4.1.7 \
             -e MESH_COS_LEDGER_PATH=/var/lib/mesh/ledger/taskledger.sqlite3 \
             -e MESH_COS_REQUIRE_EXISTING_LEDGER=true \
             -e MESH_COS_KILL_SWITCH=false \
@@ -171,7 +185,7 @@ jobs:
           curl -fsS http://127.0.0.1:18080/readyz > /tmp/mesh-ready.json
           for f in /tmp/mesh-health.json /tmp/mesh-ready.json; do
             grep -q '"mcp_version":"4.0.0"' "$f"
-            grep -q '"deployment_release":"4.1.6"' "$f"
+            grep -q '"deployment_release":"4.1.7"' "$f"
             grep -q '"agent_id":"cos"' "$f"
             grep -q '"transport":"SECURE_MCP_TUNNEL"' "$f"
           done
@@ -195,4 +209,4 @@ jobs:
           PY
           docker restart mesh-cos-mcp >/dev/null
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/readyz >/dev/null && break; sleep 1; done
-          curl -fsS http://127.0.0.1:18080/readyz | grep -q '"deployment_release":"4.1.6"'
+          curl -fsS http://127.0.0.1:18080/readyz | grep -q '"deployment_release":"4.1.7"'

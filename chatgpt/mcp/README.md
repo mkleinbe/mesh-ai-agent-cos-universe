@@ -2,7 +2,7 @@
 
 `mesh-cos-mcp.v1.json` remains the canonical Phase 1 **4.0.0 authority/runtime contract**. It defines the 10 registered agent principals, deny-by-default tool allowlists, immutable agent identity, human-only catalog, delegation rules, and completion/verification boundary.
 
-Repository/QNAP deployment release **v4.1.6** packages that unchanged authority contract behind the published **Mesh CoS MCP** ChatGPT app and OpenAI Secure MCP Tunnel, while making the serving deployment release independently observable.
+Repository/QNAP deployment release **v4.1.7** packages that unchanged authority contract behind the published **Mesh CoS MCP** ChatGPT app and OpenAI Secure MCP Tunnel, while making the serving deployment release independently observable and release-image provenance verifiable.
 
 ## Transport model
 
@@ -26,13 +26,19 @@ Successful governed tool envelopes report both version domains:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.6
+deployment_release: 4.1.7
 agent_id: cos
 ```
 
 `mcp_version` identifies the canonical Phase 1 authority/runtime contract. `deployment_release` identifies the QNAP deployment release serving the call. Production `/healthz` and `/readyz` also report `transport: SECURE_MCP_TUNNEL`.
 
 Remote startup fails closed when `MESH_COS_DEPLOYMENT_RELEASE` is missing or blank. Release identity is observability metadata only; it cannot select tools, change authority, create approvals, or change canonical state.
+
+## v4.1.7 deployment integrity
+
+Hosted v4.1.6 acceptance found a serving instance whose governed responses omitted `deployment_release`, while the final tagged v4.1.6 source and release package already contained the correct envelope code. v4.1.7 therefore hardens the QNAP deployment boundary rather than changing the canonical MCP contract.
+
+A same-tag local image is reusable only when its OCI version and revision labels match the extracted release metadata. A mismatch forces a rebuild. Post-deploy verification then executes a real read-only `registry.get_agent` `tools/call` against the running service from the tunnel network namespace and fails unless the actual governed envelope reports the identities above.
 
 ## Agent versus human catalogs
 
@@ -46,6 +52,6 @@ The canonical workforce remains exactly **10 registered agents**. Mesh Devil's A
 
 ## Certification
 
-Local stdio certification remains part of `npm run check`. QNAP production acceptance adds container hardening, dual release identity, Secure MCP Tunnel ingress, persistence, backup/restore, restart, sequential modern MCP calls, and published ChatGPT app verification.
+Local stdio certification remains part of `npm run check`. QNAP production acceptance adds image provenance, container hardening, dual release identity, actual governed-envelope verification, Secure MCP Tunnel ingress, persistence, backup/restore, restart, sequential modern MCP calls, and published ChatGPT app verification.
 
-See `deployment/qnap/CHATGPT-ACCEPTANCE.md` and `docs/chatgpt-published-app-production-acceptance-v4.1.6.md`.
+See `deployment/qnap/CHATGPT-ACCEPTANCE.md`, `docs/qnap-image-provenance-envelope-debugging-v4.1.7.md`, and `docs/release-4.1.7-qnap-image-provenance-envelope.md`. The v4.1.6 hosted acceptance record remains historical evidence.

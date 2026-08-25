@@ -1,8 +1,10 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this after the **v4.1.6** `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
+Run this after the **v4.1.7** `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
 
-The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted MCP runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.6**.
+The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted MCP runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.7**.
+
+v4.1.7 specifically closes the release blocker where the hosted app was functionally healthy but successful governed responses omitted `deployment_release`.
 
 ## 1. OpenAI tunnel prerequisites
 
@@ -22,31 +24,37 @@ Use ChatGPT on the web with a workspace/account allowed to use the custom MCP ap
 
 1. Open the installed **Mesh CoS MCP** app or its developer-mode configuration.
 2. Confirm the connection points to the Secure MCP Tunnel used by the QNAP deployment.
-3. Run **Scan Tools** again after the v4.1.6 upgrade.
+3. Run **Scan Tools** again after the v4.1.7 upgrade.
 4. Keep `mesh-cos-tunnel` healthy until the scan completes.
 
-No additional MCP-layer OAuth flow is introduced by v4.1.6. The Secure MCP Tunnel remains the production ingress trust boundary.
+No additional MCP-layer OAuth flow is introduced by v4.1.7. The Secure MCP Tunnel remains the production ingress trust boundary.
 
-## 3. Local deployment-identity acceptance
+## 3. Local deployment-identity and provenance acceptance
 
-Confirm the deployment actually advanced:
+The deployment itself now performs a real read-only governed MCP `registry.get_agent` call from the tunnel network namespace. PASS from `mesh-cos-mcp-deploy.sh` therefore already requires the running tool envelope to expose the expected identities.
+
+Capture additional local evidence with:
 
 ```sh
 sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-mcp
+sudo docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }} {{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp
 sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-tunnel
 grep '^MESH_COS_DEPLOYMENT_RELEASE=' /share/Docker/cos-mcp/.env
 sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
-curl -fsS http://127.0.0.1:8080/healthz
-curl -fsS http://127.0.0.1:8080/readyz
+sed -n 's/^commit=//p' /share/Docker/cos-mcp/release-metadata.txt
+sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>r.text()).then(console.log)"
+sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
 PASS requires:
 
-- `mesh-cos-mcp:qnap-v4.1.6` is running and healthy;
+- `mesh-cos-mcp:qnap-v4.1.7` is running and healthy;
 - the tunnel is running and healthy;
-- `.env` reports `MESH_COS_DEPLOYMENT_RELEASE=4.1.6`;
-- bundle metadata reports `4.1.6`;
-- `/healthz` and `/readyz` both report `mcp_version: 4.0.0`, `deployment_release: 4.1.6`, `agent_id: cos`, and `transport: SECURE_MCP_TUNNEL`.
+- `.env` reports `MESH_COS_DEPLOYMENT_RELEASE=4.1.7`;
+- bundle metadata reports `version=4.1.7`;
+- the running image label reports `4.1.7-qnap` and its OCI revision equals the bundle `commit=` value;
+- `/healthz` and `/readyz` both report `mcp_version: 4.0.0`, `deployment_release: 4.1.7`, `agent_id: cos`, and `transport: SECURE_MCP_TUNNEL`;
+- the deployment verification log records `PASS governed tool envelope dual release identity`.
 
 `mcp_version` identifies the canonical authority/runtime contract. `deployment_release` identifies the QNAP release serving the request. They are intentionally different values.
 
@@ -93,7 +101,7 @@ reliability.human_override
 
 Mesh Devil's Advocate must not appear as an agent principal. It remains a governed shared Skill. Message Operations remains a registered agent.
 
-## 5. Published-app sequential transport acceptance
+## 5. Published-app sequential transport and identity acceptance
 
 Open a new chat with only **Mesh CoS MCP** selected. Without restarting either QNAP container, execute these calls sequentially in the same conversation:
 
@@ -110,15 +118,17 @@ Open a new chat with only **Mesh CoS MCP** selected. Without restarting either Q
 
 PASS requires all ten calls to return successfully with no `502`, `invalid_session`, reconnect requirement, or container restart. Both roster calls must show exactly **10 registered agents**.
 
-For every successful governed tool call, inspect the returned envelope. PASS requires:
+For **every** successful governed tool call, inspect the returned envelope. PASS requires:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.6
+deployment_release: 4.1.7
 agent_id: cos
 ```
 
-The result payload for the underlying tool must remain unchanged apart from the new envelope metadata.
+The underlying `result` payload must retain its canonical tool semantics.
+
+Any successful hosted response that omits `deployment_release` is a **release blocker**, even if the tool result itself is correct.
 
 ## 6. Read-only authority acceptance
 
@@ -144,15 +154,15 @@ After read-only acceptance is green, use this low-authority idempotent task only
 
 ```text
 Using only the Mesh CoS MCP app, invoke task.intake with exactly these values:
-objective: QNAP Secure MCP acceptance v4.1.6
-expected_outcome: Confirm the governed write path persists to the canonical TaskLedger after the v4.1.6 deployment
+objective: QNAP Secure MCP acceptance v4.1.7
+expected_outcome: Confirm the governed write path persists to the canonical TaskLedger after the v4.1.7 deployment
 requested_by: michael
 executive_sponsor: michael
 accountable_agent: cos
 decision_owner: michael
 authority_level: 0
 acceptance_test: Read the task back through task.get and confirm it exists in canonical state without treating completion as verification
-idempotency_key: qnap-secure-mcp-v4.1.6
+idempotency_key: qnap-secure-mcp-v4.1.7
 
 Return the created or existing task_id. Do not call task.complete or task.verify.
 ```
@@ -161,8 +171,6 @@ Call `task.get` for the returned task ID and confirm the objective, accountable 
 
 ## 8. Acceptance boundary
 
-Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial v4.1.6 acceptance. The purpose is to prove deployment identity, transport reliability, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
+Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial v4.1.7 acceptance. The purpose is to prove release provenance, deployment identity, transport reliability, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
 
-The prior published-app baseline already proved ten sequential read-only calls through the Secure MCP Tunnel without a 502, session loss, reconnect, or restart. v4.1.6 acceptance additionally proves which deployment release served each response.
-
-The v4.1.6 deployment is accepted only after local dual-identity checks and the hosted published-app sequence are both green.
+v4.1.7 is accepted only after local provenance/governed-envelope verification and the hosted published-app sequence are both green.

@@ -2,7 +2,7 @@
 
 ## Release status
 
-Repository/QNAP deployment release **`v4.1.6 Secure MCP Published App Production Identity`** is the current deployment-readiness target. The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly **10 registered agents** plus the external advisory Mesh Devil's Advocate shared Skill.
+Repository/QNAP deployment release **`v4.1.7 QNAP Image Provenance and Hosted Envelope Verification`** is the current deployment-readiness target. The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly **10 registered agents** plus the external advisory Mesh Devil's Advocate shared Skill.
 
 Production readiness is fail closed. Repository CI, QNAP deployment verification, and published ChatGPT app acceptance are separate gates.
 
@@ -29,12 +29,16 @@ Production readiness is fail closed. Repository CI, QNAP deployment verification
 - Production ChatGPT uses the installed **Mesh CoS MCP** app through the **OpenAI Secure MCP Tunnel**.
 - `MCP_AUTH_MODE=tunnel` and `MCP_TRUSTED_CLIENT_IP` remain mandatory for the remote adapter.
 - Production Compose publishes no host MCP port and `/mcp` denies non-tunnel source identities.
-- The application container receives a non-empty `MESH_COS_DEPLOYMENT_RELEASE=4.1.6`; missing deployment identity fails remote startup.
-- Successful governed production tool envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.6`, and `agent_id=cos`.
+- The extracted bundle provides `release-metadata.txt` with `version=4.1.7` and a valid 40-character release commit.
+- Any local `mesh-cos-mcp:qnap-v4.1.7` image is reusable only when OCI `org.opencontainers.image.version=4.1.7-qnap` and `org.opencontainers.image.revision=<bundle commit>` both match the extracted release metadata.
+- A same-tag provenance mismatch forces a rebuild from the extracted release build context, and image provenance is revalidated before the image ID is recorded.
+- The application container receives a non-empty `MESH_COS_DEPLOYMENT_RELEASE=4.1.7`; missing deployment identity fails remote startup.
+- Successful governed production tool envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.7`, and `agent_id=cos`.
 - `/healthz` and `/readyz` report the same identity plus `transport=SECURE_MCP_TUNNEL`.
+- Post-deploy verification executes a real read-only `registry.get_agent` MCP `tools/call` against the running service from the tunnel network namespace and fails if the governed envelope identity is missing or mismatched.
 - Runtime remains UID/GID 65532 with read-only root filesystem, all capabilities dropped, no-new-privileges, no Docker socket, 2 CPU, 24 GiB RAM, and no PID limit.
 - The canonical SQLite TaskLedger remains the single writable operating-state boundary.
-- Tunnel secret material remains outside `.env`, release assets, backups, diagnostics, and MCP responses.
+- Tunnel secret material remains outside `.env`, release assets, backups, diagnostics, MCP responses, and the ephemeral governed-envelope verifier.
 
 ## Required repository certification
 
@@ -52,10 +56,10 @@ mypy src --check-untyped-defs
 pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
 python -m compileall -q src
-bash scripts/build-qnap-release-bundle.sh 4.1.6
+bash scripts/build-qnap-release-bundle.sh 4.1.7
 ```
 
-The Python coverage gate remains 100% branch-aware. The MCP package must pass TypeScript build, Node unit tests, real local stdio smoke certification, and high-severity npm audit. CI must additionally build and exercise the v4.1.6 production image.
+The Python coverage gate remains 100% branch-aware. The MCP package must pass TypeScript build, Node unit tests, real local stdio smoke certification, and high-severity npm audit. CI must additionally build and exercise the v4.1.7 production image, verify its OCI release version/revision labels against the exact candidate commit, execute modern MCP discovery and governed tool-envelope checks, and retain the non-root, persistence, backup, restart, and ingress-denial gates.
 
 ## End-to-end delegation certification
 
@@ -65,18 +69,18 @@ Negative scenarios must prove missing evidence blocks completion/verification, e
 
 ## QNAP preflight and deployment verification
 
-The QNAP candidate must pass release-metadata/environment equality, canonical ledger integrity, image identity checks, Compose rendering, non-root runtime checks, dual-identity health/readiness, modern MCP discovery, direct-ingress denial, restart recovery, and Docker-mediated online backup integrity.
+The QNAP candidate must pass release-metadata/environment equality, release-image OCI provenance, canonical ledger integrity, image identity checks, Compose rendering, non-root runtime checks, dual-identity health/readiness, modern MCP discovery, a real governed read-only `tools/call` identity check through the tunnel network boundary, direct-ingress denial, restart recovery, and Docker-mediated online backup integrity.
 
 See `qnap-production-preflight.md` and `../deployment/qnap/DEPLOYMENT-STEPS.md`.
 
 ## Published ChatGPT app acceptance
 
-After QNAP deployment verification passes, the installed **Mesh CoS MCP** app must pass the ten-call sequential read-only acceptance sequence in `../deployment/qnap/CHATGPT-ACCEPTANCE.md` without HTTP 502, `invalid_session`, reconnect, or container restart.
+After QNAP deployment verification passes, the installed **Mesh CoS MCP** app must pass the sequential read-only acceptance sequence in `../deployment/qnap/CHATGPT-ACCEPTANCE.md` without HTTP 502, `invalid_session`, reconnect, or container restart.
 
-Both roster calls must show exactly 10 registered agents. Every successful governed tool envelope must prove the serving QNAP release with `deployment_release=4.1.6` while retaining canonical `mcp_version=4.0.0`.
+Both roster calls must show exactly 10 registered agents. Every successful governed tool envelope must prove the serving QNAP release with `deployment_release=4.1.7` while retaining canonical `mcp_version=4.0.0` and bound `agent_id=cos`. Any successful hosted response that omits `deployment_release` is a release blocker.
 
 An optional idempotent L0 governed-write acceptance may be run only when a production write is explicitly intended.
 
 ## Historical releases
 
-Historical documents may retain superseded roster counts and deployment releases when clearly scoped to those releases. Current-state documentation must resolve to the canonical 10-agent authority model and the current v4.1.6 QNAP deployment train.
+Historical documents may retain superseded roster counts and deployment releases when clearly scoped to those releases. Current-state documentation must resolve to the canonical 10-agent authority model and the current v4.1.7 QNAP deployment train.

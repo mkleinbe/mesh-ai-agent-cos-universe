@@ -1,6 +1,6 @@
 # Security and Governance
 
-The canonical Phase 1 authority/runtime contract remains `4.0.0`. Repository/QNAP deployment release `v4.1.6` applies that unchanged authority model to the published **Mesh CoS MCP** ChatGPT app and OpenAI Secure MCP Tunnel production path while adding serving-release observability.
+The canonical Phase 1 authority/runtime contract remains `4.0.0`. Repository/QNAP deployment release `v4.1.7` applies that unchanged authority model to the published **Mesh CoS MCP** ChatGPT app and OpenAI Secure MCP Tunnel production path while adding serving-release observability, release-image provenance, and governed response-envelope verification.
 
 ## Trust architecture
 
@@ -33,12 +33,37 @@ Production tool envelopes and status endpoints distinguish the immutable authori
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.6
+deployment_release: 4.1.7
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
 `MESH_COS_DEPLOYMENT_RELEASE` is non-secret release metadata. The remote runtime requires it before listening, but it is never used to select agent identity, tools, approval rights, delegation rights, or canonical state.
+
+## Release-image provenance boundary
+
+The mutable local Docker tag is not trusted as release authority. QNAP preparation reads the extracted bundle `version=` and `commit=` values as data and compares them with the local image OCI `org.opencontainers.image.version` and `org.opencontainers.image.revision` labels.
+
+An existing image is reusable only when both labels match the extracted release identity. A mismatch forces a rebuild from the extracted build context. After build or reuse, the same labels are revalidated before the image ID is recorded and Compose replacement can proceed.
+
+Release metadata is never sourced or evaluated as shell code and cannot expand Docker, MCP, human, or agent authority.
+
+## Governed response-envelope verification boundary
+
+v4.1.7 post-deploy verification executes one hardcoded read-only `registry.get_agent` MCP `tools/call` against the running application from a short-lived verifier that shares the tunnel client's network namespace.
+
+The verifier is deliberately constrained:
+
+- non-root UID/GID 65532;
+- read-only root filesystem;
+- all capabilities dropped;
+- no Docker socket;
+- no TaskLedger/state mount;
+- no tunnel secret mount or secret environment value;
+- no persistent service lifetime;
+- only the expected deployment release is passed as non-secret verification data.
+
+The verifier does not change `MCP_TRUSTED_CLIENT_IP` or create a new long-running trusted client. It uses authority the QNAP Docker administrator already holds solely to verify the actual governed response boundary and exits immediately.
 
 ## Human-only isolation
 
@@ -70,7 +95,7 @@ Message Operations is the tenth registered agent. It can inspect approval state 
 
 ## QNAP container boundary
 
-The production application runtime remains UID/GID 65532 with read-only root filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, explicit CPU/memory controls, and the canonical TaskLedger bind-mounted as the single writable state boundary. The tunnel runtime secret remains file-only and is excluded from `.env`, release assets, backups, diagnostics, and tool responses.
+The production application runtime remains UID/GID 65532 with read-only root filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, explicit CPU/memory controls, and the canonical TaskLedger bind-mounted as the single writable state boundary. The tunnel runtime secret remains file-only and is excluded from `.env`, release assets, backups, diagnostics, tool responses, and the ephemeral verifier.
 
 ## Reliability and audit
 
@@ -80,6 +105,6 @@ Material decisions use `decision.v2`; consequential actions use `agent-event.v2`
 
 ## Defense in depth
 
-Workspace `Always ask`, connector restrictions, source permissions, Secure MCP Tunnel private ingress, least-privilege QNAP runtime controls, and target-environment RBAC narrow behavior but never replace Mesh L4/L5 authority controls.
+Workspace `Always ask`, connector restrictions, source permissions, Secure MCP Tunnel private ingress, release-image provenance, governed response-envelope verification, least-privilege QNAP runtime controls, and target-environment RBAC narrow behavior but never replace Mesh L4/L5 authority controls.
 
-The v4.1.6 targeted security receipt is `qnap-security-review-v4.1.6.md`.
+The v4.1.7 targeted security receipt is `qnap-security-review-v4.1.7.md`.

@@ -38,6 +38,19 @@ mesh_run runtime_readiness readyz docker exec -e EXPECTED_RELEASE="$MESH_COS_DEP
 mesh_run runtime_readiness runtime-preflight docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py || fail "canonical runtime preflight failed"
 pass "runtime health, readiness, dual release identity, and canonical preflight"
 
+MCP_ENVELOPE_CHECK="const expected=process.env.EXPECTED_RELEASE;const meta={'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'mesh-qnap-verify',version:expected}};const body={jsonrpc:'2.0',id:'verify-envelope',method:'tools/call',params:{name:'registry.get_agent',arguments:{agent_id:'cos'},_meta:meta}};fetch('http://172.30.60.2:8080/mcp',{method:'POST',headers:{'content-type':'application/json','accept':'application/json, text/event-stream','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'registry.get_agent'},body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error('http_'+r.status);const outer=JSON.parse(await r.text());const content=outer&&outer.result&&outer.result.content;if(!Array.isArray(content))throw new Error('missing_content');const item=content.find(x=>x&&x.type==='text');if(!item||typeof item.text!=='string')throw new Error('missing_text');const envelope=JSON.parse(item.text);if(envelope.ok!==true||envelope.mcp_version!=='4.0.0'||envelope.deployment_release!==expected||envelope.agent_id!=='cos'||!envelope.result)throw new Error('identity_mismatch')}).catch(()=>process.exit(1))"
+mesh_run runtime_readiness governed-tool-envelope \
+  docker run --rm \
+    --network container:mesh-cos-tunnel \
+    --read-only \
+    --user 65532:65532 \
+    --cap-drop ALL \
+    --security-opt no-new-privileges \
+    --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+    -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" \
+    --entrypoint node "$MESH_COS_IMAGE_ID" -e "$MCP_ENVELOPE_CHECK" || fail "governed MCP tool response envelope identity check failed"
+pass "governed tool envelope dual release identity"
+
 mesh_set_stage runtime_controls
 test "$(docker exec mesh-cos-mcp id -u)" = "65532" || fail "runtime UID"
 test "$(docker inspect -f '{{.HostConfig.Privileged}}' mesh-cos-mcp)" = "false" || fail "privileged mode"

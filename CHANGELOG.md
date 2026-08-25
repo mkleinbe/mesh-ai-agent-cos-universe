@@ -2,6 +2,26 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.2 - 2026-08-25 - QNAP Compose Discovery Fix
+
+### Live deployment defect remediation
+
+- Fixed the QNAP SSH case where Docker is available and Container Station has Compose V2 installed, but `docker compose` is not callable from the operator shell.
+- Added bounded Compose V2 discovery through Docker client plugin metadata, standard Docker CLI-plugin paths, and the Container Station QPKG install path.
+- Require a Compose V2 version response and reject Compose V1.
+- Expanded the read-only QNAP environment probe to report the Container Station install path, Docker-reported Compose plugin path, and executable Compose candidates.
+
+### Operator session safety
+
+- Replaced the unsafe top-level copy/paste failure pattern with a subshell deployment wrapper so `exit` on a failed check terminates only the installer subshell and never the parent SSH login.
+- Added QNAP-036 and QNAP-037 to codify Compose fallback and SSH-session preservation.
+- Added a shell regression that reproduces the observed `docker compose` failure while a direct Compose V2 plugin remains available.
+
+### Version boundary
+
+- Repository/QNAP deployment release: `4.1.2` / tag `v4.1.2`.
+- The canonical Phase 1 agent authority/runtime package contract remains `4.0.0`; the 10-agent roster, tool allowlists, human-only boundary, networking, TaskLedger authority, and `COMPLETED != VERIFIED` semantics are unchanged.
+
 ## 4.1.1 - 2026-08-25 - QNAP Deployment Automation
 
 ### Automated operator lifecycle

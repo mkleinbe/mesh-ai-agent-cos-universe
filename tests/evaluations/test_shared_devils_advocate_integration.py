@@ -25,10 +25,7 @@ def test_devils_advocate_is_shared_capability_not_workspace_agent() -> None:
 
 def test_shared_challenge_contract_preserves_owner_authority() -> None:
     source = json.loads((ROOT / "agents" / "registry.json").read_text())
-    shared = {
-        item["capability"]: item
-        for item in source.get("shared_capabilities", [])
-    }
+    shared = {item["capability"]: item for item in source.get("shared_capabilities", [])}
 
     challenge = shared["mesh-devils-advocate"]
     assert challenge["deployment"] == "EXTERNAL_SHARED_SKILL"
@@ -44,9 +41,7 @@ def test_shared_challenge_contract_preserves_owner_authority() -> None:
 
 
 def test_mcp_projects_shared_challenge_without_agent_principal() -> None:
-    contract = json.loads(
-        (ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json").read_text()
-    )
+    contract = json.loads((ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json").read_text())
     allowlists = contract["agent_tool_allowlists"]
 
     assert "devils-advocate" not in allowlists
@@ -56,14 +51,9 @@ def test_mcp_projects_shared_challenge_without_agent_principal() -> None:
 
 
 def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() -> None:
-    expected_shared = {
-        "cos": ["mesh-devils-advocate"],
-        "cro": ["mesh-devils-advocate"],
-    }
+    expected_shared = {"cos": ["mesh-devils-advocate"], "cro": ["mesh-devils-advocate"]}
     for agent_id, expected in expected_shared.items():
-        manifest = json.loads(
-            (ROOT / "chatgpt" / "workspace-agents" / f"{agent_id}.json").read_text()
-        )
+        manifest = json.loads((ROOT / "chatgpt" / "workspace-agents" / f"{agent_id}.json").read_text())
         assert manifest["shared_skills"] == expected
         assert manifest["builder_configuration"]["shared_skills"] == expected
 
@@ -78,14 +68,12 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
 
-    release_workflow = (
-        ROOT / ".github" / "workflows" / "release-production-readiness.yml"
-    ).read_text()
-    assert "TAG: v4.1.1" in release_workflow
-    assert '--title "v4.1.1 QNAP Deployment Automation"' in release_workflow
+    release_workflow = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
+    assert "TAG: v4.1.2" in release_workflow
+    assert '--title "v4.1.2 QNAP Compose Discovery Fix"' in release_workflow
 
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.1 QNAP Deployment Automation" in release_notes
+    assert "v4.1.2 QNAP Compose Discovery Fix" in release_notes
     assert "Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
     assert "Message Operations" in release_notes

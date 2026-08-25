@@ -79,14 +79,7 @@ def test_mcp_has_message_ops_principal_and_human_only_tools_remain_excluded() ->
     assert "message-ops" in allowlists
     assert contract["runtime_release"] == "4.0.0"
     message_allowlist = set(allowlists["message-ops"])
-    assert {
-        "approval.get",
-        "governance.record_event",
-        "registry.get_agent",
-        "skills.invoke_governed",
-        "task.complete",
-        "task.get",
-    } <= message_allowlist
+    assert {"approval.get", "governance.record_event", "registry.get_agent", "skills.invoke_governed", "task.complete", "task.get"} <= message_allowlist
     assert "task.verify" not in message_allowlist
     assert "approval.record_decision" not in message_allowlist
     assert "reliability.human_override" not in message_allowlist
@@ -97,6 +90,6 @@ def test_qnap_release_identity_preserves_v4_runtime() -> None:
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.1 QNAP Deployment Automation" in release
+    assert "v4.1.2 QNAP Compose Discovery Fix" in release
     assert "Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged" in release
     assert "Message Operations remains the tenth registered agent" in release

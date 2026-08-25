@@ -2,7 +2,7 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**', 'quality/**', 'enhancement/**', 'release/**']
+    branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**', 'quality/**', 'enhancement/**', 'release/**', 'fix/**']
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -31,25 +31,27 @@ jobs:
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
-      - name: Validate QNAP shell scripts
+      - name: Validate QNAP shell scripts and Compose discovery regression
         run: |
           sh -n deployment/qnap/qnap-environment-probe.sh
-          for f in deployment/qnap/scripts/*.sh; do sh -n "$f"; done
+          for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
+          sh deployment/qnap/tests/test-compose-discovery.sh
           bash -n scripts/build-qnap-release-bundle.sh
-      - name: Build and inspect v4.1.1 release bundle
+      - name: Build and inspect v4.1.2 release bundle
         run: |
-          bash scripts/build-qnap-release-bundle.sh 4.1.1
-          test -f dist/mesh-cos-mcp-qnap-v4.1.1.zip
-          test -f dist/mesh-cos-mcp-qnap-v4.1.1.zip.sha256
+          bash scripts/build-qnap-release-bundle.sh 4.1.2
+          test -f dist/mesh-cos-mcp-qnap-v4.1.2.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.2.zip.sha256
+          test -f dist/qnap-bundle/mesh-cos-qnap-compose.sh
           test -f dist/qnap-bundle/cos-mcp/build-context/Dockerfile
           test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
           test ! -e dist/qnap-bundle/cos-mcp/.env
           test ! -e dist/qnap-bundle/cos-mcp/secrets
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.1.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.2.zip.sha256)
       - name: Validate QNAP Compose candidate
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.1'
-          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.1
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.2'
+          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.2
           MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -77,7 +79,7 @@ jobs:
           assert data['networks']['lan7']['external'] is True
           PY
       - name: Build production container from release bundle context
-        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.1-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
+        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.2-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
       - name: Verify container security, readiness, restart, resource limits, and backup
         run: |
           set -euo pipefail

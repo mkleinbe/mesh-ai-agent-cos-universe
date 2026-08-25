@@ -13,14 +13,34 @@ if [ -r /etc/config/uLinux.conf ]; then
   echo "qts_build=$(grep '^Build Number' /etc/config/uLinux.conf 2>/dev/null | head -n 1)"
   echo "model=$(grep '^Model' /etc/config/uLinux.conf 2>/dev/null | head -n 1)"
 fi
+QCS_INSTALL=""
 if command -v getcfg >/dev/null 2>&1 && [ -r /etc/config/qpkg.conf ]; then
   echo "container_station_version=$(getcfg container-station Version -f /etc/config/qpkg.conf 2>/dev/null || getcfg ContainerStation Version -f /etc/config/qpkg.conf 2>/dev/null || true)"
+  QCS_INSTALL=$(getcfg container-station Install_Path -f /etc/config/qpkg.conf 2>/dev/null || getcfg ContainerStation Install_Path -f /etc/config/qpkg.conf 2>/dev/null || true)
+  echo "container_station_install_path=$QCS_INSTALL"
 fi
-command -v docker >/dev/null 2>&1 && docker version 2>/dev/null || true
-command -v docker >/dev/null 2>&1 && docker compose version 2>/dev/null || true
-command -v docker >/dev/null 2>&1 && docker network inspect lan7 2>/dev/null || true
-command -v docker >/dev/null 2>&1 && docker network ls 2>/dev/null || true
-command -v docker >/dev/null 2>&1 && docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null || true
+if command -v docker >/dev/null 2>&1; then
+  docker version 2>/dev/null || true
+  docker compose version 2>/dev/null || true
+  echo "docker_compose_plugin_path=$(docker info --format '{{range .ClientInfo.Plugins}}{{if eq .Name "compose"}}{{.Path}}{{end}}{{end}}' 2>/dev/null || true)"
+  for p in \
+    /usr/local/lib/docker/cli-plugins/docker-compose \
+    /usr/libexec/docker/cli-plugins/docker-compose \
+    "$QCS_INSTALL/usr/local/lib/docker/cli-plugins/docker-compose" \
+    "$QCS_INSTALL/usr/libexec/docker/cli-plugins/docker-compose" \
+    "$QCS_INSTALL/bin/docker-compose" \
+    "$QCS_INSTALL/bin/system-docker-compose" \
+    "$QCS_INSTALL/usr/bin/.libs/docker-compose"; do
+    [ -n "$p" ] || continue
+    if [ -x "$p" ]; then
+      echo "compose_candidate=$p"
+      "$p" version 2>/dev/null || true
+    fi
+  done
+  docker network inspect lan7 2>/dev/null || true
+  docker network ls 2>/dev/null || true
+  docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null || true
+fi
 ip addr 2>/dev/null || ifconfig 2>/dev/null || true
 ip route 2>/dev/null || route -n 2>/dev/null || true
 mount 2>/dev/null || true

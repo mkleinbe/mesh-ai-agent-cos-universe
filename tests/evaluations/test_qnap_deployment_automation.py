@@ -22,6 +22,7 @@ def test_prepare_automates_configuration_without_leaking_secret() -> None:
     assert 'chmod 0400 "$SECRET_FILE"' in prepare
     assert "OPENAI_TUNNEL_RUNTIME_KEY=" not in prepare
     assert "CONTROL_PLANE_API_KEY=" not in prepare
+    assert "mesh_resolve_compose" in prepare
     assert 'sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"' in prepare
 
 
@@ -31,7 +32,7 @@ def test_deploy_is_single_orchestrated_operator_path() -> None:
         "mesh-cos-mcp-backup.sh\" pre-deploy",
         "mesh-cos-mcp-prepare.sh",
         "mesh-cos-mcp-preflight.sh",
-        "docker compose --env-file .env -f compose.yaml up -d --no-build",
+        "mesh_compose --env-file .env -f compose.yaml up -d --no-build",
         "wait_healthy mesh-cos-mcp",
         "wait_healthy mesh-cos-tunnel",
         "mesh-cos-mcp-verify.sh",
@@ -39,6 +40,18 @@ def test_deploy_is_single_orchestrated_operator_path() -> None:
     ]
     positions = [deploy.index(token) for token in required_order]
     assert positions == sorted(positions)
+
+
+def test_compose_discovery_is_qnap_aware_and_v2_only() -> None:
+    helper = text(SCRIPTS / "mesh-cos-qnap-compose.sh")
+    regression = text(QNAP / "tests" / "test-compose-discovery.sh")
+    assert "docker compose" in helper
+    assert "/usr/local/lib/docker/cli-plugins/docker-compose" in helper
+    assert "Install_Path" in helper
+    assert "mesh_compose_v2" in helper
+    assert "direct-plugin" in helper
+    assert "MOCK_DOCKER_COMPOSE_OK=0" in regression
+    assert "MOCK_PLUGIN_VERSION=v1.29.2" in regression
 
 
 def test_preflight_and_verify_bind_running_images_to_recorded_ids() -> None:
@@ -73,15 +86,31 @@ def test_backup_captures_nonsecret_configuration_only() -> None:
 
 def test_release_bundle_contains_build_context_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.1}' in builder
+    assert 'VERSION=${1:-4.1.2}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
+    assert 'test -f "$BUNDLE/mesh-cos-qnap-compose.sh"' in builder
 
 
-def test_bdd_covers_automated_qnap_lifecycle() -> None:
+def test_deployment_steps_contain_subshell_session_guard() -> None:
+    steps = text(QNAP / "DEPLOYMENT-STEPS.md")
+    assert "The deployment executes inside a subshell" in steps
+    assert "SSH session remains active" in steps
+    assert "exit \"$RC\"" not in steps
+
+
+def test_bdd_covers_automated_qnap_lifecycle_and_cli_regression() -> None:
     feature = text(ROOT / "specs" / "mesh-cos-mcp.feature")
-    for scenario_id in ["QNAP-031", "QNAP-032", "QNAP-033", "QNAP-034", "QNAP-035"]:
+    for scenario_id in [
+        "QNAP-031",
+        "QNAP-032",
+        "QNAP-033",
+        "QNAP-034",
+        "QNAP-035",
+        "QNAP-036",
+        "QNAP-037",
+    ]:
         assert f"Scenario: {scenario_id}" in feature

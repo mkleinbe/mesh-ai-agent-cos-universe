@@ -2,7 +2,7 @@
 set -eu
 
 IMAGE=${1:-mesh-cos-mcp:ci}
-DEPLOYMENT_RELEASE=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.6}
+DEPLOYMENT_RELEASE=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.7}
 NAME=mesh-cos-modern-transport-test
 ROOT=${TMPDIR:-/tmp}/mesh-cos-modern-transport-$$
 STATE=$ROOT/state

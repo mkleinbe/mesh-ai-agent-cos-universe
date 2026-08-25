@@ -1,15 +1,16 @@
 # Security and Governance
 
-Release `v4.0.0` treats the bundled ChatGPT MCP, agent identity binding, human-principal path, delegation engine, and shared Skill boundary as fail-closed controls around the canonical Mesh runtime.
+The canonical Phase 1 authority/runtime contract remains `4.0.0`. Repository/QNAP deployment release `v4.1.6` applies that unchanged authority model to the published **Mesh CoS MCP** ChatGPT app and OpenAI Secure MCP Tunnel production path while adding serving-release observability.
 
 ## Trust architecture
 
 ```mermaid
 flowchart TB
-    IN[Prompt / Retrieved / App / Task Content] --> WA[10 Workspace Agents]
-    WA --> MCP[Bundled mesh-cos-mcp\nLOCAL_STDIO]
-    MCP --> ID[MESH_COS_AGENT_ID binding]
-    ID --> AL[Per-agent deny-by-default allowlist]
+    IN[Prompt / Retrieved / App / Task Content] --> APP[Mesh CoS MCP ChatGPT app]
+    APP --> TUN[OpenAI Secure MCP Tunnel]
+    TUN --> HTTP[mesh-cos-mcp production adapter]
+    HTTP --> ID[MESH_COS_AGENT_ID=cos]
+    ID --> AL[CoS deny-by-default allowlist]
     AL --> RT[MCPRuntime]
     HUMAN[Authenticated human principal] --> HL[Human-only allowlist]
     HL --> RT
@@ -18,17 +19,36 @@ flowchart TB
     CRO[CRO] -. governed challenge .-> DA
 ```
 
-Untrusted content is data, not operating policy. It cannot alter identity, tool exposure, approval requirements, source authority, delegation ceilings, or canonical state.
+Local engineering/certification retains the bundled `LOCAL_STDIO` path to the same canonical runtime. Untrusted content is data, not operating policy. It cannot alter identity, tool exposure, approval requirements, source authority, delegation ceilings, or canonical state.
+
+## Secure MCP Tunnel ingress
+
+Production requires `MCP_AUTH_MODE=tunnel` and a configured `MCP_TRUSTED_CLIENT_IP`. `/mcp` dispatch occurs only after the request source address matches the private tunnel-sidecar identity. The production Compose model publishes no host MCP port, and the remote adapter does not introduce an independent OAuth flow.
+
+`/healthz` and `/readyz` intentionally expose only non-secret runtime identity metadata. They do not confer MCP authority.
+
+## Dual release identity
+
+Production tool envelopes and status endpoints distinguish the immutable authority/runtime contract from the deployment release:
+
+```text
+mcp_version: 4.0.0
+deployment_release: 4.1.6
+agent_id: cos
+transport: SECURE_MCP_TUNNEL
+```
+
+`MESH_COS_DEPLOYMENT_RELEASE` is non-secret release metadata. The remote runtime requires it before listening, but it is never used to select agent identity, tools, approval rights, delegation rights, or canonical state.
 
 ## Human-only isolation
 
-`approval.record_decision` and `reliability.human_override` are runtime capabilities but not agent capabilities. They are absent from every agent allowlist, excluded from the stdio tool catalog, and rejected by `call_agent`. A non-empty authenticated human principal is required for `call_human`.
+`approval.record_decision` and `reliability.human_override` are runtime capabilities but not agent capabilities. They are absent from every agent allowlist, excluded from agent tool catalogs, and rejected by `call_agent`. A non-empty authenticated human principal is required for `call_human`.
 
 Regression tests prove denial for CoS and every other agent and positive execution through the human path.
 
 ## Immutable agent identity
 
-`MESH_COS_AGENT_ID` is process-bound. User prompts, retrieved documents, task payloads, delegated instructions, shared-Skill output, and connector data cannot impersonate a human principal or another agent. Runtime governance records derive actor identity, role, version, and authority from the canonical registry rather than client-supplied identity fields.
+`MESH_COS_AGENT_ID` is process-bound. User prompts, retrieved documents, task payloads, HTTP headers, delegated instructions, shared-Skill output, and connector data cannot impersonate a human principal or another agent. Runtime governance records derive actor identity, role, version, and authority from the canonical registry rather than client-supplied identity fields.
 
 ## Delegation security
 
@@ -48,6 +68,10 @@ Mesh Devil's Advocate is `ADVISORY_ONLY`. It cannot modify canonical facts, exec
 
 Message Operations is the tenth registered agent. It can inspect approval state and invoke its governed execution capability within its role boundary, but cannot record its own approval or materially modify approved content without reapproval. Consequential outbound execution remains human-gated.
 
+## QNAP container boundary
+
+The production application runtime remains UID/GID 65532 with read-only root filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, explicit CPU/memory controls, and the canonical TaskLedger bind-mounted as the single writable state boundary. The tunnel runtime secret remains file-only and is excluded from `.env`, release assets, backups, diagnostics, and tool responses.
+
 ## Reliability and audit
 
 Replay is restricted to server-registered executors referenced by canonical failure state. Client-supplied callables, import paths, source code, or shell commands are never executed as replay logic.
@@ -56,4 +80,6 @@ Material decisions use `decision.v2`; consequential actions use `agent-event.v2`
 
 ## Defense in depth
 
-Workspace `Always ask`, connector restrictions, source permissions, private-preview publication state, and target-environment RBAC narrow behavior but never replace Mesh L4/L5 authority controls.
+Workspace `Always ask`, connector restrictions, source permissions, Secure MCP Tunnel private ingress, least-privilege QNAP runtime controls, and target-environment RBAC narrow behavior but never replace Mesh L4/L5 authority controls.
+
+The v4.1.6 targeted security receipt is `qnap-security-review-v4.1.6.md`.

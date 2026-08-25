@@ -49,6 +49,34 @@ class GovernedAdapterRegistry:
         self.registry = registry
         self.governance = governance
         self.adapters: dict[tuple[str, str], SkillAdapter] = {}
+        self._known_capabilities = {
+            str(capability)
+            for record in registry.values()
+            for key in ("skills", "tools")
+            for capability in record.get(key, [])
+        }
+        self._bind_declared_skill_handoffs()
+
+    def _bind_declared_skill_handoffs(self) -> None:
+        """Server-register declared ChatGPT Skills as authorization/handoff adapters.
+
+        Prompt Skills are executed by the ChatGPT Skill runtime, not imported or run as
+        arbitrary QNAP code. The MCP grants a bounded, auditable handoff only. A
+        server-owned executable adapter may later replace this registration explicitly.
+        """
+        for agent_id, record in self.registry.items():
+            for capability in record.get("skills", []):
+                self.adapters[(agent_id, capability)] = SkillAdapter(
+                    agent_id,
+                    capability,
+                    lambda payload, bound_agent=agent_id, bound_capability=capability: {
+                        "status": "AUTHORIZED",
+                        "execution_mode": "CHATGPT_SKILL_HANDOFF",
+                        "agent_id": bound_agent,
+                        "capability": bound_capability,
+                        "payload": dict(payload),
+                    },
+                )
 
     def register(self, adapter: SkillAdapter) -> None:
         if adapter.agent_id not in self.registry:
@@ -72,9 +100,16 @@ class GovernedAdapterRegistry:
         return {agent_id: list(record.get("skills", [])) for agent_id, record in self.registry.items() if record.get("skills")}
 
     def execute(self, agent_id: str, capability: str, payload: dict) -> dict:
+        if agent_id not in self.registry:
+            raise PermissionError(f"Unknown agent principal: {agent_id}")
         key = (agent_id, capability)
         if key not in self.adapters:
-            raise KeyError(key)
+            if capability not in self._known_capabilities:
+                raise KeyError(capability)
+            allowed = set(self.registry[agent_id].get("skills", [])) | set(self.registry[agent_id].get("tools", []))
+            if capability not in allowed:
+                raise PermissionError(f"Capability not allowed for {agent_id}: {capability}")
+            raise RuntimeError(f"Declared capability is not server-registered: {capability}")
         adapter = self.adapters[key]
         record = self.registry[agent_id]
         if adapter.source or adapter.tool or adapter.action:
@@ -106,7 +141,7 @@ class GovernedAdapterRegistry:
             return
         task_id = payload.get("task_id")
         correlation_id = payload.get("correlation_id") or f"skill:{adapter.agent_id}:{adapter.capability}"
-        authority_level = int(payload.get("authority_level", record.get("decision_authority", 0)))
+        authority_level = int(payload.get("authority_level", 0))
         self.governance.record_event(
             event_type="agent.capability_invoked",
             event_category="EXECUTION",

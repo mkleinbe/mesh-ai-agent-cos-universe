@@ -2,6 +2,33 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.4 - 2026-08-25 - QNAP Modern MCP Transport Reliability
+
+### Production 502 causal remediation
+
+- Reproduced the hosted-path failure at the MCP HTTP protocol boundary: valid modern `server/discover` requests were rejected by the v4.1.3 legacy server-managed session router with HTTP 400 `invalid_session`, which surfaced through the Secure MCP Tunnel path as a 502.
+- Migrated remote MCP serving from the monolithic v1 SDK to pinned stable v2 split packages and stateless `createMcpHandler` handling.
+- Removed the obsolete eight-entry protocol-session map and the requirement for legacy `Mcp-Session-Id` on current clients while retaining SDK-provided compatibility for older client flows.
+- Preserved process-bound `cos` identity, the exact 27-tool CoS catalog, the 10-agent roster, human-only operations, canonical TaskLedger semantics, and the Secure MCP Tunnel source-IP gate.
+- Strengthened `/readyz` so readiness requires successful modern MCP discovery in addition to bound-agent and audit-chain health.
+
+### QNAP deployment and release engineering
+
+- Advanced the QNAP deployment release, image label, release workflow, deterministic bundle builder, environment metadata, and acceptance procedures to `4.1.4` / `v4.1.4`.
+- Added QNAP-042 through QNAP-047 behavior scenarios plus production-image modern discovery and ten-request sequential transport regression coverage.
+- Updated the operator runbook for the current QNAP account where Docker access requires `sudo`; the host-side privileged invocation does not change the long-running non-root UID/GID 65532 runtime.
+- Bundled the v4.1.4 debugging record, targeted security receipt, release notes, deployment guide, and sequential hosted-path acceptance instructions.
+
+### Verification and security
+
+- Exact-candidate gates cover npm build/tests/smoke/audit, Python contracts and drift checks, Ruff, mypy, Bandit, 100% branch-aware coverage, deterministic bundle/checksum generation, production image construction, modern MCP discovery, ten sequential requests, direct-ingress 403, real Docker permission handoff, hardened runtime controls, restart recovery, and Docker-mediated SQLite backup integrity.
+- Security applicability remains TARGETED. SEC-QNAP-021 documents the obsolete protocol-session boundary and SEC-QNAP-022 documents the prior readiness false-positive. No authentication, authorization, tool, persistence, or human-principal boundary is expanded.
+
+### Version boundary
+
+- Repository/QNAP deployment release: `4.1.4` / tag `v4.1.4`.
+- Canonical Phase 1 agent/runtime authority contract remains `4.0.0`; exactly 10 agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel, resource policy, and `COMPLETED != VERIFIED` semantics are unchanged.
+
 ## 4.1.3 - 2026-08-25 - QNAP Non-Root Deployment Reliability
 
 ### Live QNAP root-cause remediation

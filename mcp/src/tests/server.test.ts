@@ -5,6 +5,7 @@ import {
   createServer,
   loadContract,
   requireAgentId,
+  requireDeploymentRelease,
   requireLocalStdioContract,
   safeErrorPayload,
   toolsForAgent,
@@ -28,6 +29,12 @@ test('agent identity is required and must be registered', () => {
   assert.throws(() => requireAgentId(contract, { MESH_COS_AGENT_ID: 'devils-advocate' }), /registered/);
   assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: 'message-ops' }), 'message-ops');
   assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: 'cro' }), 'cro');
+});
+
+test('production deployment release identity is required and normalized', () => {
+  assert.throws(() => requireDeploymentRelease({}), /MESH_COS_DEPLOYMENT_RELEASE/);
+  assert.throws(() => requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: '   ' }), /MESH_COS_DEPLOYMENT_RELEASE/);
+  assert.equal(requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: ' 4.1.6 ' }), '4.1.6');
 });
 
 test('tool projection is exact and excludes human-only tools', () => {

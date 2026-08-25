@@ -76,6 +76,7 @@ The release bundle contains the release-bound build context and QNAP operator to
 - Container image label default: `4.1.4-qnap`
 - Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
 - Canonical workforce: exactly 10 agents
+- Message Operations remains the tenth registered agent
 - Mesh Devil's Advocate remains a governed shared Skill, not agent 11
 - Human-only operations remain `approval.record_decision` and `reliability.human_override`
 - Production transport remains OpenAI Secure MCP Tunnel

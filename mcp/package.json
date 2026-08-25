@@ -2,7 +2,7 @@
   "name": "@meshdigitalio/mesh-cos-mcp",
   "version": "4.0.0",
   "private": true,
-  "description": "Bundled local stdio MCP transport for the governed Mesh AI Chief of Staff runtime",
+  "description": "Governed Mesh AI Chief of Staff MCP runtime with modern and legacy-compatible transports",
   "type": "module",
   "bin": {
     "mesh-cos-mcp": "dist/index.js"
@@ -15,8 +15,8 @@
     "check": "npm run build && npm run test && npm run smoke && npm run security"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.30.0",
-    "zod": "3.25.76"
+    "@modelcontextprotocol/node": "2.0.0",
+    "@modelcontextprotocol/server": "2.0.0"
   },
   "devDependencies": {
     "@types/node": "20.19.30",

@@ -47,6 +47,8 @@ test -f "$BUILD_CONTEXT/deployment/qnap/runtime_preflight.py"
 chmod +x "$BUNDLE"/*.sh "$BUNDLE/cos-mcp/qnap-environment-probe.sh"
 mkdir -p "$(dirname "$ASSET")"
 (cd "$BUNDLE" && zip -qr "$OLDPWD/$ASSET" .)
-sha256sum "$ASSET" > "$ASSET.sha256"
+ASSET_BASENAME=$(basename "$ASSET")
+ASSET_SHA256=$(sha256sum "$ASSET" | awk '{print $1}')
+printf '%s  %s\n' "$ASSET_SHA256" "$ASSET_BASENAME" > "$ASSET.sha256"
 echo "bundle=$ASSET"
 echo "checksum=$ASSET.sha256"

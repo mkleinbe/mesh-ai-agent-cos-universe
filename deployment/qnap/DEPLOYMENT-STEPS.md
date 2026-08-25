@@ -1,34 +1,34 @@
-# Short QNAP Deployment Steps
+# Short QNAP Deployment and Upgrade Steps
 
-v4.1.3 fixes the QNAP non-root shared-folder permission failure and adds durable failure instrumentation across the deployment lifecycle.
+v4.1.4 fixes the production MCP transport/session defect that surfaced through ChatGPT as `502 Upstream or external service errors`. It retains the v4.1.3 QNAP permission, backup, observability, and runtime-hardening corrections.
 
-## Human inputs required on first run
+## Upgrade behavior
 
-The deployment automates everything except three facts it must not invent:
+For an existing running v4.1.3 environment, the deployment script preserves the canonical TaskLedger, the existing Secure MCP `tunnel_id`, and the existing tunnel runtime-key file. It performs a pre-deploy online backup, builds the v4.1.4 release-bound image, runs preflight, recreates the services with the new image identities, verifies the runtime, and takes a post-deploy backup.
 
-1. the path to the approved existing canonical TaskLedger if the canonical target does not already exist;
-2. the OpenAI Secure MCP `tunnel_id`;
-3. the OpenAI tunnel runtime API key, entered through a hidden terminal prompt.
+The canonical Phase 1 authority/runtime contract remains `4.0.0`; this is a QNAP transport patch release.
 
-On later idempotent runs, the existing canonical ledger, tunnel ID, and secret file are preserved.
+## QNAP Docker privilege note
 
-## Safe copy/paste deployment
+On this QNAP operator account, Docker commands require `sudo`. Run the deployment orchestrator itself with `sudo`; its child Docker and Compose operations then inherit the required host privilege. This does **not** make the long-running Mesh runtime root. `mesh-cos-mcp` still runs as UID/GID `65532:65532` with read-only root filesystem, dropped capabilities, no-new-privileges, and no Docker socket.
 
-Place the v4.1.3 ZIP and checksum in `/share/Docker`, then run the entire block below. The deployment executes inside a subshell. Any internal `exit` terminates only the installer subshell. The parent SSH session remains active.
+## Safe copy/paste upgrade
+
+Place the v4.1.4 ZIP and checksum in `/share/Docker`, then run the complete block below. The installer executes inside a subshell so an internal failure does not terminate the parent SSH session.
 
 ```sh
 if cd /share/Docker; then
   (
     set -u
-    ZIP="mesh-cos-mcp-qnap-v4.1.3.zip"
-    SUM="mesh-cos-mcp-qnap-v4.1.3.zip.sha256"
+    ZIP="mesh-cos-mcp-qnap-v4.1.4.zip"
+    SUM="mesh-cos-mcp-qnap-v4.1.4.zip.sha256"
 
     [ -f "$ZIP" ] || { echo "ERROR: missing /share/Docker/$ZIP" >&2; exit 1; }
     [ -f "$SUM" ] || { echo "ERROR: missing /share/Docker/$SUM" >&2; exit 1; }
     sha256sum -c "$SUM" || { echo "ERROR: checksum failed" >&2; exit 1; }
     unzip -oq "$ZIP" || { echo "ERROR: extraction failed" >&2; exit 1; }
     chmod 0755 /share/Docker/mesh-cos-*.sh /share/Docker/cos-mcp/qnap-environment-probe.sh || exit 1
-    sh /share/Docker/mesh-cos-mcp-deploy.sh
+    sudo sh /share/Docker/mesh-cos-mcp-deploy.sh
   )
   RC=$?
 else
@@ -37,7 +37,7 @@ fi
 
 echo
 if [ "$RC" -eq 0 ]; then
-  echo "PASS: Mesh CoS MCP v4.1.3 deployment completed."
+  echo "PASS: Mesh CoS MCP v4.1.4 deployment completed."
 else
   echo "ERROR: deployment stopped with rc=$RC. SSH session remains active." >&2
   if [ -f /share/Docker/cos-mcp/logs/deployment/LATEST ]; then
@@ -46,6 +46,16 @@ else
   fi
 fi
 ```
+
+## First-deployment inputs only
+
+A clean first deployment can require three facts the installer must not invent:
+
+1. the path to the approved existing canonical TaskLedger if the canonical target does not exist;
+2. the OpenAI Secure MCP `tunnel_id`;
+3. the OpenAI tunnel runtime API key, entered through a hidden terminal prompt.
+
+An upgrade from the existing running deployment should preserve all three.
 
 ## Failure diagnostics
 
@@ -57,7 +67,7 @@ The newest path is recorded in:
 
 `/share/Docker/cos-mcp/logs/deployment/LATEST`
 
-If a run fails, capture the complete log with:
+If a run fails, do not delete or recreate the environment first. Capture the complete log with:
 
 ```sh
 LOG=$(cat /share/Docker/cos-mcp/logs/deployment/LATEST)
@@ -67,16 +77,6 @@ cat "$LOG"
 
 The diagnostic collector is designed not to dump the tunnel secret, `.env` contents, process environments, credential-bearing command arguments, or tunnel-client logs.
 
-## Non-root QNAP behavior
+## Post-upgrade acceptance
 
-The SSH operator is not required to run as root or use `sudo`. The script does not use host `chown` to hand state to UID/GID 65532. It uses a short-lived, network-disabled Docker helper over only the explicit state or secret path. The long-running Mesh application still runs as UID/GID 65532.
-
-Preflight tests canonical-state access from the runtime identity. Online backup export uses `docker cp`, so the SSH operator does not need direct read permission on UID-65532 runtime files.
-
-## Docker and Compose behavior
-
-The deployment sets a writable deployment-local `DOCKER_CONFIG` at `/share/Docker/cos-mcp/.docker-cli`, avoiding the inaccessible Container Station QPKG-home config observed in the live v4.1.2 run.
-
-Compose V2 resolution still first tries `docker compose`, then the Docker-reported plugin path, standard CLI-plugin locations, and the Container Station QPKG path. Compose V1 is rejected.
-
-After deployment passes, continue with `CHATGPT-ACCEPTANCE.md`.
+After deployment passes, continue with `CHATGPT-ACCEPTANCE.md`. v4.1.4 acceptance specifically re-tests modern MCP discovery and repeated sequential calls through the published Secure MCP Tunnel path so the former session-loss/502 defect is not considered closed until the hosted path passes.

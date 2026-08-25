@@ -1,12 +1,14 @@
 # Short QNAP Deployment and Upgrade Steps
 
-v4.1.4 fixes the production MCP transport/session defect that surfaced through ChatGPT as `502 Upstream or external service errors`. It retains the v4.1.3 QNAP permission, backup, observability, and runtime-hardening corrections.
+v4.1.5 fixes the release-identity preflight drift that stopped the v4.1.4 QNAP upgrade before Compose replacement. It carries forward the v4.1.4 modern MCP transport correction and the v4.1.3 QNAP permission, backup, observability, and runtime-hardening corrections.
 
 ## Upgrade behavior
 
-For an existing running v4.1.3 environment, the deployment script preserves the canonical TaskLedger, the existing Secure MCP `tunnel_id`, and the existing tunnel runtime-key file. It performs a pre-deploy online backup, builds the v4.1.4 release-bound image, runs preflight, recreates the services with the new image identities, verifies the runtime, and takes a post-deploy backup.
+For the currently running v4.1.3 environment, the deployment script preserves the canonical TaskLedger, existing Secure MCP `tunnel_id`, and tunnel runtime-key file. It performs a pre-deploy online backup, builds the v4.1.5 release-bound image, validates `.env` release identity against the v4.1.5 bundle metadata, recreates the services, verifies the runtime, and takes a post-deploy backup.
 
-The canonical Phase 1 authority/runtime contract remains `4.0.0`; this is a QNAP transport patch release.
+The failed v4.1.4 attempt stopped safely during preflight. It did not replace the running v4.1.3 containers, so no rollback is required before deploying v4.1.5.
+
+The canonical Phase 1 authority/runtime contract remains `4.0.0`; this is a QNAP deployment reliability patch release.
 
 ## QNAP Docker privilege note
 
@@ -14,14 +16,14 @@ On this QNAP operator account, Docker commands require `sudo`. Run the deploymen
 
 ## Safe copy/paste upgrade
 
-Place the v4.1.4 ZIP and checksum in `/share/Docker`, then run the complete block below. The installer executes inside a subshell so an internal failure does not terminate the parent SSH session.
+Place the v4.1.5 ZIP and checksum in `/share/Docker`, then run the complete block below. The installer executes inside a subshell so an internal failure does not terminate the parent SSH session.
 
 ```sh
 if cd /share/Docker; then
   (
     set -u
-    ZIP="mesh-cos-mcp-qnap-v4.1.4.zip"
-    SUM="mesh-cos-mcp-qnap-v4.1.4.zip.sha256"
+    ZIP="mesh-cos-mcp-qnap-v4.1.5.zip"
+    SUM="mesh-cos-mcp-qnap-v4.1.5.zip.sha256"
 
     [ -f "$ZIP" ] || { echo "ERROR: missing /share/Docker/$ZIP" >&2; exit 1; }
     [ -f "$SUM" ] || { echo "ERROR: missing /share/Docker/$SUM" >&2; exit 1; }
@@ -37,7 +39,7 @@ fi
 
 echo
 if [ "$RC" -eq 0 ]; then
-  echo "PASS: Mesh CoS MCP v4.1.4 deployment completed."
+  echo "PASS: Mesh CoS MCP v4.1.5 deployment completed."
 else
   echo "ERROR: deployment stopped with rc=$RC. SSH session remains active." >&2
   if [ -f /share/Docker/cos-mcp/logs/deployment/LATEST ]; then
@@ -79,4 +81,4 @@ The diagnostic collector is designed not to dump the tunnel secret, `.env` conte
 
 ## Post-upgrade acceptance
 
-After deployment passes, continue with `CHATGPT-ACCEPTANCE.md`. v4.1.4 acceptance specifically re-tests modern MCP discovery and repeated sequential calls through the published Secure MCP Tunnel path so the former session-loss/502 defect is not considered closed until the hosted path passes.
+After deployment passes, continue with `CHATGPT-ACCEPTANCE.md`. v4.1.5 acceptance retains the v4.1.4 modern MCP discovery and repeated sequential hosted-path tests, and adds confirmation that the deployed release identity is 4.1.5 and that preflight completed rather than rejecting a stale patch-release literal.

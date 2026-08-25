@@ -2,6 +2,36 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.1 - 2026-08-25 - QNAP Deployment Automation
+
+### Automated operator lifecycle
+
+- Reduced first deployment to `cd /share/Docker && sh mesh-cos-mcp-deploy.sh` after bundle extraction.
+- Automated release-bound local Mesh image build and content-addressed image-ID recording.
+- Automated OpenAI tunnel-client version retrieval, immutable RepoDigest resolution, and image-ID recording.
+- Automated deterministic `.env` generation with no runtime secret values.
+- Automated pre-deploy backup, preflight, Compose deployment, bounded health waits, verification, direct non-tunnel denial checks, and post-deploy backup.
+
+### Canonical state and secrets
+
+- Added explicit-source canonical TaskLedger staging only when the target ledger is absent; an existing canonical target is preserved and never silently replaced.
+- Added canonical runtime and SQLite integrity validation before deployment.
+- Added hidden terminal input for the tunnel runtime API key and file-only storage at the approved secret path with owner `65532:65532`, mode `0400`.
+- Kept tunnel runtime secret material out of `.env`, release assets, deployment receipts, and backups.
+
+### Deterministic bundle and recovery
+
+- Added a minimal release-bound Docker build context under `cos-mcp/build-context` so QNAP deployment requires no Git checkout and no separately published Mesh registry image.
+- Set `pull_policy: never` on both prepared services and verify configured/running image IDs before and after deployment.
+- Expanded backups to dated directories containing SQLite online backup, non-secret Compose/environment configuration, release metadata, image receipts, and `SHA256SUMS` while explicitly excluding `secrets/`.
+- Added ChatGPT Secure MCP Tunnel connection, 27-tool catalog, read-only, and idempotent governed-write acceptance instructions.
+- Added QNAP BDD scenarios QNAP-031 through QNAP-035 and CI validation of the actual release-bundle build context.
+
+### Version boundary
+
+- Repository/QNAP deployment release: `4.1.1` / tag `v4.1.1`.
+- The canonical Phase 1 agent authority/runtime package contract remains `4.0.0`; the 10-agent roster, tool allowlists, human-only boundary, and `COMPLETED != VERIFIED` semantics are unchanged.
+
 ## 4.1.0 - 2026-08-25 - QNAP Secure MCP Transport
 
 ### Production transport and containerization

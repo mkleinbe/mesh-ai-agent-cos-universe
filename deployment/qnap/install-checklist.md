@@ -31,24 +31,28 @@ Invoke from the QNAP operator account as `sudo sh /share/Docker/mesh-cos-mcp-dep
 - [ ] Tunnel runtime key written outside `.env`, owner `65532:65532`, mode `0400`
 - [ ] Deterministic `.env` generated with no secret values
 - [ ] Bundle `release-metadata.txt` exists and its version matches generated `MESH_COS_DEPLOYMENT_RELEASE`
+- [ ] Application container receives `MESH_COS_DEPLOYMENT_RELEASE=4.1.6`
+- [ ] Remote MCP startup fails closed when deployment release identity is missing
 - [ ] 2 CPU / 24 GiB / no PID limit policy validated
 - [ ] Host preflight passes without a stale patch-release literal
 - [ ] Compose renders with `pull_policy: never`
 - [ ] Containers become healthy
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.6`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
 - [ ] `mesh-cos-mcp` remains non-root UID/GID 65532, read-only, no-new-privileges, no Docker socket
 - [ ] Direct non-tunnel MCP request is denied
 - [ ] Post-deploy state/configuration backup and SHA-256 verification pass
 
-## v4.1.5 ChatGPT acceptance
+## v4.1.6 ChatGPT acceptance
 
-- [ ] Local image is `mesh-cos-mcp:qnap-v4.1.5`, running and healthy
-- [ ] `.env` and bundle metadata both report release `4.1.5`
-- [ ] ChatGPT app connects through the associated Secure MCP Tunnel
+- [ ] Local image is `mesh-cos-mcp:qnap-v4.1.6`, running and healthy
+- [ ] `.env` and bundle metadata both report release `4.1.6`
+- [ ] Installed **Mesh CoS MCP** ChatGPT app connects through the associated Secure MCP Tunnel
 - [ ] Scan Tools returns exactly 27 canonical CoS tools
 - [ ] Human-only tools are absent
 - [ ] 10-agent roster is returned and Devil's Advocate is not an agent principal
 - [ ] Ten sequential read-only MCP calls complete with no 502, `invalid_session`, reconnect, or container restart
+- [ ] Every successful governed tool envelope reports `mcp_version=4.0.0`, `deployment_release=4.1.6`, and `agent_id=cos`
 - [ ] Read-only audit/metrics acceptance passes
-- [ ] Idempotent L0 `task.intake` acceptance with key `qnap-secure-mcp-v4.1.5` persists and reads back successfully
-- [ ] Audit chain remains valid after acceptance write
+- [ ] Optional idempotent L0 `task.intake` acceptance, if explicitly run, uses key `qnap-secure-mcp-v4.1.6` and reads back successfully
+- [ ] Audit chain remains valid after any acceptance write
 - [ ] Deployment image IDs and acceptance evidence retained

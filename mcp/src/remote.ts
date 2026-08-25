@@ -2,11 +2,14 @@ import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { createMcpHandler } from '@modelcontextprotocol/server';
 import { toNodeHandler } from '@modelcontextprotocol/node';
 import { callPythonBridge } from './python-bridge.js';
-import { createServer, loadContract, requireAgentId } from './server.js';
+import { createServer, loadContract, requireAgentId, requireDeploymentRelease, type MCPContract } from './server.js';
 
 function ip(req:IncomingMessage):string { return (req.socket.remoteAddress??'').replace(/^::ffff:/,''); }
 function allowed(req:IncomingMessage,env:NodeJS.ProcessEnv):boolean { const expected=env.MCP_TRUSTED_CLIENT_IP?.trim(); return Boolean(expected)&&ip(req)===expected; }
 function json(res:ServerResponse,status:number,value:unknown){ const out=JSON.stringify(value); res.writeHead(status,{'content-type':'application/json','content-length':Buffer.byteLength(out)}); res.end(out); }
+function statusPayload(ok:boolean,contract:MCPContract,agentId:string,deploymentRelease:string){
+  return {ok,mcp_version:contract.runtime_release,deployment_release:deploymentRelease,agent_id:agentId,transport:'SECURE_MCP_TUNNEL'};
+}
 
 async function runtimeReady(env:NodeJS.ProcessEnv):Promise<void>{
   const contract=loadContract();
@@ -17,7 +20,7 @@ async function runtimeReady(env:NodeJS.ProcessEnv):Promise<void>{
   await callPythonBridge({tool_name:'governance.verify_audit_chain',arguments:{}},env);
 }
 
-function discoveryRequest():Request {
+function discoveryRequest(deploymentRelease:string):Request {
   return new Request('http://mesh-cos-mcp.internal/mcp',{
     method:'POST',
     headers:{
@@ -34,15 +37,15 @@ function discoveryRequest():Request {
         _meta:{
           'io.modelcontextprotocol/protocolVersion':'2026-07-28',
           'io.modelcontextprotocol/clientCapabilities':{},
-          'io.modelcontextprotocol/clientInfo':{name:'mesh-cos-readiness',version:'4.1.4'},
+          'io.modelcontextprotocol/clientInfo':{name:'mesh-cos-readiness',version:deploymentRelease},
         },
       },
     }),
   });
 }
 
-async function protocolReady(handler:ReturnType<typeof createMcpHandler>):Promise<void>{
-  const response=await handler.fetch(discoveryRequest());
+async function protocolReady(handler:ReturnType<typeof createMcpHandler>,deploymentRelease:string):Promise<void>{
+  const response=await handler.fetch(discoveryRequest(deploymentRelease));
   const text=await response.text();
   if(response.status!==200||!text.includes('2026-07-28')) throw new Error('modern_mcp_discovery_unavailable');
 }
@@ -51,22 +54,25 @@ export async function startRemote(env:NodeJS.ProcessEnv=process.env){
   if((env.MCP_AUTH_MODE??'').trim()!=='tunnel') throw new Error('Remote MCP requires MCP_AUTH_MODE=tunnel; controlled HTTPS OAuth is not enabled by this deployment');
   if(!env.MCP_TRUSTED_CLIENT_IP?.trim()) throw new Error('MCP_TRUSTED_CLIENT_IP is required');
 
-  const handler=createMcpHandler(()=>createServer(env));
+  const contract=loadContract();
+  const agentId=requireAgentId(contract,env);
+  const deploymentRelease=requireDeploymentRelease(env);
+  const handler=createMcpHandler(()=>createServer(env,contract));
   const nodeHandler=toNodeHandler(handler);
   await runtimeReady(env);
-  await protocolReady(handler);
+  await protocolReady(handler,deploymentRelease);
 
   const app=http.createServer(async(req,res)=>{
     try {
       const url=new URL(req.url??'/',`http://${req.headers.host??'localhost'}`);
-      if(url.pathname==='/healthz') return json(res,200,{ok:true});
+      if(url.pathname==='/healthz') return json(res,200,statusPayload(true,contract,agentId,deploymentRelease));
       if(url.pathname==='/readyz'){
         try{
           await runtimeReady(env);
-          await protocolReady(handler);
-          return json(res,200,{ok:true});
+          await protocolReady(handler,deploymentRelease);
+          return json(res,200,statusPayload(true,contract,agentId,deploymentRelease));
         }catch{
-          return json(res,503,{ok:false});
+          return json(res,503,statusPayload(false,contract,agentId,deploymentRelease));
         }
       }
       if(url.pathname!=='/mcp') return json(res,404,{error:'not_found'});

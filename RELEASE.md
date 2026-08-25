@@ -1,75 +1,44 @@
-# v4.1.1 QNAP Deployment Automation
+# v4.1.2 QNAP Compose Discovery Fix
 
-`v4.1.1` is a patch release for the QNAP Secure MCP deployment surface. It preserves the existing governed Mesh Chief of Staff operating core and canonical Phase 1 agent/runtime authority contract at `4.0.0`, while automating the QNAP deployment steps that do not require human authority, canonical-source selection, or secret knowledge.
+`v4.1.2` is a corrective patch for the QNAP Secure MCP deployment surface. It fixes two defects observed during the first live operator deployment attempt without changing the governed Mesh Chief of Staff runtime, authority model, network boundary, persistence model, or secret-handling contract.
 
-## Verified target environment
+## Defects fixed
 
-The production target remains the 2026-08-25 probe of `mdk-qnap6782xt`: x86_64/linux-amd64, 4 CPU cores, approximately 62.7 GiB RAM, QTS 5.2.10 build 20260731, Docker 27.1.2-qnap8, Compose 2.29.1-qnap2, and QNAP `lan7` qnet on `eth1` with subnet `192.168.7.0/24` and gateway `192.168.7.1`.
+- **QNAP Compose CLI discovery:** v4.1.1 assumed that an installed Compose V2 package would always be callable through `docker compose`. The live QNAP SSH session disproved that assumption. v4.1.2 resolves Compose V2 through the Docker subcommand when available, then falls back to Docker client plugin metadata, `/usr/local/lib/docker/cli-plugins/docker-compose`, `/usr/libexec/docker/cli-plugins/docker-compose`, and Container Station QPKG paths. Compose V1 is rejected.
+- **SSH session termination:** the prior copy/paste wrapper used a top-level `exit` after a deployment error. In an interactive SSH shell that logs the operator out. The v4.1.2 deployment block runs inside a subshell, so a failed deployment returns a nonzero status while the parent SSH session remains active.
 
-The production service remains `192.168.7.60`, with internal tunnel traffic on `172.30.60.0/29`.
+## Regression evidence
 
-## Fixed QNAP layout
+`deployment/qnap/tests/test-compose-discovery.sh` reproduces the QNAP failure mode in which `docker` exists and `docker compose` fails while the Compose V2 plugin remains discoverable. The regression also covers the normal Docker subcommand and rejects Compose V1. CI executes this test before release-bundle construction.
 
-- Scripts run from `/share/Docker`.
-- Application root: `/share/Docker/cos-mcp`.
-- Release build context: `/share/Docker/cos-mcp/build-context`.
-- Canonical state root: `/share/Docker/cos-mcp/state`.
-- Ledger: `/share/Docker/cos-mcp/state/ledger/taskledger.sqlite3`.
-- Tunnel runtime secret: `/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key`.
-- Backup root: `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`.
+The QNAP environment probe now records the Container Station install path, Docker-reported Compose plugin path, and executable Compose candidates to make future QTS/Container Station upgrades observable rather than inferred.
 
-## One-command operator flow
+## Deployment behavior retained
 
-After extracting the release bundle into `/share/Docker`, the operator runs:
+The one-command governed deployment lifecycle remains unchanged after Compose resolution: pre-backup when applicable, release-bound local Mesh image build and image-ID recording, tunnel RepoDigest resolution, explicit canonical TaskLedger staging only when necessary, canonical runtime/SQLite preflight, hidden tunnel-key capture, non-secret `.env` generation, QNAP host preflight, Compose deployment, bounded health waits, least-privilege/runtime verification, direct non-tunnel denial testing, and post-deploy backup.
 
-```sh
-cd /share/Docker && sh mesh-cos-mcp-deploy.sh
-```
+## Security boundary
 
-The script automatically performs pre-backup, release-bound image build/pinning, canonical ledger staging when required, hidden credential-file creation, deterministic `.env` generation, preflight, Compose deployment, bounded health waits, verification, direct non-tunnel denial testing, and post-deploy backup.
-
-The only first-run inputs that remain human are the approved existing TaskLedger source path when needed, the OpenAI Secure MCP `tunnel_id`, and the tunnel runtime API key. Existing canonical state and secret material are preserved on later runs.
-
-## Deterministic image boundary
-
-The release ZIP now includes the minimal source/build context required to build `mesh-cos-mcp:qnap-v4.1.1` locally on the QNAP. Prepare records the Docker content-addressed image ID. The OpenAI tunnel client is resolved to an immutable GHCR RepoDigest and Docker image ID. Preflight and post-deploy verification bind the configured and running containers to those exact IDs.
-
-Compose uses `pull_policy: never` for both services after preparation.
-
-## Secret boundary
-
-The tunnel runtime key is captured with terminal echo disabled, written only to the approved secret file with owner `65532:65532` and mode `0400`, and never written to `.env`, source control, release artifacts, deployment receipts, or backups.
-
-## Persistence and recovery
-
-Production still refuses a missing or in-memory TaskLedger. A missing canonical target can only be populated from an explicitly selected existing source. An existing canonical target is preserved.
-
-Automated backups use SQLite online backup and capture non-secret deployment configuration, release metadata, running image IDs, and SHA-256 receipts under the safely quoted backup root. The secret directory is excluded.
-
-The backup destination remains on the same NAS, so QNAP snapshots and an independent second copy remain recommended defense in depth for total-NAS-loss scenarios.
+The patch does not add MCP tools, expand agent authority, change the 10-agent roster, expose new ports, weaken container controls, alter the TaskLedger trust boundary, or move the tunnel key into configuration. Compose discovery executes only a local executable path reported by the local Docker client or found under known Docker/Container Station installation locations, and requires a Compose V2 version response.
 
 ## Resource policy
 
 `mesh-cos-mcp` remains limited to 2 CPUs and 24 GiB RAM with no PID limit. `mesh-cos-tunnel` remains limited to 0.25 CPU and 256 MiB RAM with no PID limit.
 
-## Release quality gates
-
-The candidate must pass package integrity, TypeScript/MCP tests, stdio certification, npm audit, schema and documentation drift checks, Ruff, mypy, 100% branch-aware Python coverage, Bandit, compileall, QNAP shell syntax, v4.1.1 automation BDD/evaluation tests, deterministic release-bundle construction, production image build from the bundled build context, Compose/resource validation, least-privilege checks, readiness, direct MCP denial, SQLite backup integrity, and restart recovery.
-
 ## Release assets
 
 The release workflow creates:
 
-- `mesh-cos-mcp-qnap-v4.1.1.zip`, designed to be unpacked directly into `/share/Docker`;
-- `mesh-cos-mcp-qnap-v4.1.1.zip.sha256`.
+- `mesh-cos-mcp-qnap-v4.1.2.zip`, designed to be unpacked directly into `/share/Docker`;
+- `mesh-cos-mcp-qnap-v4.1.2.zip.sha256`.
 
-The bundle contains QNAP configuration, runbooks, operator scripts, ChatGPT acceptance instructions, and the minimal local image build context. It contains no runtime secrets and no canonical TaskLedger data.
+The checksum references only the ZIP basename, so both files can be verified directly from `/share/Docker`.
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.1.1`
-- Semantic tag: `v4.1.1`
-- Container image label default: `4.1.1-qnap`
+- Repository/QNAP deployment release: `4.1.2`
+- Semantic tag: `v4.1.2`
+- Container image label default: `4.1.2-qnap`
 - Canonical Phase 1 agent/runtime authority contract: `4.0.0` unchanged
 - Canonical workforce: exactly 10 registered agents
 - Message Operations remains the tenth registered agent.
@@ -77,4 +46,4 @@ The bundle contains QNAP configuration, runbooks, operator scripts, ChatGPT acce
 - Production connectivity: OpenAI Secure MCP Tunnel
 - Local engineering transport: stdio retained
 
-See `docs/release-4.1.1-qnap-deployment-automation.md`, `deployment/qnap/README-QNAP.md`, and `deployment/qnap/CHATGPT-ACCEPTANCE.md`.
+See `docs/release-4.1.2-qnap-compose-discovery-fix.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, and `deployment/qnap/CHATGPT-ACCEPTANCE.md`.

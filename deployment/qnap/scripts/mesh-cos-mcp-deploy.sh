@@ -3,9 +3,15 @@ set -eu
 
 SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-/share/Docker}
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
+COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 
 fail() { echo "ERROR: $1" >&2; exit 1; }
 info() { echo "INFO $1"; }
+
+[ -r "$COMPOSE_LIB" ] || fail "Compose discovery helper is missing: $COMPOSE_LIB"
+. "$COMPOSE_LIB"
+mesh_resolve_compose || fail "Docker Compose V2 could not be resolved from the QNAP Container Station installation"
+info "using Compose V2 via $(mesh_compose_description)"
 
 wait_healthy() {
   name=$1
@@ -32,8 +38,8 @@ sh "$SCRIPT_ROOT/mesh-cos-mcp-prepare.sh"
 sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"
 
 cd "$APP_ROOT"
-docker compose --env-file .env -f compose.yaml config >/tmp/mesh-cos-mcp-compose.rendered.yaml
-docker compose --env-file .env -f compose.yaml up -d --no-build
+mesh_compose --env-file .env -f compose.yaml config >/tmp/mesh-cos-mcp-compose.rendered.yaml
+mesh_compose --env-file .env -f compose.yaml up -d --no-build
 
 wait_healthy mesh-cos-mcp
 wait_healthy mesh-cos-tunnel

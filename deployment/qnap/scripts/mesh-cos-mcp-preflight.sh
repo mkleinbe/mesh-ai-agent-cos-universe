@@ -8,6 +8,7 @@ BACKUP_ROOT=${QNAP_BACKUP_ROOT:-/share/QNAP NAS/Mike Home/MCP/CoS/Backups}
 SECRET_FILE=${QNAP_TUNNEL_API_KEY_FILE:-/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
+COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 FAIL=0
 
 pass() { echo "PASS $1"; }
@@ -24,7 +25,17 @@ MEM_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)
 [ "$MEM_KB" -ge 33554432 ] && pass "RAM leaves headroom above 24-GiB container limit" || fail "less than 32 GiB host RAM"
 
 command -v docker >/dev/null 2>&1 && pass "docker present" || fail "docker missing"
-docker compose version >/dev/null 2>&1 && pass "docker compose present" || fail "docker compose missing"
+if [ -r "$COMPOSE_LIB" ]; then
+  . "$COMPOSE_LIB"
+  if mesh_resolve_compose; then
+    pass "Compose V2 resolved via $(mesh_compose_description)"
+  else
+    fail "Compose V2 could not be resolved from docker compose, Docker plugin metadata, /usr/local/lib/docker/cli-plugins, or the Container Station QPKG path"
+  fi
+else
+  fail "Compose discovery helper missing: $COMPOSE_LIB"
+fi
+
 LAN7=$(docker network inspect lan7 2>/dev/null || true)
 echo "$LAN7" | grep -q '"Driver": "qnet"' && pass "lan7 uses qnet" || fail "lan7 is missing or not qnet"
 echo "$LAN7" | grep -q '"Subnet": "192.168.7.0/24"' && pass "lan7 subnet" || fail "lan7 subnet mismatch"
@@ -67,7 +78,7 @@ if [ -f "$APP_ROOT/.env" ]; then
   set -a
   . "$APP_ROOT/.env"
   set +a
-  [ "${MESH_COS_DEPLOYMENT_RELEASE:-}" = "4.1.1" ] && pass "deployment release 4.1.1" || fail "MESH_COS_DEPLOYMENT_RELEASE must be 4.1.1"
+  [ "${MESH_COS_DEPLOYMENT_RELEASE:-}" = "4.1.2" ] && pass "deployment release 4.1.2" || fail "MESH_COS_DEPLOYMENT_RELEASE must be 4.1.2"
   [ "${MESH_CPU_LIMIT:-}" = "2.0" ] && pass "2-CPU limit configured" || fail "MESH_CPU_LIMIT must be 2.0"
   [ "${MESH_MEMORY_LIMIT:-}" = "24g" ] && pass "24-GiB memory limit configured" || fail "MESH_MEMORY_LIMIT must be 24g"
   grep -q '^MESH_PIDS_LIMIT=' "$APP_ROOT/.env" && fail "PID limit must not be configured" || pass "no PID limit configured"
@@ -88,7 +99,11 @@ if [ -d "$APP_ROOT" ]; then
 fi
 
 if [ -f "$APP_ROOT/compose.yaml" ] && [ -f "$APP_ROOT/.env" ]; then
-  (cd "$APP_ROOT" && docker compose --env-file .env -f compose.yaml config >/tmp/mesh-cos-mcp-compose.rendered.yaml) && pass "Compose renders" || fail "Compose render failed"
+  if command -v mesh_compose >/dev/null 2>&1; then
+    (cd "$APP_ROOT" && mesh_compose --env-file .env -f compose.yaml config >/tmp/mesh-cos-mcp-compose.rendered.yaml) && pass "Compose renders" || fail "Compose render failed"
+  else
+    fail "Compose render skipped because Compose V2 was not resolved"
+  fi
 fi
 
 [ "$FAIL" -eq 0 ] || exit 1

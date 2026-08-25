@@ -194,3 +194,17 @@ Feature: QNAP production boundary for mesh-cos-mcp
     Then the online TaskLedger backup and non-secret Compose environment release metadata and image IDs are captured
     And SHA-256 verification passes
     And the secrets directory and tunnel runtime key are never copied
+
+  Scenario: QNAP-036 QNAP Compose V2 is resolved outside the Docker subcommand path
+    Given Docker is available
+    And docker compose is not callable in the operator SSH environment
+    And Container Station has an executable Compose V2 plugin
+    When prepare or preflight resolves Compose
+    Then the installed Compose V2 plugin is used directly
+    And Compose V1 is never accepted
+
+  Scenario: QNAP-037 Deployment wrapper failure preserves the operator SSH session
+    Given the release installation commands are executed inside a subshell
+    When verification or deployment returns a nonzero status
+    Then the subshell returns that status to the parent shell
+    And the parent SSH session remains active

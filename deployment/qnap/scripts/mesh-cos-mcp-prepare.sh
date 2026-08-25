@@ -8,12 +8,13 @@ BACKUP_ROOT=${QNAP_BACKUP_ROOT:-/share/QNAP NAS/Mike Home/MCP/CoS/Backups}
 SECRET_FILE=${QNAP_TUNNEL_API_KEY_FILE:-/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
-RELEASE_VERSION=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.1}
-MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v4.1.1}
+RELEASE_VERSION=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.2}
+MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v4.1.2}
 TUNNEL_SOURCE=${OPENAI_TUNNEL_IMAGE_SOURCE:-ghcr.io/openai/tunnel-client:v0.0.12}
 BUILD_CONTEXT="$APP_ROOT/build-context"
 LEDGER="$STATE_ROOT/ledger/taskledger.sqlite3"
 ENV_FILE="$APP_ROOT/.env"
+COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 
 fail() { echo "ERROR: $1" >&2; exit 1; }
 info() { echo "INFO $1"; }
@@ -49,7 +50,10 @@ cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 [ -d "$BUILD_CONTEXT" ] || fail "$BUILD_CONTEXT is missing from the release bundle"
 [ -f "$BUILD_CONTEXT/Dockerfile" ] || fail "$BUILD_CONTEXT/Dockerfile is missing"
 command -v docker >/dev/null 2>&1 || fail "docker is not available"
-docker compose version >/dev/null 2>&1 || fail "docker compose is not available"
+[ -r "$COMPOSE_LIB" ] || fail "Compose discovery helper is missing: $COMPOSE_LIB"
+. "$COMPOSE_LIB"
+mesh_resolve_compose || fail "Docker Compose V2 is installed by Container Station but could not be resolved from docker compose, Docker plugin metadata, /usr/local/lib/docker/cli-plugins, or the Container Station QPKG path"
+info "using Compose V2 via $(mesh_compose_description)"
 
 mkdir -p "$STATE_ROOT/ledger" "$STATE_ROOT/governance" "$STATE_ROOT/audit" "$STATE_ROOT/runtime" "$APP_ROOT/secrets"
 [ -d "$BACKUP_ROOT" ] || mkdir -p "$BACKUP_ROOT"

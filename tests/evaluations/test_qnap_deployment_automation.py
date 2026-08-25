@@ -28,8 +28,12 @@ def test_prepare_automates_configuration_without_leaking_secret() -> None:
     assert 'sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"' in prepare
     assert "chown -R" not in prepare
     assert 'chown "$MESH_UID:$MESH_GID"' not in prepare
-    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.6" in prepare
-    assert "mesh-cos-mcp:qnap-v4.1.6" in prepare
+    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.7" in prepare
+    assert "mesh-cos-mcp:qnap-v4.1.7" in prepare
+    assert 'IMAGE_PROVENANCE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"' in prepare
+    assert "mesh_image_provenance_matches" in prepare
+    assert "built Mesh image version label mismatch" in prepare
+    assert "built Mesh image revision label mismatch" in prepare
 
 
 def test_deploy_is_single_orchestrated_operator_path_with_diagnostics() -> None:
@@ -107,6 +111,17 @@ def test_permission_helper_is_constrained_and_host_chown_is_not_required() -> No
     assert "nonnumeric GID" in regression
 
 
+def test_image_provenance_helper_rejects_stale_release_labels() -> None:
+    helper = text(SCRIPTS / "mesh-cos-qnap-image-provenance.sh")
+    regression = text(QNAP / "tests" / "test-image-provenance.sh")
+    assert "mesh_release_metadata_value" in helper
+    assert "mesh_image_provenance_matches" in helper
+    assert "org.opencontainers.image.version" in helper
+    assert "org.opencontainers.image.revision" in helper
+    assert "stale image version was accepted" in regression
+    assert "stale image revision was accepted" in regression
+
+
 def test_preflight_validates_runtime_access_not_host_user_rw() -> None:
     preflight = text(SCRIPTS / "mesh-cos-mcp-preflight.sh")
     assert "runtime-state-access" in preflight
@@ -116,7 +131,7 @@ def test_preflight_validates_runtime_access_not_host_user_rw() -> None:
     assert "deployment-local Docker config exists and is writable" in preflight
 
 
-def test_preflight_and_verify_bind_running_images_to_recorded_ids() -> None:
+def test_preflight_and_verify_bind_running_images_and_governed_envelope() -> None:
     preflight = text(SCRIPTS / "mesh-cos-mcp-preflight.sh")
     verify = text(SCRIPTS / "mesh-cos-mcp-verify.sh")
     assert "MESH_COS_IMAGE_ID" in preflight
@@ -126,6 +141,10 @@ def test_preflight_and_verify_bind_running_images_to_recorded_ids() -> None:
     assert 'RUNNING_TUNNEL_ID=$(docker inspect -f' in verify
     assert "non-tunnel direct MCP request denied" in verify
     assert "mesh_obs_init verify" in verify
+    assert "--network container:mesh-cos-tunnel" in verify
+    assert "tools/call" in verify
+    assert "registry.get_agent" in verify
+    assert "governed tool envelope dual release identity" in verify
 
 
 def test_compose_never_pulls_after_prepare_and_preserves_resource_policy() -> None:
@@ -152,30 +171,31 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_v416_docs_helpers_metadata_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_v417_docs_helpers_metadata_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.6}' in builder
+    assert 'VERSION=${1:-4.1.7}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
-    assert "qnap-security-review-v4.1.6.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.6.md" in builder
-    assert "release-4.1.6-secure-mcp-published-app-identity.md" in builder
-    assert "qnap-published-chatgpt-app-v4.1.6.feature" in builder
+    assert "qnap-security-review-v4.1.7.md" in builder
+    assert "qnap-image-provenance-envelope-debugging-v4.1.7.md" in builder
+    assert "release-4.1.7-qnap-image-provenance-envelope.md" in builder
+    assert "qnap-image-provenance-envelope-v4.1.7.feature" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-compose.sh"' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-observability.sh"' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"' in builder
+    assert 'test -f "$BUNDLE/mesh-cos-qnap-image-provenance.sh"' in builder
     assert 'test -f "$BUNDLE/cos-mcp/release-metadata.txt"' in builder
 
 
-def test_deployment_steps_contain_v416_subshell_sudo_and_log_receipt() -> None:
+def test_deployment_steps_contain_v417_subshell_sudo_and_log_receipt() -> None:
     steps = text(QNAP / "DEPLOYMENT-STEPS.md")
     assert "installer executes inside a subshell" in steps
     assert "SSH session remains active" in steps
     assert "DIAGNOSTIC_LOG" in steps
-    assert "v4.1.6" in steps
+    assert "v4.1.7" in steps
     assert "sudo sh /share/Docker/mesh-cos-mcp-deploy.sh" in steps
     assert "exit \"$RC\"" not in steps
 
@@ -206,4 +226,13 @@ def test_v416_published_app_bdd_covers_identity_and_hosted_acceptance() -> None:
     for scenario_id in ["QNAP-051", "QNAP-052", "QNAP-053", "QNAP-054", "QNAP-055"]:
         assert f"Scenario: {scenario_id}" in feature
     for token in ["deployment_release", "SECURE_MCP_TUNNEL", "exactly 27", "exactly 10", "HTTP 502"]:
+        assert token in feature
+
+
+def test_v417_image_provenance_and_envelope_bdd_is_ready() -> None:
+    feature = text(ROOT / "specs" / "qnap-image-provenance-envelope-v4.1.7.feature")
+    assert "@ready" in feature
+    for scenario_id in ["QNAP-056", "QNAP-057", "QNAP-058"]:
+        assert f"Scenario: {scenario_id}" in feature
+    for token in ["release metadata", "deployment_release 4.1.7", "mcp_version 4.0.0", "agent_id cos"]:
         assert token in feature

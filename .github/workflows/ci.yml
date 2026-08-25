@@ -40,12 +40,12 @@ jobs:
           sh deployment/qnap/tests/test-observability.sh
           sh deployment/qnap/tests/test-runtime-permissions.sh
           bash -n scripts/build-qnap-release-bundle.sh
-      - name: Build and inspect v4.1.3 release bundle
+      - name: Build and inspect v4.1.4 release bundle
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh 4.1.3
-          test -f dist/mesh-cos-mcp-qnap-v4.1.3.zip
-          test -f dist/mesh-cos-mcp-qnap-v4.1.3.zip.sha256
+          bash scripts/build-qnap-release-bundle.sh 4.1.4
+          test -f dist/mesh-cos-mcp-qnap-v4.1.4.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.4.zip.sha256
           test -f dist/qnap-bundle/mesh-cos-qnap-compose.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-observability.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-permissions.sh
@@ -53,11 +53,11 @@ jobs:
           test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
           test ! -e dist/qnap-bundle/cos-mcp/.env
           test ! -e dist/qnap-bundle/cos-mcp/secrets
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.3.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.4.zip.sha256)
       - name: Validate QNAP Compose candidate
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.3'
-          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.3
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.4'
+          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.4
           MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
@@ -85,8 +85,8 @@ jobs:
           assert data['networks']['lan7']['external'] is True
           PY
       - name: Build production container from release bundle context
-        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.3-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
-      - name: RED regression - modern MCP discovery and sequential requests
+        run: docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.4-qnap -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
+      - name: Verify modern MCP discovery and sequential requests
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci
       - name: Verify non-root QNAP ownership handoff with real Docker bind mounts
         run: |

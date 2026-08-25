@@ -1,6 +1,6 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this only after the v4.1.4 `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
+Run this only after the v4.1.5 `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
 
 ## 1. OpenAI tunnel prerequisites
 
@@ -20,12 +20,32 @@ Use ChatGPT on the web with a workspace/account allowed to use the custom MCP ap
 
 1. Open the existing `Mesh CoS MCP` app or its developer-mode configuration.
 2. Confirm the connection still points to the same Secure MCP Tunnel used by the QNAP deployment.
-3. Run **Scan Tools** again after the v4.1.4 upgrade.
+3. Run **Scan Tools** again after the v4.1.5 upgrade.
 4. Keep `mesh-cos-tunnel` healthy until the scan completes.
 
-The production transport remains Secure MCP Tunnel. No additional MCP-layer OAuth flow is introduced by v4.1.4.
+The production transport remains Secure MCP Tunnel. No additional MCP-layer OAuth flow is introduced by v4.1.5.
 
-## 3. Tool-catalog acceptance
+## 3. QNAP release-identity acceptance
+
+Before hosted MCP calls, confirm the local deployment actually advanced:
+
+```sh
+sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-mcp
+sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-tunnel
+grep '^MESH_COS_DEPLOYMENT_RELEASE=' /share/Docker/cos-mcp/.env
+sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
+```
+
+PASS requires:
+
+- `mesh-cos-mcp:qnap-v4.1.5` is running and healthy;
+- the tunnel is running and healthy;
+- `.env` reports `MESH_COS_DEPLOYMENT_RELEASE=4.1.5`;
+- bundle metadata reports `4.1.5`.
+
+The two release values must match. A stale v4.1.3 preflight literal must no longer block deployment.
+
+## 4. Tool-catalog acceptance
 
 The scan must expose exactly the 27 CoS tools below:
 
@@ -68,9 +88,9 @@ reliability.human_override
 
 Mesh Devil's Advocate must not appear as an agent principal. It remains a governed shared Skill.
 
-## 4. Sequential transport acceptance
+## 5. Sequential transport acceptance
 
-v4.1.4 specifically remediates the prior session-loss/502 behavior. Open a new chat with only `Mesh CoS MCP` selected and execute these calls sequentially in the same conversation without restarting the QNAP containers between calls:
+v4.1.5 carries forward the v4.1.4 remediation for the prior session-loss/502 behavior. Open a new chat with only `Mesh CoS MCP` selected and execute these calls sequentially in the same conversation without restarting the QNAP containers between calls:
 
 1. `registry.list_agents`
 2. `governance.verify_audit_chain`
@@ -85,7 +105,7 @@ v4.1.4 specifically remediates the prior session-loss/502 behavior. Open a new c
 
 PASS requires all ten calls to return successfully with no `502`, `invalid_session`, reconnect requirement, or container restart. The roster calls must continue to show exactly 10 agents.
 
-## 5. Read-only authority acceptance
+## 6. Read-only authority acceptance
 
 Run:
 
@@ -103,21 +123,21 @@ Using only the Mesh CoS MCP app, call governance.verify_audit_chain, then metric
 
 PASS requires a valid audit-chain result and a successful metrics response.
 
-## 6. Governed-write acceptance
+## 7. Governed-write acceptance
 
 Use the low-authority, idempotent acceptance task below:
 
 ```text
 Using only the Mesh CoS MCP app, invoke task.intake with exactly these values:
-objective: QNAP Secure MCP acceptance v4.1.4
-expected_outcome: Confirm the governed write path persists to the canonical TaskLedger after the v4.1.4 transport upgrade
+objective: QNAP Secure MCP acceptance v4.1.5
+expected_outcome: Confirm the governed write path persists to the canonical TaskLedger after the v4.1.5 deployment correction
 requested_by: michael
 executive_sponsor: michael
 accountable_agent: cos
 decision_owner: michael
 authority_level: 0
 acceptance_test: Read the task back through task.get and confirm it exists in canonical state without treating completion as verification
-idempotency_key: qnap-secure-mcp-v4.1.4
+idempotency_key: qnap-secure-mcp-v4.1.5
 
 Return the created or existing task_id. Do not call task.complete or task.verify.
 ```
@@ -126,8 +146,8 @@ Then call `task.get` for the returned task ID and confirm the objective, account
 
 PASS requires successful canonical readback and a valid audit chain. Re-running the acceptance task with the same idempotency key must resolve to the same canonical task rather than creating a duplicate.
 
-## 7. Acceptance boundary
+## 8. Acceptance boundary
 
-Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial v4.1.4 acceptance. The purpose is to prove transport reliability, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
+Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial v4.1.5 acceptance. The purpose is to prove deployment identity, transport reliability, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
 
-The production 502 defect is considered closed only after the upgraded QNAP runtime passes the sequential hosted-path acceptance above without a restart between calls.
+The production deployment blocker is closed only after the v4.1.5 QNAP runtime passes both the local release-identity checks and sequential hosted-path acceptance without a restart between calls.

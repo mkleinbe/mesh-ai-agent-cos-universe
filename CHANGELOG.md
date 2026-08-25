@@ -2,6 +2,28 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.5 - 2026-08-25 - QNAP Release Identity Preflight Reliability
+
+### Live QNAP causal remediation
+
+- Reproduced the v4.1.4 upgrade failure at the host-preflight release-identity gate: the v4.1.4 image built successfully and surrounding checks passed, but preflight still required `MESH_COS_DEPLOYMENT_RELEASE=4.1.3`.
+- Confirmed the later `prepare failed` messages were propagation of that one stale release check, not independent Docker, TaskLedger, tunnel, resource, or MCP transport failures.
+- Confirmed the failed upgrade stopped safely before Compose replacement, leaving the existing v4.1.3 application and tunnel healthy.
+
+### TDD and release engineering
+
+- Added regression RED proving preflight did not derive release identity from bundle metadata and still contained the stale v4.1.3 literal.
+- Replaced the duplicated patch-release gate with comparison against the verified bundle's `release-metadata.txt` `version=` value.
+- Added fail-closed handling for missing release metadata, missing version, and bundle/environment release mismatch.
+- Added ready QNAP-048 through QNAP-050 behavior scenarios and CI inspection of the actual v4.1.5 release bundle for release-metadata correctness and stale-literal absence.
+- Advanced QNAP bundle, image label, generated environment, workflow, deployment runbooks, acceptance procedures, and release assets to `4.1.5` / `v4.1.5`.
+
+### Security and authority boundary
+
+- Classified the deployment/runtime validation correction TARGETED and documented SEC-QNAP-024 through SEC-QNAP-026.
+- Release metadata is parsed as data and is never sourced, evaluated, or used to expand Docker/MCP authority.
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`; exactly 10 agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel, canonical TaskLedger, v4.1.4 modern MCP transport, resource policy, and `COMPLETED != VERIFIED` semantics are unchanged.
+
 ## 4.1.4 - 2026-08-25 - QNAP Modern MCP Transport Reliability
 
 ### Production 502 causal remediation

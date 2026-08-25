@@ -62,10 +62,10 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     release_workflow = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
-    assert "TAG: v4.1.4" in release_workflow
-    assert '--title "v4.1.4 QNAP Modern MCP Transport Reliability"' in release_workflow
+    assert "TAG: v4.1.5" in release_workflow
+    assert '--title "v4.1.5 QNAP Release Identity Preflight Reliability"' in release_workflow
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.4 QNAP Modern MCP Transport Reliability" in release_notes
+    assert "v4.1.5 QNAP Release Identity Preflight Reliability" in release_notes
     assert "Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
     assert "Message Operations" in release_notes

@@ -2,7 +2,7 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository/QNAP deployment target: `v4.1.11 QNAP Versioned Release Staging Remediation`.**
+**Current repository/QNAP deployment target: `v4.1.12 QNAP Release-Root Bootstrap`.**
 
 The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, scheduled execution, Slack HITL, request contract, and release evidence without widening the Phase 1 agent authority model.
 
@@ -37,15 +37,15 @@ local MCP client
   -> TaskLedger SQLite
 ```
 
-The canonical QNAP application root remains `/share/Docker/cos-mcp` and uses the verified external QNAP `lan7` qnet. Release artifacts are staged and executed from `/share/Docker/cos-mcp/releases/vX.Y.Z`; operator/helper scripts resolve from the extracted release directory and must not be copied to `/share/Docker`. The MCP protocol port is not published to the host or public internet. Production `/mcp` requests are accepted only from the Secure MCP Tunnel sidecar private source address.
+The canonical QNAP application root remains `/share/Docker/cos-mcp` and uses the verified external QNAP `lan7` qnet. The stable operator release root is `/share/Docker/cos-mcp/releases`. Starting with v4.1.12, the release ZIP itself creates its `vX.Y.Z/` subdirectory when extracted from that root. Operator/helper scripts resolve from their own versioned directory and must not be copied to `/share/Docker`. The MCP protocol port is not published to the host or public internet. Production `/mcp` requests are accepted only from the Secure MCP Tunnel sidecar private source address.
 
 ## Dual release identity
 
-Successful governed tool envelopes for v4.1.11 must report:
+Successful governed tool envelopes for v4.1.12 must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.11
+deployment_release: 4.1.12
 agent_id: cos
 ```
 
@@ -53,18 +53,20 @@ Production `/healthz` and `/readyz` additionally report `transport: SECURE_MCP_T
 
 `mcp_version` identifies the canonical Phase 1 authority/runtime contract. `deployment_release` identifies the QNAP deployment release serving the request. Remote production startup fails closed if `MESH_COS_DEPLOYMENT_RELEASE` is absent.
 
-## v4.1.11 deployment remediation
+## v4.1.12 deployment remediation
 
-v4.1.11 supersedes the defective v4.1.10 QNAP deployment artifact while preserving the v4.1.10 runtime capability and security behavior.
+v4.1.12 supersedes v4.1.11 for QNAP artifact layout and operator pathing while preserving v4.1.11 candidate-identity controls and the v4.1.10 runtime capability/security behavior.
 
-1. The bundle executes directly from `/share/Docker/cos-mcp/releases/v4.1.11`.
-2. Operator scripts self-resolve their release root instead of defaulting helper lookup to `/share/Docker`.
-3. Candidate release metadata, build context, Compose, and generated `.env.runtime` are read from the versioned staging directory.
-4. Active production `.env` may remain on an older release while a newer candidate is staged; preflight reports these identities separately.
-5. Runtime release identity defaults from staged metadata. A leading Git `v` is normalized, while real mismatches still fail closed.
-6. Standard `sudo sh ./mesh-cos-mcp-deploy.sh` does not depend on sudo preserving a release environment variable.
-7. Candidate `.env`, Compose, and release metadata are promoted to the canonical root only after application and tunnel containers are healthy.
-8. The pre-deploy online SQLite backup, canonical TaskLedger, tunnel key, Slack protected configuration, qnet/static networking, image provenance, and rollback behavior are preserved.
+1. The canonical operator working directory is `/share/Docker/cos-mcp/releases`.
+2. `mesh-cos-mcp-qnap-v4.1.12.zip` contains a single top-level `v4.1.12/` directory, so extraction creates the version folder automatically.
+3. No manual version-folder creation, payload copy/move, helper copy, chmod, or `cd` into the release directory is required.
+4. Operator scripts self-resolve their release directory and helper paths using POSIX/BusyBox-compatible `dirname`, `cd`, and `pwd -P` behavior.
+5. Deployment validates that the resolved folder is directly beneath the canonical releases root and that its `vX.Y.Z` basename matches staged release metadata before candidate preparation.
+6. Candidate release metadata, build context, Compose, and generated `.env.runtime` remain in the versioned release directory.
+7. Active production `.env` may remain on an older release while a newer candidate is staged; preflight reports these identities separately.
+8. Runtime release identity defaults from staged metadata. A leading Git `v` is normalized, while real mismatches still fail closed.
+9. Candidate `.env`, Compose, and release metadata are promoted to the canonical root only after application and tunnel containers are healthy.
+10. The pre-deploy online SQLite backup, canonical TaskLedger, tunnel key, Slack protected configuration, qnet/static networking, image provenance, and rollback behavior are preserved.
 
 ## v4.1.10 capability retained
 
@@ -84,7 +86,7 @@ The CoS production projection remains exactly **27 governed tools**. L4 requires
 
 Repository, CI, container, and release-package verification do not prove the newly deployed on-premises serving instance, the official OpenAI Workspace Agent Slack delivery configuration, or the live Socket Mode human-interaction path.
 
-After deploying v4.1.11, execute `docs/chatgpt-published-app-production-acceptance-v4.1.11.md`. Production certification requires the actual bot-authored HITL notice, proof ordinary APPROVE text remains non-authoritative, a provider-authenticated `/mesh-approval` interaction, fresh canonical approval readback, valid audit chain, zero unauthorized external actions, and required TaskLedger operating-mirror reconciliation.
+After deploying v4.1.12, execute `docs/chatgpt-published-app-production-acceptance-v4.1.12.md`. Production certification requires the actual bot-authored HITL notice, proof ordinary APPROVE text remains non-authoritative, a provider-authenticated `/mesh-approval` interaction, fresh canonical approval readback, valid audit chain, zero unauthorized external actions, and required TaskLedger operating-mirror reconciliation.
 
 Current operator and release references:
 
@@ -92,12 +94,12 @@ Current operator and release references:
 - `RELEASE.md`
 - `docs/production-readiness.md`
 - `docs/slack-agent-protocol.md`
-- `docs/qnap-versioned-release-staging-v4.1.11.md`
-- `docs/qnap-security-review-v4.1.11.md`
-- `docs/release-4.1.11-qnap-versioned-release-staging.md`
-- `docs/verification-v4.1.11-qnap-versioned-release-staging.md`
-- `docs/chatgpt-published-app-production-acceptance-v4.1.11.md`
-- `specs/qnap-versioned-release-staging-v4.1.11.feature`
+- `docs/qnap-release-root-bootstrap-v4.1.12.md`
+- `docs/qnap-security-review-v4.1.12.md`
+- `docs/release-4.1.12-qnap-release-root-bootstrap.md`
+- `docs/verification-v4.1.12-qnap-release-root-bootstrap.md`
+- `docs/chatgpt-published-app-production-acceptance-v4.1.12.md`
+- `specs/qnap-release-root-bootstrap-v4.1.12.feature`
 - `specs/scheduled-automation-slack-hitl-v4.1.10.feature`
 - `deployment/qnap/README-QNAP.md`
 - `deployment/qnap/DEPLOYMENT-STEPS.md`

@@ -11,7 +11,12 @@ from mesh_cos.ledger import TaskLedger
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
 from mesh_cos.slack_hitl import CHATGPT_AGENTS_SLACK_USER_ID
-from mesh_cos.slack_socket_bridge import _read_stdin, _safe_error, execute_socket_envelope
+from mesh_cos.slack_socket_bridge import (
+    _read_stdin,
+    _safe_error,
+    execute_socket_envelope,
+    main,
+)
 
 CHANNEL_ID = "C0TESTAGENTOPS"
 APPROVER_USER_ID = "U0TESTAPPROVER"
@@ -148,3 +153,42 @@ def test_read_stdin_rejects_empty_oversize_and_parses_json(monkeypatch: pytest.M
     monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdin", Stdin(b"not-json"))
     with pytest.raises(json.JSONDecodeError):
         _read_stdin()
+
+
+def test_main_writes_bounded_success_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    stdout = io.StringIO()
+    monkeypatch.setattr("mesh_cos.slack_socket_bridge._read_stdin", lambda: {"synthetic": True})
+    monkeypatch.setattr(
+        "mesh_cos.slack_socket_bridge.execute_socket_envelope",
+        lambda payload: {
+            "ok": True,
+            "runtime_version": "4.0.0",
+            "source": "SLACK_SOCKET_MODE",
+            "result": payload,
+        },
+    )
+    monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdout", stdout)
+
+    assert main() == 0
+    assert json.loads(stdout.getvalue()) == {
+        "ok": True,
+        "runtime_version": "4.0.0",
+        "source": "SLACK_SOCKET_MODE",
+        "result": {"synthetic": True},
+    }
+
+
+def test_main_converts_bridge_failure_to_bounded_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    stdout = io.StringIO()
+
+    def denied() -> dict:
+        raise PermissionError("sensitive provider detail")
+
+    monkeypatch.setattr("mesh_cos.slack_socket_bridge._read_stdin", denied)
+    monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdout", stdout)
+
+    assert main() == 0
+    response = json.loads(stdout.getvalue())
+    assert response["ok"] is False
+    assert response["error"] == "forbidden"
+    assert "sensitive provider detail" not in stdout.getvalue()

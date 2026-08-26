@@ -1,32 +1,40 @@
 #!/bin/sh
 set -u
 
-SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-/share/Docker}
+SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-}
+if [ -z "$SCRIPT_ROOT" ]; then
+  SCRIPT_ROOT=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd -P) || { echo "ERROR: unable to resolve deployment bundle root" >&2; exit 1; }
+fi
+BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 STATE_ROOT=${QNAP_MESH_ROOT:-/share/Docker/cos-mcp/state}
 BACKUP_ROOT=${QNAP_BACKUP_ROOT:-/share/QNAP NAS/Mike Home/MCP/CoS/Backups}
 SECRET_FILE=${QNAP_TUNNEL_API_KEY_FILE:-/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
-RELEASE_VERSION=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.10}
-MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v4.1.10}
+RELEASE_REQUESTED=${MESH_COS_DEPLOYMENT_RELEASE:-}
 TUNNEL_SOURCE=${OPENAI_TUNNEL_IMAGE_SOURCE:-ghcr.io/openai/tunnel-client:v0.0.12}
-BUILD_CONTEXT="$APP_ROOT/build-context"
+BUILD_CONTEXT="$BUNDLE_APP_ROOT/build-context"
 LEDGER="$STATE_ROOT/ledger/taskledger.sqlite3"
-ENV_FILE="$APP_ROOT/.env"
-RELEASE_METADATA="$APP_ROOT/release-metadata.txt"
+ACTIVE_ENV_FILE="$APP_ROOT/.env"
+CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"
+CANDIDATE_COMPOSE="$BUNDLE_APP_ROOT/compose.yaml"
+RELEASE_METADATA="$BUNDLE_APP_ROOT/release-metadata.txt"
+LAYOUT_LIB="$SCRIPT_ROOT/mesh-cos-qnap-layout.sh"
 COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
 IMAGE_PROVENANCE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"
 MESH_COS_SCRIPT=mesh-cos-mcp-prepare.sh
-export QNAP_SCRIPT_ROOT APP_ROOT STATE_ROOT BACKUP_ROOT SECRET_FILE MESH_UID MESH_GID MESH_COS_SCRIPT
+export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT QNAP_MESH_ROOT QNAP_BACKUP_ROOT QNAP_TUNNEL_API_KEY_FILE MESH_UID MESH_GID MESH_COS_SCRIPT
 
 [ -r "$OBS_LIB" ] || { echo "ERROR: observability helper missing: $OBS_LIB" >&2; exit 1; }
 . "$OBS_LIB"
 mesh_obs_init prepare || { echo "ERROR: unable to initialize deployment logging" >&2; exit 1; }
 mesh_init_docker_config || mesh_fail 1 bootstrap "unable to initialize deployment-local Docker config"
 
+[ -r "$LAYOUT_LIB" ] || mesh_fail 1 bootstrap "release layout helper missing: $LAYOUT_LIB"
+. "$LAYOUT_LIB"
 [ -r "$PERM_LIB" ] || mesh_fail 1 bootstrap "runtime permission helper missing: $PERM_LIB"
 . "$PERM_LIB"
 [ -r "$IMAGE_PROVENANCE_LIB" ] || mesh_fail 1 bootstrap "image provenance helper missing: $IMAGE_PROVENANCE_LIB"
@@ -57,30 +65,38 @@ read_secret_tty() {
 
 existing_env_value() {
   key=$1
-  [ -f "$ENV_FILE" ] || return 0
-  sed -n "s/^${key}=//p" "$ENV_FILE" | tail -n 1 | sed 's/^"//;s/"$//'
+  [ -f "$ACTIVE_ENV_FILE" ] || return 0
+  sed -n "s/^${key}=//p" "$ACTIVE_ENV_FILE" | tail -n 1 | sed 's/^"//;s/"$//'
 }
 
 mesh_set_stage bootstrap
 cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
-[ -d "$APP_ROOT" ] || fail "$APP_ROOT is missing. Extract the release bundle into /share/Docker first."
-[ -f "$APP_ROOT/compose.yaml" ] || fail "$APP_ROOT/compose.yaml is missing"
+[ -d "$BUNDLE_APP_ROOT" ] || fail "candidate application payload is missing: $BUNDLE_APP_ROOT"
+[ -d "$APP_ROOT" ] || fail "canonical application root is missing: $APP_ROOT"
+[ -f "$CANDIDATE_COMPOSE" ] || fail "candidate Compose file is missing: $CANDIDATE_COMPOSE"
 [ -d "$BUILD_CONTEXT" ] || fail "$BUILD_CONTEXT is missing from the release bundle"
 [ -f "$BUILD_CONTEXT/Dockerfile" ] || fail "$BUILD_CONTEXT/Dockerfile is missing"
 [ -r "$RELEASE_METADATA" ] || fail "release metadata is missing: $RELEASE_METADATA"
-EXPECTED_RELEASE=$(mesh_release_metadata_value version "$RELEASE_METADATA")
+EXPECTED_RELEASE=$(mesh_candidate_release "$RELEASE_METADATA") || fail "release metadata version is not a valid runtime semantic version"
 EXPECTED_COMMIT=$(mesh_release_metadata_value commit "$RELEASE_METADATA")
-[ -n "$EXPECTED_RELEASE" ] || fail "release metadata has no version"
 [ -n "$EXPECTED_COMMIT" ] || fail "release metadata has no commit"
 printf '%s' "$EXPECTED_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$' || fail "release metadata commit is not a 40-character Git SHA"
-[ "$RELEASE_VERSION" = "$EXPECTED_RELEASE" ] || fail "requested deployment release does not match extracted bundle metadata"
+REQUESTED_RELEASE=$(mesh_normalize_release "$RELEASE_REQUESTED")
+if [ -n "$REQUESTED_RELEASE" ]; then
+  mesh_release_is_semver "$REQUESTED_RELEASE" || fail "requested deployment release is not a valid semantic version"
+  [ "$REQUESTED_RELEASE" = "$EXPECTED_RELEASE" ] || fail "requested deployment release does not match extracted bundle metadata"
+  RELEASE_VERSION=$REQUESTED_RELEASE
+else
+  RELEASE_VERSION=$EXPECTED_RELEASE
+fi
 EXPECTED_IMAGE_VERSION="${EXPECTED_RELEASE}-qnap"
+MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v${RELEASE_VERSION}}
 command -v docker >/dev/null 2>&1 || fail "docker is not available"
 [ -r "$COMPOSE_LIB" ] || fail "Compose discovery helper is missing: $COMPOSE_LIB"
 . "$COMPOSE_LIB"
 mesh_resolve_compose || fail "Docker Compose V2 could not be resolved from the QNAP Container Station installation"
 mesh_log INFO compose_resolved "via=$(mesh_compose_description)"
-mesh_log INFO release_identity "release=$EXPECTED_RELEASE commit=$EXPECTED_COMMIT image_version=$EXPECTED_IMAGE_VERSION"
+mesh_log INFO release_identity "requested=${REQUESTED_RELEASE:-metadata-default} release=$EXPECTED_RELEASE commit=$EXPECTED_COMMIT image_version=$EXPECTED_IMAGE_VERSION bundle_root=$SCRIPT_ROOT"
 
 mesh_set_stage filesystem_init
 mesh_run filesystem_init create-runtime-roots mkdir -p "$STATE_ROOT" "$APP_ROOT/secrets" "$BACKUP_ROOT" || fail "unable to create required runtime roots"
@@ -202,7 +218,7 @@ mesh_apply_secret_permissions "$MESH_IMAGE_TAG" "$MESH_UID" "$MESH_GID" "$APP_RO
 mesh_log INFO secret_file "owner=$MESH_UID:$MESH_GID mode=0400 value_logged=false"
 
 mesh_set_stage environment
-ENV_TMP="$ENV_FILE.incoming.$$"
+ENV_TMP="$CANDIDATE_ENV.incoming.$$"
 cat > "$ENV_TMP" <<EOF_ENV
 # Generated by mesh-cos-mcp-prepare.sh for QNAP release v${RELEASE_VERSION}. No secret or personal Slack values are stored here.
 MESH_COS_DEPLOYMENT_RELEASE=${RELEASE_VERSION}
@@ -211,13 +227,13 @@ MESH_COS_IMAGE_ID=${MESH_IMAGE_ID}
 TUNNEL_IMAGE=${TUNNEL_IMAGE}
 TUNNEL_IMAGE_ID=${TUNNEL_IMAGE_ID}
 OPENAI_TUNNEL_IMAGE_SOURCE=${TUNNEL_SOURCE}
-QNAP_SCRIPT_ROOT=/share/Docker
 QNAP_APP_ROOT=/share/Docker/cos-mcp
 QNAP_MESH_ROOT=/share/Docker/cos-mcp/state
 QNAP_BACKUP_ROOT="/share/QNAP NAS/Mike Home/MCP/CoS/Backups"
 QNAP_TUNNEL_API_KEY_FILE=/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key
 QNAP_SLACK_APPROVER_USER_ID_FILE=/share/Docker/cos-mcp/secrets/slack-approver-user-id
 QNAP_SLACK_VERIFIER_TOKEN_FILE=/share/Docker/cos-mcp/secrets/slack-verifier-token
+QNAP_SLACK_SOCKET_APP_TOKEN_FILE=/share/Docker/cos-mcp/secrets/slack-socket-app-token
 MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A
 MESH_COS_SLACK_APPROVER_PRINCIPAL=michael
 MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS=U0BKV7Z8M96,U0BN8V2BU9Z
@@ -234,17 +250,17 @@ MESH_COS_BRIDGE_TIMEOUT_MS=30000
 MESH_COS_MAX_BRIDGE_QUEUE=32
 CONTROL_PLANE_TUNNEL_ID=${TUNNEL_ID}
 EOF_ENV
-chmod 0640 "$ENV_TMP" || fail "unable to set generated .env mode"
-mv "$ENV_TMP" "$ENV_FILE" || fail "unable to install generated .env"
-info "generated deterministic .env with pinned image identities and no secret or personal Slack values"
+chmod 0640 "$ENV_TMP" || fail "unable to set candidate .env mode"
+mv "$ENV_TMP" "$CANDIDATE_ENV" || fail "unable to install candidate runtime environment"
+info "generated staged candidate runtime environment with pinned image identities and no secret or personal Slack values"
 
 mesh_set_stage host_preflight
 mesh_log INFO child_start "script=mesh-cos-mcp-preflight.sh"
 sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"
 rc=$?
 mesh_log INFO child_end "script=mesh-cos-mcp-preflight.sh rc=$rc"
-[ "$rc" -eq 0 ] || fail "QNAP host preflight failed"
+[ "$rc" -eq 0 ] || fail "QNAP host/candidate preflight failed"
 
 mesh_set_stage complete
 info "prepare complete"
-mesh_log INFO prepare_complete "release=$RELEASE_VERSION log=$MESH_COS_LOG_FILE"
+mesh_log INFO prepare_complete "release=$RELEASE_VERSION candidate_env=$CANDIDATE_ENV log=$MESH_COS_LOG_FILE"

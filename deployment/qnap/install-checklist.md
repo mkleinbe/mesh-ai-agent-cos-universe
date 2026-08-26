@@ -19,68 +19,81 @@
 - [ ] OpenAI `tunnel_id` is available
 - [ ] OpenAI tunnel runtime API key is available for hidden entry
 - [ ] Slack provider identity for MK is known to the operator but is not committed or logged
-- [ ] A Slack bot credential with read access to the governed private approval channel is available for hidden provider-verifier configuration
-- [ ] A Slack Socket Mode app-level `xapp-` credential is available for hidden human-ingress configuration
+- [ ] Slack provider-verifier bot credential is available for hidden configuration
+- [ ] Slack Socket Mode app-level `xapp-` credential is available for hidden configuration
 - [ ] Slack app exposes `/mesh-approval` through Socket Mode
 - [ ] Official ChatGPT Agents app is installed in Slack
-- [ ] A specific OpenAI Workspace Agent is deployed/configured to `#mesh-agent-ops` for official bot-authored HITL delivery
+- [ ] A specific OpenAI Workspace Agent is configured for official bot-authored HITL delivery
+
+## Versioned release staging
+
+- [ ] v4.1.11 ZIP and checksum are staged under `/share/Docker/cos-mcp/releases/v4.1.11`
+- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.1.11.zip.sha256` passes in that directory
+- [ ] bundle is extracted in place
+- [ ] operator/helper scripts remain in the versioned release directory
+- [ ] no helper script is copied to `/share/Docker`
+- [ ] staged `cos-mcp/release-metadata.txt` reports `4.1.11` and a valid 40-character commit
+- [ ] standalone preflight reports active production identity separately from `staged candidate release 4.1.11`
+- [ ] active v4.1.8 or other prior release is allowed to remain active before candidate promotion
 
 ## Automated by `mesh-cos-mcp-deploy.sh`
 
-Invoke from the QNAP operator account as `sudo sh /share/Docker/mesh-cos-mcp-deploy.sh` so child Docker and Compose operations have the required host permission.
+Invoke from `/share/Docker/cos-mcp/releases/v4.1.11` as `sudo sh ./mesh-cos-mcp-deploy.sh`. Normal deployment does not require a release environment variable to survive `sudo`.
 
-- [ ] `/share/Docker/cos-mcp` state/secrets tree prepared with approved ownership/permissions
-- [ ] Backup root `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"` exists and is writable
-- [ ] Bundle `release-metadata.txt` reports release `4.1.10` and a valid release commit
-- [ ] Any same-tag local `mesh-cos-mcp:qnap-v4.1.10` image is reused only if OCI version/revision exactly match bundle metadata
-- [ ] Stale/ambiguous same-tag image is rebuilt from the extracted v4.1.10 build context
-- [ ] Built/reused image labels are revalidated before content-addressed image ID is recorded
+- [ ] canonical `/share/Docker/cos-mcp` state/secrets tree is preserved
+- [ ] backup root `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"` exists and is writable
+- [ ] pre-deploy online backup succeeds when current runtime is running
+- [ ] release identity derives from staged metadata, not active `.env`
+- [ ] any explicit `v4.1.11` request normalizes to runtime `4.1.11`
+- [ ] a genuine requested-versus-staged release mismatch fails closed
+- [ ] any same-tag `mesh-cos-mcp:qnap-v4.1.11` image is reused only when OCI version/revision matches staged metadata
+- [ ] stale/ambiguous same-tag image is rebuilt from staged v4.1.11 build context
+- [ ] built/reused image labels are revalidated before content-addressed image ID is recorded
 - [ ] OpenAI tunnel image resolves to immutable RepoDigest and image ID
-- [ ] Canonical ledger is staged only if missing and validated before deployment
-- [ ] Tunnel runtime key remains outside `.env`, owner `65532:65532`, mode `0400`
-- [ ] Slack HITL protected configuration runs after release preparation and before preflight
-- [ ] Human Slack identity is stored only in `secrets/slack-approver-user-id`, runtime-owned, mode `0400`
-- [ ] Slack verifier bot token is stored only in `secrets/slack-verifier-token`, runtime-owned, mode `0400`
-- [ ] Slack Socket Mode app token is stored only in `secrets/slack-socket-app-token`, runtime-owned, mode `0400`
-- [ ] Deterministic `.env` is generated with no tunnel secret, Slack verifier/app token, or human Slack identifier value
-- [ ] Application receives `MESH_COS_DEPLOYMENT_RELEASE=4.1.10`
-- [ ] Application receives `MESH_COS_SLACK_HITL_REQUIRED=true`
-- [ ] Application receives `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`
-- [ ] Slack identity/verifier/Socket Mode protected files are mounted read-only
-- [ ] Remote MCP startup/readiness fails closed when deployment identity, notice verification, or active Socket Mode HITL boundary is missing
+- [ ] canonical ledger is staged only if missing and validated before deployment
+- [ ] tunnel runtime key remains outside candidate/active environment files, owner `65532:65532`, mode `0400`
+- [ ] Slack HITL protected configuration runs against the staged candidate image
+- [ ] Slack protected files remain runtime-owned, mode `0400`, and read-only mounted
+- [ ] staged `cos-mcp/.env.runtime` is generated with no tunnel secret, Slack token, or human Slack identifier value
+- [ ] active `.env`, Compose, and release metadata are not promoted before candidate health
+- [ ] candidate application receives `MESH_COS_DEPLOYMENT_RELEASE=4.1.11`
+- [ ] application receives `MESH_COS_SLACK_HITL_REQUIRED=true`
+- [ ] application receives `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`
+- [ ] remote MCP startup/readiness fails closed when deployment identity, notice verification, or active Socket Mode HITL boundary is missing
 - [ ] 2 CPU / 24 GiB / no PID limit policy validated
-- [ ] Host/runtime preflight passes
-- [ ] Compose renders with `pull_policy: never`
-- [ ] Containers become healthy
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.10`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
-- [ ] Hosted `/readyz` reports `slack_hitl_ready=true`
-- [ ] Post-deploy verifier executes a real read-only `registry.get_agent` MCP call from the tunnel network namespace
-- [ ] Public `tools/list` remains exactly 27 canonical CoS tools with closed schemas
-- [ ] Human-only tools remain absent from agent-facing catalogs
-- [ ] Scheduled idempotency/lifecycle regression remains green
+- [ ] staged-candidate preflight passes
+- [ ] candidate Compose renders with `pull_policy: never`
+- [ ] both candidate containers become healthy
+- [ ] active descriptors are promoted only after health
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.11`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
+- [ ] hosted `/readyz` reports `slack_hitl_ready=true`
+- [ ] post-deploy verifier executes a real read-only `registry.get_agent` call from the tunnel network namespace
+- [ ] public `tools/list` remains exactly 27 canonical CoS tools with closed schemas
+- [ ] human-only tools remain absent from agent-facing catalogs
+- [ ] scheduled idempotency/lifecycle regression remains green
 - [ ] CoS `slack-adapter` exposes `bind_notice` only and cannot record/infer a human decision
 - [ ] `COMPLETED != VERIFIED` remains enforced
-- [ ] `mesh-cos-mcp` remains non-root UID/GID 65532, read-only, no-new-privileges, no Docker socket
-- [ ] Direct non-tunnel MCP request is denied
-- [ ] Post-deploy state/configuration backup and SHA-256 verification pass
+- [ ] application remains non-root UID/GID 65532, read-only, no-new-privileges, no Docker socket
+- [ ] direct non-tunnel MCP request is denied
+- [ ] post-deploy backup and SHA-256 verification pass
 
-## v4.1.10 ChatGPT and Slack acceptance
+## v4.1.11 ChatGPT and Slack acceptance
 
-- [ ] Local image is `mesh-cos-mcp:qnap-v4.1.10`, running and healthy
-- [ ] `.env` and bundle metadata both report release `4.1.10`
-- [ ] Running OCI version is `4.1.10-qnap` and revision equals bundle `commit=`
-- [ ] Installed **Mesh CoS MCP** ChatGPT app connects through the Secure MCP Tunnel
+- [ ] local image is `mesh-cos-mcp:qnap-v4.1.11`, running and healthy
+- [ ] active `.env` and active release metadata both report `4.1.11`
+- [ ] running OCI version is `4.1.11-qnap` and revision equals staged bundle `commit=`
+- [ ] installed **Mesh CoS MCP** ChatGPT app connects through the Secure MCP Tunnel
 - [ ] Scan Tools returns exactly 27 canonical CoS tools
 - [ ] 10-agent roster is ACTIVE and Devil's Advocate remains a shared Skill, not an agent principal
-- [ ] Every successful governed envelope reports `mcp_version=4.0.0`, `deployment_release=4.1.10`, and `agent_id=cos`
-- [ ] Audit chain remains valid
-- [ ] Synthetic scheduled exact-once/lifecycle acceptance passes
-- [ ] Official OpenAI Workspace Agent creates the synthetic HITL parent as ChatGPT/ChatGPT Agents, not as MK
-- [ ] Provider-verified notice binding succeeds for exact Approval ID/thread/fingerprint
-- [ ] An ordinary thread message containing `APPROVE <Approval ID>` leaves the canonical approval PENDING
+- [ ] every successful governed envelope reports `mcp_version=4.0.0`, `deployment_release=4.1.11`, and `agent_id=cos`
+- [ ] audit chain remains valid
+- [ ] synthetic scheduled exact-once/lifecycle acceptance passes
+- [ ] official OpenAI Workspace Agent creates the synthetic HITL parent as ChatGPT/ChatGPT Agents, not as MK
+- [ ] provider-verified notice binding succeeds for exact Approval ID/thread/fingerprint
+- [ ] ordinary thread text containing `APPROVE <Approval ID>` leaves canonical approval PENDING
 - [ ] MK invokes `/mesh-approval APPROVE <Approval ID>` through Slack
-- [ ] Active Socket Mode boundary receives the slash-command envelope and the non-MCP human-ingress service records canonical principal `michael`
-- [ ] Fresh `approval.get` reflects the exact synthetic canonical decision
-- [ ] No prospect Gmail, publication, commercial commitment, or other consequential external action occurs during acceptance
-- [ ] Google TaskLedger operating mirror is reconciled when the exact source connector is available; no shadow workbook is substituted
-- [ ] Production certification closes only with zero open CRITICAL/HIGH defects and no required acceptance blocker
+- [ ] Socket Mode non-MCP human ingress records canonical principal `michael`
+- [ ] fresh `approval.get` reflects the exact synthetic canonical decision
+- [ ] no prospect Gmail, publication, commercial commitment, or other consequential external action occurs during acceptance
+- [ ] TaskLedger operating mirror is reconciled when the exact source connector is available; no shadow workbook is substituted
+- [ ] production certification closes only with zero open CRITICAL/HIGH defects and no required acceptance blocker

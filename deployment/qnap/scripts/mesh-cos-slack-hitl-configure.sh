@@ -1,8 +1,13 @@
 #!/bin/sh
 set -u
 
-SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-/share/Docker}
+SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-}
+if [ -z "$SCRIPT_ROOT" ]; then
+  SCRIPT_ROOT=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd -P) || { echo "ERROR: unable to resolve deployment bundle root" >&2; exit 1; }
+fi
+BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
+CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
 SECRET_DIR="$APP_ROOT/secrets"
 APPROVER_FILE=${QNAP_SLACK_APPROVER_USER_ID_FILE:-$SECRET_DIR/slack-approver-user-id}
 VERIFIER_FILE=${QNAP_SLACK_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
@@ -12,7 +17,7 @@ MESH_GID=${MESH_GID:-65532}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
 MESH_COS_SCRIPT=mesh-cos-slack-hitl-configure.sh
-export QNAP_SCRIPT_ROOT QNAP_APP_ROOT MESH_UID MESH_GID MESH_COS_SCRIPT
+export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT MESH_UID MESH_GID MESH_COS_SCRIPT
 
 [ -r "$OBS_LIB" ] || { echo "ERROR: observability helper missing: $OBS_LIB" >&2; exit 1; }
 . "$OBS_LIB"
@@ -58,14 +63,13 @@ write_protected_file() {
 }
 
 mesh_set_stage prepared_release
-ENV_FILE="$APP_ROOT/.env"
-[ -r "$ENV_FILE" ] || fail "prepared release .env is required; run mesh-cos-mcp-prepare.sh first"
+[ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run mesh-cos-mcp-prepare.sh first"
 set -a
-. "$ENV_FILE"
+. "$CANDIDATE_ENV_FILE"
 set +a
 MESH_IMAGE=${MESH_COS_IMAGE:-}
-[ -n "$MESH_IMAGE" ] || fail "prepared release does not define MESH_COS_IMAGE"
-docker image inspect "$MESH_IMAGE" >/dev/null 2>&1 || fail "prepared Mesh release image is unavailable"
+[ -n "$MESH_IMAGE" ] || fail "prepared candidate release does not define MESH_COS_IMAGE"
+docker image inspect "$MESH_IMAGE" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable"
 
 mesh_set_stage filesystem
 mkdir -p "$SECRET_DIR" || fail "unable to create Slack HITL secrets directory"
@@ -87,10 +91,7 @@ mesh_set_stage verifier_token
 if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ] || [ ! -s "$VERIFIER_FILE" ]; then
   read_secret_tty "Slack read-only verifier bot token (input hidden): " "Slack verifier token"
   [ -n "$SECRET_VALUE" ] || fail "Slack verifier token cannot be empty"
-  printf '%s' "$SECRET_VALUE" | grep -Eq '^xoxb-' || {
-    unset SECRET_VALUE
-    fail "Slack verifier must use a bot token"
-  }
+  printf '%s' "$SECRET_VALUE" | grep -Eq '^xoxb-' || { unset SECRET_VALUE; fail "Slack verifier must use a bot token"; }
   write_protected_file "$VERIFIER_FILE" "$SECRET_VALUE"
   unset SECRET_VALUE
   mesh_log INFO slack_verifier_file "status=staged value_logged=false"
@@ -102,10 +103,7 @@ mesh_set_stage socket_app_token
 if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ] || [ ! -s "$SOCKET_APP_FILE" ]; then
   read_secret_tty "Slack Socket Mode app-level token (input hidden): " "Slack Socket Mode app token"
   [ -n "$SECRET_VALUE" ] || fail "Slack Socket Mode app token cannot be empty"
-  printf '%s' "$SECRET_VALUE" | grep -Eq '^xapp-' || {
-    unset SECRET_VALUE
-    fail "Slack Socket Mode requires an app-level xapp token"
-  }
+  printf '%s' "$SECRET_VALUE" | grep -Eq '^xapp-' || { unset SECRET_VALUE; fail "Slack Socket Mode requires an app-level xapp token"; }
   write_protected_file "$SOCKET_APP_FILE" "$SECRET_VALUE"
   unset SECRET_VALUE
   mesh_log INFO slack_socket_app_file "status=staged value_logged=false"

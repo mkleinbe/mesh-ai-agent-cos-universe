@@ -2,6 +2,67 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.11 - 2026-08-26 - QNAP Versioned Release Staging Remediation
+
+### Live QNAP deployment defect remediation
+
+- Superseded the published v4.1.10 QNAP artifact after a real deployment exposed a release-layout defect rather than a checksum or canonical-state failure.
+- Confirmed v4.1.10 operator scripts defaulted helper lookup to `/share/Docker`, violating the established versioned release staging convention and causing the staged bundle to miss its bundled observability helper.
+- Confirmed preflight and preparation bound candidate identity to active `/share/Docker/cos-mcp` configuration, allowing a staged v4.1.10 preflight to report active v4.1.8 and causing the later fail-closed release-metadata mismatch.
+- Preserved the successful pre-deploy online SQLite backup, active v4.1.8 runtime, canonical TaskLedger, tunnel identity, Slack protected configuration, and qnet/static networking throughout the failed attempt.
+- Classified the observed 96 percent application-filesystem utilization as an operational headroom warning, not the causal deployment failure, because the absolute free-space gate passed.
+
+### Versioned staging and promotion contract
+
+- Restored the canonical release execution location `/share/Docker/cos-mcp/releases/vX.Y.Z` while retaining `/share/Docker/cos-mcp` as the canonical active application/state root.
+- Made operator/helper scripts self-resolve their extracted release root so no helper scripts are copied into `/share/Docker`.
+- Bound staged release metadata, build context, Compose, and generated `.env.runtime` to the versioned release payload rather than the active application root.
+- Added generic semantic release normalization that removes only a leading Git `v`; genuine requested-versus-staged release mismatches remain hard failures.
+- Removed the normal requirement for `sudo` to preserve `MESH_COS_DEPLOYMENT_RELEASE`; staged release metadata is the default candidate identity source.
+- Separated active-production and staged-candidate identities in preflight so an older active release is expected before candidate promotion.
+- Promote active `.env`, Compose, and release metadata only after both candidate containers are healthy, then perform governed verification and post-deploy backup.
+
+### BDD, TDD, verification, and security
+
+- Added RED-first regression coverage and ready QNAP-074 through QNAP-082 scenarios for versioned execution, helper-root resolution, active/candidate separation, semantic normalization, mismatch rejection, sudo behavior, post-health promotion, rollback/state preservation, BusyBox compatibility, and unchanged authority boundaries.
+- Added POSIX-shell versioned-layout regressions plus exact-candidate bundle, Compose, OCI provenance, hardened-runtime, ingress-denial, restart, persistence, and SQLite backup verification.
+- Added v4.1.11 root-cause, targeted security, independent verification, release, operator, and hosted-acceptance documentation.
+- Security applicability remains TARGETED. No MCP tool, agent, human-approval, network, persistence, or commercial authority is widened.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, v4.1.10 scheduled/Slack HITL controls, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
+## 4.1.10 - 2026-08-26 - Scheduled Automation and Slack HITL Hardening
+
+### Scheduled execution integrity
+
+- Required each governed Scheduled Task logical occurrence to derive an immutable execution identity and pass it explicitly as `task.intake.idempotency_key` so replay reuses the canonical task instead of creating duplicates.
+- Reconciled scheduled execution with the canonical lifecycle `INTAKE -> TRIAGED -> PLANNED -> ASSIGNED -> IN_PROGRESS -> QA -> COMPLETED`, followed by separate verification.
+- Preserved due-time semantics and distinguished dispatcher execution acceptance from the business outcome of a scheduled occurrence.
+
+### Slack HITL trust boundary
+
+- Provider-verifies and binds an official ChatGPT/ChatGPT Agents bot-authored parent notice rather than accepting user-scoped Slack connector authorship as governed notice evidence.
+- Removed agent-accessible free-text Slack human-decision ingestion and kept `approval.record_decision` human-principal-only.
+- Added a protected Slack verifier credential and authenticated outbound Socket Mode app-level credential as read-only runtime files.
+- Added a dedicated non-MCP `/mesh-approval` slash-command boundary for canonical human decisions, validating governed channel, protected human identity, exact Approval ID, PENDING state, provider-verified notice binding, payload fingerprint, and replay state.
+- Explicitly treated ordinary Slack text, reactions, copied APPROVE text, and user-attributed application posts as non-authoritative evidence only.
+- Made runtime readiness fail closed when required Slack notice verification or authenticated Socket Mode human interaction cannot initialize or remain active.
+
+### BDD, TDD, QNAP, and security
+
+- Added ready SCH-HITL-001 through SCH-HITL-007 behavior scenarios covering scheduled idempotency/lifecycle, official OpenAI notice authorship, authenticated human decision mapping, negative identity/binding controls, user-impersonation prohibition, and production Slack HITL preflight.
+- Added deterministic positive and negative tests for Slack bot notice binding, Socket Mode transport, non-MCP human ingress, protected file loading, secret non-disclosure, and QNAP permission/mount/readiness handling.
+- Advanced the QNAP release bundle, deployment identity, image label, CI, release workflow, operator acceptance material, and targeted security review to `4.1.10` / `v4.1.10`.
+- Published the v4.1.10 release artifact from commit `32178b19dbe11ef8a208082de8ee96c5197b6b71`; the later v4.1.11 remediation supersedes its deployment layout without rewriting this release history.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
 ## 4.1.9 - 2026-08-25 - Documentation and Release Closeout
 
 ### Documentation and release integrity

@@ -1,27 +1,33 @@
 # Upgrade Checklist
 
-- [ ] Candidate passes BDD, unit, integration, bundle, container, security, preflight, provenance, and hosted-acceptance contract checks
+- [ ] Candidate passes BDD, unit, integration, MCP-contract, bundle, container, security, preflight, provenance, and hosted-acceptance contract checks
 - [ ] SQLite schema compatibility evaluated
-- [ ] Approved v4.1.7 release ZIP extracted into `/share/Docker` without deleting `/share/Docker/cos-mcp/state` or `secrets`
+- [ ] Approved v4.1.8 release ZIP extracted into `/share/Docker` without deleting `/share/Docker/cos-mcp/state` or `secrets`
 - [ ] Human release/deployment approval recorded
 - [ ] QNAP operator uses `sudo` for Docker authority: `cd /share/Docker && sudo sh mesh-cos-mcp-deploy.sh`
 - [ ] Automated pre-deploy backup completes when an existing service is running
 - [ ] Existing canonical TaskLedger is preserved
 - [ ] Existing Secure MCP tunnel ID and runtime-key file are preserved
-- [ ] `release-metadata.txt` reports `version=4.1.7` and a valid release commit
-- [ ] Any existing `mesh-cos-mcp:qnap-v4.1.7` image is reused only when OCI version/revision match the extracted release metadata
-- [ ] Provenance mismatch forces a rebuild from the extracted v4.1.7 build context
+- [ ] `release-metadata.txt` reports `version=4.1.8` and a valid release commit
+- [ ] Any existing `mesh-cos-mcp:qnap-v4.1.8` image is reused only when OCI version/revision match the extracted release metadata
+- [ ] Provenance mismatch forces a rebuild from the extracted v4.1.8 build context
 - [ ] Built/reused image labels are verified before image ID is recorded
-- [ ] Tunnel RepoDigest/image ID is generated and verified automatically
-- [ ] Compose passes `MESH_COS_DEPLOYMENT_RELEASE=4.1.7` to `mesh-cos-mcp`
+- [ ] Compose passes `MESH_COS_DEPLOYMENT_RELEASE=4.1.8` to `mesh-cos-mcp`
 - [ ] Automated host preflight passes
 - [ ] Automated deployment, health wait, least-privilege/image/resource verification, and post-deploy backup pass
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.7`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
-- [ ] Post-deploy verifier executes a real read-only `registry.get_agent` `tools/call` through the tunnel network namespace
-- [ ] Governed tool envelope verification passes with `mcp_version=4.0.0`, `deployment_release=4.1.7`, and `agent_id=cos`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.8`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
+- [ ] Post-deploy verifier executes a real read-only governed MCP call through the tunnel network namespace
+- [ ] Public `tools/list` input schemas match the checked-in runtime schema registry
+- [ ] Invalid structured input returns bounded `validation_failed` field details without raw exceptions
+- [ ] `task.get` and `task.decompose` resolve the same canonical task identifier when the documented `parent_task_id` field is used
+- [ ] Authorized declared Skills resolve as `CHATGPT_SKILL_HANDOFF`; unknown and unauthorized Skills fail closed
+- [ ] Client-supplied executable Skill/code fields fail validation and are never executed
+- [ ] `agentops.recommend` accepts its documented minimum contract
+- [ ] `COMPLETED != VERIFIED` remains enforced
+- [ ] Human-only operations remain absent from agent-facing catalogs
 - [ ] Verified dated backup exists under `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"`
 - [ ] Long-running `mesh-cos-mcp` remains UID/GID 65532 despite host-side sudo deployment invocation
 - [ ] Direct non-tunnel `/mcp` ingress remains denied
-- [ ] Re-run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app, including the ten-call sequential transport regression
-- [ ] Every successful hosted tool response reports `mcp_version=4.0.0`, `deployment_release=4.1.7`, and `agent_id=cos`
-- [ ] Close production deployment acceptance only after v4.1.7 local provenance/envelope verification and hosted ChatGPT/Tunnel acceptance pass without container restart between calls
+- [ ] Re-run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app
+- [ ] Every successful hosted tool response reports `mcp_version=4.0.0`, `deployment_release=4.1.8`, and `agent_id=cos`
+- [ ] Close production deployment acceptance only after v4.1.8 local verification and hosted ChatGPT/Tunnel acceptance pass

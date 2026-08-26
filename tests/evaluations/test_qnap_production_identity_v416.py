@@ -42,7 +42,7 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     )
 
 
-def test_active_release_train_is_v4112_and_ci_uses_setup_node_v7() -> None:
+def test_active_release_train_is_v4113_and_ci_uses_setup_node_v7() -> None:
     dockerfile = read("Dockerfile")
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
@@ -50,20 +50,22 @@ def test_active_release_train_is_v4112_and_ci_uses_setup_node_v7() -> None:
     ci = read(".github/workflows/ci.yml")
     release = read(".github/workflows/release-production-readiness.yml")
 
-    assert "IMAGE_VERSION=4.1.12-qnap" in dockerfile
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.12" in env_example
+    assert "IMAGE_VERSION=4.1.13-qnap" in dockerfile
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.13" in env_example
     assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
     assert "mesh_candidate_release" in prepare
-    assert "VERSION=${1:-4.1.12}" in builder
+    assert "VERSION=${1:-4.1.13}" in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "v4.1.12" in ci
-    assert "TAG: v4.1.12" in release
-    assert "v4.1.12 QNAP Release-Root Bootstrap" in release
+    assert "Build and inspect v4.1.13 release bundle" in ci
+    assert "mesh-cos-mcp-qnap-v4.1.13.zip" in ci
+    assert "DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK" in ci
+    assert "TAG: v4.1.13" in release
+    assert "v4.1.13 Slack Approver Bootstrap" in release
 
 
-def test_historical_and_v4112_current_docs_are_packaged() -> None:
+def test_historical_and_v4113_current_docs_are_packaged() -> None:
     builder = read("scripts/build-qnap-release-bundle.sh")
     for path in [
         "docs/qnap-security-review-v4.1.6.md",
@@ -98,15 +100,21 @@ def test_historical_and_v4112_current_docs_are_packaged() -> None:
         "docs/verification-v4.1.12-qnap-release-root-bootstrap.md",
         "docs/chatgpt-published-app-production-acceptance-v4.1.12.md",
         "specs/qnap-release-root-bootstrap-v4.1.12.feature",
+        "docs/qnap-security-review-v4.1.13.md",
+        "docs/qnap-slack-approver-bootstrap-v4.1.13.md",
+        "docs/release-4.1.13-slack-approver-bootstrap.md",
+        "docs/verification-v4.1.13-slack-approver-bootstrap.md",
+        "docs/chatgpt-published-app-production-acceptance-v4.1.13.md",
+        "specs/qnap-slack-approver-bootstrap-v4.1.13.feature",
     ]:
         assert (ROOT / path).is_file()
         assert Path(path).name in builder
 
 
-def test_chatgpt_acceptance_requires_dual_identity_after_v4112_deploy() -> None:
+def test_chatgpt_acceptance_requires_dual_identity_after_v4113_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.1.12",
+        "v4.1.13",
         "mcp_version",
         "4.0.0",
         "deployment_release",

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION=${1:-4.1.12}
+VERSION=${1:-4.1.13}
 TAG="v${VERSION}"
 BUNDLE=${BUNDLE_DIR:-dist/qnap-bundle}
 RELEASE_DIR="$BUNDLE/v${VERSION}"
@@ -44,18 +44,21 @@ cp docs/qnap-security-review-v4.1.9.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-security-review-v4.1.10.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-security-review-v4.1.11.md "$RELEASE_DIR/cos-mcp/"
 [ -f docs/qnap-security-review-v4.1.12.md ] && cp docs/qnap-security-review-v4.1.12.md "$RELEASE_DIR/cos-mcp/"
+[ -f docs/qnap-security-review-v4.1.13.md ] && cp docs/qnap-security-review-v4.1.13.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-deployment-observability-standard.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-mcp-502-debugging-v4.1.4.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-release-identity-debugging-v4.1.5.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-image-provenance-envelope-debugging-v4.1.7.md "$RELEASE_DIR/cos-mcp/"
 cp docs/qnap-versioned-release-staging-v4.1.11.md "$RELEASE_DIR/cos-mcp/"
 [ -f docs/qnap-release-root-bootstrap-v4.1.12.md ] && cp docs/qnap-release-root-bootstrap-v4.1.12.md "$RELEASE_DIR/cos-mcp/"
+[ -f docs/qnap-slack-approver-bootstrap-v4.1.13.md ] && cp docs/qnap-slack-approver-bootstrap-v4.1.13.md "$RELEASE_DIR/cos-mcp/"
 cp docs/chatgpt-published-app-production-acceptance-v4.1.6.md "$RELEASE_DIR/cos-mcp/"
 cp docs/chatgpt-published-app-production-acceptance-v4.1.8.md "$RELEASE_DIR/cos-mcp/"
 cp docs/chatgpt-published-app-production-acceptance-v4.1.9.md "$RELEASE_DIR/cos-mcp/"
 cp docs/chatgpt-published-app-production-acceptance-v4.1.10.md "$RELEASE_DIR/cos-mcp/"
 cp docs/chatgpt-published-app-production-acceptance-v4.1.11.md "$RELEASE_DIR/cos-mcp/"
 [ -f docs/chatgpt-published-app-production-acceptance-v4.1.12.md ] && cp docs/chatgpt-published-app-production-acceptance-v4.1.12.md "$RELEASE_DIR/cos-mcp/"
+[ -f docs/chatgpt-published-app-production-acceptance-v4.1.13.md ] && cp docs/chatgpt-published-app-production-acceptance-v4.1.13.md "$RELEASE_DIR/cos-mcp/"
 cp docs/release-4.1.4-qnap-modern-mcp-transport.md "$RELEASE_DIR/cos-mcp/"
 cp docs/release-4.1.5-qnap-release-identity.md "$RELEASE_DIR/cos-mcp/"
 cp docs/release-4.1.6-secure-mcp-published-app-identity.md "$RELEASE_DIR/cos-mcp/"
@@ -65,8 +68,10 @@ cp docs/release-4.1.9-documentation-closeout.md "$RELEASE_DIR/cos-mcp/"
 cp docs/release-4.1.10-scheduled-slack-hitl.md "$RELEASE_DIR/cos-mcp/"
 cp docs/release-4.1.11-qnap-versioned-release-staging.md "$RELEASE_DIR/cos-mcp/"
 [ -f docs/release-4.1.12-qnap-release-root-bootstrap.md ] && cp docs/release-4.1.12-qnap-release-root-bootstrap.md "$RELEASE_DIR/cos-mcp/"
+[ -f docs/release-4.1.13-slack-approver-bootstrap.md ] && cp docs/release-4.1.13-slack-approver-bootstrap.md "$RELEASE_DIR/cos-mcp/"
 cp docs/verification-v4.1.11-qnap-versioned-release-staging.md "$RELEASE_DIR/cos-mcp/"
 [ -f docs/verification-v4.1.12-qnap-release-root-bootstrap.md ] && cp docs/verification-v4.1.12-qnap-release-root-bootstrap.md "$RELEASE_DIR/cos-mcp/"
+[ -f docs/verification-v4.1.13-slack-approver-bootstrap.md ] && cp docs/verification-v4.1.13-slack-approver-bootstrap.md "$RELEASE_DIR/cos-mcp/"
 cp specs/qnap-published-chatgpt-app-v4.1.6.feature "$RELEASE_DIR/cos-mcp/"
 cp specs/qnap-image-provenance-envelope-v4.1.7.feature "$RELEASE_DIR/cos-mcp/"
 cp specs/qnap-mcp-production-acceptance-v4.1.8.feature "$RELEASE_DIR/cos-mcp/"
@@ -74,6 +79,7 @@ cp specs/qnap-release-closeout-v4.1.9.feature "$RELEASE_DIR/cos-mcp/"
 cp specs/scheduled-automation-slack-hitl-v4.1.10.feature "$RELEASE_DIR/cos-mcp/"
 cp specs/qnap-versioned-release-staging-v4.1.11.feature "$RELEASE_DIR/cos-mcp/"
 [ -f specs/qnap-release-root-bootstrap-v4.1.12.feature ] && cp specs/qnap-release-root-bootstrap-v4.1.12.feature "$RELEASE_DIR/cos-mcp/"
+[ -f specs/qnap-slack-approver-bootstrap-v4.1.13.feature ] && cp specs/qnap-slack-approver-bootstrap-v4.1.13.feature "$RELEASE_DIR/cos-mcp/"
 cp RELEASE.md SECURITY.md "$RELEASE_DIR/cos-mcp/"
 printf 'tag=%s\nversion=%s\ncommit=%s\n' "$TAG" "$VERSION" "$COMMIT" > "$RELEASE_DIR/cos-mcp/release-metadata.txt"
 
@@ -121,6 +127,15 @@ if [ "$VERSION" = "4.1.12" ]; then
   test -f "$RELEASE_DIR/cos-mcp/verification-v4.1.12-qnap-release-root-bootstrap.md"
   test -f "$RELEASE_DIR/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.12.md"
   test -f "$RELEASE_DIR/cos-mcp/qnap-release-root-bootstrap-v4.1.12.feature"
+fi
+
+if [ "$VERSION" = "4.1.13" ]; then
+  test -f "$RELEASE_DIR/cos-mcp/qnap-security-review-v4.1.13.md"
+  test -f "$RELEASE_DIR/cos-mcp/qnap-slack-approver-bootstrap-v4.1.13.md"
+  test -f "$RELEASE_DIR/cos-mcp/release-4.1.13-slack-approver-bootstrap.md"
+  test -f "$RELEASE_DIR/cos-mcp/verification-v4.1.13-slack-approver-bootstrap.md"
+  test -f "$RELEASE_DIR/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.13.md"
+  test -f "$RELEASE_DIR/cos-mcp/qnap-slack-approver-bootstrap-v4.1.13.feature"
 fi
 
 chmod +x "$RELEASE_DIR"/*.sh "$RELEASE_DIR/cos-mcp/qnap-environment-probe.sh"

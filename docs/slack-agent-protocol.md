@@ -8,14 +8,14 @@ Slack is the observable collaboration and human-interaction layer for agent coor
 - Channel ID: `C0BRL4GCL3A`
 - Configuration: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
 
-Do not commit bot tokens, app-level tokens, verifier credentials, or personal Slack IDs. The human approver Slack ID is a protected runtime binding and maps only to canonical principal `michael`.
+Do not commit bot tokens, app-level tokens, verifier credentials, or other authentication credentials. The verified human approver Slack user ID is non-secret governed identity configuration and maps only to canonical principal `michael` inside the trusted human-interaction boundary.
 
 ## Slack identities and authority
 
 Four identity/transport classes are intentionally separate:
 
 1. **OpenAI notice author.** Governed HITL notices must be provider-authored by the official Slack identity for ChatGPT (`U0BKV7Z8M96`) or ChatGPT Agents (`U0BN8V2BU9Z`). ChatGPT Agents is preferred for scheduled agent delivery. A user-authored message, custom bot, or copied OpenAI display name cannot satisfy this control.
-2. **Human approval principal.** One immutable Slack user ID for MK is configured at deployment through `MESH_COS_SLACK_APPROVER_USER_ID_FILE` or, outside the QNAP production bundle, `MESH_COS_SLACK_APPROVER_USER_ID`. Its value is not committed or logged. It maps only to canonical principal `michael` after the trusted interactive boundary validates the provider envelope.
+2. **Human approval principal.** The verified Slack user ID for Michael/MK is `U01KG3CNYHK`. v4.1.13 carries this non-secret value as governed deployment configuration and materializes it into the protected `MESH_COS_SLACK_APPROVER_USER_ID_FILE` runtime binding. A Slack `D...` identifier is a direct-message/conversation Channel ID, not a user principal, and must fail closed if supplied as an approver identity. Eligible human user-principal forms begin with `U` or `W`.
 3. **Provider notice verifier.** `MESH_COS_SLACK_VERIFIER_TOKEN_FILE` points to a protected Slack bot credential used only to read the approval-notice thread from the provider and bind the bot-authored notice to the canonical Approval ID and payload fingerprint.
 4. **Human interaction ingress.** `MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE` points to a protected Slack app-level `xapp-` token. The QNAP runtime opens an outbound Socket Mode connection and accepts canonical human decisions only from the dedicated `/mesh-approval` slash-command envelope.
 
@@ -78,7 +78,7 @@ sequenceDiagram
     MK->>S: /mesh-approval APPROVE|REJECT|CHANGES Approval-ID
     S->>SM: authenticated Socket Mode slash_commands envelope
     SM->>H: bounded envelope over non-MCP local bridge
-    H->>H: verify channel, protected MK identity, command, approval, bot binding, fingerprint, replay
+    H->>H: verify channel, configured MK user ID, command, approval, bot binding, fingerprint, replay
     H->>A: record decision as canonical principal michael
     A->>L: canonical approval decision and task transition
     COS->>A: fresh approval.get before consequential action
@@ -128,9 +128,9 @@ The QNAP production bundle sets `MESH_COS_SLACK_HITL_REQUIRED=true` and file-mou
 
 The runtime also fixes `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`.
 
-`mesh-cos-slack-hitl-configure.sh` runs after the release image is prepared and before production activation. It captures the approver ID visibly, captures the verifier bot token and Socket Mode app-level token with terminal echo disabled, never logs any protected value, and normalizes governed secret files to the runtime UID/GID with mode `0400`.
+`mesh-cos-slack-hitl-configure.sh` runs after the release image is prepared and before production activation. Starting with v4.1.13, it does **not** prompt for the approver user ID. It validates and preserves an existing valid `U...`/`W...` identity when present, or stages governed default `U01KG3CNYHK` when the file is absent or forced reconfiguration is requested. It rejects `D...` conversation IDs explicitly. It captures only the verifier bot token and Socket Mode app-level token with terminal echo disabled when those credentials must be created or replaced, never logs credential values or the configured approver ID, and normalizes the identity/credential files to runtime UID/GID with mode `0400`.
 
-Production preflight requires the governed channel, protected human identity, canonical principal `michael`, exact official OpenAI notice-author set, `xoxb-` provider-verifier credential, `xapp-` Socket Mode credential, `/mesh-approval`, and canonical audit integrity. Runtime readiness also fails closed when HITL is required and the Socket Mode connection is inactive.
+Production preflight requires the governed channel, validated human identity, canonical principal `michael`, exact official OpenAI notice-author set, `xoxb-` provider-verifier credential, `xapp-` Socket Mode credential, `/mesh-approval`, and canonical audit integrity. Runtime readiness also fails closed when HITL is required and the Socket Mode connection is inactive.
 
 ## Answer Desk separation
 
@@ -147,6 +147,6 @@ Agents should post only when work is accepted, state materially changes, evidenc
 - Verify the bot-authored notice against provider state, Approval ID, channel/thread binding, and immutable payload fingerprint.
 - Require the dedicated Socket Mode slash-command envelope for canonical human decisions. Ordinary user-attributed messages are evidence only.
 - Keep human-only approval authority outside the agent-callable MCP surface.
-- Keep verifier/app credentials and the personal human Slack identity out of source, prompts, logs, TaskLedger evidence text, and generated artifacts.
+- Keep verifier/app credentials out of source, prompts, logs, TaskLedger evidence text, and generated artifacts. The governed approver user ID is non-secret configuration but should still be omitted from routine logs and TaskLedger evidence.
 - Minimize copied sensitive data and reference protected source objects where possible.
 - Keep formal approvals and consequential state in the canonical ledger.

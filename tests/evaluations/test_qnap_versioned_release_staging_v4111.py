@@ -87,4 +87,4 @@ def test_v4111_release_evidence_remains_historical_and_reproducible() -> None:
     assert "v4.1.11" in historical_release
     assert "QNAP-074" in historical_spec
     assert "QNAP-082" in historical_spec
-    assert 'VERSION=${1:-4.1.12}' in builder
+    assert 'VERSION=${1:-4.1.13}' in builder

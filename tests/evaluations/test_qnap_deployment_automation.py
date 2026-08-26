@@ -88,10 +88,16 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
         assert "pwd -P" in script
 
 
-def test_slack_hitl_configuration_is_candidate_bound_and_protected() -> None:
+def test_slack_hitl_configuration_is_candidate_bound_protected_and_noninteractive_for_approver() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     assert 'CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}' in script
     assert "prepared candidate release .env.runtime is required" in script
+    assert "DEFAULT_APPROVER_USER_ID" in script
+    assert "U01KG3CNYHK" in script
+    assert "read_visible_tty" not in script
+    assert "Slack user ID for the human approval principal" not in script
+    assert "Slack conversation/DM channel ID is not a user ID" in script
+    assert "grep -Eq '^[UW][A-Z0-9]+$'" in script
     assert "Slack read-only verifier bot token (input hidden)" in script
     assert "Slack Socket Mode app-level token (input hidden)" in script
     assert "stty -echo" in script
@@ -243,19 +249,22 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_current_v4112_contract_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_current_v4113_contract_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.12}' in builder
+    assert 'VERSION=${1:-4.1.13}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
-    assert "qnap-security-review-v4.1.12.md" in builder
-    assert "qnap-release-root-bootstrap-v4.1.12.md" in builder
-    assert "release-4.1.12-qnap-release-root-bootstrap.md" in builder
-    assert "verification-v4.1.12-qnap-release-root-bootstrap.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.12.md" in builder
-    assert "qnap-release-root-bootstrap-v4.1.12.feature" in builder
+    for token in [
+        "qnap-security-review-v4.1.13.md",
+        "qnap-slack-approver-bootstrap-v4.1.13.md",
+        "release-4.1.13-slack-approver-bootstrap.md",
+        "verification-v4.1.13-slack-approver-bootstrap.md",
+        "chatgpt-published-app-production-acceptance-v4.1.13.md",
+        "qnap-slack-approver-bootstrap-v4.1.13.feature",
+    ]:
+        assert token in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder
@@ -285,6 +294,8 @@ def test_historical_release_behavior_specs_remain_retained() -> None:
         "qnap-release-closeout-v4.1.9.feature": ["QNAP-069", "QNAP-073"],
         "scheduled-automation-slack-hitl-v4.1.10.feature": ["SCH-HITL-001", "SCH-HITL-007"],
         "qnap-versioned-release-staging-v4.1.11.feature": ["QNAP-074", "QNAP-082"],
+        "qnap-release-root-bootstrap-v4.1.12.feature": ["QNAP-083", "QNAP-091"],
+        "qnap-slack-approver-bootstrap-v4.1.13.feature": ["QNAP-092", "QNAP-099"],
     }
     for filename, scenario_ids in historical.items():
         feature = text(ROOT / "specs" / filename)

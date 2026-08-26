@@ -12,6 +12,7 @@ SECRET_DIR="$APP_ROOT/secrets"
 APPROVER_FILE=${QNAP_SLACK_APPROVER_USER_ID_FILE:-$SECRET_DIR/slack-approver-user-id}
 VERIFIER_FILE=${QNAP_SLACK_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
 SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
+DEFAULT_APPROVER_USER_ID=${MESH_COS_SLACK_APPROVER_USER_ID:-U01KG3CNYHK}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
@@ -27,13 +28,6 @@ mesh_obs_init slack-hitl-configure || { echo "ERROR: unable to initialize deploy
 
 fail() { mesh_fail 1 "${MESH_COS_STAGE:-slack_hitl_configure}" "$1"; }
 info() { mesh_log INFO info "$1"; }
-
-read_visible_tty() {
-  prompt=$1
-  [ -r /dev/tty ] || fail "Slack approver identity input requires a TTY"
-  printf '%s' "$prompt" > /dev/tty
-  IFS= read -r REPLY < /dev/tty || fail "unable to read Slack approver identity"
-}
 
 read_secret_tty() {
   prompt=$1
@@ -62,6 +56,15 @@ write_protected_file() {
   mv "$incoming" "$target" || fail "unable to install protected runtime file"
 }
 
+validate_approver_user_id() {
+  APPROVER_VALUE_TO_VALIDATE=$1
+  case "$APPROVER_VALUE_TO_VALIDATE" in
+    D*) fail "Slack conversation/DM channel ID is not a user ID; expected a Slack user ID beginning with U or W" ;;
+  esac
+  printf '%s' "$APPROVER_VALUE_TO_VALIDATE" | grep -Eq '^[UW][A-Z0-9]+$' || fail "Slack approver user ID format is invalid; expected a Slack user ID beginning with U or W"
+  unset APPROVER_VALUE_TO_VALIDATE
+}
+
 mesh_set_stage prepared_release
 [ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run mesh-cos-mcp-prepare.sh first"
 set -a
@@ -77,13 +80,15 @@ chmod 0700 "$SECRET_DIR" 2>/dev/null || fail "unable to set Slack HITL secrets d
 
 mesh_set_stage approver_identity
 if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ] || [ ! -s "$APPROVER_FILE" ]; then
-  read_visible_tty "Slack user ID for the human approval principal Michael/MK: "
-  APPROVER_VALUE=$REPLY
-  printf '%s' "$APPROVER_VALUE" | grep -Eq '^[UW][A-Z0-9]+$' || fail "Slack approver user ID format is invalid"
+  APPROVER_VALUE=$DEFAULT_APPROVER_USER_ID
+  validate_approver_user_id "$APPROVER_VALUE"
   write_protected_file "$APPROVER_FILE" "$APPROVER_VALUE"
-  unset APPROVER_VALUE REPLY
-  mesh_log INFO slack_approver_identity "status=staged value_logged=false"
+  unset APPROVER_VALUE
+  mesh_log INFO slack_approver_identity "status=staged source=governed_default value_logged=false"
 else
+  APPROVER_VALUE=$(cat "$APPROVER_FILE") || fail "unable to read existing Slack approver identity file"
+  validate_approver_user_id "$APPROVER_VALUE"
+  unset APPROVER_VALUE
   info "preserving existing Slack approver identity file"
 fi
 

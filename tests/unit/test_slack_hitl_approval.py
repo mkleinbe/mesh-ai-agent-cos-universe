@@ -64,7 +64,10 @@ def _config() -> SlackHITLConfig:
     )
 
 
-def _client(messages: list[dict], callback: Callable[[str, dict, str], dict] | None = None) -> SlackWebClient:
+def _client(
+    messages: list[dict],
+    callback: Callable[[str, dict, str], dict] | None = None,
+) -> SlackWebClient:
     def transport(method: str, payload: dict, token: str) -> dict:
         if callback is not None:
             return callback(method, payload, token)
@@ -103,7 +106,9 @@ def test_bind_notice_requires_real_openai_bot_and_configured_approver_identity()
 
     assert binding["approval_id"] == approval_id
     assert binding["notice_author_user_id"] == CHATGPT_AGENTS_SLACK_USER_ID
-    assert binding["approver_user_id"] == APPROVER_USER_ID
+    assert binding["approver_identity_verified"] is True
+    assert "approver_user_id" not in binding
+    assert APPROVER_USER_ID not in str(binding)
     assert binding["approver_principal"] == "michael"
     assert ledger.get_record("approval_slack_binding", approval_id) == binding
     assert not hasattr(service, "ingest_decision")

@@ -28,19 +28,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build v4.1.11 QNAP deployment bundle
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.11
+      - name: Build v4.1.12 QNAP deployment bundle
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.12
+      - name: Verify v4.1.12 release-root archive contract
+        run: |
+          set -euo pipefail
+          ZIP=dist/mesh-cos-mcp-qnap-v4.1.12.zip
+          SHA="$ZIP.sha256"
+          test -f "$ZIP"
+          test -f "$SHA"
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.12.zip.sha256)
+          unzip -Z1 "$ZIP" > /tmp/v4112.entries
+          test -s /tmp/v4112.entries
+          if grep -Ev '^v4\.1\.12/' /tmp/v4112.entries; then
+            echo 'ERROR: release archive contains entries outside v4.1.12/' >&2
+            exit 1
+          fi
+          grep -qx 'v4.1.12/mesh-cos-mcp-deploy.sh' /tmp/v4112.entries
+          grep -qx 'v4.1.12/mesh-cos-mcp-preflight.sh' /tmp/v4112.entries
+          grep -qx 'v4.1.12/mesh-cos-mcp-verify.sh' /tmp/v4112.entries
+          grep -qx 'v4.1.12/cos-mcp/release-metadata.txt' /tmp/v4112.entries
+          grep -qx 'v4.1.12/cos-mcp/build-context/Dockerfile' /tmp/v4112.entries
+          unzip -p "$ZIP" v4.1.12/cos-mcp/release-metadata.txt | grep -q '^version=4.1.12$'
+          unzip -p "$ZIP" v4.1.12/cos-mcp/release-metadata.txt | grep -q "^commit=$GITHUB_SHA$"
+          ! unzip -Z1 "$ZIP" | grep -Eq '(^|/)(state|secrets)(/|$)|(^|/)\.env\.runtime$'
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.11
+          name: mesh-cos-mcp-qnap-v4.1.12
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.11.zip
-            dist/mesh-cos-mcp-qnap-v4.1.11.zip.sha256
-      - name: Create v4.1.11 release and semantic tag
+            dist/mesh-cos-mcp-qnap-v4.1.12.zip
+            dist/mesh-cos-mcp-qnap-v4.1.12.zip.sha256
+      - name: Create v4.1.12 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.1.11
-          ASSET: dist/mesh-cos-mcp-qnap-v4.1.11.zip
+          TAG: v4.1.12
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.12.zip
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -49,6 +71,6 @@ jobs:
           fi
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
-            --title "v4.1.11 QNAP Versioned Release Staging Remediation" \
+            --title "v4.1.12 QNAP Release-Root Bootstrap" \
             --notes-file RELEASE.md \
             "$ASSET" "$ASSET.sha256"

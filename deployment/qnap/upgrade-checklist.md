@@ -1,47 +1,55 @@
 # Upgrade Checklist
 
-- [ ] Exact v4.1.10 candidate passes ready BDD scenarios SCH-HITL-001 through SCH-HITL-007
-- [ ] Candidate passes dependency integrity, TypeScript MCP/Socket Mode checks, contract/package/document drift checks, Ruff, mypy, 100% Python coverage, Bandit, shell regressions, bundle, Compose, OCI provenance, container/runtime, backup, and security gates
+- [ ] Exact v4.1.11 candidate passes ready QNAP-074 through QNAP-082 scenarios and retained SCH-HITL-001 through SCH-HITL-007 scenarios
+- [ ] Candidate passes dependency integrity, TypeScript MCP/Socket Mode checks, contract/package/document drift checks, Ruff, mypy, 100% Python coverage, Bandit, POSIX shell regressions, bundle, Compose, OCI provenance, container/runtime, backup, and targeted security gates
 - [ ] SQLite schema compatibility evaluated
-- [ ] Approved v4.1.10 release ZIP extracted into `/share/Docker` without deleting `/share/Docker/cos-mcp/state` or `secrets`
+- [ ] Approved v4.1.11 ZIP and checksum staged under `/share/Docker/cos-mcp/releases/v4.1.11`
+- [ ] ZIP checksum verifies before extraction
+- [ ] Bundle extracts in place without deleting `/share/Docker/cos-mcp/state` or `secrets`
+- [ ] Helper/operator scripts remain in the versioned release directory; none are copied to `/share/Docker`
 - [ ] Human release/deployment authority is valid for the deployment
-- [ ] QNAP operator uses `sudo` for Docker authority: `cd /share/Docker && sudo sh mesh-cos-mcp-deploy.sh`
+- [ ] QNAP operator uses `sudo` for Docker authority from the versioned release directory
+- [ ] Normal deployment does not rely on sudo preserving `MESH_COS_DEPLOYMENT_RELEASE`
+- [ ] Standalone preflight reports active production release separately from staged candidate `4.1.11`
 - [ ] Automated pre-deploy backup completes when an existing service is running
 - [ ] Existing canonical TaskLedger is preserved
 - [ ] Existing Secure MCP tunnel ID and runtime-key file are preserved
 - [ ] Existing protected Slack approver-identity, verifier, and Socket Mode files are preserved unless explicit reconfiguration is requested
-- [ ] `release-metadata.txt` reports `version=4.1.10` and the exact release commit
-- [ ] Any existing `mesh-cos-mcp:qnap-v4.1.10` image is reused only when OCI version/revision match release metadata
-- [ ] Provenance mismatch forces a rebuild from the extracted v4.1.10 build context
-- [ ] Built/reused image labels are verified before image ID is recorded
-- [ ] Deployment orchestrator runs protected Slack HITL configuration after release preparation and before preflight
-- [ ] Protected Slack human identity file is present, non-empty, runtime-owned, mode `0400`, and not printed
-- [ ] Protected Slack provider-verifier bot token is present, non-empty, runtime-owned, mode `0400`, and not printed
-- [ ] Protected Slack Socket Mode app-level token is present, non-empty, runtime-owned, mode `0400`, and not printed
-- [ ] Generated `.env` contains no tunnel secret, Slack verifier/app token, or human Slack identifier value
-- [ ] Compose passes `MESH_COS_DEPLOYMENT_RELEASE=4.1.10` and `MESH_COS_SLACK_HITL_REQUIRED=true`
-- [ ] Compose configures `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`
-- [ ] Compose mounts Slack approver identity, verifier token, and Socket Mode app token read-only
-- [ ] Automated QNAP host/runtime preflight passes
-- [ ] Automated deployment, health wait, least-privilege/image/resource verification, and post-deploy backup pass
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.10`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
-- [ ] Hosted `/readyz` reports `slack_hitl_ready=true`
-- [ ] Post-deploy verifier executes a real read-only governed MCP call through the tunnel network namespace
-- [ ] Public `tools/list` remains the exact 27-tool CoS projection and matches checked-in schemas
-- [ ] Human-only `approval.record_decision` and `reliability.human_override` remain unavailable to agents
+- [ ] staged `cos-mcp/release-metadata.txt` reports `version=4.1.11` and exact release commit
+- [ ] candidate release identity derives from staged metadata and true mismatch remains fail-closed
+- [ ] any existing `mesh-cos-mcp:qnap-v4.1.11` image is reused only when OCI version/revision match staged release metadata
+- [ ] provenance mismatch forces rebuild from staged v4.1.11 build context
+- [ ] built/reused image labels are verified before image ID is recorded
+- [ ] staged `.env.runtime` contains no tunnel secret, Slack verifier/app token, or human Slack identifier value
+- [ ] active `.env`, Compose, and release metadata remain unchanged before candidate containers are healthy
+- [ ] deployment orchestrator runs Slack HITL protected configuration against the staged candidate
+- [ ] protected Slack human identity, verifier token, and Socket Mode token are present, runtime-owned, mode `0400`, and not printed
+- [ ] candidate Compose passes `MESH_COS_DEPLOYMENT_RELEASE=4.1.11` and `MESH_COS_SLACK_HITL_REQUIRED=true`
+- [ ] candidate Compose configures `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`
+- [ ] candidate Compose mounts Slack protected files read-only
+- [ ] staged-candidate QNAP host/runtime preflight passes
+- [ ] candidate application and tunnel containers become healthy
+- [ ] active `.env`, Compose, and release metadata promote only after health
+- [ ] automated least-privilege/image/resource verification and post-deploy backup pass
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.11`, `agent_id=cos`, and `transport=SECURE_MCP_TUNNEL`
+- [ ] hosted `/readyz` reports `slack_hitl_ready=true`
+- [ ] post-deploy verifier executes a real read-only governed MCP call through the tunnel network namespace
+- [ ] public `tools/list` remains the exact 27-tool CoS projection and matches checked-in schemas
+- [ ] exactly 10 agents remain registered and Devil's Advocate remains a shared Skill
+- [ ] human-only `approval.record_decision` and `reliability.human_override` remain unavailable to agents
 - [ ] CoS `slack-adapter` exposes `bind_notice` only; any human-decision operation is denied
-- [ ] Ordinary Slack messages cannot change canonical approval state
-- [ ] Scheduled execution reuses explicit `task.intake.idempotency_key` and follows canonical lifecycle through `QA`
+- [ ] ordinary Slack messages cannot change canonical approval state
+- [ ] scheduled execution reuses explicit `task.intake.idempotency_key` and follows canonical lifecycle through `QA`
 - [ ] `COMPLETED != VERIFIED` remains enforced
-- [ ] Verified dated backup exists under `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"`
-- [ ] Long-running `mesh-cos-mcp` remains UID/GID 65532 despite host-side sudo deployment invocation
-- [ ] Direct non-tunnel `/mcp` ingress remains denied
-- [ ] Run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app
-- [ ] Run `chatgpt-published-app-production-acceptance-v4.1.10.md`
-- [ ] Live official OpenAI Workspace Agent produces a provider-verified bot-authored synthetic HITL notice in `#mesh-agent-ops`
-- [ ] An ordinary `APPROVE <Approval ID>` thread message leaves the canonical approval PENDING
+- [ ] verified dated backup exists under `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"`
+- [ ] long-running application remains UID/GID 65532 despite host-side sudo deployment invocation
+- [ ] direct non-tunnel `/mcp` ingress remains denied
+- [ ] run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app
+- [ ] run `chatgpt-published-app-production-acceptance-v4.1.11.md`
+- [ ] live official OpenAI Workspace Agent produces a provider-verified bot-authored synthetic HITL notice
+- [ ] ordinary `APPROVE <Approval ID>` thread text leaves canonical approval PENDING
 - [ ] MK invokes `/mesh-approval APPROVE <Approval ID>` through Slack
-- [ ] Active Socket Mode boundary receives the slash-command envelope and the non-MCP human-ingress service records canonical principal `michael`
-- [ ] Fresh `approval.get` reflects the exact synthetic canonical decision with no external action taken
-- [ ] Google TaskLedger operating mirror is reconciled when the exact source connector is available; no shadow workbook is substituted
-- [ ] Production certification occurs only with zero open CRITICAL/HIGH defects and no required live acceptance blocker
+- [ ] active Socket Mode boundary records canonical principal `michael` through the non-MCP human ingress
+- [ ] fresh `approval.get` reflects the exact synthetic canonical decision with no external action taken
+- [ ] TaskLedger operating mirror is reconciled when the exact source connector is available; no shadow workbook is substituted
+- [ ] production certification occurs only with zero open CRITICAL/HIGH defects and no required live acceptance blocker

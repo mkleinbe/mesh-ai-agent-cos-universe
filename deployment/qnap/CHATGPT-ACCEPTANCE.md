@@ -1,10 +1,10 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this only after the **v4.1.11** versioned deployment path reports successful candidate health, promotion, verification, and post-deploy backup.
+Run this only after the **v4.1.12** deployment reports successful release-root validation, candidate health, promotion, verification, and post-deploy backup.
 
-The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.11**.
+The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.12**.
 
-v4.1.11 carries forward the v4.1.10 scheduled idempotency/lifecycle and Slack HITL hardening while correcting the QNAP release staging and promotion contract.
+v4.1.12 carries forward the scheduled idempotency/lifecycle, Slack HITL hardening, and v4.1.11 staged candidate controls while correcting the final archive/operator path mismatch.
 
 ## 1. Local deployment identity
 
@@ -19,11 +19,11 @@ sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').th
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires application image `mesh-cos-mcp:qnap-v4.1.11`, both containers healthy, and:
+PASS requires application image `mesh-cos-mcp:qnap-v4.1.12`, both containers healthy, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.11
+deployment_release: 4.1.12
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_ready: true
@@ -31,9 +31,18 @@ slack_hitl_ready: true
 
 Do not print protected Slack or tunnel files as part of acceptance.
 
-## 2. Release-staging evidence
+## 2. Release-root evidence
 
-Confirm the retained release directory exists at `/share/Docker/cos-mcp/releases/v4.1.11`. Active `.env`, active Compose, and active `release-metadata.txt` must all identify the promoted v4.1.11 deployment. The staged `release-metadata.txt` commit must match the released artifact commit. Do not delete the versioned release directory during acceptance.
+Confirm:
+
+- operator release root is `/share/Docker/cos-mcp/releases`;
+- retained release directory is `/share/Docker/cos-mcp/releases/v4.1.12`;
+- staged `release-metadata.txt` reports `version=4.1.12` and the released commit;
+- no loose Mesh operator helper was copied into `/share/Docker`;
+- no canonical TaskLedger or protected secret exists beneath the versioned release directory;
+- active `.env`, Compose, and active `release-metadata.txt` all identify the promoted v4.1.12 deployment.
+
+Do not delete the versioned release directory during acceptance.
 
 ## 3. Tool catalog
 
@@ -53,7 +62,7 @@ Call `skills.invoke_governed` for an authorized CoS Skill using a synthetic, non
 
 The CoS `slack-adapter` remains notice-binding only. It may bind provider-verified notice evidence but cannot ingest, infer, or submit a human approval decision. Any human-decision fields or operations must fail closed. `approval.record_decision` remains unavailable to the CoS.
 
-The human approval path is deliberately **not** an MCP tool. It is the QNAP-hosted authenticated Socket Mode `/mesh-approval` interaction boundary tested in `chatgpt-published-app-production-acceptance-v4.1.11.md`.
+The human approval path is deliberately **not** an MCP tool. It is the QNAP-hosted authenticated Socket Mode `/mesh-approval` interaction boundary tested in `chatgpt-published-app-production-acceptance-v4.1.12.md`.
 
 ## 6. AgentOps acceptance
 
@@ -89,6 +98,6 @@ Do not perform prospect sends, public publishing, client commitments, pricing/di
 
 ## 12. Pass rule
 
-Base v4.1.11 hosted acceptance passes only when the actual Mesh CoS MCP app demonstrates correct dual release identity, `slack_hitl_ready=true`, exact schema behavior, safe validation, canonical TaskLedger lookup, scheduled idempotency, lifecycle separation, governed Skill/adapter enforcement, AgentOps contract, authorization boundaries, and valid audit chain.
+Base v4.1.12 hosted acceptance passes only when the actual Mesh CoS MCP app demonstrates correct dual release identity, release-root provenance, `slack_hitl_ready=true`, exact schema behavior, safe validation, canonical TaskLedger lookup, scheduled idempotency, lifecycle separation, governed Skill/adapter enforcement, AgentOps contract, authorization boundaries, and valid audit chain.
 
-Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.11.md`, including the official OpenAI bot-authored notice, authenticated `/mesh-approval` human interaction, canonical approval readback, proof ordinary Slack text cannot approve, no unauthorized external action, and required TaskLedger mirror reconciliation. Zero open CRITICAL/HIGH defects and no required acceptance blocker are mandatory.
+Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.12.md`, including the official OpenAI bot-authored notice, authenticated `/mesh-approval` human interaction, canonical approval readback, proof ordinary Slack text cannot approve, no unauthorized external action, and required TaskLedger mirror reconciliation. Zero open CRITICAL/HIGH defects and no required acceptance blocker are mandatory.

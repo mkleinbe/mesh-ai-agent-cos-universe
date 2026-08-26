@@ -22,9 +22,9 @@ def test_v4112_behavior_contract_is_ready_and_complete() -> None:
         assert f"Scenario: QNAP-{scenario_id:03d}" in feature
 
 
-def test_bundle_extracts_current_release_as_single_versioned_directory() -> None:
+def test_bundle_keeps_v4112_and_later_releases_versioned() -> None:
     builder = text(BUILDER)
-    assert 'VERSION=${1:-4.1.12}' in builder
+    assert 'VERSION=${1:-4.1.13}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
     assert 'LEGACY_FLAT=0' in builder
@@ -61,16 +61,16 @@ def test_release_layout_helper_validates_version_directory_against_metadata() ->
     assert "before candidate preparation" in deploy
 
 
-def test_runbook_uses_only_canonical_release_root_as_working_directory() -> None:
+def test_current_runbook_retains_canonical_release_root_contract() -> None:
     steps = text(STEPS)
     assert "cd /share/Docker/cos-mcp/releases" in steps
-    assert "cd /share/Docker/cos-mcp/releases/v4.1.12" not in steps
-    assert "mkdir -p /share/Docker/cos-mcp/releases/v4.1.12" not in steps
+    assert "cd /share/Docker/cos-mcp/releases/v4.1.13" not in steps
+    assert "mkdir -p /share/Docker/cos-mcp/releases/v4.1.13" not in steps
     assert "cp /share/Docker/mesh-cos-mcp-qnap" not in steps
     assert "chmod 0755" not in steps
-    assert "sudo sh ./v4.1.12/mesh-cos-mcp-deploy.sh" in steps
-    assert "sudo sh ./v4.1.12/mesh-cos-mcp-preflight.sh" in steps
-    assert "sudo sh ./v4.1.12/mesh-cos-mcp-verify.sh" in steps
+    assert "sudo sh ./v4.1.13/mesh-cos-mcp-deploy.sh" in steps
+    assert "sudo sh ./v4.1.13/mesh-cos-mcp-preflight.sh" in steps
+    assert "sudo sh ./v4.1.13/mesh-cos-mcp-verify.sh" in steps
 
 
 def test_v4112_bundle_builder_keeps_runtime_state_and_secrets_outside_release() -> None:

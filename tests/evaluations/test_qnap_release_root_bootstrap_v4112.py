@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,13 +22,17 @@ def test_v4112_behavior_contract_is_ready_and_complete() -> None:
         assert f"Scenario: QNAP-{scenario_id:03d}" in feature
 
 
-def test_bundle_extracts_as_single_versioned_directory() -> None:
+def test_bundle_extracts_current_release_as_single_versioned_directory() -> None:
     builder = text(BUILDER)
     assert 'VERSION=${1:-4.1.12}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
+    assert 'LEGACY_FLAT=0' in builder
+    assert '4.1.10|4.1.11' in builder
+    assert 'LEGACY_FLAT=1' in builder
+    assert 'if [ "$LEGACY_FLAT" -eq 1 ]; then' in builder
+    assert 'zip -qr "$OLDPWD/$ASSET" .' in builder
     assert 'zip -qr "$OLDPWD/$ASSET" "v${VERSION}"' in builder
-    assert 'zip -qr "$OLDPWD/$ASSET" .' not in builder
 
 
 def test_all_operator_scripts_self_resolve_and_never_depend_on_cwd() -> None:
@@ -80,6 +85,11 @@ def test_release_root_contract_does_not_change_phase1_authority() -> None:
     deploy = text(SCRIPTS / "mesh-cos-mcp-deploy.sh")
     assert "/share/Docker/cos-mcp/state" in text(SCRIPTS / "mesh-cos-mcp-prepare.sh")
     assert "mesh-cos-mcp-verify.sh" in deploy
-    readme = text(ROOT / "README.md")
-    assert "exactly 10" in readme.lower()
-    assert "27" in readme
+    contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
+    assert contract["runtime_release"] == "4.0.0"
+    assert len(contract["agent_tool_allowlists"]) == 10
+    assert len(contract["agent_tool_allowlists"]["cos"]) == 27
+    assert set(contract["human_tool_allowlist"]) == {
+        "approval.record_decision",
+        "reliability.human_override",
+    }

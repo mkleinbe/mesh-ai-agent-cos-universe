@@ -152,7 +152,7 @@ class SlackSocketApprovalService:
             "disposition": disposition,
             "requested_change": requested_change,
             "canonical_principal": self.config.approver_principal,
-            "slack_user_id": self.config.approver_user_id,
+            "provider_identity_verified": True,
             "channel_id": self.config.channel_id,
             "command": self.config.command,
             "envelope_id": envelope_id,

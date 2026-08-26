@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -35,7 +36,7 @@ def test_approver_bootstrap_never_prompts_for_user_id() -> None:
 
 def test_conversation_ids_fail_with_specific_diagnostic() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
-    assert 'case "$APPROVER_VALUE" in' in script
+    assert 'case "$APPROVER_VALUE_TO_VALIDATE" in' in script
     assert 'D*)' in script
     assert "Slack conversation/DM channel ID is not a user ID" in script
     assert "grep -Eq '^[UW][A-Z0-9]+$'" in script
@@ -64,7 +65,8 @@ def test_v4113_release_defaults_advance_without_authority_change() -> None:
     assert 'VERSION=${1:-4.1.13}' in builder
     assert "Build v4.1.13 QNAP deployment bundle" in workflow
     assert "TAG: v4.1.13" in workflow
-    readme = text(ROOT / "README.md")
-    assert "4.1.13" in readme
-    assert "exactly 10" in readme.lower()
-    assert "27" in readme
+    assert "4.1.13" in text(ROOT / "README.md")
+    contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
+    assert contract["runtime_release"] == "4.0.0"
+    assert len(contract["agent_tool_allowlists"]) == 10
+    assert len(contract["agent_tool_allowlists"]["cos"]) == 27

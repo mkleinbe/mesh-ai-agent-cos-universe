@@ -72,6 +72,7 @@ def test_value_validation_reports_type_enum_length_range_and_array_constraints()
     _validate_value({"type": "number", "minimum": 1, "maximum": 2}, 0, "low", details)
     _validate_value({"type": "number", "minimum": 1, "maximum": 2}, 3, "high", details)
     _validate_value({"type": "array", "minItems": 2, "items": {"type": "string"}}, [1], "items", details)
+    _validate_value({"type": "array", "items": "not-a-schema"}, ["data"], "opaque-items", details)
     reasons = {(item["field"], item["reason"]) for item in details}
     assert ("integer", "type") in reasons
     assert ("enum", "enum") in reasons
@@ -80,6 +81,7 @@ def test_value_validation_reports_type_enum_length_range_and_array_constraints()
     assert ("high", "maximum") in reasons
     assert ("items", "min_items") in reasons
     assert ("items[0]", "type") in reasons
+    assert not any(item["field"].startswith("opaque-items") for item in details)
 
 
 def test_object_validation_covers_required_unknown_properties_and_nested_values() -> None:

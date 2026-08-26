@@ -6,9 +6,16 @@ import { callPythonBridge, PythonBridgeError, repositoryRoot } from './python-br
 
 export const MAX_ARGUMENT_BYTES = 1_000_000;
 export type ToolContract = { name: string; description?: string; read_only?: boolean };
+export type JsonSchemaValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonSchemaValue[]
+  | { [key: string]: JsonSchemaValue };
 export type ToolInputSchema = {
   type: 'object';
-  properties: Record<string, unknown>;
+  properties: Record<string, JsonSchemaValue>;
   required: string[];
   additionalProperties: false;
 };

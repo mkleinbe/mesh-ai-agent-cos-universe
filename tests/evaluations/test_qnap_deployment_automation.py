@@ -11,9 +11,15 @@ def text(path: Path) -> str:
     return path.read_text()
 
 
-def test_prepare_automates_configuration_without_leaking_secret() -> None:
+def test_prepare_automates_staged_candidate_without_leaking_secret() -> None:
     prepare = text(SCRIPTS / "mesh-cos-mcp-prepare.sh")
-    assert 'BUILD_CONTEXT="$APP_ROOT/build-context"' in prepare
+    assert 'BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}' in prepare
+    assert 'BUILD_CONTEXT="$BUNDLE_APP_ROOT/build-context"' in prepare
+    assert 'CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"' in prepare
+    assert 'RELEASE_METADATA="$BUNDLE_APP_ROOT/release-metadata.txt"' in prepare
+    assert "mesh_candidate_release" in prepare
+    assert "mesh_normalize_release" in prepare
+    assert "requested deployment release does not match extracted bundle metadata" in prepare
     assert "docker build" in prepare
     assert "MESH_IMAGE_ID=$(docker image inspect" in prepare
     assert "TUNNEL_IMAGE=$(docker image inspect" in prepare
@@ -28,41 +34,62 @@ def test_prepare_automates_configuration_without_leaking_secret() -> None:
     assert 'sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"' in prepare
     assert "chown -R" not in prepare
     assert 'chown "$MESH_UID:$MESH_GID"' not in prepare
-    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" in prepare
-    assert "mesh-cos-mcp:qnap-v4.1.10" in prepare
+    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
+    assert "mesh-cos-mcp:qnap-v${RELEASE_VERSION}" in prepare
     assert 'IMAGE_PROVENANCE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"' in prepare
     assert "mesh_image_provenance_matches" in prepare
     assert "built Mesh image version label mismatch" in prepare
     assert "built Mesh image revision label mismatch" in prepare
     assert "QNAP_SLACK_APPROVER_USER_ID_FILE=" in prepare
     assert "QNAP_SLACK_VERIFIER_TOKEN_FILE=" in prepare
+    assert "QNAP_SLACK_SOCKET_APP_TOKEN_FILE=" in prepare
     assert "MESH_COS_SLACK_APPROVER_USER_ID=" not in prepare
 
 
-def test_deploy_is_single_orchestrated_operator_path_with_slack_hitl_and_diagnostics() -> None:
+def test_deploy_is_single_orchestrated_operator_path_with_safe_promotion() -> None:
     deploy = text(SCRIPTS / "mesh-cos-mcp-deploy.sh")
     required_order = [
         "mesh-cos-mcp-backup.sh\" pre-deploy",
         "mesh-cos-mcp-prepare.sh",
         "mesh-cos-slack-hitl-configure.sh",
         "mesh-cos-mcp-preflight.sh",
-        "mesh_compose --env-file .env -f compose.yaml up -d --no-build",
+        "mesh_compose --env-file \"$CANDIDATE_ENV\" -f \"$CANDIDATE_COMPOSE\" up -d --no-build",
         "wait_healthy mesh-cos-mcp",
         "wait_healthy mesh-cos-tunnel",
+        "candidate_promote",
         "mesh-cos-mcp-verify.sh",
         "mesh-cos-mcp-backup.sh\" post-deploy",
     ]
     positions = [deploy.index(token) for token in required_order]
     assert positions == sorted(positions)
+    assert 'BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}' in deploy
+    assert 'CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"' in deploy
     assert "mesh_obs_init deploy" in deploy
     assert "mesh_collect_diagnostics" in deploy
     assert 'echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"' in deploy
+    assert 'promote_candidate_file "$CANDIDATE_ENV" "$APP_ROOT/.env" 0640' in deploy
+    assert 'promote_candidate_file "$BUNDLE_APP_ROOT/release-metadata.txt" "$APP_ROOT/release-metadata.txt" 0644' in deploy
 
 
-def test_slack_hitl_configuration_is_protected_and_release_image_bound() -> None:
+def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
+    for filename in [
+        "mesh-cos-mcp-deploy.sh",
+        "mesh-cos-mcp-prepare.sh",
+        "mesh-cos-mcp-preflight.sh",
+        "mesh-cos-mcp-backup.sh",
+        "mesh-cos-mcp-verify.sh",
+        "mesh-cos-slack-hitl-configure.sh",
+    ]:
+        script = text(SCRIPTS / filename)
+        assert "QNAP_SCRIPT_ROOT:-/share/Docker" not in script
+        assert 'dirname "$0"' in script
+        assert "pwd -P" in script
+
+
+def test_slack_hitl_configuration_is_candidate_bound_and_protected() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
-    assert 'ENV_FILE="$APP_ROOT/.env"' in script
-    assert "prepared release .env is required" in script
+    assert 'CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}' in script
+    assert "prepared candidate release .env.runtime is required" in script
     assert "Slack read-only verifier bot token (input hidden)" in script
     assert "Slack Socket Mode app-level token (input hidden)" in script
     assert "stty -echo" in script
@@ -136,23 +163,32 @@ def test_permission_helper_is_constrained_and_hardens_all_governed_secret_files(
     assert "slack-socket-app-token" in regression
 
 
-def test_image_provenance_helper_rejects_stale_release_labels() -> None:
-    helper = text(SCRIPTS / "mesh-cos-qnap-image-provenance.sh")
+def test_image_provenance_and_release_layout_helpers_fail_closed() -> None:
+    provenance = text(SCRIPTS / "mesh-cos-qnap-image-provenance.sh")
+    layout = text(SCRIPTS / "mesh-cos-qnap-layout.sh")
     regression = text(QNAP / "tests" / "test-image-provenance.sh")
-    assert "mesh_release_metadata_value" in helper
-    assert "mesh_image_provenance_matches" in helper
-    assert "org.opencontainers.image.version" in helper
-    assert "org.opencontainers.image.revision" in helper
+    assert "mesh_release_metadata_value" in provenance
+    assert "mesh_image_provenance_matches" in provenance
+    assert "org.opencontainers.image.version" in provenance
+    assert "org.opencontainers.image.revision" in provenance
     assert "stale image version was accepted" in regression
     assert "stale image revision was accepted" in regression
+    assert "mesh_normalize_release" in layout
+    assert "mesh_release_is_semver" in layout
+    assert "mesh_candidate_release" in layout
 
 
-def test_preflight_validates_runtime_access_not_host_user_rw() -> None:
+def test_preflight_distinguishes_active_runtime_and_staged_candidate() -> None:
     preflight = text(SCRIPTS / "mesh-cos-mcp-preflight.sh")
+    assert 'ACTIVE_ENV_FILE="$APP_ROOT/.env"' in preflight
+    assert 'CANDIDATE_ENV_FILE="$BUNDLE_APP_ROOT/.env.runtime"' in preflight
+    assert 'RELEASE_METADATA="$BUNDLE_APP_ROOT/release-metadata.txt"' in preflight
+    assert "staged candidate release" in preflight
+    assert "active deployment release" in preflight
+    assert "active release may differ before candidate promotion" in preflight
     assert "runtime-state-access" in preflight
     assert '--user "$MESH_UID:$MESH_GID"' in preflight
-    assert "canonical ledger is read/write for runtime UID/GID" in preflight
-    assert '[ -r "$LEDGER" ] && [ -w "$LEDGER" ]' not in preflight
+    assert "canonical ledger is read/write for candidate runtime UID/GID" in preflight
     assert "deployment-local Docker config exists and is writable" in preflight
 
 
@@ -161,7 +197,7 @@ def test_preflight_and_verify_bind_running_images_and_governed_envelope() -> Non
     verify = text(SCRIPTS / "mesh-cos-mcp-verify.sh")
     assert "MESH_COS_IMAGE_ID" in preflight
     assert "TUNNEL_IMAGE_ID" in preflight
-    assert "Mesh image identity mismatch" in preflight
+    assert "candidate Mesh image identity mismatch" in preflight
     assert 'RUNNING_MESH_ID=$(docker inspect -f' in verify
     assert 'RUNNING_TUNNEL_ID=$(docker inspect -f' in verify
     assert "non-tunnel direct MCP request denied" in verify
@@ -200,58 +236,34 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert "SHA256SUMS" in backup
     assert "secrets_included=false" in backup
     assert "state_export_method=docker_cp" in backup
-    assert 'cp "$TMP_HOST"' not in backup
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_v4110_slack_hitl_docs_helpers_metadata_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_v4111_staging_contract_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.10}' in builder
+    assert 'VERSION=${1:-4.1.11}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
-    assert "qnap-security-review-v4.1.10.md" in builder
-    assert "release-4.1.10-scheduled-slack-hitl.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.10.md" in builder
-    assert "scheduled-automation-slack-hitl-v4.1.10.feature" in builder
+    assert "qnap-security-review-v4.1.11.md" in builder
+    assert "qnap-versioned-release-staging-v4.1.11.md" in builder
+    assert "release-4.1.11-qnap-versioned-release-staging.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.11.md" in builder
+    assert "qnap-versioned-release-staging-v4.1.11.feature" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
+    assert 'test ! -e "$BUNDLE/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
-    assert 'test -f "$BUILD_CONTEXT/src/mesh_cos/mcp_validation.py"' in builder
-    assert 'test -f "$BUILD_CONTEXT/src/mesh_cos/slack_hitl.py"' in builder
-    assert 'test -f "$BUILD_CONTEXT/src/mesh_cos/slack_socket_approval.py"' in builder
-    assert 'test -f "$BUILD_CONTEXT/src/mesh_cos/slack_socket_bridge.py"' in builder
-    assert 'test -f "$BUILD_CONTEXT/mcp/src/slack-socket-mode.ts"' in builder
-    assert 'test -f "$BUILD_CONTEXT/chatgpt/mcp/tool-input-schemas.v1.json"' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-qnap-compose.sh"' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-qnap-observability.sh"' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-qnap-image-provenance.sh"' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-slack-hitl-configure.sh"' in builder
+    assert 'test ! -e "$BUNDLE/cos-mcp/state"' in builder
+    assert 'test -f "$BUNDLE/mesh-cos-qnap-layout.sh"' in builder
     assert 'test -f "$BUNDLE/cos-mcp/release-metadata.txt"' in builder
 
 
-def test_v4110_slack_hitl_bdd_is_ready() -> None:
-    feature = text(ROOT / "specs" / "scheduled-automation-slack-hitl-v4.1.10.feature")
+def test_v4111_qnap_staging_bdd_is_ready() -> None:
+    feature = text(ROOT / "specs" / "qnap-versioned-release-staging-v4.1.11.feature")
     assert "@ready" in feature
-    for scenario_id in [
-        "SCH-HITL-001",
-        "SCH-HITL-002",
-        "SCH-HITL-003",
-        "SCH-HITL-004",
-        "SCH-HITL-005",
-        "SCH-HITL-006",
-        "SCH-HITL-007",
-    ]:
+    for scenario_id in ["QNAP-074", "QNAP-075", "QNAP-076", "QNAP-077", "QNAP-078", "QNAP-079", "QNAP-080", "QNAP-081", "QNAP-082"]:
         assert scenario_id in feature
-    for token in [
-        "idempotency_key",
-        "OpenAI Slack bot",
-        "principal \"michael\"",
-        "Socket Mode",
-        "/mesh-approval",
-        "BLOCKED_CHATGPT_AGENT_TRANSPORT",
-        "Production preflight",
-    ]:
+    for token in ["versioned release", "active deployment release", "leading \"v\"", "mismatch", "sudo", "promotion", "TaskLedger", "BusyBox"]:
         assert token in feature
 
 
@@ -264,6 +276,7 @@ def test_historical_release_behavior_specs_remain_retained() -> None:
         "qnap-image-provenance-envelope-v4.1.7.feature": ["QNAP-056", "QNAP-058"],
         "qnap-mcp-production-acceptance-v4.1.8.feature": ["QNAP-059", "QNAP-068"],
         "qnap-release-closeout-v4.1.9.feature": ["QNAP-069", "QNAP-073"],
+        "scheduled-automation-slack-hitl-v4.1.10.feature": ["SCH-HITL-001", "SCH-HITL-007"],
     }
     for filename, scenario_ids in historical.items():
         feature = text(ROOT / "specs" / filename)

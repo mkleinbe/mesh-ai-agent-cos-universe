@@ -28,41 +28,44 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build v4.1.12 QNAP deployment bundle
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.12
-      - name: Verify v4.1.12 release-root archive contract
+      - name: Build v4.1.13 QNAP deployment bundle
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.13
+      - name: Verify v4.1.13 release-root and Slack approver bootstrap contract
         run: |
           set -euo pipefail
-          ZIP=dist/mesh-cos-mcp-qnap-v4.1.12.zip
+          ZIP=dist/mesh-cos-mcp-qnap-v4.1.13.zip
           SHA="$ZIP.sha256"
           test -f "$ZIP"
           test -f "$SHA"
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.12.zip.sha256)
-          unzip -Z1 "$ZIP" > /tmp/v4112.entries
-          test -s /tmp/v4112.entries
-          if grep -Ev '^v4\.1\.12/' /tmp/v4112.entries; then
-            echo 'ERROR: release archive contains entries outside v4.1.12/' >&2
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.13.zip.sha256)
+          unzip -Z1 "$ZIP" > /tmp/v4113.entries
+          test -s /tmp/v4113.entries
+          if grep -Ev '^v4\.1\.13/' /tmp/v4113.entries; then
+            echo 'ERROR: release archive contains entries outside v4.1.13/' >&2
             exit 1
           fi
-          grep -qx 'v4.1.12/mesh-cos-mcp-deploy.sh' /tmp/v4112.entries
-          grep -qx 'v4.1.12/mesh-cos-mcp-preflight.sh' /tmp/v4112.entries
-          grep -qx 'v4.1.12/mesh-cos-mcp-verify.sh' /tmp/v4112.entries
-          grep -qx 'v4.1.12/cos-mcp/release-metadata.txt' /tmp/v4112.entries
-          grep -qx 'v4.1.12/cos-mcp/build-context/Dockerfile' /tmp/v4112.entries
-          unzip -p "$ZIP" v4.1.12/cos-mcp/release-metadata.txt | grep -q '^version=4.1.12$'
-          unzip -p "$ZIP" v4.1.12/cos-mcp/release-metadata.txt | grep -q "^commit=$GITHUB_SHA$"
+          grep -qx 'v4.1.13/mesh-cos-mcp-deploy.sh' /tmp/v4113.entries
+          grep -qx 'v4.1.13/mesh-cos-mcp-preflight.sh' /tmp/v4113.entries
+          grep -qx 'v4.1.13/mesh-cos-mcp-verify.sh' /tmp/v4113.entries
+          grep -qx 'v4.1.13/mesh-cos-slack-hitl-configure.sh' /tmp/v4113.entries
+          grep -qx 'v4.1.13/cos-mcp/release-metadata.txt' /tmp/v4113.entries
+          grep -qx 'v4.1.13/cos-mcp/build-context/Dockerfile' /tmp/v4113.entries
+          unzip -p "$ZIP" v4.1.13/cos-mcp/release-metadata.txt | grep -q '^version=4.1.13$'
+          unzip -p "$ZIP" v4.1.13/cos-mcp/release-metadata.txt | grep -q "^commit=$GITHUB_SHA$"
+          unzip -p "$ZIP" v4.1.13/mesh-cos-slack-hitl-configure.sh | grep -q 'DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK'
+          ! unzip -p "$ZIP" v4.1.13/mesh-cos-slack-hitl-configure.sh | grep -q 'read_visible_tty'
           ! unzip -Z1 "$ZIP" | grep -Eq '(^|/)(state|secrets)(/|$)|(^|/)\.env\.runtime$'
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.12
+          name: mesh-cos-mcp-qnap-v4.1.13
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.12.zip
-            dist/mesh-cos-mcp-qnap-v4.1.12.zip.sha256
-      - name: Create v4.1.12 release and semantic tag
+            dist/mesh-cos-mcp-qnap-v4.1.13.zip
+            dist/mesh-cos-mcp-qnap-v4.1.13.zip.sha256
+      - name: Create v4.1.13 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.1.12
-          ASSET: dist/mesh-cos-mcp-qnap-v4.1.12.zip
+          TAG: v4.1.13
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.13.zip
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -71,6 +74,6 @@ jobs:
           fi
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
-            --title "v4.1.12 QNAP Release-Root Bootstrap" \
+            --title "v4.1.13 Slack Approver Bootstrap" \
             --notes-file RELEASE.md \
             "$ASSET" "$ASSET.sha256"

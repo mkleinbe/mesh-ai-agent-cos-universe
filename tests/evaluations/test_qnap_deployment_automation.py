@@ -239,7 +239,8 @@ def test_v417_image_provenance_and_envelope_bdd_is_ready() -> None:
 def test_v418_mcp_contract_acceptance_bdd_is_ready() -> None:
     feature = text(ROOT / "specs" / "qnap-mcp-production-acceptance-v4.1.8.feature")
     assert "@ready" in feature
-    for scenario_id in ["QNAP-059", "QNAP-060", "QNAP-061", "QNAP-062", "QNAP-063", "QNAP-064", "QNAP-065", "QNAP-066", "QNAP-067", "QNAP-068"]:
+    for scenario_id in ["QNAP-059", "QNAP-060", "QNAP-061", "QNAP-062", "QNAP-063", "QNAP-065", "QNAP-066", "QNAP-067", "QNAP-068"]:
         assert f"Scenario: {scenario_id}" in feature
+    assert "Scenario Outline: QNAP-064" in feature
     for token in ["validation_failed", "CHATGPT_SKILL_HANDOFF", "COMPLETED", "VERIFIED", "deployment_release"]:
         assert token in feature

@@ -1,7 +1,10 @@
 #!/bin/sh
 set -u
 
-SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-/share/Docker}
+SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-}
+if [ -z "$SCRIPT_ROOT" ]; then
+  SCRIPT_ROOT=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd -P) || { echo "ERROR: unable to resolve deployment bundle root" >&2; exit 1; }
+fi
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 MESH_COS_SCRIPT=mesh-cos-mcp-verify.sh

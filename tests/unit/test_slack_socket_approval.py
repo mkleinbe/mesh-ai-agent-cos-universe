@@ -58,7 +58,7 @@ def _pending() -> tuple[TaskLedger, str, str]:
             "channel_id": CHANNEL_ID,
             "thread_ts": THREAD_TS,
             "notice_author_user_id": CHATGPT_AGENTS_SLACK_USER_ID,
-            "approver_user_id": APPROVER_USER_ID,
+            "approver_identity_verified": True,
             "approver_principal": "michael",
             "payload_fingerprint": FINGERPRINT,
             "bound_at": "2026-08-26T15:00:00+00:00",
@@ -108,6 +108,8 @@ def test_socket_slash_command_can_record_canonical_human_approval_idempotently()
     assert decision["trigger_id"] == "trigger-001"
     assert decision["disposition"] == "APPROVE"
     assert decision["canonical_principal"] == "michael"
+    assert decision["provider_identity_verified"] is True
+    assert APPROVER_USER_ID not in str(decision)
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
     assert ledger.get_record("approval", approval_id)["decided_by"] == "michael"
     assert ledger.get_task(task_id).status == TaskStatus.READY_FOR_ACTION
@@ -279,10 +281,10 @@ def test_socket_envelope_requires_provider_fields_and_mapping_payload() -> None:
         service.handle_envelope(invalid_payload)
 
 
-def test_socket_binding_must_match_governed_channel_approver_and_principal() -> None:
+def test_socket_binding_must_match_governed_channel_verified_approver_and_principal() -> None:
     for field, value, error in (
         ("channel_id", "C0OTHER", "channel mismatch"),
-        ("approver_user_id", "U0OTHER", "approver mismatch"),
+        ("approver_identity_verified", False, "provider-verified"),
         ("approver_principal", "other", "principal mismatch"),
     ):
         ledger, _, approval_id = _pending()

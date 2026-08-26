@@ -4,6 +4,8 @@
 
 The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and 27 governed CoS MCP tools. Human-only operations remain human-only. This release does not widen L4/L5 authority.
 
+Roster identity remains explicit: Message Operations (`message-ops`) is one of the 10 registered agents. Mesh Devil's Advocate remains an external governed shared Skill and is not an agent principal, task owner, or approval authority.
+
 ## Why this release exists
 
 Post-v4.1.8 production acceptance exposed five material integration defects:

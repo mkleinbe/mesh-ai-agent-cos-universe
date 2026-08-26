@@ -58,7 +58,9 @@ def test_active_release_train_is_v4113_and_ci_uses_setup_node_v7() -> None:
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "v4.1.12" in ci  # full CI still exercises the retained v4.1.12 path contract
+    assert "Build and inspect v4.1.13 release bundle" in ci
+    assert "mesh-cos-mcp-qnap-v4.1.13.zip" in ci
+    assert "DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK" in ci
     assert "TAG: v4.1.13" in release
     assert "v4.1.13 Slack Approver Bootstrap" in release
 

@@ -81,8 +81,8 @@ class SlackSocketApprovalService:
         binding = dict(binding)
         if binding.get("channel_id") != self.config.channel_id:
             raise PermissionError("Slack notice binding channel mismatch")
-        if binding.get("approver_user_id") != self.config.approver_user_id:
-            raise PermissionError("Slack notice binding approver mismatch")
+        if binding.get("approver_identity_verified") is not True:
+            raise PermissionError("Slack notice binding approver identity was not provider-verified")
         if binding.get("approver_principal") != self.config.approver_principal:
             raise PermissionError("Slack notice binding principal mismatch")
         if binding.get("notice_author_user_id") not in DEFAULT_ALLOWED_NOTICE_AUTHORS:

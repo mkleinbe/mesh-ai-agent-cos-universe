@@ -9,6 +9,7 @@ BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"
 CANDIDATE_COMPOSE="$BUNDLE_APP_ROOT/compose.yaml"
+LAYOUT_LIB="$SCRIPT_ROOT/mesh-cos-qnap-layout.sh"
 COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 MESH_COS_SCRIPT=mesh-cos-mcp-deploy.sh
@@ -18,6 +19,8 @@ export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT MESH_COS_SCRIPT
 . "$OBS_LIB"
 mesh_obs_init deploy || { echo "ERROR: unable to initialize deployment logging" >&2; exit 1; }
 mesh_init_docker_config || mesh_fail 1 bootstrap "unable to initialize deployment-local Docker config"
+[ -r "$LAYOUT_LIB" ] || mesh_fail 1 bootstrap "release layout helper missing: $LAYOUT_LIB"
+. "$LAYOUT_LIB"
 
 fail() { mesh_fail 1 "${MESH_COS_STAGE:-deploy}" "$1"; }
 info() { mesh_log INFO info "$1"; }
@@ -90,7 +93,8 @@ cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 [ -r "$BUNDLE_APP_ROOT/release-metadata.txt" ] || fail "candidate release metadata missing: $BUNDLE_APP_ROOT/release-metadata.txt"
 [ -r "$CANDIDATE_COMPOSE" ] || fail "candidate Compose file missing: $CANDIDATE_COMPOSE"
 [ -d "$APP_ROOT" ] || fail "$APP_ROOT is missing; canonical runtime root must already exist"
-mesh_log INFO deployment_start "bundle_root=$SCRIPT_ROOT candidate_root=$BUNDLE_APP_ROOT app_root=$APP_ROOT log=$MESH_COS_LOG_FILE"
+mesh_validate_release_root "$SCRIPT_ROOT" "$BUNDLE_APP_ROOT/release-metadata.txt" || fail "release-root validation failed before candidate preparation"
+mesh_log INFO deployment_start "bundle_root=$SCRIPT_ROOT candidate_root=$BUNDLE_APP_ROOT app_root=$APP_ROOT releases_root=${QNAP_RELEASES_ROOT:-/share/Docker/cos-mcp/releases} log=$MESH_COS_LOG_FILE"
 
 mesh_set_stage pre_backup
 if docker inspect mesh-cos-mcp >/dev/null 2>&1 && [ "$(docker inspect -f '{{.State.Running}}' mesh-cos-mcp 2>/dev/null || echo false)" = "true" ]; then
@@ -131,4 +135,4 @@ mesh_set_stage complete
 info "deployment, promotion, verification, and post-deploy backup complete"
 mesh_log INFO deployment_complete "release=$DEPLOYMENT_RELEASE bundle_root=$SCRIPT_ROOT log=$MESH_COS_LOG_FILE"
 echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
-echo "NEXT: verify the deployed OpenAI Workspace Agent can author the synthetic Slack HITL notice, then run CHATGPT-ACCEPTANCE.md and the v4.1.11 hosted acceptance procedure."
+echo "NEXT: verify the deployed OpenAI Workspace Agent can author the synthetic Slack HITL notice, then run CHATGPT-ACCEPTANCE.md and the hosted acceptance procedure for deployment release $DEPLOYMENT_RELEASE."

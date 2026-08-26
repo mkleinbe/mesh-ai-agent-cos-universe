@@ -1,6 +1,6 @@
 # Production Readiness
 
-This is the current go-live gate for the Mesh AI Chief of Staff universe at QNAP deployment target **v4.1.11**. Historical release-specific acceptance records remain evidence, but they do not override this current contract.
+This is the current go-live gate for the Mesh AI Chief of Staff universe at QNAP deployment target **v4.1.12**. Historical release-specific acceptance records remain evidence, but they do not override this current contract.
 
 The canonical Phase 1 authority/runtime contract remains `4.0.0`, with exactly 10 registered agents and 27 governed CoS MCP tools.
 
@@ -12,26 +12,30 @@ Production is green only when:
 - all 10 agents resolve against the same canonical TaskLedger and registry universe;
 - `MESH_COS_AGENT_ID` binds the process identity and cannot be overridden by prompt/task/Slack/connector content;
 - remote production is served through the OpenAI Secure MCP Tunnel and accepts `/mcp` only from the trusted tunnel-side private source identity;
-- hosted envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.11`, and `agent_id=cos`;
+- hosted envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.12`, and `agent_id=cos`;
 - the governance audit chain validates;
 - the kill switch is not active;
 - local/QNAP preflight is green.
 
-## 2. Release staging and promotion integrity
+## 2. Release-root staging and promotion integrity
 
-Every production deployment must preserve the versioned release contract:
+Every production deployment must preserve the current release-root contract:
 
 - canonical application root remains `/share/Docker/cos-mcp`;
-- release bundles are extracted and executed from `/share/Docker/cos-mcp/releases/vX.Y.Z`;
-- operator/helper scripts self-resolve their extracted release root and are not copied to `/share/Docker`;
+- stable operator working directory is `/share/Docker/cos-mcp/releases`;
+- current release ZIPs contain a single top-level `vX.Y.Z/` directory and create that version directory when extracted from the releases root;
+- the operator does not manually create the version directory, copy/move release payload files, copy helpers to `/share/Docker`, chmod extracted scripts, or change into the version directory;
+- operator/helper scripts self-resolve their extracted release root and do not depend on caller CWD;
+- before candidate preparation, deployment verifies that the resolved release directory is directly beneath the canonical releases root and that its `vX.Y.Z` basename matches staged `release-metadata.txt`;
+- missing, malformed, outside-root, and metadata-mismatched release paths fail closed;
 - staged release metadata, build context, Compose, and `.env.runtime` remain under the versioned release directory;
 - staged release identity derives from staged `release-metadata.txt`, not active `.env` and not a release-specific default;
 - only a leading Git `v` is normalized between tag and runtime release identity;
-- genuine requested-versus-staged release mismatch fails closed;
 - active production identity is reported separately from staged candidate identity before promotion;
-- normal `sudo sh ./mesh-cos-mcp-deploy.sh` does not depend on sudo preserving a release variable;
+- host-side `sudo` does not need to preserve a release variable;
 - active `.env`, Compose, and release metadata are promoted only after both candidate containers are healthy;
-- canonical TaskLedger, tunnel key, Slack protected files, qnet/static networking, and rollback evidence remain preserved throughout staging.
+- canonical TaskLedger, tunnel key, Slack protected files, qnet/static networking, logs, and rollback evidence remain outside the release directory and preserved throughout staging;
+- already-published historical artifact layouts remain immutable and do not define the current operator contract.
 
 ## 3. Scheduled execution integrity
 
@@ -135,7 +139,7 @@ A result cannot be reported as verified unless:
 
 ## 10. Repository release gate
 
-The exact v4.1.11 candidate must pass fresh:
+The exact v4.1.12 candidate must pass fresh:
 
 - dependency integrity checks;
 - TypeScript MCP build/tests, including Socket Mode transport, and npm security audit;
@@ -144,9 +148,10 @@ The exact v4.1.11 candidate must pass fresh:
 - pytest with 100% branch-aware `mesh_cos` coverage;
 - high-severity Bandit gate;
 - compileall;
-- QNAP POSIX shell regressions, including versioned release layout, Slack protected configuration, permissions, provenance, and observability;
-- deterministic v4.1.11 bundle and checksum;
-- final release ZIP inspection proving staged metadata/path consistency and absence of generated env, secrets, and canonical state;
+- QNAP POSIX shell regressions, including release-root layout, Slack protected configuration, permissions, provenance, and observability;
+- deterministic v4.1.12 bundle and checksum;
+- final release ZIP inspection proving every current release entry is below `v4.1.12/`, staged metadata/path consistency, and absence of generated env, secrets, and canonical state;
+- fail-closed release-directory-to-metadata mismatch regression;
 - Compose rendering and release identity assertions, including protected Socket Mode mount and `/mesh-approval` configuration;
 - OCI image version/revision provenance;
 - modern MCP discovery and sequential requests;
@@ -155,15 +160,16 @@ The exact v4.1.11 candidate must pass fresh:
 - direct-ingress denial;
 - persistence, restart, and SQLite backup integrity.
 
-Security applicability for v4.1.11 is TARGETED. See `docs/qnap-security-review-v4.1.11.md`.
+Security applicability for v4.1.12 is TARGETED. See `docs/qnap-security-review-v4.1.12.md`.
 
 ## 11. Hosted production acceptance
 
 Repository and container evidence produce a **verified candidate**, not production certification.
 
-After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.11.md` and require:
+After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.12.md` and require:
 
 - correct dual release identity;
+- deployment provenance from `/share/Docker/cos-mcp/releases/v4.1.12`;
 - exactly 10 active agents and exactly 27 CoS tools;
 - valid audit chain;
 - explicit scheduled idempotency and lifecycle behavior;
@@ -182,6 +188,7 @@ Production certification requires **zero open CRITICAL/HIGH defects** and no unr
 The following are blockers, not advisories:
 
 - live runtime still serving an older deployment release;
+- release path or staged metadata does not identify v4.1.12 consistently;
 - official OpenAI bot-authored HITL transport not proven;
 - Socket Mode `/mesh-approval` human ingress not proven against the deployed runtime;
 - invalid audit chain;

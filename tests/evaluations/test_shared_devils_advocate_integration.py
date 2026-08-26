@@ -66,10 +66,10 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     release_workflow = (
         ROOT / ".github" / "workflows" / "release-production-readiness.yml"
     ).read_text()
-    assert "TAG: v4.1.11" in release_workflow
-    assert '--title "v4.1.11 QNAP Versioned Release Staging Remediation"' in release_workflow
+    assert "TAG: v4.1.12" in release_workflow
+    assert '--title "v4.1.12 QNAP Release-Root Bootstrap"' in release_workflow
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.11 QNAP Versioned Release Staging Remediation" in release_notes
+    assert "v4.1.12 QNAP Release-Root Bootstrap" in release_notes
     assert "canonical Phase 1 authority/runtime contract remains **`4.0.0`**" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
     assert "Message Operations" in release_notes

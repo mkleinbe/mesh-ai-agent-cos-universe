@@ -2,6 +2,33 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.12 - 2026-08-26 - QNAP Release-Root Bootstrap
+
+### Operator-path defect remediation
+
+- Superseded v4.1.11 for QNAP deployment packaging after the published archive and operator runbook were found to disagree about who creates the versioned release directory.
+- Confirmed the observed operator failures were pre-execution path failures: `/share/Docker/cos-mcp/releases/v4.1.11` did not yet exist, so subsequent checksum, unzip, and chmod commands targeted files that could not be present there.
+- Changed the current release artifact to contain a single top-level `v4.1.12/` directory so extraction from `/share/Docker/cos-mcp/releases` creates the versioned release directory automatically.
+- Standardized `/share/Docker/cos-mcp/releases` as the only release staging/execution working directory. No manual version-directory `mkdir`, release payload `cp`/`mv`, helper copy, chmod, or `cd` into the version folder is required.
+
+### Release path and integrity controls
+
+- Preserved self-resolving operator scripts using POSIX/BusyBox-compatible `dirname`, `cd`, and `pwd -P` behavior so child/helper resolution is independent of caller CWD.
+- Added fail-closed release-root validation before candidate preparation: the resolved release directory must be directly beneath the canonical releases root and its `vX.Y.Z` basename must agree with staged `release-metadata.txt`.
+- Kept candidate metadata, build context, Compose, and generated `.env.runtime` in the versioned release directory while canonical TaskLedger, protected secrets, deployment logs, tunnel identity, and active descriptors remain under the canonical application root.
+- Preserved historical already-published 4.1.0 through 4.1.11 archive layout when explicitly rebuilding those versions, while v4.1.12 and future current releases use the versioned top-level archive contract.
+
+### BDD, TDD, verification, and security
+
+- Added RED-first regression coverage and ready QNAP-083 through QNAP-091 scenarios for archive prefixing, release-root execution, directory/metadata identity, removal of manual staging choreography, auxiliary operator actions, secret/state exclusion, canonical runtime separation, BusyBox compatibility, and unchanged authority.
+- Added targeted security findings SEC-QNAP-027 and SEC-QNAP-028 covering ambiguous extraction-root behavior and release-path identity binding; both are remediated by the v4.1.12 artifact/path contract.
+- Required exact-candidate verification of current archive structure, deterministic checksum, shell regressions, Compose, OCI provenance, hardened runtime, ingress denial, restart/persistence, SQLite backup integrity, npm/TypeScript checks, Bandit, and 100% branch-aware Python coverage before integration.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, scheduled/Slack HITL controls, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
 ## 4.1.11 - 2026-08-26 - QNAP Versioned Release Staging Remediation
 
 ### Live QNAP deployment defect remediation

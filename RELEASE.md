@@ -1,49 +1,39 @@
-# v4.1.8 MCP Contract Validation and Governed Skill Handoff
+# v4.1.9 Documentation and Release Closeout
 
-`v4.1.8` is a corrective production-interface and QNAP deployment release for the published **Mesh CoS MCP** ChatGPT app connected through the **OpenAI Secure MCP Tunnel**.
+`v4.1.9` is a release-integrity and documentation-closeout patch for the QNAP-hosted **Mesh CoS MCP** runtime and published ChatGPT app connected through the **OpenAI Secure MCP Tunnel**.
 
 The canonical Mesh CoS Phase 1 authority/runtime contract remains **`4.0.0`**. Phase 1 remains exactly 10 agents, including Message Operations as the tenth registered agent. Human-only operations, canonical TaskLedger, `COMPLETED != VERIFIED`, resource policy, and the Secure MCP Tunnel trust boundary are unchanged.
 
-## Defects remediated
+## Why this release exists
 
-### Public MCP schema drift
+v4.1.8 correctly shipped the MCP request-contract remediation and passed the repository/QNAP release gate, but several active documentation surfaces still described v4.1.7 and the canonical changelog lacked the v4.1.8 entry. v4.1.9 closes that release-documentation drift and advances the deployment/release identity consistently across the active bundle, QNAP runbooks, CI, release automation, and acceptance evidence.
 
-The hosted MCP previously projected generic object inputs while Python handlers required specific fields. Valid-looking client requests could therefore fail after dispatch with opaque `invalid_request` responses.
+## v4.1.8 behavior carried forward
 
-v4.1.8 adds a canonical input-schema registry covering the complete runtime catalog and projects the actual closed schema through `tools/list`. Structured arguments are validated before business handler execution.
-
-### Opaque request and lookup errors
-
-Request-binding `KeyError` could be confused with a missing canonical TaskLedger record. v4.1.8 introduces bounded `validation_failed` responses with safe `{field, reason}` details and separates request validation from resource lookup and lifecycle failures.
-
-### Governed Skill registration
-
-Registry-declared Skills such as `mesh-ppmd-bot` could be allowlisted but unresolved by the default runtime adapter registry. v4.1.8 server-registers declared prompt Skills as auditable `CHATGPT_SKILL_HANDOFF` capabilities. The QNAP runtime does not import or execute arbitrary Skill code. Unknown or unauthorized capabilities continue to fail closed, and client-supplied code, import paths, callables, shell commands, plugin executables, and Skill implementations are rejected.
-
-### AgentOps request binding
-
-`agentops.recommend` now uses the same explicit structured schema and validation boundary as the rest of the hosted MCP.
+- Canonical closed input schemas are projected through `tools/list` and validated before business dispatch.
+- Invalid structured input returns bounded `validation_failed` field/reason details without raw exceptions or secrets.
+- Request validation is distinguished from canonical TaskLedger `not_found` lookup behavior.
+- Registry-declared governed Skills resolve as auditable `CHATGPT_SKILL_HANDOFF` capabilities rather than arbitrary QNAP code execution.
+- Client-supplied code, import paths, callables, shell commands, plugin executables, and Skill implementations remain rejected.
+- `agentops.recommend` uses the documented structured request contract.
+- Image reuse remains bound to OCI version/revision labels matching extracted release metadata.
+- Post-deploy verification executes a governed read-only MCP call from the tunnel network namespace and validates the running dual release identity.
 
 ## BDD and TDD evidence
 
-Ready scenarios QNAP-059 through QNAP-068 cover:
+v4.1.8 ready scenarios QNAP-059 through QNAP-068 remain the behavior contract for MCP request validation, governed Skill handoff, immutable identity, delegation, lifecycle separation, and audit integrity.
 
-- schema/runtime agreement;
-- safe structured validation;
-- consistent canonical task identifiers;
-- governed Skill resolution and fail-closed denial;
-- AgentOps request binding;
-- exact 10-agent immutable identity and allowlist projection;
-- delegation limits;
-- `COMPLETED != VERIFIED`;
-- audit integrity;
-- packaged and hosted release identity agreement.
+v4.1.9 adds ready scenarios QNAP-069 through QNAP-073 for:
 
-The changes were driven through RED/GREEN regression loops and must pass the full repository and QNAP release gate before integration.
+- active documentation release consistency;
+- bundle/image/Compose/governed-envelope deployment identity agreement;
+- unchanged Phase 1 authority;
+- deterministic secret/state-safe release packaging;
+- explicit post-deploy hosted acceptance boundaries.
 
 ## Security boundary
 
-Security applicability is **TARGETED** because MCP input validation, agent authorization, governed Skill handoff, persistence-facing operations, and deployment/runtime packaging are touched.
+Security applicability is **TARGETED** because CI/CD, deployment identity, QNAP packaging, and release evidence are touched.
 
 Preserved controls include:
 
@@ -57,20 +47,20 @@ Preserved controls include:
 - long-running runtime UID/GID 65532, read-only rootfs, all capabilities dropped, no-new-privileges, and no Docker socket;
 - existing tunnel secret handling and network architecture unchanged.
 
-See `docs/qnap-security-review-v4.1.8.md`.
+See `docs/qnap-security-review-v4.1.9.md`.
 
 ## Release assets
 
-- `mesh-cos-mcp-qnap-v4.1.8.zip`
-- `mesh-cos-mcp-qnap-v4.1.8.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.1.9.zip`
+- `mesh-cos-mcp-qnap-v4.1.9.zip.sha256`
 
-The bundle contains the release-bound build context, QNAP operator tooling, the current acceptance procedure, v4.1.8 BDD scenarios, targeted security review, release handoff, and hosted acceptance contract. It contains no tunnel runtime secret and no canonical TaskLedger data.
+The bundle contains the release-bound build context, QNAP operator tooling, current deployment and acceptance procedures, historical release evidence, the v4.1.9 security/release/hosted-acceptance receipts, and v4.1.9 BDD scenarios. It contains no tunnel runtime secret and no canonical TaskLedger data.
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.1.8`
-- Semantic tag: `v4.1.8`
-- Container image label default: `4.1.8-qnap`
+- Repository/QNAP deployment release: `4.1.9`
+- Semantic tag: `v4.1.9`
+- Container image label default: `4.1.9-qnap`
 - Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
 - Canonical workforce: exactly 10 agents
 - Mesh Devil's Advocate remains a governed shared Skill, not agent 11
@@ -78,13 +68,17 @@ The bundle contains the release-bound build context, QNAP operator tooling, the 
 - Two human-principal-only operations remain separate from agent catalogs
 - Production transport: OpenAI Secure MCP Tunnel
 
+## Verification gate
+
+The exact candidate must pass the full repository and QNAP release suite before integration, including Python 100% branch-aware coverage, TypeScript MCP checks, contract/documentation drift checks, Ruff, mypy, npm audit, Bandit, QNAP shell regressions, deterministic bundle/checksum generation, Compose validation, OCI image provenance, modern MCP discovery, sequential requests, non-root ownership, hardened runtime, direct-ingress denial, restart, and SQLite backup integrity.
+
 ## Post-deploy acceptance boundary
 
-Repository, container, and release-package verification cannot prove the newly deployed on-premises serving instance. After deploying v4.1.8 to QNAP, repeat the published-app acceptance suite and require successful governed responses to report:
+Repository, container, and release-package verification cannot prove the newly deployed on-premises serving instance. After deploying v4.1.9 to QNAP, repeat the published-app acceptance suite and require successful governed responses to report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.8
+deployment_release: 4.1.9
 agent_id: cos
 ```
 
@@ -92,9 +86,9 @@ Do not mark production acceptance PASS until the actual hosted Mesh CoS MCP app 
 
 See:
 
-- `docs/qnap-security-review-v4.1.8.md`
-- `docs/release-4.1.8-mcp-contract-acceptance.md`
-- `docs/chatgpt-published-app-production-acceptance-v4.1.8.md`
-- `specs/qnap-mcp-production-acceptance-v4.1.8.feature`
+- `docs/qnap-security-review-v4.1.9.md`
+- `docs/release-4.1.9-documentation-closeout.md`
+- `docs/chatgpt-published-app-production-acceptance-v4.1.9.md`
+- `specs/qnap-release-closeout-v4.1.9.feature`
 - `deployment/qnap/DEPLOYMENT-STEPS.md`
 - `deployment/qnap/CHATGPT-ACCEPTANCE.md`

@@ -5,7 +5,10 @@ from mesh_cos.ledger import TaskLedger
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
 from mesh_cos.slack_hitl import CHATGPT_AGENTS_SLACK_USER_ID
-from mesh_cos.slack_socket_approval import SlackSocketApprovalConfig, SlackSocketApprovalService
+from mesh_cos.slack_socket_approval import (
+    SlackSocketApprovalConfig,
+    SlackSocketApprovalService,
+)
 
 
 def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() -> None:
@@ -22,7 +25,7 @@ def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() 
         accountable_agent="cos",
         decision_owner="michael",
         authority_level=AuthorityLevel.L4,
-        acceptance_test="durable decision contains canonical principal without protected provider ID",
+        acceptance_test="durable approval evidence contains canonical principal without protected provider ID",
         idempotency_key="TEST-SOCKET-EVIDENCE-PRIVACY",
     )
     for target in (
@@ -48,7 +51,7 @@ def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() 
             "channel_id": channel_id,
             "thread_ts": "1788000000.000001",
             "notice_author_user_id": CHATGPT_AGENTS_SLACK_USER_ID,
-            "approver_user_id": approver_user_id,
+            "approver_identity_verified": True,
             "approver_principal": "michael",
             "payload_fingerprint": fingerprint,
         },
@@ -74,9 +77,16 @@ def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() 
         }
     )
 
-    durable = dict(ledger.get_record("approval_slack_socket_decision", approval.approval_id))
+    binding = dict(ledger.get_record("approval_slack_binding", approval.approval_id))
+    durable = dict(
+        ledger.get_record("approval_slack_socket_decision", approval.approval_id)
+    )
+    assert binding["approver_identity_verified"] is True
+    assert "approver_user_id" not in binding
+    assert approver_user_id not in str(binding)
     assert decision["provider_identity_verified"] is True
     assert durable["provider_identity_verified"] is True
     assert durable["canonical_principal"] == "michael"
     assert "slack_user_id" not in durable
+    assert "approver_user_id" not in durable
     assert approver_user_id not in str(durable)

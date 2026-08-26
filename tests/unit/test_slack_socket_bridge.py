@@ -60,7 +60,7 @@ def _seed(path: Path) -> str:
             "channel_id": CHANNEL_ID,
             "thread_ts": "1788000000.000001",
             "notice_author_user_id": CHATGPT_AGENTS_SLACK_USER_ID,
-            "approver_user_id": APPROVER_USER_ID,
+            "approver_identity_verified": True,
             "approver_principal": "michael",
             "payload_fingerprint": FINGERPRINT,
         },
@@ -103,6 +103,8 @@ def test_execute_socket_envelope_round_trips_canonical_state(tmp_path: Path) -> 
     assert response["source"] == "SLACK_SOCKET_MODE"
     result = response["result"]
     assert result["disposition"] == "APPROVE"
+    assert result["provider_identity_verified"] is True
+    assert APPROVER_USER_ID not in str(result)
     ledger = TaskLedger(path)
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
     ledger.conn.close()
@@ -134,19 +136,27 @@ def test_bridge_errors_are_bounded(exc: BaseException, error: str) -> None:
     assert str(response).find(str(exc)) == -1
 
 
-def test_read_stdin_rejects_empty_oversize_and_parses_json(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_read_stdin_rejects_empty_oversize_and_parses_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class Stdin:
         def __init__(self, value: bytes):
             self.buffer = io.BytesIO(value)
 
-    monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdin", Stdin(b'{"type":"slash_commands"}'))
+    monkeypatch.setattr(
+        "mesh_cos.slack_socket_bridge.sys.stdin",
+        Stdin(b'{"type":"slash_commands"}'),
+    )
     assert _read_stdin() == {"type": "slash_commands"}
 
     monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdin", Stdin(b""))
     with pytest.raises(ValueError, match="body is required"):
         _read_stdin()
 
-    monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdin", Stdin(b"x" * 1_000_001))
+    monkeypatch.setattr(
+        "mesh_cos.slack_socket_bridge.sys.stdin",
+        Stdin(b"x" * 1_000_001),
+    )
     with pytest.raises(ValueError, match="maximum size"):
         _read_stdin()
 
@@ -157,7 +167,10 @@ def test_read_stdin_rejects_empty_oversize_and_parses_json(monkeypatch: pytest.M
 
 def test_main_writes_bounded_success_response(monkeypatch: pytest.MonkeyPatch) -> None:
     stdout = io.StringIO()
-    monkeypatch.setattr("mesh_cos.slack_socket_bridge._read_stdin", lambda: {"synthetic": True})
+    monkeypatch.setattr(
+        "mesh_cos.slack_socket_bridge._read_stdin",
+        lambda: {"synthetic": True},
+    )
     monkeypatch.setattr(
         "mesh_cos.slack_socket_bridge.execute_socket_envelope",
         lambda payload: {
@@ -178,7 +191,9 @@ def test_main_writes_bounded_success_response(monkeypatch: pytest.MonkeyPatch) -
     }
 
 
-def test_main_converts_bridge_failure_to_bounded_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_converts_bridge_failure_to_bounded_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     stdout = io.StringIO()
 
     def denied() -> dict:

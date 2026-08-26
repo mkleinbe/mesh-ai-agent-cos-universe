@@ -13,7 +13,7 @@ def text(path: Path) -> str:
 
 def test_prepare_validates_existing_image_provenance_before_reuse() -> None:
     prepare = text(SCRIPTS / "mesh-cos-mcp-prepare.sh")
-    assert 'RELEASE_METADATA="$APP_ROOT/release-metadata.txt"' in prepare
+    assert 'RELEASE_METADATA="$BUNDLE_APP_ROOT/release-metadata.txt"' in prepare
     assert "EXPECTED_RELEASE" in prepare
     assert "EXPECTED_COMMIT" in prepare
     assert "org.opencontainers.image.version" in prepare

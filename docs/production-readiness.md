@@ -1,6 +1,6 @@
 # Production Readiness
 
-This is the current go-live gate for the Mesh AI Chief of Staff universe at QNAP deployment target **v4.1.10**. Historical release-specific acceptance records remain evidence, but they do not override this current contract.
+This is the current go-live gate for the Mesh AI Chief of Staff universe at QNAP deployment target **v4.1.11**. Historical release-specific acceptance records remain evidence, but they do not override this current contract.
 
 The canonical Phase 1 authority/runtime contract remains `4.0.0`, with exactly 10 registered agents and 27 governed CoS MCP tools.
 
@@ -12,12 +12,28 @@ Production is green only when:
 - all 10 agents resolve against the same canonical TaskLedger and registry universe;
 - `MESH_COS_AGENT_ID` binds the process identity and cannot be overridden by prompt/task/Slack/connector content;
 - remote production is served through the OpenAI Secure MCP Tunnel and accepts `/mcp` only from the trusted tunnel-side private source identity;
-- hosted envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.10`, and `agent_id=cos`;
+- hosted envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.11`, and `agent_id=cos`;
 - the governance audit chain validates;
 - the kill switch is not active;
 - local/QNAP preflight is green.
 
-## 2. Scheduled execution integrity
+## 2. Release staging and promotion integrity
+
+Every production deployment must preserve the versioned release contract:
+
+- canonical application root remains `/share/Docker/cos-mcp`;
+- release bundles are extracted and executed from `/share/Docker/cos-mcp/releases/vX.Y.Z`;
+- operator/helper scripts self-resolve their extracted release root and are not copied to `/share/Docker`;
+- staged release metadata, build context, Compose, and `.env.runtime` remain under the versioned release directory;
+- staged release identity derives from staged `release-metadata.txt`, not active `.env` and not a release-specific default;
+- only a leading Git `v` is normalized between tag and runtime release identity;
+- genuine requested-versus-staged release mismatch fails closed;
+- active production identity is reported separately from staged candidate identity before promotion;
+- normal `sudo sh ./mesh-cos-mcp-deploy.sh` does not depend on sudo preserving a release variable;
+- active `.env`, Compose, and release metadata are promoted only after both candidate containers are healthy;
+- canonical TaskLedger, tunnel key, Slack protected files, qnet/static networking, and rollback evidence remain preserved throughout staging.
+
+## 3. Scheduled execution integrity
 
 Every governed Scheduled Task logical occurrence must:
 
@@ -33,7 +49,7 @@ Every governed Scheduled Task logical occurrence must:
 
 A correct business no-op or blocked business outcome may still be a completed/verified dispatcher execution when the occurrence contract was correctly evaluated. Business outcome and execution acceptance remain separate fields.
 
-## 3. Human-only operations and approval
+## 4. Human-only operations and approval
 
 The following remain human-only:
 
@@ -46,7 +62,7 @@ L4 requires qualified-human approval. L5 remains Michael-exclusive under the cur
 
 Consequential external actions require exact, current, payload-bound approval and idempotent/auditable execution. Material payload changes invalidate reuse of prior approval.
 
-## 4. Slack HITL trust boundary
+## 5. Slack HITL trust boundary
 
 For governed Slack human approval:
 
@@ -66,7 +82,7 @@ For governed Slack human approval:
 
 Production QNAP sets `MESH_COS_SLACK_HITL_REQUIRED=true`. Runtime readiness must fail when bot-notice verification or the authenticated Socket Mode human-interaction boundary cannot initialize or remain active.
 
-## 5. QNAP runtime and secret handling
+## 6. QNAP runtime and secret handling
 
 Production remains fail closed unless:
 
@@ -77,13 +93,13 @@ Production remains fail closed unless:
 - Docker socket is not mounted;
 - CPU/memory controls match the approved deployment contract;
 - canonical SQLite TaskLedger is writable only through the intended state mount;
-- tunnel secret, Slack human-identity binding, Slack verifier credential, and Socket Mode app-level credential are outside source and generated `.env` values;
+- tunnel secret, Slack human-identity binding, Slack verifier credential, and Socket Mode app-level credential are outside source and generated environment values;
 - the Slack human identity, verifier token, and Socket Mode app token are mounted read-only from protected host files;
 - governed secret files are owned by runtime UID/GID and mode `0400`;
 - diagnostics and logs do not expose secret or personal identity values;
 - backup/restore integrity checks remain green.
 
-## 6. Completion and verification
+## 7. Completion and verification
 
 `task.complete` and `task.verify` are different operations.
 
@@ -97,7 +113,7 @@ A task may not be reported as verified unless:
 
 `COMPLETED != VERIFIED` remains a non-negotiable production invariant.
 
-## 7. AgentOps and escalation
+## 8. AgentOps and escalation
 
 Production is green only if:
 
@@ -105,7 +121,7 @@ Production is green only if:
 - `promote`, `coach`, `retrain`, `restrict`, and `retire` dispositions remain governed recommendations rather than silent model self-modification;
 - critical defects can trigger quarantine/routing restriction and, when necessary, Workspace Agent restriction or unpublication.
 
-## 8. Evidence quality
+## 9. Evidence quality
 
 A result cannot be reported as verified unless:
 
@@ -117,9 +133,9 @@ A result cannot be reported as verified unless:
 - unresolved conflicts are not hidden;
 - Sheet or conversational readback is not substituted for canonical MCP evidence.
 
-## 9. Repository release gate
+## 10. Repository release gate
 
-The exact v4.1.10 candidate must pass fresh:
+The exact v4.1.11 candidate must pass fresh:
 
 - dependency integrity checks;
 - TypeScript MCP build/tests, including Socket Mode transport, and npm security audit;
@@ -128,8 +144,9 @@ The exact v4.1.10 candidate must pass fresh:
 - pytest with 100% branch-aware `mesh_cos` coverage;
 - high-severity Bandit gate;
 - compileall;
-- QNAP shell regressions, including Slack protected configuration/permissions;
-- deterministic v4.1.10 bundle and checksum;
+- QNAP POSIX shell regressions, including versioned release layout, Slack protected configuration, permissions, provenance, and observability;
+- deterministic v4.1.11 bundle and checksum;
+- final release ZIP inspection proving staged metadata/path consistency and absence of generated env, secrets, and canonical state;
 - Compose rendering and release identity assertions, including protected Socket Mode mount and `/mesh-approval` configuration;
 - OCI image version/revision provenance;
 - modern MCP discovery and sequential requests;
@@ -138,16 +155,16 @@ The exact v4.1.10 candidate must pass fresh:
 - direct-ingress denial;
 - persistence, restart, and SQLite backup integrity.
 
-Security applicability for v4.1.10 is TARGETED. See `docs/qnap-security-review-v4.1.10.md`.
+Security applicability for v4.1.11 is TARGETED. See `docs/qnap-security-review-v4.1.11.md`.
 
-## 10. Hosted production acceptance
+## 11. Hosted production acceptance
 
 Repository and container evidence produce a **verified candidate**, not production certification.
 
-After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.10.md` and require:
+After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.11.md` and require:
 
 - correct dual release identity;
-- exactly 10 active agents;
+- exactly 10 active agents and exactly 27 CoS tools;
 - valid audit chain;
 - explicit scheduled idempotency and lifecycle behavior;
 - one synthetic non-consequential HITL approval with a provider-authored official OpenAI bot parent;
@@ -156,9 +173,9 @@ After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance
 - one provider-authenticated `/mesh-approval APPROVE <Approval ID>` interaction by MK;
 - fresh canonical `approval.get` reflecting principal `michael` and the exact synthetic action;
 - no unauthorized external action;
-- required Google TaskLedger operating-mirror reconciliation when the exact connector is available.
+- required TaskLedger operating-mirror reconciliation when the exact connector is available.
 
-## 11. Go-live rule
+## 12. Go-live rule
 
 Production certification requires **zero open CRITICAL/HIGH defects** and no unresolved required acceptance blocker.
 

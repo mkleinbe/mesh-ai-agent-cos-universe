@@ -34,7 +34,7 @@ test('agent identity is required and must be registered', () => {
 test('production deployment release identity is required and normalized', () => {
   assert.throws(() => requireDeploymentRelease({}), /MESH_COS_DEPLOYMENT_RELEASE/);
   assert.throws(() => requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: '   ' }), /MESH_COS_DEPLOYMENT_RELEASE/);
-  assert.equal(requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: ' 4.1.6 ' }), '4.1.6');
+  assert.equal(requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: ' 4.1.7 ' }), '4.1.7');
 });
 
 test('tool projection is exact and excludes human-only tools', () => {
@@ -56,12 +56,12 @@ test('argument validation is object-only and size bounded', () => {
 });
 
 test('safe errors never return raw bridge error messages', () => {
-  const bridge = safeErrorPayload(new PythonBridgeError('permission_denied'), 'r1');
-  assert.deepEqual(bridge, { ok: false, request_id: 'r1', error: 'permission_denied' });
+  const bridge = safeErrorPayload(new PythonBridgeError('forbidden'), 'r1');
+  assert.deepEqual(bridge, { ok: false, request_id: 'r1', error: 'forbidden' });
   assert.equal(JSON.stringify(bridge).includes('secret'), false);
   assert.equal(safeErrorPayload(new Error('Tool arguments exceed maximum size'), 'r2').error, 'request_too_large');
   assert.equal(safeErrorPayload(new Error('Tool arguments must be an object'), 'r3').error, 'invalid_request');
-  assert.equal(safeErrorPayload(new Error('unexpected secret'), 'r4').error, 'runtime_error');
+  assert.equal(safeErrorPayload(new Error('unexpected secret'), 'r4').error, 'execution_failed');
 });
 
 test('python environment always makes repository src importable', () => {

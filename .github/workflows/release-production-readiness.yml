@@ -23,19 +23,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build v4.1.7 QNAP deployment bundle
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.7
+      - name: Build v4.1.8 QNAP deployment bundle
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.8
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.7
+          name: mesh-cos-mcp-qnap-v4.1.8
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.7.zip
-            dist/mesh-cos-mcp-qnap-v4.1.7.zip.sha256
-      - name: Create or update v4.1.7 release and semantic tag
+            dist/mesh-cos-mcp-qnap-v4.1.8.zip
+            dist/mesh-cos-mcp-qnap-v4.1.8.zip.sha256
+      - name: Create or update v4.1.8 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.1.7
-          ASSET: dist/mesh-cos-mcp-qnap-v4.1.7.zip
+          TAG: v4.1.8
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.8.zip
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -43,7 +43,7 @@ jobs:
           else
             gh release create "$TAG" \
               --target "$GITHUB_SHA" \
-              --title "v4.1.7 QNAP Image Provenance and Hosted Envelope Verification" \
+              --title "v4.1.8 MCP Contract Validation and Governed Skill Handoff" \
               --notes-file RELEASE.md \
               "$ASSET" "$ASSET.sha256"
           fi

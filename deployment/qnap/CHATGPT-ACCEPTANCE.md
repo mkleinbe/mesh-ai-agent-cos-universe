@@ -1,176 +1,104 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this after the **v4.1.7** `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
+Run this after the **v4.1.8** `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
 
-The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted MCP runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.7**.
+The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted MCP runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.8**.
 
-v4.1.7 specifically closes the release blocker where the hosted app was functionally healthy but successful governed responses omitted `deployment_release`.
+v4.1.8 specifically closes request-schema drift, opaque validation, request-binding versus canonical lookup ambiguity, missing runtime registration for declared governed Skills, and AgentOps request-contract drift.
 
-## 1. OpenAI tunnel prerequisites
+## 1. Local deployment identity
 
-In OpenAI Platform tunnel settings:
-
-1. Create or select the Secure MCP Tunnel used by this deployment.
-2. Ensure the tunnel is associated with the Platform organization that owns/manages it and with the target ChatGPT workspace.
-3. The operator who creates or edits the tunnel needs **Tunnels Read + Manage**.
-4. The operator who runs `tunnel-client` or selects the tunnel while creating the ChatGPT app needs **Tunnels Read + Use**.
-5. Record the `tunnel_id` and create the runtime API key used by the QNAP deployment script.
-
-The QNAP tunnel client needs outbound HTTPS to `api.openai.com:443` and private reachability to `mesh-cos-mcp`. It does not need inbound internet exposure.
-
-## 2. Select or refresh the ChatGPT app
-
-Use ChatGPT on the web with a workspace/account allowed to use the custom MCP app.
-
-1. Open the installed **Mesh CoS MCP** app or its developer-mode configuration.
-2. Confirm the connection points to the Secure MCP Tunnel used by the QNAP deployment.
-3. Run **Scan Tools** again after the v4.1.7 upgrade.
-4. Keep `mesh-cos-tunnel` healthy until the scan completes.
-
-No additional MCP-layer OAuth flow is introduced by v4.1.7. The Secure MCP Tunnel remains the production ingress trust boundary.
-
-## 3. Local deployment-identity and provenance acceptance
-
-The deployment itself now performs a real read-only governed MCP `registry.get_agent` call from the tunnel network namespace. PASS from `mesh-cos-mcp-deploy.sh` therefore already requires the running tool envelope to expose the expected identities.
-
-Capture additional local evidence with:
+After deployment, capture:
 
 ```sh
 sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-mcp
-sudo docker inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }} {{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp
 sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-tunnel
 grep '^MESH_COS_DEPLOYMENT_RELEASE=' /share/Docker/cos-mcp/.env
 sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
-sed -n 's/^commit=//p' /share/Docker/cos-mcp/release-metadata.txt
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>r.text()).then(console.log)"
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires:
-
-- `mesh-cos-mcp:qnap-v4.1.7` is running and healthy;
-- the tunnel is running and healthy;
-- `.env` reports `MESH_COS_DEPLOYMENT_RELEASE=4.1.7`;
-- bundle metadata reports `version=4.1.7`;
-- the running image label reports `4.1.7-qnap` and its OCI revision equals the bundle `commit=` value;
-- `/healthz` and `/readyz` both report `mcp_version: 4.0.0`, `deployment_release: 4.1.7`, `agent_id: cos`, and `transport: SECURE_MCP_TUNNEL`;
-- the deployment verification log records `PASS governed tool envelope dual release identity`.
-
-`mcp_version` identifies the canonical authority/runtime contract. `deployment_release` identifies the QNAP release serving the request. They are intentionally different values.
-
-## 4. Tool-catalog acceptance
-
-The app scan must expose exactly **27 CoS tools**:
-
-```text
-agentops.recommend
-agentops.record_event
-agentops.score
-answer_desk.resolve
-approval.get
-approval.request
-conflict.decide
-conflict.open
-delegation.create
-governance.record_decision
-governance.record_event
-governance.verify_audit_chain
-metrics.snapshot
-registry.get_agent
-registry.list_agents
-reliability.replay
-skills.invoke_governed
-task.check_in
-task.complete
-task.decompose
-task.get
-task.intake
-task.list
-task.reassign
-task.remediate_stall
-task.transition
-task.verify
-```
-
-These human-principal-only operations must **not** appear:
-
-```text
-approval.record_decision
-reliability.human_override
-```
-
-Mesh Devil's Advocate must not appear as an agent principal. It remains a governed shared Skill. Message Operations remains a registered agent.
-
-## 5. Published-app sequential transport and identity acceptance
-
-Open a new chat with only **Mesh CoS MCP** selected. Without restarting either QNAP container, execute these calls sequentially in the same conversation:
-
-1. `registry.list_agents`
-2. `governance.verify_audit_chain`
-3. `metrics.snapshot`
-4. `registry.get_agent` for `cos`
-5. `task.list`
-6. `registry.list_agents`
-7. `governance.verify_audit_chain`
-8. `metrics.snapshot`
-9. `registry.get_agent` for `message-ops`
-10. `task.list`
-
-PASS requires all ten calls to return successfully with no `502`, `invalid_session`, reconnect requirement, or container restart. Both roster calls must show exactly **10 registered agents**.
-
-For **every** successful governed tool call, inspect the returned envelope. PASS requires:
+PASS requires the v4.1.8 application image, both containers healthy, and status identity:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.7
+deployment_release: 4.1.8
+agent_id: cos
+transport: SECURE_MCP_TUNNEL
+```
+
+## 2. Tool catalog
+
+The CoS-bound published app must expose exactly **27 agent-facing tools**. Human-principal-only `approval.record_decision` and `reliability.human_override` must not appear. The canonical roster remains exactly 10 agents; Mesh Devil's Advocate remains a governed shared Skill rather than an agent principal.
+
+## 3. Request-contract acceptance
+
+### Valid intake
+
+Create one clearly synthetic L0 task with the documented `task.intake` fields and an idempotency key. PASS requires a canonical TaskRecord and the same task ID if the request is repeated with that key.
+
+### Invalid intake
+
+Call `task.intake` while omitting `accountable_agent`. PASS requires:
+
+```text
+ok: false
+error: validation_failed
+details:
+  - field: accountable_agent
+    reason: required
+```
+
+No raw exception, stack trace, secret, filesystem detail, or private reasoning may appear.
+
+### Canonical task lookup
+
+For an existing synthetic task, `task.get` and `task.decompose` using `parent_task_id` must resolve the same canonical identifier. An undocumented alias such as `parent` must fail as request validation, not as resource `not_found`.
+
+## 4. Governed Skill acceptance
+
+Call `skills.invoke_governed` for CoS capability `mesh-ppmd-bot` using a synthetic, non-consequential payload. PASS requires a bounded authorization/handoff result with:
+
+```text
+status: AUTHORIZED
+execution_mode: CHATGPT_SKILL_HANDOFF
+agent_id: cos
+capability: mesh-ppmd-bot
+```
+
+This result authorizes the ChatGPT Skill runtime handoff; it is not arbitrary QNAP code execution.
+
+A nonexistent capability must fail closed as `not_found`. A capability known to another role but not allowlisted for CoS must fail closed as `forbidden`. Payload fields attempting to provide code, import paths, callables, shell commands, plugin executables, or Skill implementations must return `validation_failed` and must never execute.
+
+## 5. AgentOps acceptance
+
+`agentops.recommend` with the documented minimum contract:
+
+```text
 agent_id: cos
 ```
 
-The underlying `result` payload must retain its canonical tool semantics.
+must succeed. Invalid field names or malformed values must return the same safe structured validation contract used by other tools.
 
-Any successful hosted response that omits `deployment_release` is a **release blocker**, even if the tool result itself is correct.
+## 6. Lifecycle acceptance
 
-## 6. Read-only authority acceptance
+Use a separate synthetic task if lifecycle testing is required. Move it through a valid working path and call `task.complete` with non-empty outcome and evidence. PASS requires `status=COMPLETED` and `verified_at=null`.
 
-Run:
+Only a separate expressly authorized `task.verify` action with acceptance evidence may move it to `VERIFIED`. Verification before completion, verification without evidence, or unauthorized verification must fail closed.
 
-```text
-Using only the Mesh CoS MCP app, call registry.list_agents. Return only agent_id, display_name, and parent_agent_id. Do not invoke any write tool.
-```
+## 7. Audit integrity
 
-PASS requires exactly 10 registered agents, including `message-ops`, and no `devils-advocate` principal.
+Call `governance.verify_audit_chain` before and after synthetic acceptance writes. PASS requires `valid: true` both times.
 
-Then run:
+## 8. Multi-agent boundary
 
-```text
-Using only the Mesh CoS MCP app, call governance.verify_audit_chain, then metrics.snapshot. Do not invoke any write tool. Report the audit-chain result and the returned metrics without modifying canonical state.
-```
+Repository/container certification establishes immutable `MESH_COS_AGENT_ID` binding and exact allowlists for all 10 agents. Do not claim a downstream agent has independently authenticated to the hosted production interface unless a distinct bound session for that agent is actually provisioned and tested. A CoS session reading another registry record is not equivalent evidence.
 
-PASS requires a valid audit-chain result and a successful metrics response.
+## 9. Consequential-action exclusion
 
-## 7. Optional governed-write acceptance
+Do not perform external sends, public publishing, client commitments, pricing or discount approvals, final staffing commitments, human approval decisions, reliability human overrides, or other consequential real-world actions during acceptance.
 
-After read-only acceptance is green, use this low-authority idempotent task only when a production write is explicitly desired:
+## 10. Pass rule
 
-```text
-Using only the Mesh CoS MCP app, invoke task.intake with exactly these values:
-objective: QNAP Secure MCP acceptance v4.1.7
-expected_outcome: Confirm the governed write path persists to the canonical TaskLedger after the v4.1.7 deployment
-requested_by: michael
-executive_sponsor: michael
-accountable_agent: cos
-decision_owner: michael
-authority_level: 0
-acceptance_test: Read the task back through task.get and confirm it exists in canonical state without treating completion as verification
-idempotency_key: qnap-secure-mcp-v4.1.7
-
-Return the created or existing task_id. Do not call task.complete or task.verify.
-```
-
-Call `task.get` for the returned task ID and confirm the objective, accountable agent, authority level, and acceptance test. Then call `governance.verify_audit_chain` again. Re-running the intake with the same idempotency key must resolve to the same canonical task rather than create a duplicate.
-
-## 8. Acceptance boundary
-
-Do not use `task.complete`, `task.verify`, `approval.request`, `conflict.decide`, `reliability.replay`, or external messaging/publishing actions during initial v4.1.7 acceptance. The purpose is to prove release provenance, deployment identity, transport reliability, catalog projection, immutable CoS identity, canonical persistence, and audit integrity without making a business commitment.
-
-v4.1.7 is accepted only after local provenance/governed-envelope verification and the hosted published-app sequence are both green.
+v4.1.8 is production-accepted only when the actual hosted Mesh CoS MCP app demonstrates the expected deployment envelope, exact schema behavior, safe validation, canonical TaskLedger lookup, governed Skill enforcement, AgentOps contract, lifecycle separation, authorization boundaries, and valid audit chain.

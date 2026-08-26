@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-VERSION=${1:-4.1.7}
+VERSION=${1:-4.1.8}
 TAG="v${VERSION}"
 BUNDLE=${BUNDLE_DIR:-dist/qnap-bundle}
 ASSET=${ASSET_PATH:-dist/mesh-cos-mcp-qnap-v${VERSION}.zip}
@@ -30,17 +30,21 @@ cp docs/qnap-security-review-v4.1.4.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review-v4.1.5.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review-v4.1.6.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-security-review-v4.1.7.md "$BUNDLE/cos-mcp/"
+cp docs/qnap-security-review-v4.1.8.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-deployment-observability-standard.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-mcp-502-debugging-v4.1.4.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-release-identity-debugging-v4.1.5.md "$BUNDLE/cos-mcp/"
 cp docs/qnap-image-provenance-envelope-debugging-v4.1.7.md "$BUNDLE/cos-mcp/"
 cp docs/chatgpt-published-app-production-acceptance-v4.1.6.md "$BUNDLE/cos-mcp/"
+cp docs/chatgpt-published-app-production-acceptance-v4.1.8.md "$BUNDLE/cos-mcp/"
 cp docs/release-4.1.4-qnap-modern-mcp-transport.md "$BUNDLE/cos-mcp/"
 cp docs/release-4.1.5-qnap-release-identity.md "$BUNDLE/cos-mcp/"
 cp docs/release-4.1.6-secure-mcp-published-app-identity.md "$BUNDLE/cos-mcp/"
 cp docs/release-4.1.7-qnap-image-provenance-envelope.md "$BUNDLE/cos-mcp/"
+cp docs/release-4.1.8-mcp-contract-acceptance.md "$BUNDLE/cos-mcp/"
 cp specs/qnap-published-chatgpt-app-v4.1.6.feature "$BUNDLE/cos-mcp/"
 cp specs/qnap-image-provenance-envelope-v4.1.7.feature "$BUNDLE/cos-mcp/"
+cp specs/qnap-mcp-production-acceptance-v4.1.8.feature "$BUNDLE/cos-mcp/"
 cp RELEASE.md "$BUNDLE/cos-mcp/"
 printf 'tag=%s\nversion=%s\ncommit=%s\n' "$TAG" "$VERSION" "$COMMIT" > "$BUNDLE/cos-mcp/release-metadata.txt"
 
@@ -57,15 +61,17 @@ test ! -e "$BUNDLE/cos-mcp/secrets"
 test -f "$BUILD_CONTEXT/Dockerfile"
 test -f "$BUILD_CONTEXT/mcp/package-lock.json"
 test -f "$BUILD_CONTEXT/src/mesh_cos/mcp_runtime.py"
+test -f "$BUILD_CONTEXT/src/mesh_cos/mcp_validation.py"
+test -f "$BUILD_CONTEXT/chatgpt/mcp/tool-input-schemas.v1.json"
 test -f "$BUILD_CONTEXT/deployment/qnap/runtime_preflight.py"
 test -f "$BUNDLE/mesh-cos-qnap-compose.sh"
 test -f "$BUNDLE/mesh-cos-qnap-observability.sh"
 test -f "$BUNDLE/mesh-cos-qnap-permissions.sh"
 test -f "$BUNDLE/mesh-cos-qnap-image-provenance.sh"
-test -f "$BUNDLE/cos-mcp/qnap-security-review-v4.1.7.md"
-test -f "$BUNDLE/cos-mcp/qnap-image-provenance-envelope-debugging-v4.1.7.md"
-test -f "$BUNDLE/cos-mcp/release-4.1.7-qnap-image-provenance-envelope.md"
-test -f "$BUNDLE/cos-mcp/qnap-image-provenance-envelope-v4.1.7.feature"
+test -f "$BUNDLE/cos-mcp/qnap-security-review-v4.1.8.md"
+test -f "$BUNDLE/cos-mcp/release-4.1.8-mcp-contract-acceptance.md"
+test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.8.md"
+test -f "$BUNDLE/cos-mcp/qnap-mcp-production-acceptance-v4.1.8.feature"
 test -f "$BUNDLE/cos-mcp/release-metadata.txt"
 
 chmod +x "$BUNDLE"/*.sh "$BUNDLE/cos-mcp/qnap-environment-probe.sh"

@@ -72,6 +72,22 @@ class WorkspaceAgentMCPPolicy:
         tools = self._tools()
         if not tools:
             raise ValueError("MCP contract requires tools")
+        if strict_contract:
+            registry_ref = self.contract.get("input_schema_registry", "chatgpt/mcp/tool-input-schemas.v1.json")
+            if not isinstance(registry_ref, str) or not registry_ref.strip():
+                raise ValueError("MCP input schema registry reference must be non-empty")
+            schema_path = Path(__file__).resolve().parents[2] / registry_ref
+            schema_payload = json.loads(schema_path.read_text(encoding="utf-8"))
+            if schema_payload.get("schema_version") != "mesh.cos.mcp-tool-input-schemas.v1":
+                raise ValueError("Unexpected MCP input schema registry version")
+            input_schemas = schema_payload.get("tools")
+            if not isinstance(input_schemas, dict) or set(input_schemas) != set(tools):
+                raise ValueError("MCP input schema registry must exactly match the tool catalog")
+            for tool_name, schema in input_schemas.items():
+                if not isinstance(schema, dict) or schema.get("type") != "object":
+                    raise ValueError(f"MCP input schema must be an object: {tool_name}")
+                if schema.get("additionalProperties") is not False:
+                    raise ValueError(f"MCP input schema must be closed: {tool_name}")
         for name, tool in tools.items():
             if tool.get("authority_enforced") is not True:
                 raise ValueError(f"Authority enforcement missing for {name}")

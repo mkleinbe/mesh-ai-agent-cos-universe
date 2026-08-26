@@ -78,12 +78,13 @@ def test_release_identity_normalization_accepts_git_v_prefix_but_preserves_misma
     assert "requested deployment release does not match extracted bundle metadata" in prepare
 
 
-def test_v4111_bundle_and_docs_define_versioned_staging_contract() -> None:
+def test_v4111_release_evidence_remains_historical_and_reproducible() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    steps = text(QNAP / "DEPLOYMENT-STEPS.md")
-    assert 'VERSION=${1:-4.1.11}' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-qnap-layout.sh"' in builder
-    assert "/share/Docker/cos-mcp/releases/v4.1.11" in steps
-    assert "No helper scripts are copied to `/share/Docker`" in steps
-    assert "sudo sh ./mesh-cos-mcp-deploy.sh" in steps
-    assert "4.1.11" in steps
+    historical_release = text(ROOT / "docs" / "release-4.1.11-qnap-versioned-release-staging.md")
+    historical_spec = text(ROOT / "specs" / "qnap-versioned-release-staging-v4.1.11.feature")
+    assert "4.1.10|4.1.11" in builder
+    assert "LEGACY_FLAT=1" in builder
+    assert "v4.1.11" in historical_release
+    assert "QNAP-074" in historical_spec
+    assert "QNAP-082" in historical_spec
+    assert 'VERSION=${1:-4.1.12}' in builder

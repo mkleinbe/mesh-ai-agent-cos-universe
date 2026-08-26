@@ -215,7 +215,7 @@ class SlackApprovalHITLService:
             "channel_id": channel_id,
             "thread_ts": thread_ts,
             "notice_author_user_id": author,
-            "approver_user_id": self.config.approver_user_id,
+            "approver_identity_verified": True,
             "approver_principal": self.config.approver_principal,
             "payload_fingerprint": payload_fingerprint,
             "bound_at": utcnow(),

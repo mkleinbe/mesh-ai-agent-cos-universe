@@ -9,26 +9,35 @@ from mesh_cos.ledger import TaskLedger
 from mesh_cos.preflight import ProductionPreflight
 
 ROOT = Path(__file__).resolve().parents[2]
+APPROVER_USER_ID = "U0TESTAPPROVER"
 
 
-def production_env() -> dict[str, str]:
+def production_env(tmp_path: Path) -> dict[str, str]:
+    verifier_file = tmp_path / "slack-verifier-token"
+    verifier_file.write_text("xoxb-test-secret\n", encoding="utf-8")
+    socket_file = tmp_path / "slack-socket-app-token"
+    socket_file.write_text("xapp-test-secret\n", encoding="utf-8")
     return {
         "MESH_COS_KILL_SWITCH": "false",
         "MESH_COS_AGENT_ID": "cos",
         "MESH_COS_LEDGER_PATH": ".mesh-cos/test-task-ledger.sqlite3",
         "MESH_COS_PYTHON_BIN": "python",
         "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": "C0BRL4GCL3A",
-        "MESH_COS_SLACK_BOT_TOKEN": "xoxb-test-secret",
-        "MESH_COS_SLACK_SIGNING_SECRET": "signing-secret",
+        "MESH_COS_SLACK_APPROVER_USER_ID": APPROVER_USER_ID,
+        "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
+        "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS": "U0BKV7Z8M96,U0BN8V2BU9Z",
+        "MESH_COS_SLACK_VERIFIER_TOKEN_FILE": str(verifier_file),
+        "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE": str(socket_file),
+        "MESH_COS_SLACK_APPROVAL_COMMAND": "/mesh-approval",
         "MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID": "CANSWER",
     }
 
 
-def test_production_preflight_passes_without_exposing_secrets() -> None:
+def test_production_preflight_passes_without_exposing_secrets(tmp_path: Path) -> None:
     ledger = TaskLedger()
     result = ProductionPreflight(
         root=ROOT,
-        env=production_env(),
+        env=production_env(tmp_path),
         ledger=ledger,
         require_slack=True,
         require_answer_desk=True,
@@ -37,12 +46,13 @@ def test_production_preflight_passes_without_exposing_secrets() -> None:
     assert all(check["status"] == "PASS" for check in result["checks"])
     rendered = str(result)
     assert "xoxb-test-secret" not in rendered
-    assert "signing-secret" not in rendered
+    assert "xapp-test-secret" not in rendered
+    assert APPROVER_USER_ID not in rendered
     assert ".mesh-cos/test-task-ledger.sqlite3" not in rendered
 
 
-def test_production_preflight_fails_closed_for_missing_local_runtime_config() -> None:
-    missing = production_env()
+def test_production_preflight_fails_closed_for_missing_local_runtime_config(tmp_path: Path) -> None:
+    missing = production_env(tmp_path)
     missing.pop("MESH_COS_LEDGER_PATH")
     result = ProductionPreflight(root=ROOT, env=missing).check()
     assert result["ready"] is False
@@ -54,35 +64,130 @@ def test_production_preflight_fails_closed_for_missing_local_runtime_config() ->
     with pytest.raises(RuntimeError, match="mcp_ledger_path"):
         ProductionPreflight(root=ROOT, env=missing).assert_ready()
 
-    killed = production_env()
+    killed = production_env(tmp_path)
     killed["MESH_COS_KILL_SWITCH"] = "true"
     result = ProductionPreflight(root=ROOT, env=killed).check()
     assert result["ready"] is False
-    assert any(check["name"] == "kill_switch" and check["status"] == "FAIL" for check in result["checks"])
+    assert any(
+        check["name"] == "kill_switch" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
 
 
-def test_production_preflight_enforces_requested_slack_surfaces_only() -> None:
-    env = production_env()
-    env.pop("MESH_COS_SLACK_BOT_TOKEN")
-    env.pop("MESH_COS_SLACK_SIGNING_SECRET")
+def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: Path) -> None:
+    env = production_env(tmp_path)
+    env.pop("MESH_COS_SLACK_APPROVER_USER_ID")
+    env.pop("MESH_COS_SLACK_VERIFIER_TOKEN_FILE")
+    env.pop("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE")
+    env.pop("MESH_COS_SLACK_APPROVAL_COMMAND")
     env.pop("MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID")
 
     assert ProductionPreflight(root=ROOT, env=env, require_slack=False).check()["ready"] is True
 
     slack = ProductionPreflight(root=ROOT, env=env, require_slack=True).check()
     assert slack["ready"] is False
-    assert any(check["name"] == "slack_credentials" and check["status"] == "FAIL" for check in slack["checks"])
+    for name in (
+        "slack_approver_identity",
+        "slack_verifier_credential",
+        "slack_socket_app_credential",
+        "slack_approval_command",
+    ):
+        assert any(
+            check["name"] == name and check["status"] == "FAIL"
+            for check in slack["checks"]
+        )
 
     answer = ProductionPreflight(
         root=ROOT,
-        env=production_env() | {"MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID": ""},
+        env=production_env(tmp_path) | {"MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID": ""},
         require_answer_desk=True,
     ).check()
     assert answer["ready"] is False
-    assert any(check["name"] == "answer_desk_channel" and check["status"] == "FAIL" for check in answer["checks"])
+    assert any(
+        check["name"] == "answer_desk_channel" and check["status"] == "FAIL"
+        for check in answer["checks"]
+    )
 
 
-def test_production_preflight_detects_audit_chain_corruption() -> None:
+def test_production_preflight_rejects_slack_identity_author_and_credential_drift(
+    tmp_path: Path,
+) -> None:
+    wrong_channel = production_env(tmp_path)
+    wrong_channel["MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID"] = "C0WRONG"
+    result = ProductionPreflight(root=ROOT, env=wrong_channel, require_slack=True).check()
+    assert any(
+        check["name"] == "agent_ops_channel" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+    wrong_principal = production_env(tmp_path)
+    wrong_principal["MESH_COS_SLACK_APPROVER_PRINCIPAL"] = "other"
+    result = ProductionPreflight(root=ROOT, env=wrong_principal, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_approver_identity" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+    wrong_authors = production_env(tmp_path)
+    wrong_authors["MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS"] = "U0BKV7Z8M96"
+    result = ProductionPreflight(root=ROOT, env=wrong_authors, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_notice_authors" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+    bad_verifier = tmp_path / "bad-verifier"
+    bad_verifier.write_text("xapp-wrong-type\n", encoding="utf-8")
+    bad_verifier_env = production_env(tmp_path)
+    bad_verifier_env["MESH_COS_SLACK_VERIFIER_TOKEN_FILE"] = str(bad_verifier)
+    result = ProductionPreflight(root=ROOT, env=bad_verifier_env, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_verifier_credential" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+    bad_socket = tmp_path / "bad-socket"
+    bad_socket.write_text("xoxb-wrong-type\n", encoding="utf-8")
+    bad_socket_env = production_env(tmp_path)
+    bad_socket_env["MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE"] = str(bad_socket)
+    result = ProductionPreflight(root=ROOT, env=bad_socket_env, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_socket_app_credential" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+    wrong_command = production_env(tmp_path)
+    wrong_command["MESH_COS_SLACK_APPROVAL_COMMAND"] = "/other-command"
+    result = ProductionPreflight(root=ROOT, env=wrong_command, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_approval_command" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+
+def test_production_preflight_fails_closed_when_protected_file_read_raises(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    env = production_env(tmp_path)
+    verifier = Path(env["MESH_COS_SLACK_VERIFIER_TOKEN_FILE"])
+    original = Path.read_text
+
+    def read_text(path: Path, *args: object, **kwargs: object) -> str:
+        if path == verifier:
+            raise OSError("simulated unreadable verifier")
+        return original(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    result = ProductionPreflight(root=ROOT, env=env, require_slack=True).check()
+    assert result["ready"] is False
+    assert any(
+        check["name"] == "slack_verifier_credential" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
+
+def test_production_preflight_detects_audit_chain_corruption(tmp_path: Path) -> None:
     ledger = TaskLedger()
     journal = GovernanceJournal(ledger)
     event = journal.record_event(
@@ -114,6 +219,9 @@ def test_production_preflight_detects_audit_chain_corruption() -> None:
     event["event_hash"] = "tampered"
     ledger.save_record("audit_event_v2", event["event_id"], event)
 
-    result = ProductionPreflight(root=ROOT, env=production_env(), ledger=ledger).check()
+    result = ProductionPreflight(root=ROOT, env=production_env(tmp_path), ledger=ledger).check()
     assert result["ready"] is False
-    assert any(check["name"] == "audit_chain" and check["status"] == "FAIL" for check in result["checks"])
+    assert any(
+        check["name"] == "audit_chain" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )

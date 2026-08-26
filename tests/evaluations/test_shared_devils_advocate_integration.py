@@ -48,7 +48,9 @@ def test_mcp_projects_shared_challenge_without_agent_principal() -> None:
 def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() -> None:
     expected_shared = {"cos": ["mesh-devils-advocate"], "cro": ["mesh-devils-advocate"]}
     for agent_id, expected in expected_shared.items():
-        manifest = json.loads((ROOT / "chatgpt" / "workspace-agents" / f"{agent_id}.json").read_text())
+        manifest = json.loads(
+            (ROOT / "chatgpt" / "workspace-agents" / f"{agent_id}.json").read_text()
+        )
         assert manifest["shared_skills"] == expected
         assert manifest["builder_configuration"]["shared_skills"] == expected
     for path in (ROOT / "chatgpt" / "workspace-agents").glob("*.json"):
@@ -61,11 +63,13 @@ def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() ->
 def test_qnap_release_preserves_v4_authority_contract() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
-    release_workflow = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
-    assert "TAG: v4.1.9" in release_workflow
-    assert '--title "v4.1.9 Documentation and Release Closeout"' in release_workflow
+    release_workflow = (
+        ROOT / ".github" / "workflows" / "release-production-readiness.yml"
+    ).read_text()
+    assert "TAG: v4.1.10" in release_workflow
+    assert '--title "v4.1.10 Scheduled Automation and Slack HITL Hardening"' in release_workflow
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.9 Documentation and Release Closeout" in release_notes
-    assert "canonical Mesh CoS Phase 1 authority/runtime contract remains **`4.0.0`**" in release_notes
+    assert "v4.1.10 Scheduled Automation and Slack HITL Hardening" in release_notes
+    assert "canonical Phase 1 authority/runtime contract remains **`4.0.0`**" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
     assert "Message Operations" in release_notes

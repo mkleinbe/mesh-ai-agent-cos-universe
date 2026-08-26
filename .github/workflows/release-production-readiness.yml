@@ -6,11 +6,14 @@ on:
     paths:
       - RELEASE.md
       - CHANGELOG.md
+      - SECURITY.md
       - deployment/qnap/**
       - docs/qnap-**
       - docs/chatgpt-**
       - docs/release-**
+      - docs/slack-agent-protocol.md
       - specs/qnap-**
+      - specs/scheduled-automation-slack-hitl-v4.1.10.feature
       - Dockerfile
       - scripts/build-qnap-release-bundle.sh
       - .github/workflows/release-production-readiness.yml
@@ -24,19 +27,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build v4.1.9 QNAP deployment bundle
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.9
+      - name: Build v4.1.10 QNAP deployment bundle
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.10
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.9
+          name: mesh-cos-mcp-qnap-v4.1.10
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.9.zip
-            dist/mesh-cos-mcp-qnap-v4.1.9.zip.sha256
-      - name: Create or update v4.1.9 release and semantic tag
+            dist/mesh-cos-mcp-qnap-v4.1.10.zip
+            dist/mesh-cos-mcp-qnap-v4.1.10.zip.sha256
+      - name: Create or update v4.1.10 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.1.9
-          ASSET: dist/mesh-cos-mcp-qnap-v4.1.9.zip
+          TAG: v4.1.10
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.10.zip
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
@@ -44,7 +47,7 @@ jobs:
           else
             gh release create "$TAG" \
               --target "$GITHUB_SHA" \
-              --title "v4.1.9 Documentation and Release Closeout" \
+              --title "v4.1.10 Scheduled Automation and Slack HITL Hardening" \
               --notes-file RELEASE.md \
               "$ASSET" "$ASSET.sha256"
           fi

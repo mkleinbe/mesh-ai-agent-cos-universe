@@ -10,6 +10,8 @@ from .ledger import TaskLedger
 from .mcp_policy import WorkspaceAgentMCPPolicy
 from .mcp_runtime import MCPRuntime
 from .registry import load_registry
+from .slack_hitl import DEFAULT_ALLOWED_NOTICE_AUTHORS, SlackHITLConfig
+from .slack_socket_approval import DEFAULT_APPROVAL_COMMAND
 
 EXPECTED_AGENT_IDS = {
     "cos",
@@ -25,12 +27,22 @@ EXPECTED_AGENT_IDS = {
 }
 
 
+def _protected_file_matches(path_value: str, prefix: str) -> bool:
+    if not path_value:
+        return False
+    path = Path(path_value).expanduser()
+    try:
+        return path.is_file() and path.read_text(encoding="utf-8").strip().startswith(prefix)
+    except OSError:
+        return False
+
+
 @dataclass(slots=True)
 class ProductionPreflight:
     """Fail-closed repository/runtime readiness checks for a production activation.
 
-    The result deliberately reports only configuration presence and validation state.
-    It never echoes credential, token, or local state-path values.
+    Results report configuration presence and validation state only. Credentials,
+    personal Slack IDs, and local state paths are never echoed.
     """
 
     root: Path
@@ -83,15 +95,16 @@ class ProductionPreflight:
                 self.root / "mcp" / "src" / "index.ts",
                 self.root / "mcp" / "src" / "server.ts",
                 self.root / "mcp" / "src" / "python-bridge.ts",
+                self.root / "mcp" / "src" / "slack-socket-mode.ts",
             )
         )
         checks.append(
             self._result(
                 "mcp_local_package",
                 local_package_ok,
-                "bundled local stdio MCP source package present"
+                "bundled local MCP and Slack Socket Mode source package present"
                 if local_package_ok
-                else "bundled local stdio MCP package is incomplete",
+                else "bundled local MCP package is incomplete",
             )
         )
 
@@ -109,7 +122,7 @@ class ProductionPreflight:
                 detail = "canonical agent set does not match the Phase 1 organization"
             elif unsafe_health:
                 detail = "non-routable agent health present: " + ", ".join(unsafe_health)
-        except Exception as exc:  # noqa: BLE001 - preflight converts any validation defect to fail-closed status
+        except Exception as exc:  # noqa: BLE001
             registry_ok = False
             detail = f"registry validation failed: {type(exc).__name__}"
         checks.append(self._result("agent_registry", registry_ok, detail))
@@ -124,7 +137,7 @@ class ProductionPreflight:
                 if mcp_contract_ok
                 else f"{len(binding_errors)} runtime binding error(s)"
             )
-        except Exception as exc:  # noqa: BLE001 - preflight must report MCP defects instead of crashing
+        except Exception as exc:  # noqa: BLE001
             mcp_contract_ok = False
             mcp_detail = f"MCP contract validation failed: {type(exc).__name__}"
         checks.append(self._result("mcp_contract", mcp_contract_ok, mcp_detail))
@@ -144,30 +157,83 @@ class ProductionPreflight:
                 if runtime_ok
                 else "serialized MCP runtime tool surface differs from contract"
             )
-        except Exception as exc:  # noqa: BLE001 - composition defects must fail preflight, not crash it
+        except Exception as exc:  # noqa: BLE001
             runtime_ok = False
             runtime_detail = f"serialized MCP runtime validation failed: {type(exc).__name__}"
         checks.append(self._result("mcp_runtime", runtime_ok, runtime_detail))
 
         if self.require_slack:
-            channel_present = bool(
-                str(env.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "")).strip()
-            )
+            channel = str(env.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "")).strip()
             checks.append(
                 self._result(
                     "agent_ops_channel",
-                    channel_present,
-                    "configured" if channel_present else "missing channel ID",
+                    channel == "C0BRL4GCL3A",
+                    "governed agent-operations channel configured"
+                    if channel == "C0BRL4GCL3A"
+                    else "governed agent-operations channel missing or mismatched",
                 )
             )
-            credentials_present = bool(
-                str(env.get("MESH_COS_SLACK_BOT_TOKEN", "")).strip()
-            ) and bool(str(env.get("MESH_COS_SLACK_SIGNING_SECRET", "")).strip())
+
+            try:
+                slack_config = SlackHITLConfig.from_env(env)
+                identity_ok = (
+                    bool(slack_config.approver_user_id)
+                    and slack_config.approver_principal == "michael"
+                )
+                authors_ok = slack_config.allowed_notice_author_ids == DEFAULT_ALLOWED_NOTICE_AUTHORS
+            except RuntimeError:
+                identity_ok = False
+                authors_ok = False
             checks.append(
                 self._result(
-                    "slack_credentials",
-                    credentials_present,
-                    "configured" if credentials_present else "bot token and/or signing secret missing",
+                    "slack_approver_identity",
+                    identity_ok,
+                    "protected Slack identity maps to canonical principal michael"
+                    if identity_ok
+                    else "Slack approver identity binding is missing or invalid",
+                )
+            )
+            checks.append(
+                self._result(
+                    "slack_notice_authors",
+                    authors_ok,
+                    "official OpenAI Slack notice identities configured"
+                    if authors_ok
+                    else "official OpenAI Slack notice identity set is invalid",
+                )
+            )
+
+            verifier_path = str(env.get("MESH_COS_SLACK_VERIFIER_TOKEN_FILE", "")).strip()
+            verifier_ok = _protected_file_matches(verifier_path, "xoxb-")
+            checks.append(
+                self._result(
+                    "slack_verifier_credential",
+                    verifier_ok,
+                    "provider-verifier bot credential file is mounted"
+                    if verifier_ok
+                    else "provider-verifier credential file is missing or invalid",
+                )
+            )
+
+            socket_path = str(env.get("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE", "")).strip()
+            socket_ok = _protected_file_matches(socket_path, "xapp-")
+            checks.append(
+                self._result(
+                    "slack_socket_app_credential",
+                    socket_ok,
+                    "Socket Mode app-level credential file is mounted"
+                    if socket_ok
+                    else "Socket Mode app-level credential file is missing or invalid",
+                )
+            )
+            command = str(env.get("MESH_COS_SLACK_APPROVAL_COMMAND", "")).strip()
+            checks.append(
+                self._result(
+                    "slack_approval_command",
+                    command == DEFAULT_APPROVAL_COMMAND,
+                    "dedicated approval slash command configured"
+                    if command == DEFAULT_APPROVAL_COMMAND
+                    else "approval slash command is missing or mismatched",
                 )
             )
 

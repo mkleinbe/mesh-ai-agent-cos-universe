@@ -3,6 +3,9 @@ on:
   pull_request:
   push:
     branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**', 'quality/**', 'enhancement/**', 'release/**', 'fix/**']
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -40,44 +43,53 @@ jobs:
           sh deployment/qnap/tests/test-observability.sh
           sh deployment/qnap/tests/test-runtime-permissions.sh
           sh deployment/qnap/tests/test-image-provenance.sh
+          sh deployment/qnap/tests/test-slack-hitl-configure.sh
           bash -n scripts/build-qnap-release-bundle.sh
-      - name: Build and inspect v4.1.9 release bundle
+      - name: Build and inspect v4.1.10 release bundle
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh 4.1.9
-          test -f dist/mesh-cos-mcp-qnap-v4.1.9.zip
-          test -f dist/mesh-cos-mcp-qnap-v4.1.9.zip.sha256
+          bash scripts/build-qnap-release-bundle.sh 4.1.10
+          test -f dist/mesh-cos-mcp-qnap-v4.1.10.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.10.zip.sha256
           test -f dist/qnap-bundle/mesh-cos-qnap-compose.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-observability.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-permissions.sh
           test -f dist/qnap-bundle/mesh-cos-qnap-image-provenance.sh
+          test -f dist/qnap-bundle/mesh-cos-slack-hitl-configure.sh
           test -f dist/qnap-bundle/cos-mcp/build-context/Dockerfile
           test -f dist/qnap-bundle/cos-mcp/build-context/mcp/package-lock.json
+          test -f dist/qnap-bundle/cos-mcp/build-context/mcp/src/slack-socket-mode.ts
           test -f dist/qnap-bundle/cos-mcp/build-context/src/mesh_cos/mcp_validation.py
+          test -f dist/qnap-bundle/cos-mcp/build-context/src/mesh_cos/slack_hitl.py
+          test -f dist/qnap-bundle/cos-mcp/build-context/src/mesh_cos/slack_socket_approval.py
+          test -f dist/qnap-bundle/cos-mcp/build-context/src/mesh_cos/slack_socket_bridge.py
           test -f dist/qnap-bundle/cos-mcp/build-context/chatgpt/mcp/tool-input-schemas.v1.json
           test -f dist/qnap-bundle/cos-mcp/release-metadata.txt
-          grep -q '^version=4.1.9$' dist/qnap-bundle/cos-mcp/release-metadata.txt
+          grep -q '^version=4.1.10$' dist/qnap-bundle/cos-mcp/release-metadata.txt
           grep -q "^commit=$GITHUB_SHA$" dist/qnap-bundle/cos-mcp/release-metadata.txt
           grep -q 'RELEASE_METADATA="$APP_ROOT/release-metadata.txt"' dist/qnap-bundle/mesh-cos-mcp-prepare.sh
           grep -q 'mesh_image_provenance_matches' dist/qnap-bundle/mesh-cos-mcp-prepare.sh
           grep -q -- '--network container:mesh-cos-tunnel' dist/qnap-bundle/mesh-cos-mcp-verify.sh
           grep -q 'governed tool envelope dual release identity' dist/qnap-bundle/mesh-cos-mcp-verify.sh
-          test -f dist/qnap-bundle/cos-mcp/qnap-security-review-v4.1.9.md
-          test -f dist/qnap-bundle/cos-mcp/release-4.1.9-documentation-closeout.md
-          test -f dist/qnap-bundle/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.9.md
-          test -f dist/qnap-bundle/cos-mcp/qnap-release-closeout-v4.1.9.feature
+          test -f dist/qnap-bundle/cos-mcp/qnap-security-review-v4.1.10.md
+          test -f dist/qnap-bundle/cos-mcp/release-4.1.10-scheduled-slack-hitl.md
+          test -f dist/qnap-bundle/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.10.md
+          test -f dist/qnap-bundle/cos-mcp/scheduled-automation-slack-hitl-v4.1.10.feature
           test ! -e dist/qnap-bundle/cos-mcp/.env
           test ! -e dist/qnap-bundle/cos-mcp/secrets
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.9.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.10.zip.sha256)
       - name: Validate QNAP Compose candidate
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.9'
-          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.9
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.10'
+          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.10
           MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
           TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
           QNAP_MESH_ROOT: /tmp/mesh-state
           QNAP_TUNNEL_API_KEY_FILE: /tmp/tunnel-runtime-key
+          QNAP_SLACK_APPROVER_USER_ID_FILE: /tmp/slack-approver-user-id
+          QNAP_SLACK_VERIFIER_TOKEN_FILE: /tmp/slack-verifier-token
+          QNAP_SLACK_SOCKET_APP_TOKEN_FILE: /tmp/slack-socket-app-token
           MESH_UID: '65532'
           MESH_GID: '65532'
           MESH_CPU_LIMIT: '2.0'
@@ -95,7 +107,15 @@ jobs:
           assert 'pids_limit' not in svc
           assert 'ports' not in svc
           assert svc['pull_policy'] == 'never'
-          assert svc['environment']['MESH_COS_DEPLOYMENT_RELEASE'] == '4.1.9'
+          assert svc['environment']['MESH_COS_DEPLOYMENT_RELEASE'] == '4.1.10'
+          assert svc['environment']['MESH_COS_SLACK_HITL_REQUIRED'] == 'true'
+          assert svc['environment']['MESH_COS_SLACK_APPROVER_USER_ID_FILE'] == '/run/secrets/slack_approver_user_id'
+          assert svc['environment']['MESH_COS_SLACK_VERIFIER_TOKEN_FILE'] == '/run/secrets/slack_verifier_token'
+          assert svc['environment']['MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE'] == '/run/secrets/slack_socket_app_token'
+          assert svc['environment']['MESH_COS_SLACK_APPROVAL_COMMAND'] == '/mesh-approval'
+          assert any(v.endswith('/run/secrets/slack_approver_user_id:ro') for v in svc['volumes'])
+          assert any(v.endswith('/run/secrets/slack_verifier_token:ro') for v in svc['volumes'])
+          assert any(v.endswith('/run/secrets/slack_socket_app_token:ro') for v in svc['volumes'])
           assert tun['pull_policy'] == 'never'
           assert data['networks']['mesh-cos-private']['driver'] == 'bridge'
           assert data['networks']['lan7']['external'] is True
@@ -106,13 +126,13 @@ jobs:
           docker build \
             --build-arg VCS_REF="$GITHUB_SHA" \
             --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --build-arg IMAGE_VERSION=4.1.9-qnap \
+            --build-arg IMAGE_VERSION=4.1.10-qnap \
             -t mesh-cos-mcp:ci dist/qnap-bundle/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci)" = '4.1.9-qnap'
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci)" = '4.1.10-qnap'
           test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci)" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and sequential requests
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.9'
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.10'
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci
       - name: Verify non-root QNAP ownership handoff with real Docker bind mounts
         run: |
@@ -141,11 +161,16 @@ jobs:
             -v "$QNAP_MESH_ROOT:/var/lib/mesh:rw" --entrypoint /bin/sh mesh-cos-mcp:ci \
             -c "grep -q ledger-stream-regression /var/lib/mesh/ledger/taskledger.sqlite3 && test -w /var/lib/mesh/ledger/taskledger.sqlite3"
           printf 'not-a-real-runtime-key\n' > "$QNAP_APP_ROOT/secrets/openai-tunnel-runtime-key"
+          printf 'U0TESTAPPROVER\n' > "$QNAP_APP_ROOT/secrets/slack-approver-user-id"
+          printf 'xoxb-test-verifier\n' > "$QNAP_APP_ROOT/secrets/slack-verifier-token"
+          printf 'xapp-test-socket\n' > "$QNAP_APP_ROOT/secrets/slack-socket-app-token"
           mesh_apply_secret_permissions mesh-cos-mcp:ci 65532 65532 "$QNAP_APP_ROOT/secrets"
-          test "$(stat -c '%u:%g' "$QNAP_APP_ROOT/secrets/openai-tunnel-runtime-key")" = '65532:65532'
-          test "$(stat -c '%a' "$QNAP_APP_ROOT/secrets/openai-tunnel-runtime-key")" = '400'
-          ! grep -R -q 'not-a-real-runtime-key' "$MESH_COS_LOG_ROOT"
-      - name: Verify hardened runtime, identity, readiness, restart, and Docker-mediated backup
+          for f in openai-tunnel-runtime-key slack-approver-user-id slack-verifier-token slack-socket-app-token; do
+            test "$(stat -c '%u:%g' "$QNAP_APP_ROOT/secrets/$f")" = '65532:65532'
+            test "$(stat -c '%a' "$QNAP_APP_ROOT/secrets/$f")" = '400'
+          done
+          ! grep -R -q 'not-a-real-runtime-key\|U0TESTAPPROVER\|xoxb-test-verifier\|xapp-test-socket' "$MESH_COS_LOG_ROOT"
+      - name: Verify hardened runtime, identity, restart, and Docker-mediated backup
         run: |
           set -euo pipefail
           APP=/tmp/mesh-runtime-app
@@ -170,11 +195,12 @@ jobs:
             --user 65532:65532 --read-only --cap-drop ALL --security-opt no-new-privileges \
             --cpus 2 --memory 24g \
             -e MESH_COS_AGENT_ID=cos \
-            -e MESH_COS_DEPLOYMENT_RELEASE=4.1.9 \
+            -e MESH_COS_DEPLOYMENT_RELEASE=4.1.10 \
             -e MESH_COS_LEDGER_PATH=/var/lib/mesh/ledger/taskledger.sqlite3 \
             -e MESH_COS_REQUIRE_EXISTING_LEDGER=true \
             -e MESH_COS_KILL_SWITCH=false \
             -e MESH_MIN_FREE_BYTES=1048576 \
+            -e MESH_COS_SLACK_HITL_REQUIRED=false \
             -e MCP_AUTH_MODE=tunnel \
             -e MCP_TRUSTED_CLIENT_IP=172.30.60.3 \
             -v "$STATE:/var/lib/mesh:rw" \
@@ -187,9 +213,10 @@ jobs:
           curl -fsS http://127.0.0.1:18080/readyz > /tmp/mesh-ready.json
           for f in /tmp/mesh-health.json /tmp/mesh-ready.json; do
             grep -q '"mcp_version":"4.0.0"' "$f"
-            grep -q '"deployment_release":"4.1.9"' "$f"
+            grep -q '"deployment_release":"4.1.10"' "$f"
             grep -q '"agent_id":"cos"' "$f"
             grep -q '"transport":"SECURE_MCP_TUNNEL"' "$f"
+            grep -q '"slack_hitl_ready":true' "$f"
           done
           test "$(docker exec mesh-cos-mcp id -u)" = "65532"
           test "$(docker inspect -f '{{.HostConfig.Privileged}}' mesh-cos-mcp)" = "false"
@@ -211,4 +238,4 @@ jobs:
           PY
           docker restart mesh-cos-mcp >/dev/null
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:18080/readyz >/dev/null && break; sleep 1; done
-          curl -fsS http://127.0.0.1:18080/readyz | grep -q '"deployment_release":"4.1.9"'
+          curl -fsS http://127.0.0.1:18080/readyz | grep -q '"deployment_release":"4.1.10"'

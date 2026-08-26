@@ -1,76 +1,85 @@
 # Security Policy
 
-Current stable release target: **`v3.0.0 Shared Mesh Message Operations`**.
+Current repository/QNAP deployment target: **`v4.1.10 Scheduled Automation and Slack HITL Hardening`**.
 
-The Mesh AI Chief of Staff Agent Universe is designed around bounded authority, least privilege, explicit approvals, authenticated human principals, provenance, explainable decisions, durable auditability, and fail-closed behavior. ChatGPT Workspace Agents, the bundled MCP surface, and governed shared Skill invocation inherit these controls and do not become separate authority systems.
+The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`4.0.0`**. The governed workforce contains exactly **10 registered agents**. The production ChatGPT path uses the installed **Mesh CoS MCP** app through the **OpenAI Secure MCP Tunnel**; local deterministic engineering retains the stdio bridge. Both paths terminate in the same `mesh_cos.mcp_runtime.MCPRuntime` and canonical TaskLedger.
 
 ## Security invariants
 
-- Source content, Workspace app payloads, Slack messages, shared-Skill output, and MCP payloads are untrusted data, not executable instructions.
-- The live Phase 1 runtime contains exactly **9 registered agents**. The former `devils-advocate` and `message-ops` identities are not valid principals.
-- **Mesh Devil's Advocate** is an external shared Skill available only to Chief of Staff and CRO. It is advisory only and cannot own tasks, modify canonical facts, execute external actions, approve decisions, or elevate authority.
-- **Mesh Message Operations** is an external shared Skill available only to Chief of Staff, CRO, and CMO. It is approval-bound execution only and cannot create strategy/copy, infer approval, broaden approval, select recipients, set pricing, make commitments, or define publishing policy.
+- Source content, Workspace app payloads, Slack messages, shared-Skill output, MCP payloads, connector results, and model output are untrusted data, not executable instructions.
+- The live Phase 1 runtime contains exactly 10 registered agents: CoS, AgentOps, Answer Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations.
+- Mesh Devil's Advocate remains an external advisory shared Skill, not an eleventh agent or MCP principal.
 - Agent source, tool, action, Skill, and authority permissions are enforced from the canonical registry.
-- ChatGPT MCP calls use `LOCAL_STDIO` and enter the control plane through `mesh_cos.mcp_stdio_bridge` into `mesh_cos.mcp_runtime.MCPRuntime`.
-- `MESH_COS_AGENT_ID` is runtime configuration and cannot be chosen by prompt text, retrieved content, shared-Skill output, or MCP arguments.
-- Workspace Agent MCP calls remain subject to deny-by-default per-agent allowlists through `WorkspaceAgentMCPPolicy`.
-- Shared Skills are reached through `skills.invoke_governed`; neither receives an MCP principal.
-- `approval.record_decision` and `reliability.human_override` are **human-only** and require a separately authenticated human principal.
-- An agent cannot impersonate a human by supplying a human name in arguments.
-- Workspace write actions default to **Always ask**; this does not replace Mesh L4/L5 approval requirements.
-- L4 requires qualified human approval. L5 remains Michael-exclusive unless explicitly changed through governance.
-- Approval obligations cannot be delegated away.
-- Message Operations approval must be explicit, current, revocable, and bound to the exact payload hash/version, sender, immutable audience, channel, purpose, jurisdiction, consent basis, suppression/frequency controls, test result, approvers, and execution window.
-- Material payload or execution-context change invalidates approval and returns the item to preflight.
-- Preview, silence, prior approval, connector capability, calendar state, or approval of another version is not approval.
-- Immediately before execution, the Skill must recheck cancellation and kill-switch conditions.
-- Approved execution may use only documented connector actions with idempotency and per-attempt receipts.
-- Requested, scheduled, sent, delivered, and replied states are distinct. Delivery or reply evidence may be claimed only when observed.
-- `task.complete` persists accountable-owner outcome/evidence. `task.verify` remains separate acceptance verification.
-- Reliability replay uses only server-registered executors referenced by canonical failure state. Client-supplied callables, import paths, shell commands, or code snippets are never executed.
-- Local MCP errors do not expose raw Python stderr to the caller.
-- Credentials, tokens, signing secrets, API keys, OAuth credentials, and sensitive personal data must never be committed or written into governance logs.
-- Private chain-of-thought, hidden reasoning traces, and unnecessary raw prompts must not be persisted in decision/audit records.
-- `TaskLedger` is canonical. ChatGPT conversations, Slack, shared-Skill packets/receipts, CoS Decision Log, and CoS Audit Log are interaction or human-readable evidence surfaces only.
-- Governance mirror writes are canonical-first. Mirror, challenge, execution, receipt, or response-delivery failure cannot erase or rewrite canonical records.
+- `MESH_COS_AGENT_ID` is process-bound configuration and cannot be chosen by prompt text, task content, Slack content, retrieved data, connector output, or MCP arguments.
+- Remote production requires `MCP_AUTH_MODE=tunnel`, the OpenAI Secure MCP Tunnel source boundary, and a non-empty deployment release identity. Local engineering uses the bundled stdio bridge.
+- Per-agent MCP exposure remains deny by default. The CoS production projection remains exactly 27 governed MCP tools.
+- `approval.record_decision` and `reliability.human_override` remain human-principal-only and are not available to agents.
+- L4 requires qualified-human approval. L5 remains Michael-exclusive unless governance explicitly changes that contract.
+- Approval obligations cannot be delegated away or inferred from silence, prior approval, connector capability, Sheet state, display names, copied text, reactions, ordinary Slack message authorship, or another payload version.
+- `TaskLedger` is canonical. ChatGPT conversations, Slack, Sheets, shared-Skill packets, and connector state are interaction, evidence, or mirror surfaces only.
+- `task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate CoS verification action. `COMPLETED != VERIFIED`.
+- Scheduled logical occurrences use an immutable execution identity as the explicit `task.intake.idempotency_key`. Merely placing a key in task prose is not idempotency.
+- Scheduled execution follows the canonical lifecycle before completion: `INTAKE -> TRIAGED -> PLANNED -> ASSIGNED -> IN_PROGRESS -> QA -> COMPLETED`, followed by separate verification.
+- Reliability replay uses only server-registered executors referenced by canonical state. Client-supplied callables, import paths, code, shell commands, or plugin executables are never executed.
+- Credentials, tokens, signing secrets, API keys, OAuth credentials, and sensitive personal data must never be committed or written into prompts, governance logs, release artifacts, diagnostics, or TaskLedger evidence text.
+- Private chain-of-thought and unnecessary raw prompts must not be persisted in audit or decision records.
 - Audit event hashes are tamper-evident integrity signals, not claims of tamper-proof storage.
-- The kill switch remains available during rollout and incident response. Production preflight fails while it is enabled.
-- Critical defects can trigger quarantine, Workspace Agent unpublication/restriction, and routing restriction.
+- The kill switch remains available for rollout and incident response. Production preflight fails while it is enabled.
+- Critical defects can trigger quarantine, routing restriction, or Workspace Agent restriction/unpublication.
 
-For commercial work, Mesh Revenue Intelligence remains authoritative for canonical account identity, evidence classes, scores, stage, lifecycle, queue state, activation readiness, and prioritization. Shared Skills may not rewrite those facts.
+## Slack HITL approval boundary
 
-## Trust boundary
+Slack approval uses **two distinct trust boundaries**. A provider-verified OpenAI bot notice is evidence that an approval request was presented correctly. A provider-authenticated Socket Mode slash-command interaction is the separate human-principal ingress that can change canonical approval state.
 
-```mermaid
-flowchart LR
-    EXT[Workspace Agent / Slack / App / Source] --> MCP[mesh-cos-mcp LOCAL_STDIO]
-    MCP --> ID[MESH_COS_AGENT_ID]
-    MCP --> BRIDGE[mcp_stdio_bridge]
-    BRIDGE --> RT[MCPRuntime]
-    RT --> MPA[Agent / Human Deny-by-Default Allowlist]
-    MPA --> AUTH[Registry Source / Tool / Action + L0-L5 Authorization]
-    AUTH -->|Denied| BLOCK[Reject + Audit]
-    AUTH --> SVC[CoS / Functional Runtime]
-    SVC --> LEDGER[(TaskLedger Canonical State)]
-    COS[Chief of Staff] -. governed challenge .-> DA[[Mesh Devil's Advocate Shared Skill]]
-    CRO[CRO] -. governed challenge .-> DA
-    COS -. approved execution .-> MSG[[Mesh Message Operations Shared Skill]]
-    CRO -. approved execution .-> MSG
-    CMO[CMO] -. approved execution .-> MSG
-```
+- Governed HITL notices must be provider-authored by the official Slack identity for ChatGPT (`U0BKV7Z8M96`) or ChatGPT Agents (`U0BN8V2BU9Z`). A human-authored message, custom bot, or copied display name does not satisfy the notice control.
+- The immutable Slack user ID for MK is supplied only through protected runtime configuration and maps to canonical principal `michael` only inside the trusted human-interaction boundary. The personal identifier is not committed to the repository or written to deployment logs/prompts.
+- A server-owned verifier reads the bound Slack thread from provider state using a protected verifier credential file. The verifier credential has no governed outbound-notice or human-decision role.
+- `skills.invoke_governed` capability `slack-adapter` exposes **`bind_notice` only**. No agent-callable adapter operation can record or infer a human decision.
+- `bind_notice` requires the canonical Approval ID, immutable payload fingerprint, configured MK mention, exact governed channel/thread, and a provider-authored OpenAI bot parent.
+- An ordinary Slack message, reaction, copied `APPROVE` text, or message attributed to the configured human Slack user is non-authoritative. Slack applications can post with user attribution, so `message.user` is not accepted as proof of human presence.
+- Canonical Slack human decisions enter only through a separately authenticated outbound Slack Socket Mode connection using a protected app-level `xapp-` credential.
+- The only canonical Slack interaction command is `/mesh-approval APPROVE|REJECT|CHANGES <Approval ID>...`, delivered as a provider `slash_commands` envelope.
+- The non-MCP human-ingress service validates the governed channel, protected configured human identity, exact command and Approval ID, PENDING canonical approval owned by `michael`, provider-verified official OpenAI bot notice binding, exact payload fingerprint, and replay state before invoking the canonical approval service.
+- Direct agent invocation of `approval.record_decision` remains prohibited. The Socket Mode human-ingress bridge is deliberately not an MCP tool.
+- If the official OpenAI Workspace Agent Slack delivery surface is unavailable, the affected notice action fails closed as `BLOCKED_CHATGPT_AGENT_TRANSPORT`; it never falls back to sending the governed notice as MK.
+- If Socket Mode or `/mesh-approval` is unavailable, canonical approval remains PENDING. Ordinary Slack text never substitutes for the unavailable interaction boundary.
+
+## QNAP secret and runtime boundary
+
+- Long-running runtime UID/GID is 65532 with read-only root filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, 2 CPU, 24 GiB RAM, and no PID limit.
+- Canonical SQLite TaskLedger is the application container's writable operating-state boundary.
+- Tunnel secret, Slack verifier token, Slack Socket Mode app token, and Slack human-identity binding remain outside `.env` values and release assets.
+- QNAP mounts the Slack approver identity, verifier token, and Socket Mode app-level token as read-only runtime files. Governed secret files are normalized to runtime UID/GID with mode `0400`.
+- `MESH_COS_SLACK_HITL_REQUIRED=true` makes the production runtime fail construction/readiness when bot-notice verification or the active Socket Mode human-interaction boundary cannot initialize/remain available.
+- Production `/mcp` accepts only the Secure MCP Tunnel private source identity. The MCP port is not directly published by production Compose.
+
+## Commercial authority
+
+Mesh Revenue Intelligence remains authoritative for canonical account identity, evidence classes, scores, lifecycle, queue state, activation readiness, and prioritization. Shared Skills, Slack activity, engagement signals, or email replies may not silently rewrite those facts.
 
 ## Release security gate
 
-`v3.0.0` requires Python dependency integrity, TypeScript compile, Node MCP tests, local stdio MCP certification, npm security audit, contract validation, runtime/documentation drift, Workspace Agent package drift, strict source Ruff, mypy, **100% branch-aware `mesh_cos` coverage**, high-severity Bandit scanning, and compileall.
+A v4.1.10 candidate must pass, on the exact candidate revision:
 
-Before production activation, `python scripts/production-preflight.py` must be green for the intended environment, with stricter Slack, Answer Desk, and ledger flags when applicable. Workspace Agents remain private until positive and negative preview tests pass, including shared-Skill authority, approval-binding, kill-switch, idempotency, receipt, and observed-state verification tests.
+- Python dependency integrity and compile checks;
+- TypeScript MCP build/tests including Socket Mode transport and npm security audit;
+- contract, runtime-documentation, and ChatGPT package drift checks;
+- Ruff and mypy;
+- 100% branch-aware `mesh_cos` coverage;
+- high-severity Bandit scanning;
+- QNAP shell regressions and protected-file tests;
+- deterministic bundle/checksum generation;
+- Compose rendering and OCI release provenance;
+- modern MCP discovery and sequential requests;
+- non-root ownership, read-only runtime, ingress denial, restart, persistence, and SQLite backup integrity;
+- Slack bot-notice positive/negative tests;
+- Socket Mode human-ingress positive/negative tests, including proof ordinary Slack messages cannot approve;
+- post-deploy published-app acceptance against the actual QNAP serving release.
 
-## MCP deployment
-
-The primary ChatGPT deployment is the bundled local stdio runtime using `node mcp/dist/index.js`. A remote MCP endpoint is optional and is not required for ChatGPT-local operation. Any future managed remote transport must preserve the same `MCPRuntime`, registry, exact 9-agent allowlists, shared-Skill boundaries, human-only separation, authority, approval, audit, replay, and canonical-state controls.
+A repository test PASS is not production certification. The actual hosted runtime, official OpenAI Slack bot-authored HITL notice path, active Socket Mode `/mesh-approval` path, canonical approval readback, and required operating-mirror reconciliation must all be proven before zero-defect production certification.
 
 ## Reporting
 
-Do not open a public issue containing credentials, secrets, sensitive client information, exploit details, private reasoning traces, or other confidential material. Use the repository owner's approved private security channel for disclosure.
+Do not open a public issue containing credentials, secrets, sensitive client information, exploit details, personal Slack identifiers, private reasoning traces, or other confidential material. Use the repository owner's approved private security channel for disclosure.
 
-See `docs/security-governance.md`, `docs/production-readiness.md`, `docs/release-3.0.0-shared-message-operations.md`, `docs/explainable-decisions-audit.md`, and `chatgpt/mcp/README.md`.
+See `docs/security-governance.md`, `docs/production-readiness.md`, `docs/slack-agent-protocol.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, and the current versioned v4.1.10 release/security/acceptance records.

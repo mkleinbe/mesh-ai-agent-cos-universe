@@ -102,9 +102,14 @@ mesh_apply_secret_permissions() {
         set -eu
         uid=$1
         gid=$2
-        secret=/mesh-secrets/openai-tunnel-runtime-key
-        test -f "$secret"
-        chown "$uid:$gid" "$secret"
-        chmod 0400 "$secret"
+        tunnel=/mesh-secrets/openai-tunnel-runtime-key
+        test -f "$tunnel"
+        for name in openai-tunnel-runtime-key slack-approver-user-id slack-verifier-token slack-socket-app-token; do
+          secret="/mesh-secrets/$name"
+          if [ -f "$secret" ]; then
+            chown "$uid:$gid" "$secret"
+            chmod 0400 "$secret"
+          fi
+        done
       ' sh "$uid" "$gid"
 }

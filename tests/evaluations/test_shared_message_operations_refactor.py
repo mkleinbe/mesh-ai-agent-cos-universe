@@ -40,16 +40,25 @@ def test_message_operations_contract_is_exact_and_least_privilege() -> None:
     assert message["authoritative_sources"] == ["recorded approval state"]
     assert message["allowed_sources"] == ["approved outbound message artifact"]
     assert message["skills"] == ["mesh-message-operations"]
-    assert set(message["permitted_actions"]) == {"prepare_execution", "execute_approved_message"}
+    assert set(message["permitted_actions"]) == {
+        "prepare_execution",
+        "execute_approved_message",
+    }
     assert "consequential_external_send_without_approval" in message["prohibited_actions"]
     assert "fabricate_approval" in message["prohibited_actions"]
     assert "modify_approved_message_materially_without_reapproval" in message["prohibited_actions"]
-    assert message["required_approvals"] == ["qualified human approval for consequential external send"]
+    assert message["required_approvals"] == [
+        "qualified human approval for consequential external send"
+    ]
 
 
 def test_message_operations_entitlement_is_owned_only_by_message_ops_agent() -> None:
     registry = load_registry(REGISTRY)
-    entitled = {agent_id for agent_id, record in registry.items() if "mesh-message-operations" in record["skills"]}
+    entitled = {
+        agent_id
+        for agent_id, record in registry.items()
+        if "mesh-message-operations" in record["skills"]
+    }
     assert entitled == {"message-ops"}
     assert "mesh-message-operations" not in registry["vp-content"]["skills"]
     assert "mesh-message-operations" not in registry["cos"]["skills"]
@@ -78,7 +87,14 @@ def test_mcp_has_message_ops_principal_and_human_only_tools_remain_excluded() ->
     assert "message-ops" in allowlists
     assert contract["runtime_release"] == "4.0.0"
     message_allowlist = set(allowlists["message-ops"])
-    assert {"approval.get", "governance.record_event", "registry.get_agent", "skills.invoke_governed", "task.complete", "task.get"} <= message_allowlist
+    assert {
+        "approval.get",
+        "governance.record_event",
+        "registry.get_agent",
+        "skills.invoke_governed",
+        "task.complete",
+        "task.get",
+    } <= message_allowlist
     assert "task.verify" not in message_allowlist
     assert "approval.record_decision" not in message_allowlist
     assert "reliability.human_override" not in message_allowlist
@@ -89,7 +105,7 @@ def test_qnap_release_identity_preserves_v4_runtime() -> None:
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.9 Documentation and Release Closeout" in release
-    assert "canonical Mesh CoS Phase 1 authority/runtime contract remains **`4.0.0`**" in release
-    assert "exactly 10 agents" in release
+    assert "v4.1.10 Scheduled Automation and Slack HITL Hardening" in release
+    assert "canonical Phase 1 authority/runtime contract remains **`4.0.0`**" in release
+    assert "exactly 10 registered agents" in release
     assert "Message Operations" in release or "message-ops" in release

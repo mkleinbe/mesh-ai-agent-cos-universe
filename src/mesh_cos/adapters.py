@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from .governance import GovernanceJournal
 from .security import assert_agent_invocation_allowed
+from .slack_hitl import SlackApprovalHITLService
 
 
 @dataclass(slots=True)
@@ -43,11 +45,18 @@ class SkillAdapter:
 
 
 class GovernedAdapterRegistry:
-    """Thin runtime binding for existing Mesh skills with cross-agent governance logging."""
+    """Governed runtime bindings for Mesh skills and server-owned capabilities."""
 
-    def __init__(self, registry: dict[str, dict], governance: GovernanceJournal | None = None) -> None:
+    def __init__(
+        self,
+        registry: dict[str, dict],
+        governance: GovernanceJournal | None = None,
+        *,
+        slack_hitl: SlackApprovalHITLService | None = None,
+    ) -> None:
         self.registry = registry
         self.governance = governance
+        self._slack_hitl = slack_hitl
         self.adapters: dict[tuple[str, str], SkillAdapter] = {}
         self._known_capabilities = {
             str(capability)
@@ -56,6 +65,14 @@ class GovernedAdapterRegistry:
             for capability in record.get(key, [])
         }
         self._bind_declared_skill_handoffs()
+        self._bind_server_owned_tools()
+        if str(os.environ.get("MESH_COS_SLACK_HITL_REQUIRED", "")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }:
+            self._slack_hitl_service()
 
     @staticmethod
     def _skill_handoff_executor(agent_id: str, capability: str) -> Callable[[dict], dict]:
@@ -71,12 +88,7 @@ class GovernedAdapterRegistry:
         return execute
 
     def _bind_declared_skill_handoffs(self) -> None:
-        """Server-register declared ChatGPT Skills as authorization/handoff adapters.
-
-        Prompt Skills are executed by the ChatGPT Skill runtime, not imported or run as
-        arbitrary QNAP code. The MCP grants a bounded, auditable handoff only. A
-        server-owned executable adapter may later replace this registration explicitly.
-        """
+        """Server-register declared ChatGPT Skills as authorization/handoff adapters."""
         for agent_id, record in self.registry.items():
             for raw_capability in record.get("skills", []):
                 capability = str(raw_capability)
@@ -85,6 +97,49 @@ class GovernedAdapterRegistry:
                     capability,
                     self._skill_handoff_executor(agent_id, capability),
                 )
+
+    def _slack_hitl_service(self) -> SlackApprovalHITLService:
+        if self._slack_hitl is not None:
+            return self._slack_hitl
+        if self.governance is None:
+            raise RuntimeError("Slack HITL requires canonical governance persistence")
+        self._slack_hitl = SlackApprovalHITLService.from_env(self.governance.ledger)
+        return self._slack_hitl
+
+    @staticmethod
+    def _require_exact_payload(payload: dict, required: set[str]) -> None:
+        fields = set(payload)
+        unexpected = sorted(fields - required)
+        missing = sorted(required - fields)
+        if unexpected:
+            raise ValueError("Unexpected Slack HITL payload fields: " + ", ".join(unexpected))
+        if missing:
+            raise ValueError("Missing Slack HITL payload fields: " + ", ".join(missing))
+
+    def _slack_hitl_executor(self) -> Callable[[dict], dict]:
+        def execute(payload: dict) -> dict:
+            operation = str(payload.get("operation") or "")
+            if operation != "bind_notice":
+                raise PermissionError(
+                    "Agent Slack adapter may verify bot-authored notices but cannot record human decisions"
+                )
+            required = {"operation", "approval_id", "thread_ts", "payload_fingerprint"}
+            self._require_exact_payload(payload, required)
+            service = self._slack_hitl_service()
+            return service.bind_notice(
+                str(payload["approval_id"]),
+                channel_id=service.config.channel_id,
+                thread_ts=str(payload["thread_ts"]),
+                payload_fingerprint=str(payload["payload_fingerprint"]),
+            )
+
+        return execute
+
+    def _bind_server_owned_tools(self) -> None:
+        record = self.registry.get("cos")
+        if record is None or "slack-adapter" not in record.get("tools", []):
+            return
+        self.register(SkillAdapter("cos", "slack-adapter", self._slack_hitl_executor()))
 
     def register(self, adapter: SkillAdapter) -> None:
         if adapter.agent_id not in self.registry:
@@ -105,7 +160,11 @@ class GovernedAdapterRegistry:
         return bound
 
     def required_capabilities(self) -> dict[str, list[str]]:
-        return {agent_id: list(record.get("skills", [])) for agent_id, record in self.registry.items() if record.get("skills")}
+        return {
+            agent_id: list(record.get("skills", []))
+            for agent_id, record in self.registry.items()
+            if record.get("skills")
+        }
 
     def execute(self, agent_id: str, capability: str, payload: dict) -> dict:
         if agent_id not in self.registry:
@@ -114,7 +173,9 @@ class GovernedAdapterRegistry:
         if key not in self.adapters:
             if capability not in self._known_capabilities:
                 raise KeyError(capability)
-            allowed = set(self.registry[agent_id].get("skills", [])) | set(self.registry[agent_id].get("tools", []))
+            allowed = set(self.registry[agent_id].get("skills", [])) | set(
+                self.registry[agent_id].get("tools", [])
+            )
             if capability not in allowed:
                 raise PermissionError(f"Capability not allowed for {agent_id}: {capability}")
             raise RuntimeError(f"Declared capability is not server-registered: {capability}")

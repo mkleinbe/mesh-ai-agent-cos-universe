@@ -81,6 +81,7 @@ else
 fi
 
 run_child prepare "$SCRIPT_ROOT/mesh-cos-mcp-prepare.sh" || fail "prepare failed"
+run_child slack_hitl_configure "$SCRIPT_ROOT/mesh-cos-slack-hitl-configure.sh" || fail "Slack HITL protected configuration failed"
 run_child preflight "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh" || fail "preflight failed"
 
 mesh_set_stage compose_render
@@ -104,4 +105,4 @@ mesh_set_stage complete
 info "deployment, verification, and post-deploy backup complete"
 mesh_log INFO deployment_complete "release=$DEPLOYMENT_RELEASE log=$MESH_COS_LOG_FILE"
 echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
-echo "NEXT: create or refresh the ChatGPT Secure MCP Tunnel app and run CHATGPT-ACCEPTANCE.md."
+echo "NEXT: verify the deployed OpenAI Workspace Agent can author the synthetic Slack HITL notice, then run CHATGPT-ACCEPTANCE.md and the v4.1.10 hosted acceptance procedure."

@@ -8,9 +8,10 @@ PREFLIGHT = ROOT / "deployment" / "qnap" / "scripts" / "mesh-cos-mcp-preflight.s
 
 def test_preflight_derives_expected_release_from_bundle_metadata() -> None:
     preflight = PREFLIGHT.read_text()
-    assert 'RELEASE_METADATA="$APP_ROOT/release-metadata.txt"' in preflight
-    assert 'EXPECTED_RELEASE=$(awk -F=' in preflight
-    assert 'MESH_COS_DEPLOYMENT_RELEASE must match bundle release' in preflight
+    assert 'RELEASE_METADATA="$BUNDLE_APP_ROOT/release-metadata.txt"' in preflight
+    assert 'EXPECTED_RELEASE=$(mesh_candidate_release "$RELEASE_METADATA"' in preflight
+    assert "candidate MESH_COS_DEPLOYMENT_RELEASE must match staged bundle release" in preflight
+    assert "active release may differ before candidate promotion" in preflight
 
 
 def test_preflight_has_no_stale_release_literal_gate() -> None:

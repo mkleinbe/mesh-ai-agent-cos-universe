@@ -1,6 +1,6 @@
 # Security Policy
 
-Current repository/QNAP deployment target: **`v4.1.11 QNAP Versioned Release Staging Remediation`**.
+Current repository/QNAP deployment target: **`v4.1.12 QNAP Release-Root Bootstrap`**.
 
 The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`4.0.0`**. The governed workforce contains exactly **10 registered agents**. The production ChatGPT path uses the installed **Mesh CoS MCP** app through the **OpenAI Secure MCP Tunnel**; local deterministic engineering retains the stdio bridge. Both paths terminate in the same `mesh_cos.mcp_runtime.MCPRuntime` and canonical TaskLedger.
 
@@ -29,18 +29,21 @@ The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`
 
 ## QNAP release artifact and staging boundary
 
-The v4.1.11 remediation makes the versioned release directory an explicit privileged deployment trust boundary.
+The v4.1.12 release makes `/share/Docker/cos-mcp/releases` the stable operator trust boundary and binds each current release artifact to exactly one versioned subdirectory.
 
 - Canonical active application root remains `/share/Docker/cos-mcp`.
-- Release artifacts are checksum-verified, extracted, and executed from `/share/Docker/cos-mcp/releases/vX.Y.Z`.
-- Operator/helper scripts resolve from their own canonicalized extracted release directory by default. They do not search `/share/Docker` for helpers and are not copied there.
+- Stable operator release root is `/share/Docker/cos-mcp/releases`.
+- Current release archives contain a single top-level `vX.Y.Z/` directory so extraction under the releases root creates the version directory automatically.
+- Operator/helper scripts resolve from their own canonicalized extracted release directory. They do not depend on caller CWD, search `/share/Docker` for helpers, or require copied helper scripts.
+- Before candidate preparation, deployment validates that the resolved release directory is directly beneath the canonical releases root and that its `vX.Y.Z` basename agrees with staged `release-metadata.txt`.
+- A missing, malformed, outside-root, or metadata-mismatched release directory fails closed before candidate mutation.
 - Candidate release metadata, build context, Compose, and `.env.runtime` remain within the versioned release directory until candidate health succeeds.
 - Candidate identity derives from staged `release-metadata.txt`; active `.env` cannot silently redefine the candidate release.
 - Git tag form `vX.Y.Z` may normalize only its leading `v` to runtime `X.Y.Z`. Invalid semantic versions and true requested-versus-staged mismatches fail closed.
-- Normal host-side `sudo` execution does not need to preserve a release environment variable because staged metadata is the default source of release identity.
 - OCI image version and revision remain bound to staged release metadata and the exact release commit.
 - Active `.env`, Compose, and release metadata are promoted only after both candidate containers are healthy.
-- Canonical state, protected secrets, tunnel identity, qnet/static networking, and pre-deploy rollback evidence are not replaced by staging.
+- Canonical state, protected secrets, tunnel identity, qnet/static networking, deployment logs, and pre-deploy rollback evidence remain outside the versioned release payload.
+- Historical already-published 4.1.0 through 4.1.11 artifact layouts remain immutable/reproducible. The builder's historical mode must not be confused with the current-release contract.
 
 Release artifacts must not contain a generated `.env`, `.env.runtime`, `state/`, canonical TaskLedger, tunnel key, protected human Slack identifier, Slack verifier token, or Socket Mode token.
 
@@ -77,7 +80,7 @@ Mesh Revenue Intelligence remains authoritative for canonical account identity, 
 
 ## Release security gate
 
-A v4.1.11 candidate must pass, on the exact candidate revision:
+A v4.1.12 candidate must pass, on the exact candidate revision:
 
 - Python dependency integrity and compile checks;
 - TypeScript MCP build/tests including Socket Mode transport and npm security audit;
@@ -85,9 +88,10 @@ A v4.1.11 candidate must pass, on the exact candidate revision:
 - Ruff and mypy;
 - 100% branch-aware `mesh_cos` coverage;
 - high-severity Bandit scanning;
-- POSIX QNAP shell syntax and regressions, including versioned-layout, protected-file, provenance, permissions, and observability tests;
-- deterministic v4.1.11 bundle/checksum generation and final ZIP inspection;
+- POSIX QNAP shell syntax and regressions, including release-root, protected-file, provenance, permissions, and observability tests;
+- deterministic v4.1.12 bundle/checksum generation and archive inspection proving every current-release entry is under `v4.1.12/`;
 - proof the bundle omits generated environment, secrets, and canonical state;
+- release-directory-to-metadata mismatch rejection before candidate preparation;
 - Compose rendering and OCI release provenance;
 - modern MCP discovery and sequential requests;
 - non-root ownership, read-only runtime, ingress denial, restart, persistence, and SQLite backup integrity;
@@ -95,12 +99,12 @@ A v4.1.11 candidate must pass, on the exact candidate revision:
 - Socket Mode human-ingress positive/negative tests, including proof ordinary Slack messages cannot approve;
 - post-deploy published-app acceptance against the actual QNAP serving release.
 
-Security applicability for the v4.1.11 deployment correction is **TARGETED**. The release-specific receipt is `docs/qnap-security-review-v4.1.11.md`.
+Security applicability for the v4.1.12 deployment correction is **TARGETED**. The release-specific receipt is `docs/qnap-security-review-v4.1.12.md`.
 
-A repository test PASS is not production certification. The actual hosted runtime, official OpenAI Slack bot-authored HITL notice path, active Socket Mode `/mesh-approval` path, canonical approval readback, and required operating-mirror reconciliation must all be proven before zero-defect production certification.
+A repository test PASS is not production certification. The actual hosted runtime, official OpenAI Slack bot-authored HITL notice path, active Socket Mode `/mesh-approval` path, canonical approval readback, and required operating-mirror reconciliation must all be proven before production certification.
 
 ## Reporting
 
 Do not open a public issue containing credentials, secrets, sensitive client information, exploit details, personal Slack identifiers, private reasoning traces, or other confidential material. Use the repository owner's approved private security channel for disclosure.
 
-See `docs/security-governance.md`, `docs/production-readiness.md`, `docs/qnap-security-review-v4.1.11.md`, `docs/slack-agent-protocol.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, and the current v4.1.11 release/verification/acceptance records.
+See `docs/security-governance.md`, `docs/production-readiness.md`, `docs/qnap-security-review-v4.1.12.md`, `docs/slack-agent-protocol.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, and the current v4.1.12 release/verification/acceptance records.

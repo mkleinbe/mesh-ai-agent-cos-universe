@@ -61,6 +61,8 @@ bind_notice: operation, approval_id, thread_ts, payload_fingerprint
 
 Any `ingest_decision`, `approved`, actor/principal override, channel override, or arbitrary Slack event data must fail closed. `approval.record_decision` must remain unavailable to the CoS.
 
+A successful `bind_notice` is not established by prompt or Slack text alone. The server must re-read provider state and persist a **provider-verified** binding proving the parent author is an allowlisted official OpenAI identity and that the exact Approval ID, channel/thread, approver mapping, and payload fingerprint reconcile.
+
 The human approval path is deliberately **not** an MCP tool. It is the QNAP-hosted Socket Mode `/mesh-approval` interaction boundary defined in `chatgpt-published-app-production-acceptance-v4.1.10.md`.
 
 ## 5. AgentOps acceptance

@@ -88,6 +88,14 @@ Security applicability is **TARGETED** because authentication/identity, human ap
 
 **Status:** RESOLVED in candidate; exact-head CI and live provider acceptance required.
 
+### SEC-QNAP-040 HIGH: protected human Slack provider identity leaked into durable approval evidence
+
+**Evidence:** an intermediate v4.1.10 candidate persisted the protected approver provider ID in both the provider-verified notice binding and the durable Socket Mode decision record. This violated the release contract that the human provider identity remain protected runtime configuration and stay out of normal TaskLedger evidence.
+
+**Remediation:** the raw provider identity is now used only transiently to authenticate the Slack parent mention and trusted Socket Mode interaction. Durable notice binding persists `approver_identity_verified=true` and canonical principal `michael`; durable decision evidence persists `provider_identity_verified=true` and canonical principal `michael`. Regression tests assert the protected provider value and provider-ID field names are absent from both durable records.
+
+**Status:** RESOLVED in candidate; exact-head CI and final diff hygiene verification required.
+
 ## Security properties
 
 The exact v4.1.10 candidate must prove:
@@ -96,7 +104,7 @@ The exact v4.1.10 candidate must prove:
 - no agent-callable Slack adapter operation can record or infer a human decision;
 - ordinary Slack messages, reactions, and copied commands cannot become canonical approval even when attributed to the configured human Slack user;
 - only a provider-interactive Socket Mode `slash_commands` envelope for `/mesh-approval` can enter the non-MCP human decision path;
-- the protected configured human Slack identity maps to `michael` only inside that trusted ingress;
+- the protected configured human Slack identity maps to `michael` only inside that trusted ingress and is not persisted into normal TaskLedger approval evidence;
 - only official OpenAI Slack bot user IDs can satisfy parent notice authorship;
 - wrong user, wrong channel, wrong command, wrong fingerprint, unknown approval, duplicate/conflicting decisions, and bot impersonation fail closed;
 - Slack verifier, Socket Mode app token, and human identity values are not committed, logged, stored as values in `.env`, or packaged in release assets;

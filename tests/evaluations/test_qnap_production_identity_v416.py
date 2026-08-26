@@ -21,7 +21,9 @@ def test_v416_preserves_canonical_phase1_contract_and_catalog() -> None:
         "approval.record_decision",
         "reliability.human_override",
     }
-    assert set(contract["human_tool_allowlist"]).isdisjoint(contract["agent_tool_allowlists"]["cos"])
+    assert set(contract["human_tool_allowlist"]).isdisjoint(
+        contract["agent_tool_allowlists"]["cos"]
+    )
 
 
 def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
@@ -34,10 +36,13 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     assert "SECURE_MCP_TUNNEL" in remote
     assert "version:deploymentRelease" in remote
     assert "version:'4.1.4'" not in remote
-    assert "MESH_COS_DEPLOYMENT_RELEASE: ${MESH_COS_DEPLOYMENT_RELEASE:?deployment release required}" in compose
+    assert (
+        "MESH_COS_DEPLOYMENT_RELEASE: ${MESH_COS_DEPLOYMENT_RELEASE:?deployment release required}"
+        in compose
+    )
 
 
-def test_active_release_train_is_v419_and_ci_uses_setup_node_v7() -> None:
+def test_active_release_train_is_v4110_and_ci_uses_setup_node_v7() -> None:
     dockerfile = read("Dockerfile")
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
@@ -45,18 +50,18 @@ def test_active_release_train_is_v419_and_ci_uses_setup_node_v7() -> None:
     ci = read(".github/workflows/ci.yml")
     release = read(".github/workflows/release-production-readiness.yml")
 
-    assert "IMAGE_VERSION=4.1.9-qnap" in dockerfile
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.9" in env_example
-    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.9" in prepare
-    assert "VERSION=${1:-4.1.9}" in builder
+    assert "IMAGE_VERSION=4.1.10-qnap" in dockerfile
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.10" in env_example
+    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" in prepare
+    assert "VERSION=${1:-4.1.10}" in builder
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "v4.1.9" in ci
-    assert "TAG: v4.1.9" in release
-    assert "v4.1.9 Documentation and Release Closeout" in release
+    assert "v4.1.10" in ci
+    assert "TAG: v4.1.10" in release
+    assert "v4.1.10 Scheduled Automation and Slack HITL Hardening" in release
 
 
-def test_historical_and_v419_current_docs_are_packaged() -> None:
+def test_historical_and_v4110_current_docs_are_packaged() -> None:
     builder = read("scripts/build-qnap-release-bundle.sh")
     for path in [
         "docs/qnap-security-review-v4.1.6.md",
@@ -75,15 +80,19 @@ def test_historical_and_v419_current_docs_are_packaged() -> None:
         "docs/release-4.1.9-documentation-closeout.md",
         "docs/chatgpt-published-app-production-acceptance-v4.1.9.md",
         "specs/qnap-release-closeout-v4.1.9.feature",
+        "docs/qnap-security-review-v4.1.10.md",
+        "docs/release-4.1.10-scheduled-slack-hitl.md",
+        "docs/chatgpt-published-app-production-acceptance-v4.1.10.md",
+        "specs/scheduled-automation-slack-hitl-v4.1.10.feature",
     ]:
         assert (ROOT / path).is_file()
         assert Path(path).name in builder
 
 
-def test_chatgpt_acceptance_requires_dual_identity_after_v419_deploy() -> None:
+def test_chatgpt_acceptance_requires_dual_identity_after_v4110_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.1.9",
+        "v4.1.10",
         "mcp_version",
         "4.0.0",
         "deployment_release",
@@ -93,5 +102,7 @@ def test_chatgpt_acceptance_requires_dual_identity_after_v419_deploy() -> None:
         "exactly 10 agents",
         "validation_failed",
         "CHATGPT_SKILL_HANDOFF",
+        "slack-adapter",
+        "provider-verified",
     ]:
         assert token in acceptance

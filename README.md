@@ -2,9 +2,9 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository/QNAP deployment release: `v4.1.9 Documentation and Release Closeout`.**
+**Current repository/QNAP deployment target: `v4.1.10 Scheduled Automation and Slack HITL Hardening`.**
 
-The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, request contract, and release evidence without widening the Phase 1 agent authority model or tool allowlists.
+The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, scheduled execution, Slack HITL, request contract, and release evidence without widening the Phase 1 agent authority model.
 
 ## Canonical Phase 1 architecture
 
@@ -41,57 +41,63 @@ The QNAP application lives at `/share/Docker/cos-mcp`, uses the verified externa
 
 ## Dual release identity
 
-Successful governed tool envelopes must report:
+Successful governed tool envelopes for v4.1.10 must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.9
+deployment_release: 4.1.10
 agent_id: cos
 ```
 
-Production `/healthz` and `/readyz` additionally report `transport: SECURE_MCP_TUNNEL`.
+Production `/healthz` and `/readyz` additionally report `transport: SECURE_MCP_TUNNEL`. When Slack HITL is required, readiness also reports `slack_hitl_ready=true` only while the authenticated Socket Mode boundary is active.
 
 `mcp_version` identifies the canonical Phase 1 authority/runtime contract. `deployment_release` identifies the QNAP deployment release serving the request. Remote production startup fails closed if `MESH_COS_DEPLOYMENT_RELEASE` is absent.
 
-## Current release train controls
+## v4.1.10 hardening
 
-v4.1.9 carries forward the production corrections established in v4.1.8 and closes stale release-documentation drift.
+v4.1.10 closes production-acceptance defects in scheduled exact-once execution and Slack human approval:
 
-Current controls include:
-
-1. Public MCP `tools/list` schemas are closed and match runtime request validation.
-2. Invalid structured requests fail with bounded `validation_failed` field details rather than opaque or misclassified errors.
-3. Canonical task lookup distinguishes request validation failures from true `not_found` resource failures.
-4. Registry-declared governed Skills resolve as auditable `CHATGPT_SKILL_HANDOFF` capabilities. Client-supplied executable code paths remain rejected.
-5. `agentops.recommend` uses the documented structured request contract.
-6. Same-tag local Mesh images are reusable only when OCI version and revision labels match extracted release metadata; mismatch forces rebuild.
-7. Post-deploy verification executes a real read-only governed MCP call from the tunnel network namespace and verifies the running dual release identity.
-8. The long-running QNAP runtime remains non-root UID/GID 65532, read-only, capability-dropped, no-new-privileges, with no Docker socket.
+1. Scheduled logical occurrences pass an immutable execution identity as the explicit `task.intake.idempotency_key`.
+2. Scheduled execution progresses through `INTAKE -> TRIAGED -> PLANNED -> ASSIGNED -> IN_PROGRESS -> QA` before `task.complete`; `task.verify` remains separate.
+3. Governed Slack HITL notices are valid only when provider state attributes the parent to the official ChatGPT or ChatGPT Agents Slack identity.
+4. The Slack identity for MK is protected runtime configuration and is never committed or logged.
+5. The existing CoS `slack-adapter` exposes `bind_notice` only. Agents cannot ingest, infer, or submit a human approval decision.
+6. Canonical Slack human decisions enter through a separately authenticated, non-MCP Slack Socket Mode `/mesh-approval` interaction boundary.
+7. Ordinary Slack messages remain non-authoritative even when attributed to the configured human identity.
+8. `approval.record_decision` and `reliability.human_override` remain human-principal-only.
+9. QNAP file-mounts the Slack approver identity, provider-verifier bot credential, and Socket Mode app-level credential and fails production readiness when required HITL controls cannot initialize/remain active.
+10. The generic user-scoped Slack connector is not a governed notice-author or human-approval transport. If the official OpenAI Workspace Agent delivery path is unavailable, the workflow fails closed as `BLOCKED_CHATGPT_AGENT_TRANSPORT`.
 
 ## Authority boundary
 
-Every MCP process is immutably bound through `MESH_COS_AGENT_ID`. Prompt text, retrieved content, task content, delegated instructions, connector content, and shared-Skill output cannot change identity or widen the tool catalog.
+Every MCP process is immutably bound through `MESH_COS_AGENT_ID`. Prompt text, retrieved content, task content, delegated instructions, connector content, Slack text, and shared-Skill output cannot change identity or widen the tool catalog.
 
-The CoS production projection remains exactly **27 governed tools**. `approval.record_decision` and `reliability.human_override` remain human-principal-only and absent from every agent catalog. L4 requires qualified-human approval and L5 remains Michael-exclusive.
+The CoS production projection remains exactly **27 governed tools**. L4 requires qualified-human approval and L5 remains Michael-exclusive.
 
 ## Completion and verification
 
-`task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate verifier operation requiring acceptance evidence. **COMPLETED != VERIFIED.**
+`task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate CoS verification operation requiring acceptance evidence. **COMPLETED != VERIFIED.**
 
 ## Production acceptance
 
-Repository, CI, container, and release-package verification do not prove the newly deployed on-premises serving instance. After deploying v4.1.9, repeat hosted acceptance through the installed **Mesh CoS MCP** app and OpenAI Secure MCP Tunnel. Every successful governed response must report `mcp_version: 4.0.0`, `deployment_release: 4.1.9`, and `agent_id: cos`.
+Repository, CI, container, and release-package verification do not prove the newly deployed on-premises serving instance, the official OpenAI Workspace Agent Slack delivery configuration, or the live Socket Mode human-interaction path.
+
+After deploying v4.1.10, execute the synthetic hosted acceptance in `docs/chatgpt-published-app-production-acceptance-v4.1.10.md`. Production certification requires the actual bot-authored HITL notice, proof an ordinary APPROVE message remains non-authoritative, a provider-authenticated `/mesh-approval` interaction by MK, fresh canonical approval readback, valid audit chain, zero unauthorized external actions, and required TaskLedger operating-mirror reconciliation.
 
 Current operator and release references:
 
+- `SECURITY.md`
+- `RELEASE.md`
+- `docs/production-readiness.md`
+- `docs/slack-agent-protocol.md`
+- `docs/qnap-security-review-v4.1.10.md`
+- `docs/release-4.1.10-scheduled-slack-hitl.md`
+- `docs/chatgpt-published-app-production-acceptance-v4.1.10.md`
+- `specs/scheduled-automation-slack-hitl-v4.1.10.feature`
 - `deployment/qnap/README-QNAP.md`
 - `deployment/qnap/DEPLOYMENT-STEPS.md`
 - `deployment/qnap/CHATGPT-ACCEPTANCE.md`
 - `deployment/qnap/install-checklist.md`
 - `deployment/qnap/upgrade-checklist.md`
-- `docs/qnap-security-review-v4.1.9.md`
-- `docs/release-4.1.9-documentation-closeout.md`
-- `docs/chatgpt-published-app-production-acceptance-v4.1.9.md`
-- `specs/qnap-release-closeout-v4.1.9.feature`
 
-Historical versioned documents remain retained as evidence for the release train.
+Historical versioned documents remain retained as release-train evidence.

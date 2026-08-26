@@ -104,9 +104,7 @@ def _safe_error(exc: BaseException) -> dict[str, Any]:
             category = "forbidden"
     elif isinstance(exc, KeyError):
         category = "not_found"
-    elif isinstance(exc, json.JSONDecodeError):
-        category = "invalid_request"
-    elif isinstance(exc, TypeError):
+    elif isinstance(exc, (json.JSONDecodeError, TypeError)):
         category = "invalid_request"
     elif isinstance(exc, ValueError):
         if (

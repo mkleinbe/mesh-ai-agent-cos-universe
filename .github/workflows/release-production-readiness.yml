@@ -11,6 +11,7 @@ on:
       - docs/qnap-**
       - docs/chatgpt-**
       - docs/release-**
+      - docs/verification-**
       - docs/slack-agent-protocol.md
       - specs/qnap-**
       - specs/scheduled-automation-slack-hitl-v4.1.10.feature
@@ -27,27 +28,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Build v4.1.10 QNAP deployment bundle
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.10
+      - name: Build v4.1.11 QNAP deployment bundle
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.11
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.10
+          name: mesh-cos-mcp-qnap-v4.1.11
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.10.zip
-            dist/mesh-cos-mcp-qnap-v4.1.10.zip.sha256
-      - name: Create or update v4.1.10 release and semantic tag
+            dist/mesh-cos-mcp-qnap-v4.1.11.zip
+            dist/mesh-cos-mcp-qnap-v4.1.11.zip.sha256
+      - name: Create v4.1.11 release and semantic tag
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: v4.1.10
-          ASSET: dist/mesh-cos-mcp-qnap-v4.1.10.zip
+          TAG: v4.1.11
+          ASSET: dist/mesh-cos-mcp-qnap-v4.1.11.zip
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$ASSET" "$ASSET.sha256" --clobber
-          else
-            gh release create "$TAG" \
-              --target "$GITHUB_SHA" \
-              --title "v4.1.10 Scheduled Automation and Slack HITL Hardening" \
-              --notes-file RELEASE.md \
-              "$ASSET" "$ASSET.sha256"
+            echo "ERROR: $TAG already exists; semantic releases are immutable" >&2
+            exit 1
           fi
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "v4.1.11 QNAP Versioned Release Staging Remediation" \
+            --notes-file RELEASE.md \
+            "$ASSET" "$ASSET.sha256"

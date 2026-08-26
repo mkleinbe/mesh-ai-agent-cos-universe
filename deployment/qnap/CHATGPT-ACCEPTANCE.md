@@ -1,10 +1,10 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this after the **v4.1.8** `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
+Run this after the **v4.1.9** `mesh-cos-mcp-deploy.sh` path reports successful deployment, verification, and post-deploy backup.
 
-The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted MCP runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.8**.
+The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted MCP runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.9**.
 
-v4.1.8 specifically closes request-schema drift, opaque validation, request-binding versus canonical lookup ambiguity, missing runtime registration for declared governed Skills, and AgentOps request-contract drift.
+v4.1.9 carries forward the v4.1.8 request-schema, validation, canonical lookup, governed Skill handoff, and AgentOps request-contract corrections while closing release-documentation drift.
 
 ## 1. Local deployment identity
 
@@ -19,11 +19,11 @@ sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').th
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires the v4.1.8 application image, both containers healthy, and status identity:
+PASS requires the v4.1.9 application image, both containers healthy, and status identity:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.8
+deployment_release: 4.1.9
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
@@ -101,4 +101,4 @@ Do not perform external sends, public publishing, client commitments, pricing or
 
 ## 10. Pass rule
 
-v4.1.8 is production-accepted only when the actual hosted Mesh CoS MCP app demonstrates the expected deployment envelope, exact schema behavior, safe validation, canonical TaskLedger lookup, governed Skill enforcement, AgentOps contract, lifecycle separation, authorization boundaries, and valid audit chain.
+v4.1.9 is production-accepted only when the actual hosted Mesh CoS MCP app demonstrates the expected deployment envelope, exact schema behavior, safe validation, canonical TaskLedger lookup, governed Skill enforcement, AgentOps contract, lifecycle separation, authorization boundaries, and valid audit chain.

@@ -57,6 +57,19 @@ class GovernedAdapterRegistry:
         }
         self._bind_declared_skill_handoffs()
 
+    @staticmethod
+    def _skill_handoff_executor(agent_id: str, capability: str) -> Callable[[dict], dict]:
+        def execute(payload: dict) -> dict:
+            return {
+                "status": "AUTHORIZED",
+                "execution_mode": "CHATGPT_SKILL_HANDOFF",
+                "agent_id": agent_id,
+                "capability": capability,
+                "payload": dict(payload),
+            }
+
+        return execute
+
     def _bind_declared_skill_handoffs(self) -> None:
         """Server-register declared ChatGPT Skills as authorization/handoff adapters.
 
@@ -65,17 +78,12 @@ class GovernedAdapterRegistry:
         server-owned executable adapter may later replace this registration explicitly.
         """
         for agent_id, record in self.registry.items():
-            for capability in record.get("skills", []):
+            for raw_capability in record.get("skills", []):
+                capability = str(raw_capability)
                 self.adapters[(agent_id, capability)] = SkillAdapter(
                     agent_id,
                     capability,
-                    lambda payload, bound_agent=agent_id, bound_capability=capability: {
-                        "status": "AUTHORIZED",
-                        "execution_mode": "CHATGPT_SKILL_HANDOFF",
-                        "agent_id": bound_agent,
-                        "capability": bound_capability,
-                        "payload": dict(payload),
-                    },
+                    self._skill_handoff_executor(agent_id, capability),
                 )
 
     def register(self, adapter: SkillAdapter) -> None:

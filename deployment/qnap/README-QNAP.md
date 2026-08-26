@@ -1,6 +1,6 @@
 # mesh-cos-mcp on QNAP Container Station
 
-**Current deployment release: v4.1.11 QNAP Versioned Release Staging Remediation.**  
+**Current deployment release: v4.1.12 QNAP Release-Root Bootstrap.**  
 **Canonical Phase 1 authority/runtime contract: 4.0.0.**
 
 ## Production topology
@@ -9,94 +9,89 @@ Production uses **OpenAI Secure MCP Tunnel**. `mesh-cos-mcp` receives `192.168.7
 
 The published **Mesh CoS MCP** ChatGPT app reaches `/mcp` only through the tunnel sidecar source address. No host MCP ports, router forwarding, UPnP, public QNAP administration exposure, duplicate TaskLedger, or additional data service are introduced.
 
-Slack HITL uses two separate external surfaces: an official OpenAI Workspace Agent bot-authored notice and an outbound Slack Socket Mode connection for the `/mesh-approval` human interaction. Neither expands the agent-facing MCP catalog.
+Slack HITL uses an official OpenAI Workspace Agent bot-authored notice and an outbound Slack Socket Mode connection for the `/mesh-approval` human interaction. Neither expands the agent-facing MCP catalog.
 
-## Fixed QNAP paths and release staging
+## Canonical QNAP paths
 
+- Operator release root: `/share/Docker/cos-mcp/releases`
+- Current release directory: `/share/Docker/cos-mcp/releases/v4.1.12`
+- Candidate payload: `/share/Docker/cos-mcp/releases/v4.1.12/cos-mcp`
+- Candidate runtime environment: `/share/Docker/cos-mcp/releases/v4.1.12/cos-mcp/.env.runtime`
 - Canonical application root: `/share/Docker/cos-mcp`
-- Versioned release root pattern: `/share/Docker/cos-mcp/releases/vX.Y.Z`
-- Current staged release root: `/share/Docker/cos-mcp/releases/v4.1.11`
-- Candidate payload: `/share/Docker/cos-mcp/releases/v4.1.11/cos-mcp`
-- Candidate runtime environment: `/share/Docker/cos-mcp/releases/v4.1.11/cos-mcp/.env.runtime`
 - Canonical state: `/share/Docker/cos-mcp/state`
 - Canonical ledger: `/share/Docker/cos-mcp/state/ledger/taskledger.sqlite3`
-- Tunnel secret: `/share/Docker/cos-mcp/secrets/openai-tunnel-runtime-key`
-- Slack human-identity binding: `/share/Docker/cos-mcp/secrets/slack-approver-user-id`
-- Slack provider-verifier credential: `/share/Docker/cos-mcp/secrets/slack-verifier-token`
-- Slack Socket Mode app-level credential: `/share/Docker/cos-mcp/secrets/slack-socket-app-token`
+- Protected secrets: `/share/Docker/cos-mcp/secrets`
 - Deployment Docker config: `/share/Docker/cos-mcp/.docker-cli`
 - Deployment logs: `/share/Docker/cos-mcp/logs/deployment`
 - Backup root: `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`
 
-Operator/helper scripts live at the versioned release root and self-resolve that root. They are not installed or copied into `/share/Docker`.
+The operator remains in `/share/Docker/cos-mcp/releases` for release staging and execution. The v4.1.12 ZIP creates `v4.1.12/` automatically. Do not manually create the release directory, copy or move release payload files, copy helpers into `/share/Docker`, or chmod scripts before invoking them with `sh`.
+
+## v4.1.12 release-root controls
+
+1. The archive contains one top-level `v4.1.12/` directory.
+2. Operator scripts self-resolve their own release directory using POSIX `dirname`, `cd`, and `pwd -P` behavior.
+3. The deployment orchestrator validates that its resolved parent is `/share/Docker/cos-mcp/releases`.
+4. The resolved directory basename must be `v4.1.12` and must agree with staged `release-metadata.txt`.
+5. Candidate release identity comes from staged metadata, not active `.env` and not caller environment.
+6. Candidate build context, Compose, and `.env.runtime` remain inside the versioned release directory.
+7. Active `.env`, Compose, and release metadata are promoted only after both candidate containers are healthy.
+8. Canonical TaskLedger, tunnel identity/key, Slack protected files, qnet/static networking, OCI provenance, and backup/restore controls remain outside the release directory and are preserved.
+
+Historical already-published archive layouts remain immutable. v4.1.12 is the first release whose ZIP itself creates the versioned directory expected by the operator procedure.
 
 ## Runtime controls
 
 - `mesh-cos-mcp`: UID/GID 65532, 2 CPUs, 24 GiB RAM, no PID limit
 - `mesh-cos-tunnel`: 0.25 CPU, 256 MiB RAM, no PID limit
-- Long-running containers: non-root, read-only root filesystem, all capabilities dropped, no-new-privileges, no Docker socket, no host networking
+- long-running containers: non-root, read-only root filesystem, all capabilities dropped, no-new-privileges, no Docker socket, no host networking
 - `MESH_COS_AGENT_ID=cos` is process-bound
-- `MESH_COS_DEPLOYMENT_RELEASE=4.1.11` is required by the remote process and passed through candidate Compose
+- `MESH_COS_DEPLOYMENT_RELEASE=4.1.12` is required by the remote process and passed through candidate Compose
 - `MESH_COS_SLACK_HITL_REQUIRED=true` is required by production Compose
-- Slack identity/verifier/Socket Mode files are mounted read-only
+- protected Slack identity/verifier/Socket Mode files are read-only runtime mounts
 - `/readyz` fails when required Slack HITL verification or authenticated Socket Mode is unavailable
-
-## v4.1.11 release-layout controls
-
-1. Candidate release identity is read from staged `release-metadata.txt`, not the active `.env`.
-2. Git tag form `vX.Y.Z` normalizes to runtime `X.Y.Z`; true mismatch still fails closed.
-3. Preflight explicitly separates active production identity from the staged candidate identity.
-4. The staged build context and Compose file stay in the release directory.
-5. `mesh-cos-mcp-prepare.sh` generates staged `.env.runtime` and does not replace active `.env`.
-6. Standard `sudo sh ./mesh-cos-mcp-deploy.sh` does not require sudo environment preservation for release identity.
-7. Candidate containers start from the staged Compose/environment.
-8. Active `.env`, `compose.yaml`, and `release-metadata.txt` are promoted only after both containers are healthy.
-9. The pre-deploy online SQLite backup remains before preparation and post-deploy backup remains after verification.
-10. Existing canonical state, tunnel secret, Slack protected configuration, qnet/static networking, and OCI provenance controls are preserved.
-
-## v4.1.10 controls retained
-
-v4.1.11 carries forward explicit scheduled idempotency, canonical lifecycle progression through QA before completion, separate verification, official OpenAI bot notice binding, protected human identity, provider readback, notice-only CoS Slack adapter, non-MCP Socket Mode `/mesh-approval`, rejection of ordinary Slack text as approval authority, protected Slack files, and fail-closed Slack HITL readiness.
 
 Successful governed responses must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.11
+deployment_release: 4.1.12
 agent_id: cos
 ```
 
-`/healthz` and `/readyz` report the same identity plus `transport: SECURE_MCP_TUNNEL`. Hosted production readiness additionally requires `slack_hitl_ready=true`.
+Hosted production readiness additionally requires `slack_hitl_ready=true`.
 
 ## Authority boundary
 
 The dual version domains remain distinct:
 
 - `mcp_version` identifies the canonical Phase 1 authority/runtime contract and remains `4.0.0`.
-- `deployment_release` identifies the QNAP deployment release serving the request and is `4.1.11` after successful promotion.
+- `deployment_release` identifies the QNAP release serving the request and is `4.1.12` after successful promotion.
 
-The 10-agent roster, 27-tool CoS catalog, human-only operations, canonical TaskLedger, completion/verification semantics, and tunnel source-IP trust boundary remain governed. Mesh Devil's Advocate remains a shared Skill, not agent 11.
+The 10-agent roster, 27-tool CoS catalog, human-only operations, canonical TaskLedger, completion/verification separation, and tunnel source-IP trust boundary remain governed. Message Operations remains agent 10. Mesh Devil's Advocate remains a governed shared Skill, not agent 11.
 
-## Docker privilege on this operator account
+## QNAP Docker privilege
 
-This QNAP operator account requires `sudo` for Docker access. From the versioned release directory invoke `sudo sh ./mesh-cos-mcp-deploy.sh`. Host-side sudo is only for Docker/Container Station authority. The long-running application remains UID/GID `65532:65532`.
+The current QNAP operator account requires `sudo` for Docker access. From `/share/Docker/cos-mcp/releases`, invoke the versioned script path, for example:
 
-## Persistence, backup, and rollback
+```sh
+sudo sh ./v4.1.12/mesh-cos-mcp-deploy.sh
+```
 
-The application creates online SQLite backups as runtime UID 65532. The host wrapper exports the completed backup using `docker cp`, then deletes the temporary file through `docker exec`. The backup share receives SQLite integrity evidence, non-secret configuration, image IDs, and SHA-256 receipts. `secrets/` is never copied.
+Host-side sudo is only for Docker/Container Station authority. The long-running application remains UID/GID `65532:65532`.
 
-Existing canonical TaskLedger state, Secure MCP `tunnel_id`, tunnel runtime-key file, protected Slack HITL files, and active descriptors are preserved during staging. A failed candidate before promotion does not justify deleting or recreating state. Use `rollback-checklist.md` and `backup-restore.md` with the verified pre-deploy backup.
+## Persistence, backup, rollback, and observability
 
-## Deployment observability
+The application creates online SQLite backups as runtime UID 65532. The backup share receives SQLite integrity evidence, non-secret configuration, image IDs, and SHA-256 receipts. `secrets/` is never copied.
 
-Deploy, prepare, Slack HITL configure, preflight, verify, and backup share one timestamped log and run ID. Failures record stage, safe command classification, return code, component/script identity, and bounded QNAP/Docker/filesystem/container evidence.
+A failed candidate before promotion does not justify deleting or recreating state. Use `rollback-checklist.md` and `backup-restore.md` with the verified pre-deploy backup.
 
-The diagnostic contract does not collect secret contents, protected Slack identity contents, `.env` contents, process environments, credential-bearing argv, or tunnel logs.
+Deploy, prepare, Slack HITL configure, preflight, verify, and backup share one timestamped log and run ID. Diagnostic collection excludes secret contents, protected Slack identity contents, `.env` contents, process environments, credential-bearing argv, and tunnel logs.
 
 ## Operator flow
 
-Use the complete SSH-safe **v4.1.11** versioned upgrade block in `DEPLOYMENT-STEPS.md`. Do not manually copy helper scripts into `/share/Docker`.
+Use `DEPLOYMENT-STEPS.md`. The only release staging working directory is `/share/Docker/cos-mcp/releases`.
 
-After local deployment and verification pass, run `CHATGPT-ACCEPTANCE.md` and `chatgpt-published-app-production-acceptance-v4.1.11.md`. Production certification requires the actual official OpenAI bot-authored synthetic HITL notice, proof ordinary Slack text cannot approve, live `/mesh-approval` Socket Mode interaction, fresh canonical approval readback, valid audit chain, no unauthorized external action, and required operating-mirror reconciliation.
+After local deployment and verification pass, run `CHATGPT-ACCEPTANCE.md` and `chatgpt-published-app-production-acceptance-v4.1.12.md`. Production certification still requires the actual QNAP serving instance plus hosted ChatGPT and Slack acceptance.
 
 Controlled HTTPS remains unimplemented and requires separate explicit approval.

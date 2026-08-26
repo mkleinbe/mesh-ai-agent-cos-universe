@@ -8,6 +8,7 @@ import pytest
 
 from mesh_cos import mcp_stdio_bridge as bridge
 from mesh_cos.mcp_runtime import MCPRuntime
+from mesh_cos.mcp_validation import RequestValidationError
 
 
 def env(tmp_path: Path, *, agent_id: str = "cos") -> dict[str, str]:
@@ -55,6 +56,8 @@ def test_bridge_validates_request_shape_and_blocks_human_tools(tmp_path: Path) -
         bridge.execute_request({"tool_name": "task.list", "arguments": []}, env=values)
     with pytest.raises(PermissionError, match="Human-only"):
         bridge.execute_request({"tool_name": "approval.record_decision"}, env=values)
+    with pytest.raises(RequestValidationError):
+        bridge.execute_request({"tool_name": "task.list", "arguments": {"x": 1}}, env=values)
 
 
 def test_bridge_kill_switch_fails_closed_before_execution(tmp_path: Path) -> None:
@@ -77,14 +80,14 @@ def test_bridge_executes_with_bound_identity_and_creates_parent_directory(tmp_pa
 
     values = env(tmp_path, agent_id="cro")
     response = bridge.execute_request(
-        {"tool_name": "task.list", "arguments": {"x": 1}},
+        {"tool_name": "task.list", "arguments": {}},
         env=values,
         runtime_factory=Runtime,
     )
     assert response["ok"] is True
     assert response["agent_id"] == "cro"
     assert response["result"] == {"done": True}
-    assert captured["arguments"] == {"x": 1}
+    assert captured["arguments"] == {}
     assert (tmp_path / "state").is_dir()
 
 
@@ -133,18 +136,30 @@ def test_bridge_rejects_removed_shared_capability_agent_identities(tmp_path: Pat
 @pytest.mark.parametrize(
     ("exc", "category"),
     [
-        (PermissionError("secret"), "permission_denied"),
+        (PermissionError("secret"), "forbidden"),
+        (PermissionError("authenticated human principal required"), "unauthorized"),
+        (PermissionError("approval required"), "approval_required"),
         (KeyError("secret"), "not_found"),
         (TypeError("secret"), "invalid_request"),
-        (ValueError("secret"), "invalid_request"),
-        (RuntimeError("secret"), "runtime_blocked"),
-        (OSError("secret"), "runtime_error"),
+        (ValueError("MCP bridge request body is required"), "invalid_request"),
+        (ValueError("current accountable owner mismatch"), "conflict"),
+        (ValueError("secret"), "invalid_state"),
+        (RuntimeError("dependency unavailable"), "dependency_unavailable"),
+        (RuntimeError("secret"), "execution_failed"),
+        (OSError("secret"), "execution_failed"),
     ],
 )
 def test_safe_errors_expose_category_not_exception_message(exc: BaseException, category: str) -> None:
     payload = bridge._safe_error(exc)
     assert payload["error"] == category
     assert "secret" not in json.dumps(payload)
+
+
+def test_safe_validation_error_exposes_only_bounded_details() -> None:
+    exc = RequestValidationError([{"field": "accountable_agent", "reason": "required"}])
+    payload = bridge._safe_error(exc)
+    assert payload["error"] == "validation_failed"
+    assert payload["details"] == [{"field": "accountable_agent", "reason": "required"}]
 
 
 def test_read_stdin_validates_empty_invalid_and_oversize(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -175,8 +190,12 @@ def test_main_serializes_success_and_safe_failure(monkeypatch: pytest.MonkeyPatc
 
     out = io.StringIO()
     monkeypatch.setattr(bridge.sys, "stdout", out)
-    monkeypatch.setattr(bridge, "_read_stdin", lambda: (_ for _ in ()).throw(ValueError("do-not-leak")))
+    monkeypatch.setattr(
+        bridge,
+        "_read_stdin",
+        lambda: (_ for _ in ()).throw(ValueError("MCP bridge request body is required")),
+    )
     assert bridge.main() == 0
     value = json.loads(out.getvalue())
     assert value["error"] == "invalid_request"
-    assert "do-not-leak" not in out.getvalue()
+    assert "request body" not in out.getvalue()

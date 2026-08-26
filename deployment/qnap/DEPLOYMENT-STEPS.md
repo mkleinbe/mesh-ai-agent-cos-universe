@@ -1,14 +1,14 @@
 # Short QNAP Deployment and Upgrade Steps
 
-v4.1.8 corrects the hosted MCP request-contract, validation, canonical lookup error-classification, governed Skill handoff, and AgentOps request-binding defects. The canonical Phase 1 authority/runtime contract remains **4.0.0**.
+v4.1.9 is the documentation and release-closeout patch for the v4.1.8 MCP contract remediation. The canonical Phase 1 authority/runtime contract remains **4.0.0**.
 
 ## Upgrade behavior
 
 The deployment script preserves the canonical TaskLedger, existing Secure MCP `tunnel_id`, and tunnel runtime-key file. It performs a pre-deploy online backup, prepares the release-bound image, recreates the services, verifies runtime identity and the governed MCP envelope, and takes a post-deploy backup.
 
-Before an existing `mesh-cos-mcp:qnap-v4.1.8` image can be reused, preparation compares its OCI version and revision labels with extracted `release-metadata.txt`. A mismatch forces a rebuild from the extracted build context.
+Before an existing `mesh-cos-mcp:qnap-v4.1.9` image can be reused, preparation compares its OCI version and revision labels with extracted `release-metadata.txt`. A mismatch forces a rebuild from the extracted build context.
 
-The application container receives `MESH_COS_DEPLOYMENT_RELEASE=4.1.8`. The remote MCP process refuses to listen if deployment identity is missing or blank.
+The application container receives `MESH_COS_DEPLOYMENT_RELEASE=4.1.9`. The remote MCP process refuses to listen if deployment identity is missing or blank.
 
 ## QNAP Docker privilege note
 
@@ -16,12 +16,12 @@ On this QNAP operator account, Docker commands require `sudo`. Run the deploymen
 
 ## Safe upgrade
 
-Place the v4.1.8 ZIP and checksum in `/share/Docker`, then run:
+Place the v4.1.9 ZIP and checksum in `/share/Docker`, then run:
 
 ```sh
 cd /share/Docker
-sha256sum -c mesh-cos-mcp-qnap-v4.1.8.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.1.8.zip
+sha256sum -c mesh-cos-mcp-qnap-v4.1.9.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.1.9.zip
 chmod 0755 /share/Docker/mesh-cos-*.sh /share/Docker/cos-mcp/qnap-environment-probe.sh
 sudo sh /share/Docker/mesh-cos-mcp-deploy.sh
 ```
@@ -37,13 +37,15 @@ sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}
 sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-tunnel
 ```
 
-PASS requires release identity `4.1.8`, application image `mesh-cos-mcp:qnap-v4.1.8`, and both containers healthy. The governed response envelope must report:
+PASS requires release identity `4.1.9`, application image `mesh-cos-mcp:qnap-v4.1.9`, and both containers healthy. The governed response envelope must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.8
+deployment_release: 4.1.9
 agent_id: cos
 ```
+
+The v4.1.8 request-contract behaviors must remain green: exact public schemas, bounded `validation_failed` details, canonical task lookup, governed `CHATGPT_SKILL_HANDOFF`, AgentOps request binding, lifecycle separation, and audit integrity.
 
 ## Failure diagnostics
 
@@ -57,4 +59,4 @@ cat "$LOG"
 
 ## Post-upgrade ChatGPT acceptance
 
-After local deployment passes, run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app. Final production acceptance requires the actual hosted path to demonstrate the v4.1.8 schema, validation, identity, authorization, governed Skill handoff, lifecycle, and audit behavior.
+After local deployment passes, run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app. Final production acceptance requires the actual hosted path to demonstrate the v4.1.9 dual release identity and the preserved v4.1.8 schema, validation, authorization, governed Skill handoff, lifecycle, and audit behavior.

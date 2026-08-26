@@ -2,7 +2,7 @@
 
 `v4.1.8` is a corrective production-interface and QNAP deployment release for the published **Mesh CoS MCP** ChatGPT app connected through the **OpenAI Secure MCP Tunnel**.
 
-The canonical Mesh CoS Phase 1 authority/runtime contract remains **`4.0.0`**. The exact 10-agent roster, human-only operations, canonical TaskLedger, `COMPLETED != VERIFIED`, resource policy, and Secure MCP Tunnel trust boundary are unchanged.
+The canonical Mesh CoS Phase 1 authority/runtime contract remains **`4.0.0`**. Phase 1 remains exactly 10 agents, including Message Operations as the tenth registered agent. Human-only operations, canonical TaskLedger, `COMPLETED != VERIFIED`, resource policy, and the Secure MCP Tunnel trust boundary are unchanged.
 
 ## Defects remediated
 

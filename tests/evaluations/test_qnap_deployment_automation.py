@@ -28,8 +28,8 @@ def test_prepare_automates_configuration_without_leaking_secret() -> None:
     assert 'sh "$SCRIPT_ROOT/mesh-cos-mcp-preflight.sh"' in prepare
     assert "chown -R" not in prepare
     assert 'chown "$MESH_UID:$MESH_GID"' not in prepare
-    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.8" in prepare
-    assert "mesh-cos-mcp:qnap-v4.1.8" in prepare
+    assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.9" in prepare
+    assert "mesh-cos-mcp:qnap-v4.1.9" in prepare
     assert 'IMAGE_PROVENANCE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"' in prepare
     assert "mesh_image_provenance_matches" in prepare
     assert "built Mesh image version label mismatch" in prepare
@@ -171,16 +171,16 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_v418_contract_docs_helpers_metadata_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_v419_closeout_docs_helpers_metadata_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.8}' in builder
+    assert 'VERSION=${1:-4.1.9}' in builder
     assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
-    assert "qnap-security-review-v4.1.8.md" in builder
-    assert "release-4.1.8-mcp-contract-acceptance.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.8.md" in builder
-    assert "qnap-mcp-production-acceptance-v4.1.8.feature" in builder
+    assert "qnap-security-review-v4.1.9.md" in builder
+    assert "release-4.1.9-documentation-closeout.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.9.md" in builder
+    assert "qnap-release-closeout-v4.1.9.feature" in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
     assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
     assert 'test -f "$BUILD_CONTEXT/src/mesh_cos/mcp_validation.py"' in builder
@@ -192,9 +192,9 @@ def test_release_bundle_contains_v418_contract_docs_helpers_metadata_and_no_runt
     assert 'test -f "$BUNDLE/cos-mcp/release-metadata.txt"' in builder
 
 
-def test_deployment_steps_contain_v418_sudo_and_log_receipt() -> None:
+def test_deployment_steps_contain_v419_sudo_and_log_receipt() -> None:
     steps = text(QNAP / "DEPLOYMENT-STEPS.md")
-    assert "v4.1.8" in steps
+    assert "v4.1.9" in steps
     assert "sudo sh /share/Docker/mesh-cos-mcp-deploy.sh" in steps
     assert "DIAGNOSTIC_LOG" in steps
     assert "Run the deploy command by itself" in steps
@@ -243,4 +243,13 @@ def test_v418_mcp_contract_acceptance_bdd_is_ready() -> None:
         assert f"Scenario: {scenario_id}" in feature
     assert "Scenario Outline: QNAP-064" in feature
     for token in ["validation_failed", "CHATGPT_SKILL_HANDOFF", "COMPLETED", "VERIFIED", "deployment_release"]:
+        assert token in feature
+
+
+def test_v419_release_closeout_bdd_is_ready() -> None:
+    feature = text(ROOT / "specs" / "qnap-release-closeout-v4.1.9.feature")
+    assert "@ready" in feature
+    for scenario_id in ["QNAP-069", "QNAP-070", "QNAP-071", "QNAP-072", "QNAP-073"]:
+        assert f"Scenario: {scenario_id}" in feature
+    for token in ["4.1.9", "exactly 10", "exactly 27", "COMPLETED", "VERIFIED", "OpenAI Secure MCP Tunnel"]:
         assert token in feature

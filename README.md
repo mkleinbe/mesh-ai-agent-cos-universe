@@ -2,15 +2,15 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository/QNAP deployment release: `v4.1.7 QNAP Image Provenance and Hosted Envelope Verification`.**
+**Current repository/QNAP deployment release: `v4.1.9 Documentation and Release Closeout`.**
 
-The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, and release evidence without widening the Phase 1 agent authority model or tool allowlists.
+The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, request contract, and release evidence without widening the Phase 1 agent authority model or tool allowlists.
 
 ## Canonical Phase 1 architecture
 
 Phase 1 contains exactly **10 registered agents**: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations.
 
-**Mesh Devil's Advocate is not an eleventh agent.** It remains an external governed shared Skill, advisory only, available to Chief of Staff and CRO. It cannot own tasks, decide approvals, overwrite canonical facts, or execute external actions.
+**Mesh Devil's Advocate is not an eleventh agent.** It remains an external governed shared Skill, advisory only, available to authorized agents. It cannot own tasks, decide approvals, overwrite canonical facts, or execute external actions.
 
 `TaskLedger` remains canonical state. ChatGPT, Slack, connectors, Workspace app state, governance Sheets, and shared-Skill packets remain interaction, evidence, or mirror surfaces.
 
@@ -39,13 +39,13 @@ local MCP client
 
 The QNAP application lives at `/share/Docker/cos-mcp`, uses the verified external QNAP `lan7` qnet, and is deployed with scripts run from `/share/Docker`. The MCP protocol port is not published to the host or public internet. Production `/mcp` requests are accepted only from the Secure MCP Tunnel sidecar private source address.
 
-## Dual release identity and v4.1.7 deployment integrity
+## Dual release identity
 
 Successful governed tool envelopes must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.7
+deployment_release: 4.1.9
 agent_id: cos
 ```
 
@@ -53,10 +53,20 @@ Production `/healthz` and `/readyz` additionally report `transport: SECURE_MCP_T
 
 `mcp_version` identifies the canonical Phase 1 authority/runtime contract. `deployment_release` identifies the QNAP deployment release serving the request. Remote production startup fails closed if `MESH_COS_DEPLOYMENT_RELEASE` is absent.
 
-v4.1.7 adds two release-integrity controls after hosted v4.1.6 testing found responses that omitted `deployment_release` even though the final tagged v4.1.6 source and release package contained the correct envelope implementation:
+## Current release train controls
 
-1. A local same-tag Mesh image is reusable only when its OCI version and revision labels match the extracted release metadata. A mismatch forces a rebuild from the extracted build context.
-2. Post-deploy verification executes a real read-only governed `registry.get_agent` MCP `tools/call` from the tunnel network namespace and refuses PASS unless the actual running response envelope contains the canonical/runtime/deployment identities above.
+v4.1.9 carries forward the production corrections established in v4.1.8 and closes stale release-documentation drift.
+
+Current controls include:
+
+1. Public MCP `tools/list` schemas are closed and match runtime request validation.
+2. Invalid structured requests fail with bounded `validation_failed` field details rather than opaque or misclassified errors.
+3. Canonical task lookup distinguishes request validation failures from true `not_found` resource failures.
+4. Registry-declared governed Skills resolve as auditable `CHATGPT_SKILL_HANDOFF` capabilities. Client-supplied executable code paths remain rejected.
+5. `agentops.recommend` uses the documented structured request contract.
+6. Same-tag local Mesh images are reusable only when OCI version and revision labels match extracted release metadata; mismatch forces rebuild.
+7. Post-deploy verification executes a real read-only governed MCP call from the tunnel network namespace and verifies the running dual release identity.
+8. The long-running QNAP runtime remains non-root UID/GID 65532, read-only, capability-dropped, no-new-privileges, with no Docker socket.
 
 ## Authority boundary
 
@@ -66,22 +76,22 @@ The CoS production projection remains exactly **27 governed tools**. `approval.r
 
 ## Completion and verification
 
-`task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate CoS verifier operation requiring acceptance evidence. **COMPLETED != VERIFIED.**
+`task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate verifier operation requiring acceptance evidence. **COMPLETED != VERIFIED.**
 
 ## Production acceptance
 
-The published ChatGPT app previously passed the ten-call sequential read-only acceptance sequence through the OpenAI Secure MCP Tunnel without HTTP 502, `invalid_session`, reconnect, or container restart. The remaining v4.1.6 acceptance blocker was serving-release projection in the governed response envelope.
-
-After deploying v4.1.7, repeat hosted acceptance and require `deployment_release: 4.1.7` on every successful governed tool response. The release is not accepted until the local provenance/tool-envelope gate and hosted acceptance are both green.
+Repository, CI, container, and release-package verification do not prove the newly deployed on-premises serving instance. After deploying v4.1.9, repeat hosted acceptance through the installed **Mesh CoS MCP** app and OpenAI Secure MCP Tunnel. Every successful governed response must report `mcp_version: 4.0.0`, `deployment_release: 4.1.9`, and `agent_id: cos`.
 
 Current operator and release references:
 
 - `deployment/qnap/README-QNAP.md`
 - `deployment/qnap/DEPLOYMENT-STEPS.md`
 - `deployment/qnap/CHATGPT-ACCEPTANCE.md`
-- `docs/qnap-production-preflight.md`
-- `docs/qnap-image-provenance-envelope-debugging-v4.1.7.md`
-- `docs/qnap-security-review-v4.1.7.md`
-- `docs/release-4.1.7-qnap-image-provenance-envelope.md`
+- `deployment/qnap/install-checklist.md`
+- `deployment/qnap/upgrade-checklist.md`
+- `docs/qnap-security-review-v4.1.9.md`
+- `docs/release-4.1.9-documentation-closeout.md`
+- `docs/chatgpt-published-app-production-acceptance-v4.1.9.md`
+- `specs/qnap-release-closeout-v4.1.9.feature`
 
-Production images are built or provenance-qualified from the verified release bundle/tag, recorded by immutable image identity, and activated through the governed QNAP deployment path.
+Historical versioned documents remain retained as evidence for the release train.

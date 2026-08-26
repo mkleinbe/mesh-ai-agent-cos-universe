@@ -113,7 +113,9 @@ def test_cos_can_provider_verify_bot_notice_but_cannot_ingest_human_decision() -
         },
     )
     assert binding["notice_author_user_id"] == CHATGPT_AGENTS_SLACK_USER_ID
-    assert binding["approver_user_id"] == APPROVER_USER_ID
+    assert binding["approver_identity_verified"] is True
+    assert "approver_user_id" not in binding
+    assert APPROVER_USER_ID not in str(binding)
     assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
 
     with pytest.raises(PermissionError, match="cannot record human decisions"):

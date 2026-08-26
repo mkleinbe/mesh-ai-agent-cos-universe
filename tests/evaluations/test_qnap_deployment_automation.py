@@ -69,6 +69,8 @@ def test_deploy_is_single_orchestrated_operator_path_with_safe_promotion() -> No
     assert 'echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"' in deploy
     assert 'promote_candidate_file "$CANDIDATE_ENV" "$APP_ROOT/.env" 0640' in deploy
     assert 'promote_candidate_file "$BUNDLE_APP_ROOT/release-metadata.txt" "$APP_ROOT/release-metadata.txt" 0644' in deploy
+    assert "mesh_validate_release_root" in deploy
+    assert "before candidate preparation" in deploy
 
 
 def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
@@ -176,6 +178,8 @@ def test_image_provenance_and_release_layout_helpers_fail_closed() -> None:
     assert "mesh_normalize_release" in layout
     assert "mesh_release_is_semver" in layout
     assert "mesh_candidate_release" in layout
+    assert "mesh_validate_release_root" in layout
+    assert "QNAP_RELEASES_ROOT" in layout
 
 
 def test_preflight_distinguishes_active_runtime_and_staged_candidate() -> None:
@@ -239,23 +243,26 @@ def test_backup_uses_docker_mediated_state_export_and_excludes_secrets() -> None
     assert 'cp "$APP_ROOT/secrets' not in backup
 
 
-def test_release_bundle_contains_v4111_staging_contract_and_no_runtime_secret() -> None:
+def test_release_bundle_contains_current_v4112_contract_and_no_runtime_secret() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.11}' in builder
-    assert 'BUILD_CONTEXT="$BUNDLE/cos-mcp/build-context"' in builder
+    assert 'VERSION=${1:-4.1.12}' in builder
+    assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
+    assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
     assert "cp Dockerfile pyproject.toml .dockerignore" in builder
     assert "cp -R agents chatgpt config contracts src mcp" in builder
-    assert "qnap-security-review-v4.1.11.md" in builder
-    assert "qnap-versioned-release-staging-v4.1.11.md" in builder
-    assert "release-4.1.11-qnap-versioned-release-staging.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.11.md" in builder
-    assert "qnap-versioned-release-staging-v4.1.11.feature" in builder
-    assert 'test ! -e "$BUNDLE/cos-mcp/.env"' in builder
-    assert 'test ! -e "$BUNDLE/cos-mcp/.env.runtime"' in builder
-    assert 'test ! -e "$BUNDLE/cos-mcp/secrets"' in builder
-    assert 'test ! -e "$BUNDLE/cos-mcp/state"' in builder
-    assert 'test -f "$BUNDLE/mesh-cos-qnap-layout.sh"' in builder
-    assert 'test -f "$BUNDLE/cos-mcp/release-metadata.txt"' in builder
+    assert "qnap-security-review-v4.1.12.md" in builder
+    assert "qnap-release-root-bootstrap-v4.1.12.md" in builder
+    assert "release-4.1.12-qnap-release-root-bootstrap.md" in builder
+    assert "verification-v4.1.12-qnap-release-root-bootstrap.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.12.md" in builder
+    assert "qnap-release-root-bootstrap-v4.1.12.feature" in builder
+    assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
+    assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
+    assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder
+    assert 'test ! -e "$RELEASE_DIR/cos-mcp/state"' in builder
+    assert 'test -f "$RELEASE_DIR/mesh-cos-qnap-layout.sh"' in builder
+    assert 'test -f "$RELEASE_DIR/cos-mcp/release-metadata.txt"' in builder
+    assert 'zip -qr "$OLDPWD/$ASSET" "v${VERSION}"' in builder
 
 
 def test_v4111_qnap_staging_bdd_is_ready() -> None:
@@ -277,6 +284,7 @@ def test_historical_release_behavior_specs_remain_retained() -> None:
         "qnap-mcp-production-acceptance-v4.1.8.feature": ["QNAP-059", "QNAP-068"],
         "qnap-release-closeout-v4.1.9.feature": ["QNAP-069", "QNAP-073"],
         "scheduled-automation-slack-hitl-v4.1.10.feature": ["SCH-HITL-001", "SCH-HITL-007"],
+        "qnap-versioned-release-staging-v4.1.11.feature": ["QNAP-074", "QNAP-082"],
     }
     for filename, scenario_ids in historical.items():
         feature = text(ROOT / "specs" / filename)

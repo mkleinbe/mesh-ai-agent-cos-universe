@@ -9,7 +9,7 @@ Feature: Production-hardened scheduled automation and Slack human approval
     And the governed Slack channel is "C0BRL4GCL3A"
     And the canonical approval entity "michael" is bound at deployment to one immutable Slack user ID for MK
     And allowed OpenAI notice authors are "U0BKV7Z8M96" and "U0BN8V2BU9Z"
-    And the configured MK Slack user ID is not committed to source control
+    And the configured MK Slack user ID is not committed to source control or persisted in normal TaskLedger evidence
     And Slack Socket Mode is authenticated with a protected app-level token
     And the canonical approval slash command is "/mesh-approval"
 
@@ -38,6 +38,7 @@ Feature: Production-hardened scheduled automation and Slack human approval
     And the notice mentions the configured immutable Slack user ID for MK
     And the notice identifies MK or Michael as the approval owner
     And the notice contains the exact Approval ID and payload fingerprint
+    And the durable notice binding records provider verification without persisting the protected MK Slack user ID
     And a notice authored by the configured MK user is rejected as an invalid parent notice
     And no custom bot may pass by copying an OpenAI display name
 
@@ -49,6 +50,8 @@ Feature: Production-hardened scheduled automation and Slack human approval
     And the command is exactly APPROVE, REJECT, or CHANGES for the bound Approval ID
     Then the non-MCP human-ingress service maps that provider interaction to principal "michael"
     And the canonical approval decision is recorded server-side
+    And durable decision evidence records provider identity verification without persisting the protected MK Slack user ID
+    And a CHANGES decision closes the current approval and requires a new approval cycle and payload fingerprint before any external action
     And a fresh canonical approval read reflects the decision before consequential action
     And no agent-callable MCP tool can submit or infer that human decision
 
@@ -57,6 +60,7 @@ Feature: Production-hardened scheduled automation and Slack human approval
     Given a pending canonical approval bound to an OpenAI-bot-authored Slack thread
     When the approval evidence has <defect>
     Then no canonical human approval is recorded
+    And no Gmail send occurs without a fresh canonical approval for the exact staged draft and fingerprint
     And no consequential external action is authorized
 
     Examples:
@@ -71,6 +75,7 @@ Feature: Production-hardened scheduled automation and Slack human approval
       | a payload fingerprint mismatch |
       | an ambiguous decision command |
       | a duplicate already-decided approval |
+      | an agent-injected arbitrary Slack interaction payload |
       | an inactive Socket Mode connection |
 
   @SCH-HITL-006
@@ -88,7 +93,7 @@ Feature: Production-hardened scheduled automation and Slack human approval
   Scenario: Production preflight validates the approval trust boundary
     When production preflight is executed with Slack HITL required
     Then it requires the governed channel ID
-    And it requires a configured immutable Slack user ID for MK without committing it
+    And it requires a configured immutable Slack user ID for MK without committing or persisting it into normal evidence
     And it requires the allowed OpenAI bot user IDs
     And it requires a server-side Slack verification bot credential without exposing it
     And it requires a protected Socket Mode app-level credential

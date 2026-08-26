@@ -47,7 +47,7 @@ agent_id: cos
 
 ## Failure diagnostics
 
-Do not delete or recreate state after a failure. Capture the latest deployment log:
+Do not delete or recreate state after a failure. The deployment orchestrator reports a `DIAGNOSTIC_LOG` receipt. Capture the latest deployment log with:
 
 ```sh
 LOG=$(cat /share/Docker/cos-mcp/logs/deployment/LATEST)

@@ -35,7 +35,7 @@ def load_input_schemas(path: str | Path | None = None) -> dict[str, dict[str, An
         raise ValueError("Unsupported MCP input-schema registry version")
     tools = payload.get("tools")
     if not isinstance(tools, dict):
-        raise ValueError("MCP input-schema registry must contain tools")
+        raise TypeError("MCP input-schema registry must contain tools")
     return {str(name): dict(schema) for name, schema in tools.items()}
 
 

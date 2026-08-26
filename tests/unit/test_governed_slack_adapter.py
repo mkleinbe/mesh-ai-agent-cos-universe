@@ -35,6 +35,18 @@ def test_slack_adapter_accepts_only_notice_binding_operation() -> None:
             "slack-adapter",
             {"operation": "bind_notice", "approval_id": "approval-x"},
         )
+    with pytest.raises(ValueError, match="Unexpected Slack HITL payload fields"):
+        registry.execute(
+            "cos",
+            "slack-adapter",
+            {
+                "operation": "bind_notice",
+                "approval_id": "approval-x",
+                "thread_ts": "1788000000.000001",
+                "payload_fingerprint": "a" * 64,
+                "approved": True,
+            },
+        )
     with pytest.raises(PermissionError, match="cannot record human decisions"):
         registry.execute(
             "cos",

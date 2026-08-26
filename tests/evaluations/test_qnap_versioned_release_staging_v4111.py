@@ -35,6 +35,7 @@ def test_prepare_binds_candidate_identity_to_staged_bundle_not_active_root() -> 
     assert 'CANDIDATE_COMPOSE="$BUNDLE_APP_ROOT/compose.yaml"' in prepare
     assert 'CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"' in prepare
     assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
+    assert "mesh_candidate_release" in prepare
     assert "mesh_normalize_release" in prepare
     assert "requested deployment release does not match extracted bundle metadata" in prepare
 
@@ -57,11 +58,14 @@ def test_deploy_runs_in_place_then_promotes_only_after_candidate_health() -> Non
     assert 'CANDIDATE_COMPOSE="$BUNDLE_APP_ROOT/compose.yaml"' in deploy
     assert 'mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" up -d --no-build' in deploy
     health_pos = deploy.index("wait_healthy mesh-cos-tunnel")
-    promote_pos = deploy.index("candidate_promote")
+    promote_pos = deploy.index("mesh_set_stage candidate_promote")
     verify_pos = deploy.index("mesh-cos-mcp-verify.sh")
     assert health_pos < promote_pos < verify_pos
-    assert 'cp "$CANDIDATE_ENV" "$APP_ROOT/.env.incoming.$$"' in deploy
-    assert 'cp "$BUNDLE_APP_ROOT/release-metadata.txt" "$APP_ROOT/release-metadata.txt.incoming.$$"' in deploy
+    assert 'promote_candidate_file "$CANDIDATE_ENV" "$APP_ROOT/.env" 0640' in deploy
+    assert 'promote_candidate_file "$CANDIDATE_COMPOSE" "$APP_ROOT/compose.yaml" 0644' in deploy
+    assert 'promote_candidate_file "$BUNDLE_APP_ROOT/release-metadata.txt" "$APP_ROOT/release-metadata.txt" 0644' in deploy
+    assert 'promote_incoming="$promote_target.incoming.$$"' in deploy
+    assert 'mv "$promote_incoming" "$promote_target"' in deploy
 
 
 def test_release_identity_normalization_accepts_git_v_prefix_but_preserves_mismatch_gate() -> None:
@@ -80,6 +84,6 @@ def test_v4111_bundle_and_docs_define_versioned_staging_contract() -> None:
     assert 'VERSION=${1:-4.1.11}' in builder
     assert 'test -f "$BUNDLE/mesh-cos-qnap-layout.sh"' in builder
     assert "/share/Docker/cos-mcp/releases/v4.1.11" in steps
-    assert "No helper scripts are copied to /share/Docker" in steps
+    assert "No helper scripts are copied to `/share/Docker`" in steps
     assert "sudo sh ./mesh-cos-mcp-deploy.sh" in steps
     assert "4.1.11" in steps

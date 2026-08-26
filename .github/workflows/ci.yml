@@ -114,9 +114,19 @@ jobs:
           assert svc['environment']['MESH_COS_SLACK_VERIFIER_TOKEN_FILE'] == '/run/secrets/slack_verifier_token'
           assert svc['environment']['MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE'] == '/run/secrets/slack_socket_app_token'
           assert svc['environment']['MESH_COS_SLACK_APPROVAL_COMMAND'] == '/mesh-approval'
-          assert any(v.endswith('/run/secrets/slack_approver_user_id:ro') for v in svc['volumes'])
-          assert any(v.endswith('/run/secrets/slack_verifier_token:ro') for v in svc['volumes'])
-          assert any(v.endswith('/run/secrets/slack_socket_app_token:ro') for v in svc['volumes'])
+          volumes = {
+              v['target']: v
+              for v in svc['volumes']
+              if isinstance(v, dict) and 'target' in v
+          }
+          for target in (
+              '/run/secrets/slack_approver_user_id',
+              '/run/secrets/slack_verifier_token',
+              '/run/secrets/slack_socket_app_token',
+          ):
+              assert target in volumes
+              assert volumes[target].get('type') == 'bind'
+              assert volumes[target].get('read_only') is True
           assert tun['pull_policy'] == 'never'
           assert data['networks']['mesh-cos-private']['driver'] == 'bridge'
           assert data['networks']['lan7']['external'] is True

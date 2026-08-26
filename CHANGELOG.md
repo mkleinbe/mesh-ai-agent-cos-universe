@@ -2,6 +2,51 @@
 
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
+## 4.1.9 - 2026-08-25 - Documentation and Release Closeout
+
+### Documentation and release integrity
+
+- Reconciled active repository and QNAP operator documentation that still described v4.1.7 after v4.1.8 had shipped.
+- Restored the missing canonical v4.1.8 changelog entry and retained all historical versioned evidence without rewriting history.
+- Advanced the active QNAP deployment identity, deterministic bundle, generated environment, OCI image label, CI checks, release workflow, operator runbooks, acceptance procedure, and checklists to `4.1.9` / `v4.1.9`.
+- Added ready release-closeout scenarios QNAP-069 through QNAP-073 plus v4.1.9 security, release, and hosted-acceptance receipts.
+
+### Verification and security
+
+- Security applicability remains TARGETED because CI/CD, deployment identity, release packaging, and QNAP runtime evidence are touched.
+- The exact candidate must pass the existing full Python, TypeScript/MCP, security, deterministic bundle/checksum, Compose, OCI provenance, modern MCP, non-root ownership, hardened runtime, ingress-denial, restart, and SQLite backup gates before integration.
+- No new authentication, authorization, persistence, secret-handling, executable trust, or network boundary is introduced.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
+## 4.1.8 - 2026-08-25 - MCP Contract Validation and Governed Skill Handoff
+
+### MCP request-contract remediation
+
+- Replaced generic public MCP object schemas with the canonical closed input-schema registry for the complete runtime catalog.
+- Added structured request validation before business dispatch, including bounded `validation_failed` field/reason details for missing, malformed, enum-invalid, and unknown fields.
+- Separated request-binding failures from canonical TaskLedger `not_found` lookups so missing fields cannot be misclassified as missing resources.
+- Aligned `agentops.recommend` with the published structured request contract.
+
+### Governed Skill handoff
+
+- Registered registry-declared prompt Skills as auditable `CHATGPT_SKILL_HANDOFF` capabilities rather than arbitrary QNAP code execution.
+- Preserved fail-closed behavior for undeclared or unauthorized Skills and rejected client-supplied code, import paths, callables, shell commands, plugin executables, or Skill implementations.
+
+### BDD, TDD, QNAP, and security
+
+- Added ready scenarios QNAP-059 through QNAP-068 covering schema/runtime agreement, safe validation, canonical task lookup, governed Skill resolution, AgentOps binding, immutable 10-agent identity, delegation limits, completion/verification separation, audit integrity, and packaged/hosted release identity agreement.
+- Advanced the QNAP release bundle, deployment identity, image label, CI, release workflow, operator acceptance material, and targeted security review to `4.1.8` / `v4.1.8`.
+- Passed the full repository/QNAP release gate, including 278 Python tests with 100% branch-aware coverage, TypeScript MCP checks, npm audit, Bandit, deterministic bundle/checksum generation, Compose rendering, production image provenance, modern MCP discovery, sequential requests, non-root ownership, hardened runtime, restart, direct-ingress denial, and SQLite backup integrity.
+
+### Authority boundary
+
+- Canonical Phase 1 authority/runtime contract remains `4.0.0`.
+- Exactly 10 registered agents, 27 governed CoS tools, human-only operations, Secure MCP Tunnel source-IP boundary, canonical TaskLedger, and `COMPLETED != VERIFIED` semantics remain unchanged.
+
 ## 4.1.7 - 2026-08-25 - QNAP Image Provenance and Hosted Envelope Verification
 
 ### Hosted acceptance defect and causal evidence

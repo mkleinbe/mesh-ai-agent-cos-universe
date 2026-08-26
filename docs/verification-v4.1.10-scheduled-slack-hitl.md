@@ -24,6 +24,7 @@ This record separates repository candidate verification from hosted production c
 | SEC-QNAP-037 | HIGH | Single QNAP deploy path did not invoke Slack protected configuration | REMEDIATED | Clean v4.1.10 deploy from the single operator path |
 | SEC-QNAP-038 | HIGH | Slack provider response could be consumed without service-level `ok:true` assertion under injected transport | REMEDIATED | Negative provider failure regression; live invalid verifier remains fail closed |
 | SEC-QNAP-039 | CRITICAL | Ordinary Slack user attribution could be mistaken for proof of human approval | REMEDIATED BY ATTACK-PATH REMOVAL | Ordinary APPROVE message remains PENDING; Socket Mode slash command produces canonical decision |
+| SEC-QNAP-040 | HIGH | Protected human Slack provider identity was persisted into normal approval evidence | REMEDIATED | Final-tree tests plus deployed evidence that durable notice/decision records retain verification status and canonical principal without the protected provider ID |
 
 ## Requirement to evidence mapping
 
@@ -57,11 +58,13 @@ Evidence:
 Candidate requirements:
 - parent provider user is official ChatGPT or ChatGPT Agents identity;
 - exact Approval ID, fingerprint, configured human mention, and approval-owner text;
-- human-authored/custom-bot parent is rejected.
+- human-authored/custom-bot parent is rejected;
+- durable binding records provider verification and canonical principal without persisting the protected human provider ID.
 
 Evidence:
 - `SlackApprovalHITLService.bind_notice`;
 - negative parent-author/provider tests;
+- protected-evidence privacy regression;
 - hosted synthetic acceptance Gate D/E.
 
 ### SCH-HITL-004 provider-authenticated human decision
@@ -72,11 +75,13 @@ Candidate requirements:
 - `approval.record_decision` remains unavailable to agents;
 - runtime opens authenticated Slack Socket Mode with a protected app-level credential;
 - only a `slash_commands` envelope for `/mesh-approval` enters the non-MCP human-ingress service;
-- the service validates governed channel, protected approver identity, exact command/Approval ID, PENDING canonical approval, official OpenAI bot notice binding, fingerprint, and replay state before recording principal `michael`.
+- the service validates governed channel, protected approver identity, exact command/Approval ID, PENDING canonical approval, official OpenAI bot notice binding, fingerprint, and replay state before recording principal `michael`;
+- durable decision evidence records provider identity verification and canonical principal without persisting the protected human provider ID.
 
 Evidence:
 - `SlackSocketModeApprovalListener` Node tests;
 - `SlackSocketApprovalService` and bridge tests;
+- protected-evidence privacy regression;
 - agent-side denial tests;
 - hosted synthetic acceptance Gate F/G.
 
@@ -94,10 +99,11 @@ Covered negative classes:
 - non-OpenAI bot parent;
 - provider `ok:false`;
 - direct/agent-side human-decision attempts;
+- arbitrary agent-injected Slack interaction payloads;
 - duplicate/conflicting provider interactions;
 - missing/empty/wrong-type protected approver/verifier/Socket Mode files.
 
-Expected result is no canonical approval and no consequential external action.
+Expected result is no canonical approval, no Gmail send, and no consequential external action.
 
 ### SCH-HITL-006 generic Slack connector cannot impersonate OpenAI bot or satisfy human approval
 
@@ -107,7 +113,7 @@ The user-scoped Slack connector is not an accepted governed notice-author surfac
 
 Production requires:
 - exact governed Slack channel;
-- protected configured human identity mapping to `michael`;
+- protected configured human identity mapping to `michael` without persisting that provider ID into normal evidence;
 - exact official OpenAI bot author set;
 - mounted non-empty `xoxb-` verifier credential;
 - mounted non-empty `xapp-` Socket Mode credential;
@@ -143,6 +149,12 @@ No green run from an earlier commit may satisfy the final-candidate gate.
 
 The Codex Security diff-scan engine is not executable from the current ChatGPT host. No completed Codex Security scan is claimed. The strongest available targeted evidence is required instead: exact diff inspection, repository security policy, source-to-sink attack-path tracing, closed authorization schemas, negative trust-boundary tests, Bandit, full regression/coverage, container/QNAP integration, and independent hosted acceptance.
 
+The independent review discovered SEC-QNAP-040 after the initial CI failure and closed it before merge by removing the protected human provider ID from both durable Slack notice bindings and durable Socket Mode decision evidence.
+
+## Control-ledger reconciliation
+
+The exact shared Google TaskLedger is available again. On 2026-08-26 the legacy protected human provider identifier was redacted from the existing workbook rather than copied into a shadow ledger, and stale webhook-era approval checks in `CoS - Automation Preflight` were converted to the v4.1.10 Socket Mode and official-bot trust model. Live-dependent rows remain `BLOCKED` until v4.1.10 QNAP and hosted acceptance evidence exists.
+
 ## Hosted production blockers before certification
 
 The following are not converted into source-level defects if the candidate correctly fails closed, but each blocks production certification until resolved:
@@ -154,7 +166,7 @@ The following are not converted into source-level defects if the candidate corre
 5. An ordinary `APPROVE <Approval ID>` Slack message must leave the synthetic approval `PENDING`.
 6. MK must invoke `/mesh-approval APPROVE <Approval ID>` and the non-MCP human-ingress service must update canonical principal `michael`.
 7. `approval.get` must reflect the synthetic canonical decision before any action.
-8. Google TaskLedger operating-mirror state and ProductionPreflight must be reconciled when the exact source connector is available. A shadow workbook is prohibited.
+8. Google TaskLedger operating-mirror state and ProductionPreflight must be fully reconciled after live acceptance. A shadow workbook is prohibited.
 
 ## Certification rule
 

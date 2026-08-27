@@ -41,7 +41,6 @@ case "${1:-}" in
     esac
     ;;
   stop)
-    [ "${@: -1}" = "mesh-cos-mcp" ] 2>/dev/null || true
     exit 0
     ;;
   start)

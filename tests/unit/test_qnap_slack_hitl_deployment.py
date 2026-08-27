@@ -19,7 +19,7 @@ def test_qnap_compose_mounts_only_slack_human_identity_and_socket_token_read_onl
     assert "MESH_COS_SLACK_APPROVER_USER_ID" not in env
     assert env["MESH_COS_SLACK_APPROVER_PRINCIPAL"]
     assert env["MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE"] == "/run/secrets/slack_socket_app_token"
-    assert env["MESH_COS_SLACK_APPROVAL_COMMAND"] == "/mesh-approval"
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND" not in env
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS" not in env
     assert "MESH_COS_SLACK_VERIFIER_TOKEN_FILE" not in env
     assert any("/run/secrets/slack_approver_user_id:ro" in volume for volume in volumes)
@@ -57,4 +57,4 @@ def test_qnap_reference_env_uses_only_required_protected_slack_paths() -> None:
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS=" not in text
     assert "MESH_COS_SLACK_APPROVER_USER_ID=" not in text
     assert "MESH_COS_SLACK_APPROVER_PRINCIPAL=michael" in text
-    assert "MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval" in text
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND=" not in text

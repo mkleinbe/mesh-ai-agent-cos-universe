@@ -10,6 +10,7 @@ from mesh_cos.approval import ApprovalService
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
+from mesh_cos.slack_bot import SlackApprovalNotifier, SlackBotAPI
 from mesh_cos.slack_socket_bridge import (
     _read_stdin,
     _safe_error,
@@ -19,6 +20,7 @@ from mesh_cos.slack_socket_bridge import (
 
 CHANNEL_ID = "C0TESTAGENTOPS"
 APPROVER_USER_ID = "U0TESTAPPROVER"
+APP_ID = "A0TESTAPP"
 FINGERPRINT = "f" * 64
 ROOT_TS = "1787843216.789639"
 
@@ -51,8 +53,19 @@ def _seed(path: Path) -> str:
         AuthorityLevel.L4,
         f"Execute payload_fingerprint={FINGERPRINT}",
     )
+    notifier = _notifier(ledger)
+    notifier.post_approval(approval.approval_id)
     ledger.conn.close()
     return approval.approval_id
+
+
+def _notifier(ledger: TaskLedger) -> SlackApprovalNotifier:
+    def transport(method: str, payload: dict, token: str) -> dict:
+        if method == "chat.postMessage" and "thread_ts" not in payload:
+            return {"ok": True, "channel": CHANNEL_ID, "ts": ROOT_TS}
+        return {"ok": True, "channel": CHANNEL_ID, "ts": payload.get("ts", "1787843300.1")}
+
+    return SlackApprovalNotifier(ledger, SlackBotAPI("xoxb-test", transport), CHANNEL_ID)
 
 
 def _env(path: Path) -> dict[str, str]:
@@ -63,26 +76,7 @@ def _env(path: Path) -> dict[str, str]:
         "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": CHANNEL_ID,
         "MESH_COS_SLACK_APPROVER_USER_ID": APPROVER_USER_ID,
         "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
-    }
-
-
-def _root_envelope(approval_id: str) -> dict:
-    return {
-        "envelope_id": "env-root-bridge",
-        "type": "events_api",
-        "payload": {
-            "type": "event_callback",
-            "event_id": "Ev-root-bridge",
-            "event": {
-                "type": "message",
-                "channel": CHANNEL_ID,
-                "user": APPROVER_USER_ID,
-                "app_id": "A0CHATGPT",
-                "text": f"Approval ID: `{approval_id}`",
-                "ts": ROOT_TS,
-                "event_ts": ROOT_TS,
-            },
-        },
+        "MESH_COS_SLACK_APP_ID": APP_ID,
     }
 
 
@@ -92,6 +86,7 @@ def _reply_envelope() -> dict:
         "type": "events_api",
         "payload": {
             "type": "event_callback",
+            "api_app_id": APP_ID,
             "event_id": "Ev-reply-bridge",
             "event": {
                 "type": "message",
@@ -111,20 +106,20 @@ def test_execute_socket_envelope_round_trips_bound_thread_and_canonical_state(
 ) -> None:
     path = tmp_path / "ledger.sqlite3"
     approval_id = _seed(path)
-
-    binding_response = execute_socket_envelope(_root_envelope(approval_id), env=_env(path))
-    assert binding_response["ok"] is True
-    assert binding_response["source"] == "SLACK_SOCKET_MODE"
-    binding = binding_response["result"]
-    assert binding["source"] == "SLACK_SOCKET_MODE_THREAD_BINDING"
-    assert binding["payload_fingerprint"] == FINGERPRINT
-
-    response = execute_socket_envelope(_reply_envelope(), env=_env(path))
+    notifier_ledger = TaskLedger(path)
+    try:
+        response = execute_socket_envelope(
+            _reply_envelope(),
+            env=_env(path),
+            notifier=_notifier(notifier_ledger),
+        )
+    finally:
+        notifier_ledger.conn.close()
     assert response["ok"] is True
     assert response["source"] == "SLACK_SOCKET_MODE"
     result = response["result"]
     assert result["disposition"] == "APPROVE"
-    assert result["source"] == "SLACK_SOCKET_MODE_THREAD_REPLY"
+    assert result["source"] == "SLACK_SOCKET_MODE_HUMAN_INTERACTION"
     assert result["provider_identity_verified"] is True
     assert result["payload_fingerprint"] == FINGERPRINT
     assert APPROVER_USER_ID not in str(result)
@@ -132,6 +127,24 @@ def test_execute_socket_envelope_round_trips_bound_thread_and_canonical_state(
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
     assert ledger.get_record("approval_slack_thread_binding", ROOT_TS) is not None
     ledger.conn.close()
+
+
+def test_execute_socket_envelope_builds_runtime_notifier_when_not_injected(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = tmp_path / "ledger.sqlite3"
+    _seed(path)
+    created: list[bool] = []
+
+    def from_env(ledger: TaskLedger, environment: dict) -> SlackApprovalNotifier:
+        created.append(True)
+        return _notifier(ledger)
+
+    monkeypatch.setattr("mesh_cos.slack_socket_bridge.SlackApprovalNotifier.from_env", from_env)
+    response = execute_socket_envelope(_reply_envelope(), env=_env(path))
+    assert response["ok"] is True
+    assert created == [True]
 
 
 def test_execute_socket_envelope_rejects_nonobject(tmp_path: Path) -> None:

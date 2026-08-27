@@ -1,33 +1,39 @@
 # Upgrade Checklist
 
-- [ ] Exact v4.1.15 candidate passes ready QNAP-104 through QNAP-111 and retained historical behavior contracts
+- [ ] Exact v4.1.16 candidate passes ready QNAP-112 through QNAP-115, retained QNAP-104 through QNAP-111, and retained historical behavior contracts
 - [ ] Candidate passes dependency integrity, TypeScript MCP/Socket Mode checks, contract/package/document drift checks, Ruff, mypy, 100% Python coverage, Bandit, POSIX shell regressions, bundle layout, Compose, OCI provenance, container/runtime, backup, and full security gates
+- [ ] `test-restarting-container-backup.sh` passes the `running=true` + `status=restarting` reproduction and helper-failure restoration path
 - [ ] SQLite schema compatibility evaluated; no schema migration required
-- [ ] Approved v4.1.15 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] Approved v4.1.16 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
 - [ ] ZIP checksum verifies before extraction
-- [ ] extraction creates `v4.1.15/` automatically
+- [ ] extraction creates `v4.1.16/` automatically
 - [ ] no manual version-directory creation, payload copy/move, helper copy, or chmod is required
 - [ ] human release/deployment authority is valid
-- [ ] operator uses `sudo sh ./v4.1.15/mesh-cos-mcp-deploy.sh`
-- [ ] deployment validates that `v4.1.15` is directly beneath the canonical releases root and matches staged metadata
-- [ ] pre-deploy online backup completes when an existing service is running
+- [ ] operator uses `sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh`
+- [ ] deployment validates `v4.1.16` beneath the canonical releases root and matches staged metadata
+- [ ] any existing `mesh-cos-mcp` triggers the pre-deploy backup gate
+- [ ] stable `status=running` with `.State.Restarting=false` retains online SQLite backup
+- [ ] restarting source is not given `docker exec`; it is stopped before canonical SQLite state is read
+- [ ] quiesced helper uses the exact active Mesh image, `--network none`, non-root UID/GID, read-only root filesystem, dropped capabilities, and `no-new-privileges`
+- [ ] quiesced helper receives no protected Slack/tunnel credentials
+- [ ] quiesced helper uses SQLite backup semantics and passes `PRAGMA integrity_check`
+- [ ] helper/export failure removes temporary/partial backup state and fails closed
+- [ ] prior running intent is restored after both successful and failed quiesced backup attempts
 - [ ] canonical TaskLedger is preserved
 - [ ] Secure MCP tunnel ID and runtime-key file are preserved
 - [ ] missing tunnel runtime key fails closed to `mesh-cos-tunnel-key-provision.sh`
 - [ ] Slack approver identity is bootstrapped/validated without interactive user-ID entry
 - [ ] governed Michael/MK Slack user principal remains `U01KG3CNYHK`
 - [ ] a `D...` conversation ID is rejected as an approver principal
-- [ ] existing valid `U...`/`W...` approver identity is preserved
-- [ ] only Slack Socket Mode `xapp-` credential is required by the v4.1.15 QNAP runtime
+- [ ] only Slack Socket Mode `xapp-` credential is required
 - [ ] legacy Slack verifier file, if present, is unused and unmounted
 - [ ] no active script/Compose/preflight path references `MESH_COS_SLACK_VERIFIER_TOKEN_FILE` or `xoxb-`
-- [ ] explicit provisioners require safe no-echo controlling-TTY input, never put secrets in argv/logs, and fail closed when safe input cannot be established
-- [ ] protected files are normalized to runtime UID/GID `65532:65532` and mode `0400`
-- [ ] staged `release-metadata.txt` reports `version=4.1.15` and exact release commit
+- [ ] protected files remain runtime UID/GID `65532:65532` and mode `0400`
+- [ ] staged `release-metadata.txt` reports `version=4.1.16` and exact release commit
 - [ ] candidate release identity derives from staged metadata; true mismatch remains fail-closed
 - [ ] same-tag image reuse requires matching OCI version/revision
-- [ ] provenance mismatch forces rebuild from staged v4.1.15 build context
+- [ ] provenance mismatch forces rebuild from staged v4.1.16 build context
 - [ ] staged `.env.runtime` contains no tunnel or Slack credential value
 - [ ] `mesh-cos-private` is `internal: true` on `172.30.60.0/29`
 - [ ] MCP uses private `172.30.60.2` plus qnet `192.168.7.60` as its only external-capable network
@@ -37,38 +43,27 @@
 - [ ] no direct MCP host port is published
 - [ ] staged-candidate host/runtime preflight passes
 - [ ] candidate application and tunnel containers become healthy
-- [ ] a failed activation/health check before promotion restores the prior active stack when available
+- [ ] a failed activation/health check before promotion restores prior active stack when available
 - [ ] active `.env`, Compose, and release metadata are snapshotted before promotion
-- [ ] snapshot records files that were previously absent
-- [ ] partial promotion failure restores the exact pre-promotion active configuration
-- [ ] post-promotion verification failure restores the exact pre-promotion active configuration and prior stack
+- [ ] partial promotion or post-promotion verification failure restores exact pre-promotion state and prior stack
 - [ ] incomplete rollback preserves the recovery `.release-rollback.*` snapshot
-- [ ] rollback-snapshot cleanup rejects unsafe empty/root/dot/dot-dot paths
 - [ ] successful post-deploy verification is the promotion transaction commit point
-- [ ] snapshot cleanup occurs only after successful verification
 - [ ] automated least-privilege/image/resource verification and post-deploy backup pass
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.15`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.16`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
-- [ ] post-deploy verifier executes a real read-only governed MCP call through the tunnel network namespace
 - [ ] public `tools/list` remains the exact 27-tool CoS projection
 - [ ] exactly 10 agents remain registered and Devil's Advocate remains a shared Skill
 - [ ] human-only `approval.record_decision` and `reliability.human_override` remain unavailable to agents
 - [ ] CoS `slack-adapter` accepts `operation: handoff` only and returns `CHATGPT_CONNECTOR_HANDOFF` / `COLLABORATION_ONLY`
-- [ ] connected Slack collaboration cannot create approval authority
-- [ ] ordinary Slack messages cannot change canonical approval state
+- [ ] connected Slack collaboration and ordinary Slack messages cannot create approval authority
 - [ ] canonical approval action requires immutable 64-hex `payload_fingerprint`
-- [ ] verified human `/mesh-approval` interaction records canonical principal `michael`
-- [ ] wrong user/channel/command and missing fingerprint fail closed
+- [ ] verified human `/mesh-approval` records canonical principal `michael`; wrong user/channel/command fails closed
 - [ ] same provider-envelope replay is idempotent; distinct conflicting interaction cannot re-decide
-- [ ] protected human Slack user ID is not persisted in durable decision evidence
-- [ ] scheduled execution reuses explicit `task.intake.idempotency_key` and follows canonical lifecycle through `QA`
 - [ ] `COMPLETED != VERIFIED` remains enforced
 - [ ] verified dated backup exists under `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"`
 - [ ] long-running application remains UID/GID 65532 despite host-side sudo deployment
 - [ ] direct non-tunnel `/mcp` ingress remains denied
 - [ ] run `CHATGPT-ACCEPTANCE.md` through installed **Mesh CoS MCP** app
-- [ ] run `chatgpt-published-app-production-acceptance-v4.1.15.md`
+- [ ] run `chatgpt-published-app-production-acceptance-v4.1.16.md`
 - [ ] provider/network outage leaves MCP HTTP process alive, `/readyz` fail-closed, and bounded Slack reconnect active
-- [ ] fresh `approval.get` reflects the exact synthetic canonical decision with no external action taken
-- [ ] TaskLedger operating mirror is reconciled when the exact source connector is available
 - [ ] production certification occurs only with zero open CRITICAL/HIGH defects and no required live acceptance blocker

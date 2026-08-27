@@ -1,66 +1,67 @@
 # Short QNAP Deployment and Upgrade Steps
 
-v4.1.15 simplifies Slack HITL, fixes QNAP Docker Engine 27 egress ambiguity, and makes release promotion recoverable through post-deploy verification. The canonical Phase 1 authority/runtime contract remains **4.0.0**.
+v4.1.16 fixes the restarting-runtime pre-deploy backup defect while retaining the v4.1.15 Slack HITL simplification, QNAP Docker Engine 27 deterministic egress, and transactional promotion recovery. The canonical Phase 1 authority/runtime contract remains **4.0.0**.
 
 ## Canonical paths
 
 - operator release root: `/share/Docker/cos-mcp/releases`
-- v4.1.15 extracted release: `/share/Docker/cos-mcp/releases/v4.1.15`
+- v4.1.16 extracted release: `/share/Docker/cos-mcp/releases/v4.1.16`
 - active application root: `/share/Docker/cos-mcp`
 - canonical state: `/share/Docker/cos-mcp/state`
 - protected secrets: `/share/Docker/cos-mcp/secrets`
 - deployment logs: `/share/Docker/cos-mcp/logs/deployment`
 - backups: `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`
 
-Stay in `/share/Docker/cos-mcp/releases` for staging and execution. The ZIP creates `v4.1.15/` during extraction. Do not manually create the version directory, copy helpers into `/share/Docker`, or chmod the bundle before running scripts with `sh`.
+Stay in `/share/Docker/cos-mcp/releases` for staging and execution. The ZIP creates `v4.1.16/` during extraction. Do not manually create the version directory, copy helpers into `/share/Docker`, or chmod the bundle before running scripts with `sh`.
+
+## Pre-deploy backup behavior
+
+Deployment backs up state whenever an existing `mesh-cos-mcp` container exists.
+
+- Stable `status=running` and `.State.Restarting=false`: online SQLite backup through the existing container.
+- `restarting`, `exited`, or other non-stable existing state: quiesced helper backup.
+- A restarting runtime is stopped before SQLite state is read and its prior running intent is restored after the backup attempt.
+- The one-shot helper uses the exact active Mesh image, `--network none`, non-root UID/GID, read-only root filesystem, dropped capabilities, `no-new-privileges`, and no protected Slack/tunnel secret mounts.
+- The canonical SQLite helper uses SQLite backup semantics and `PRAGMA integrity_check` before acceptance.
+- Failed backup/export attempts remove temporary/partial backup state and fail closed.
+
+This specifically handles the QNAP Docker 27 condition where `.State.Running=true` can coexist with `.State.Status=restarting`.
 
 ## Slack identity and credentials
 
 The governed human approver is Michael/MK. The verified Slack user ID is `U01KG3CNYHK`. Slack `D...` values are conversation IDs and are not valid human principals.
 
-v4.1.15 uses the connected Slack integration for collaboration and one custom Slack app boundary for authenticated `/mesh-approval` Socket Mode ingress.
+v4.1.16 retains the v4.1.15 split: connected Slack is collaboration-only; the custom Slack app is authenticated `/mesh-approval` Socket Mode ingress.
 
-The QNAP runtime requires only:
+The QNAP runtime requires only the protected approver identity file and protected Slack Socket Mode app-level token beginning `xapp-`. A Slack `xoxb-` verifier bot token is not required, mounted, validated, prompted for, or used.
 
-- protected approver identity file;
-- protected Slack Socket Mode app-level token beginning `xapp-`.
-
-A Slack `xoxb-` verifier bot token is **not required, mounted, validated, prompted for, or used** by v4.1.15. A legacy verifier file may remain on the host solely to permit rollback to an older release.
-
-Normal upgrades do not ask for the approver user ID, Socket Mode app token, or OpenAI tunnel runtime key when the protected files already exist.
-
-If the Socket Mode credential is missing or invalid, deployment fails closed and directs the operator to:
+If the Socket Mode credential is missing or invalid:
 
 ```sh
-sudo sh ./v4.1.15/mesh-cos-slack-hitl-provision.sh
+sudo sh ./v4.1.16/mesh-cos-slack-hitl-provision.sh
 ```
 
 If the OpenAI tunnel runtime key is missing:
 
 ```sh
-sudo sh ./v4.1.15/mesh-cos-tunnel-key-provision.sh
+sudo sh ./v4.1.16/mesh-cos-tunnel-key-provision.sh
 ```
-
-Explicit provisioners read secrets only from the controlling TTY using no-echo input, never put secret values on the command line, and normalize protected files to runtime ownership/mode.
 
 ## Artifact layout
 
 The archive contains one top-level directory:
 
 ```text
-v4.1.15/
+v4.1.16/
 ```
 
-Extracting `mesh-cos-mcp-qnap-v4.1.15.zip` under the canonical releases root therefore creates `/share/Docker/cos-mcp/releases/v4.1.15` automatically.
+Extracting `mesh-cos-mcp-qnap-v4.1.16.zip` under the canonical releases root creates `/share/Docker/cos-mcp/releases/v4.1.16` automatically.
 
 ## Network topology
 
-v4.1.15 avoids relying on newer Compose gateway-priority features that are not part of the QNAP Docker Engine 27 baseline.
-
-- `mesh-cos-private` is an internal-only bridge on `172.30.60.0/29`.
-- MCP uses `172.30.60.2` privately and retains qnet `lan7` address `192.168.7.60` as its only external-capable network.
-- The tunnel remains the trusted MCP source at `172.30.60.3` and receives a dedicated egress bridge address `172.30.61.2` for OpenAI control-plane traffic.
-- No second qnet LAN address is consumed by the tunnel.
+- `mesh-cos-private` is internal-only on `172.30.60.0/29`.
+- MCP uses `172.30.60.2` privately and qnet `lan7` address `192.168.7.60` as its only external-capable network.
+- Tunnel is trusted MCP source `172.30.60.3` and uses dedicated egress `172.30.61.2` for OpenAI control-plane traffic.
 - No direct MCP host port is published.
 
 ## Upgrade behavior
@@ -68,7 +69,7 @@ v4.1.15 avoids relying on newer Compose gateway-priority features that are not p
 `mesh-cos-mcp-deploy.sh` performs:
 
 1. release-root and staged metadata validation;
-2. pre-deploy online backup when the current service is running;
+2. pre-deploy state/configuration backup for any existing `mesh-cos-mcp`, selecting online or quiesced mode from actual Docker status;
 3. candidate preparation from staged metadata/build context;
 4. minimal Slack HITL identity/Socket Mode credential validation;
 5. staged-candidate QNAP preflight;
@@ -80,51 +81,45 @@ v4.1.15 avoids relying on newer Compose gateway-priority features that are not p
 11. promotion transaction commit and rollback-snapshot cleanup;
 12. post-deploy backup.
 
-If candidate activation or health fails before promotion, the previously active stack is restored when available. If active-file promotion is partial or post-deploy verification fails, the exact pre-promotion configuration snapshot is restored and the previously active stack is restarted. If rollback itself is incomplete, the recovery snapshot is preserved for operator recovery.
+If candidate activation or health fails before promotion, the previously active stack is restored when available. If active-file promotion is partial or post-deploy verification fails, the exact pre-promotion configuration snapshot is restored and the previously active stack is restarted. If rollback itself is incomplete, the recovery snapshot is preserved.
 
-The canonical TaskLedger, Secure MCP tunnel identity/key, Slack protected files, qnet/static identity, logs, and backups remain outside the versioned release folder.
-
-## Safe v4.1.15 deployment
+## Safe v4.1.16 deployment
 
 Place these assets directly in `/share/Docker/cos-mcp/releases`:
 
-- `mesh-cos-mcp-qnap-v4.1.15.zip`
-- `mesh-cos-mcp-qnap-v4.1.15.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.1.16.zip`
+- `mesh-cos-mcp-qnap-v4.1.16.zip.sha256`
 
 Then run:
 
 ```sh
 cd /share/Docker/cos-mcp/releases
-sha256sum -c mesh-cos-mcp-qnap-v4.1.15.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.1.15.zip
-sudo sh ./v4.1.15/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.1.16.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.1.16.zip
+sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
 ```
 
 If deployment reports a missing Socket Mode credential:
 
 ```sh
-cd /share/Docker/cos-mcp/releases
-sudo sh ./v4.1.15/mesh-cos-slack-hitl-provision.sh
-sudo sh ./v4.1.15/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.1.16/mesh-cos-slack-hitl-provision.sh
+sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
 ```
 
-Only if preparation explicitly reports a missing OpenAI tunnel key:
+Only if preparation reports a missing OpenAI tunnel key:
 
 ```sh
-cd /share/Docker/cos-mcp/releases
-sudo sh ./v4.1.15/mesh-cos-tunnel-key-provision.sh
-sudo sh ./v4.1.15/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.1.16/mesh-cos-tunnel-key-provision.sh
+sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
 ```
-
-Release identity comes from staged metadata; no `MESH_COS_DEPLOYMENT_RELEASE` variable needs to survive `sudo`.
 
 ## Optional explicit checks
 
 ```sh
 cd /share/Docker/cos-mcp/releases
-sudo sh ./v4.1.15/mesh-cos-mcp-backup.sh manual
-sudo sh ./v4.1.15/mesh-cos-mcp-preflight.sh
-sudo sh ./v4.1.15/mesh-cos-mcp-verify.sh
+sudo sh ./v4.1.16/mesh-cos-mcp-backup.sh manual
+sudo sh ./v4.1.16/mesh-cos-mcp-preflight.sh
+sudo sh ./v4.1.16/mesh-cos-mcp-verify.sh
 ```
 
 ## Local post-deploy checks
@@ -137,36 +132,20 @@ sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires active release `4.1.15`, application image `mesh-cos-mcp:qnap-v4.1.15`, both containers healthy, `slack_hitl_ready=true`, and:
+PASS requires active release `4.1.16`, application image `mesh-cos-mcp:qnap-v4.1.16`, both containers healthy, `slack_hitl_ready=true`, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.15
+deployment_release: 4.1.16
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
 Do not print protected Slack or tunnel files.
 
-## Intentional credential replacement
-
-Slack Socket Mode token:
-
-```sh
-cd /share/Docker/cos-mcp/releases
-sudo env MESH_COS_FORCE_SLACK_HITL_RECONFIGURE=1 sh ./v4.1.15/mesh-cos-slack-hitl-provision.sh
-```
-
-Tunnel runtime key:
-
-```sh
-cd /share/Docker/cos-mcp/releases
-sudo env MESH_COS_FORCE_TUNNEL_KEY_RECONFIGURE=1 sh ./v4.1.15/mesh-cos-tunnel-key-provision.sh
-```
-
 ## Failure diagnostics
 
-Do not delete or recreate state after a failure. Capture the durable diagnostic log:
+Do not delete or recreate state after a failure:
 
 ```sh
 LOG=$(cat /share/Docker/cos-mcp/logs/deployment/LATEST)
@@ -174,9 +153,7 @@ printf 'LOG=%s\n' "$LOG"
 cat "$LOG"
 ```
 
-If a failed transactional rollback reports a preserved `.release-rollback.*` snapshot, retain it until recovery is complete. Do not delete that directory during investigation.
-
-The deployment log must not contain Slack or tunnel credential values.
+A successful pre-deploy backup from a restarting source should record `state_export_method=quiesced_helper`. Preserve any `.release-rollback.*` snapshot reported by a failed transactional rollback.
 
 ## Rollback
 
@@ -187,7 +164,7 @@ Use the most recent successful `pre-deploy` backup under `/share/QNAP NAS/Mike H
 After local deployment passes:
 
 1. run `CHATGPT-ACCEPTANCE.md` through the installed **Mesh CoS MCP** app;
-2. run `chatgpt-published-app-production-acceptance-v4.1.15.md` for hosted roster/catalog, Slack collaboration-only handoff, authenticated `/mesh-approval`, canonical approval readback, replay denial, and no unauthorized external action;
+2. run `chatgpt-published-app-production-acceptance-v4.1.16.md`;
 3. reconcile the TaskLedger operating mirror when the exact source connector is available.
 
-Repository-green v4.1.15 is not production certification. Production acceptance requires the actual QNAP serving instance and live hosted checks.
+Repository-green v4.1.16 is not production certification. Production acceptance requires the actual QNAP serving instance and live hosted checks.

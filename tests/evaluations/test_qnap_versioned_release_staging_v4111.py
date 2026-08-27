@@ -51,21 +51,24 @@ def test_preflight_distinguishes_active_release_from_staged_candidate() -> None:
     assert "active release may differ before candidate promotion" in preflight
 
 
-def test_deploy_runs_in_place_then_promotes_only_after_candidate_health() -> None:
+def test_deploy_runs_in_place_then_promotes_transactionally_after_candidate_health() -> None:
     deploy = text(SCRIPTS / "mesh-cos-mcp-deploy.sh")
+    helper = text(SCRIPTS / "mesh-cos-qnap-promotion.sh")
     assert 'BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}' in deploy
     assert 'CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"' in deploy
     assert 'CANDIDATE_COMPOSE="$BUNDLE_APP_ROOT/compose.yaml"' in deploy
     assert 'mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" up -d --no-build' in deploy
-    health_pos = deploy.index("wait_healthy mesh-cos-tunnel")
-    promote_pos = deploy.index("mesh_set_stage candidate_promote")
-    verify_pos = deploy.index("mesh-cos-mcp-verify.sh")
-    assert health_pos < promote_pos < verify_pos
-    assert 'promote_candidate_file "$CANDIDATE_ENV" "$APP_ROOT/.env" 0640' in deploy
-    assert 'promote_candidate_file "$CANDIDATE_COMPOSE" "$APP_ROOT/compose.yaml" 0644' in deploy
-    assert 'promote_candidate_file "$BUNDLE_APP_ROOT/release-metadata.txt" "$APP_ROOT/release-metadata.txt" 0644' in deploy
-    assert 'promote_incoming="$promote_target.incoming.$$"' in deploy
-    assert 'mv "$promote_incoming" "$promote_target"' in deploy
+    execution = deploy[deploy.index("mesh_set_stage pre_backup") :]
+    health_pos = execution.index("wait_healthy mesh-cos-tunnel")
+    promote_pos = execution.index("mesh_set_stage candidate_promote")
+    verify_pos = execution.index("mesh-cos-mcp-verify.sh")
+    commit_pos = execution.index("candidate_promotion_commit")
+    assert health_pos < promote_pos < verify_pos < commit_pos
+    assert "mesh_snapshot_active_configuration" in deploy
+    assert "mesh_promote_candidate_configuration" in deploy
+    assert "mesh_restore_active_configuration" in deploy
+    assert 'incoming="$target.incoming.$$"' in helper
+    assert 'mv "$incoming" "$target"' in helper
 
 
 def test_release_identity_normalization_accepts_git_v_prefix_but_preserves_mismatch_gate() -> None:
@@ -78,7 +81,7 @@ def test_release_identity_normalization_accepts_git_v_prefix_but_preserves_misma
     assert "requested deployment release does not match extracted bundle metadata" in prepare
 
 
-def test_v4111_release_evidence_remains_historical_and_reproducible() -> None:
+def test_v4111_release_evidence_remains_historical_and_current_default_advances() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
     historical_release = text(ROOT / "docs" / "release-4.1.11-qnap-versioned-release-staging.md")
     historical_spec = text(ROOT / "specs" / "qnap-versioned-release-staging-v4.1.11.feature")
@@ -87,4 +90,4 @@ def test_v4111_release_evidence_remains_historical_and_reproducible() -> None:
     assert "v4.1.11" in historical_release
     assert "QNAP-074" in historical_spec
     assert "QNAP-082" in historical_spec
-    assert 'VERSION=${1:-4.1.13}' in builder
+    assert 'VERSION=${1:-4.1.15}' in builder

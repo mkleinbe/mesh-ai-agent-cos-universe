@@ -39,6 +39,19 @@ write_protected_file() {
   mv "$incoming" "$target" || { rm -f "$incoming"; fail "unable to install protected runtime file"; }
 }
 
+normalize_native_trigger_env() {
+  incoming="$CANDIDATE_ENV_FILE.native.$$"
+  sed \
+    -e '/^QNAP_SLACK_SOCKET_APP_TOKEN_FILE=/d' \
+    -e '/^MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE=/d' \
+    -e '/^MESH_COS_SLACK_BRIDGE_TIMEOUT_MS=/d' \
+    -e '/^MESH_COS_SLACK_HITL_MODE=/d' \
+    "$CANDIDATE_ENV_FILE" > "$incoming" || fail "unable to normalize candidate Slack HITL environment"
+  printf '%s\n' 'MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER' >> "$incoming" || { rm -f "$incoming"; fail "unable to set native Slack HITL mode"; }
+  chmod 0640 "$incoming" 2>/dev/null || { rm -f "$incoming"; fail "unable to protect normalized candidate environment"; }
+  mv "$incoming" "$CANDIDATE_ENV_FILE" || { rm -f "$incoming"; fail "unable to install normalized candidate environment"; }
+}
+
 validate_approver_user_id() {
   APPROVER_VALUE_TO_VALIDATE=$1
   case "$APPROVER_VALUE_TO_VALIDATE" in
@@ -60,6 +73,7 @@ validate_bot_file() {
 
 mesh_set_stage prepared_release
 [ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run mesh-cos-mcp-prepare.sh first"
+normalize_native_trigger_env
 set -a
 . "$CANDIDATE_ENV_FILE"
 set +a
@@ -68,6 +82,7 @@ MESH_IMAGE=${MESH_COS_IMAGE:-}
 docker image inspect "$MESH_IMAGE" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable"
 [ "${MESH_COS_SLACK_HITL_MODE:-}" = "CHATGPT_NATIVE_EVENT_TRIGGER" ] || fail "prepared release is not configured for ChatGPT native Slack event-triggered HITL"
 [ -z "${MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:-}" ] || fail "legacy Slack Socket Mode must not be configured for v4.2.0"
+[ -z "${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-}" ] || fail "legacy QNAP Slack Socket Mode path must not remain after normalization"
 
 mesh_set_stage filesystem
 mkdir -p "$SECRET_DIR" || fail "unable to create Slack HITL secrets directory"

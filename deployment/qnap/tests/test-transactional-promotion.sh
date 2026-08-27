@@ -77,4 +77,13 @@ mesh_cleanup_configuration_snapshot "$ROLLBACK" || exit 1
   exit 1
 }
 
-echo 'PASS QNAP release configuration promotion is snapshot-backed and recoverable after partial failure'
+if mesh_cleanup_configuration_snapshot ""; then
+  echo 'FAIL empty rollback directory was accepted' >&2
+  exit 1
+fi
+if mesh_cleanup_configuration_snapshot "/"; then
+  echo 'FAIL filesystem root was accepted as rollback directory' >&2
+  exit 1
+fi
+
+echo 'PASS QNAP release configuration promotion is snapshot-backed, recoverable, and cleanup-path constrained'

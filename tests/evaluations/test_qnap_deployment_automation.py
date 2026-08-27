@@ -81,6 +81,7 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
         "mesh-cos-mcp-backup.sh",
         "mesh-cos-mcp-verify.sh",
         "mesh-cos-slack-hitl-configure.sh",
+        "mesh-cos-slack-hitl-provision.sh",
     ]:
         script = text(SCRIPTS / filename)
         assert "QNAP_SCRIPT_ROOT:-/share/Docker" not in script
@@ -90,23 +91,32 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
 
 def test_slack_hitl_configuration_is_candidate_bound_protected_and_noninteractive_for_approver() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
+    provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
     assert 'CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}' in script
     assert "prepared candidate release .env.runtime is required" in script
     assert "DEFAULT_APPROVER_USER_ID" in script
     assert "U01KG3CNYHK" in script
     assert "read_visible_tty" not in script
+    assert "read_secret_tty" not in script
+    assert "command -v stty" not in script
     assert "Slack user ID for the human approval principal" not in script
     assert "Slack conversation/DM channel ID is not a user ID" in script
     assert "grep -Eq '^[UW][A-Z0-9]+$'" in script
-    assert "Slack read-only verifier bot token (input hidden)" in script
-    assert "Slack Socket Mode app-level token (input hidden)" in script
-    assert "stty -echo" in script
-    assert "grep -Eq '^xoxb-'" in script
-    assert "grep -Eq '^xapp-'" in script
+    assert "Slack verifier token file is missing" in script
+    assert "Slack Socket Mode app token file is missing" in script
+    assert "mesh-cos-slack-hitl-provision.sh" in script
     assert "slack-socket-app-token" in script
     assert "mesh_apply_secret_permissions" in script
     assert "value_logged=false" in script
+    assert "non_interactive=true" in script
     assert "MESH_COS_FORCE_SLACK_HITL_RECONFIGURE" in script
+    assert "Slack read-only verifier bot token (input hidden)" in provision
+    assert "Slack Socket Mode app-level token (input hidden)" in provision
+    assert "shell_supports_silent_read" in provision
+    assert "/bin/stty /usr/bin/stty" in provision
+    assert "xoxb-*" in provision
+    assert "xapp-*" in provision
+    assert "value_logged=false" in provision
 
 
 def test_compose_discovery_is_qnap_aware_and_v2_only() -> None:

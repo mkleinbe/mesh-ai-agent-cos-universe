@@ -25,6 +25,7 @@ COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
 IMAGE_PROVENANCE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-image-provenance.sh"
+TUNNEL_PROVISION_SCRIPT="$SCRIPT_ROOT/mesh-cos-tunnel-key-provision.sh"
 MESH_COS_SCRIPT=mesh-cos-mcp-prepare.sh
 export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT QNAP_MESH_ROOT QNAP_BACKUP_ROOT QNAP_TUNNEL_API_KEY_FILE MESH_UID MESH_GID MESH_COS_SCRIPT
 
@@ -48,19 +49,6 @@ read_visible_tty() {
   [ -r /dev/tty ] || fail "interactive input requires a TTY"
   printf '%s' "$prompt" > /dev/tty
   IFS= read -r REPLY < /dev/tty || fail "unable to read from TTY"
-}
-
-read_secret_tty() {
-  [ -r /dev/tty ] || fail "tunnel runtime key input requires a TTY"
-  command -v stty >/dev/null 2>&1 || fail "stty is required for hidden secret input"
-  printf '%s' "OpenAI tunnel runtime API key (input hidden): " > /dev/tty
-  trap 'stty echo < /dev/tty >/dev/null 2>&1 || true' 0 1 2 15
-  stty -echo < /dev/tty || fail "unable to disable terminal echo"
-  IFS= read -r SECRET_VALUE < /dev/tty || { stty echo < /dev/tty >/dev/null 2>&1 || true; fail "unable to read tunnel runtime key"; }
-  stty echo < /dev/tty >/dev/null 2>&1 || true
-  printf '\n' > /dev/tty
-  trap - 0 1 2 15
-  mesh_log INFO secret_input "status=captured value_logged=false"
 }
 
 existing_env_value() {
@@ -205,14 +193,7 @@ mesh_log INFO tunnel_id "format=valid value_logged=false"
 if [ -s "$SECRET_FILE" ]; then
   info "preserving existing tunnel runtime key file"
 else
-  read_secret_tty
-  [ -n "$SECRET_VALUE" ] || fail "tunnel runtime key cannot be empty"
-  TMP_SECRET="$APP_ROOT/secrets/.openai-tunnel-runtime-key.incoming.$$"
-  umask 077
-  printf '%s' "$SECRET_VALUE" > "$TMP_SECRET" || { unset SECRET_VALUE; fail "unable to write temporary tunnel runtime key file"; }
-  unset SECRET_VALUE
-  mv "$TMP_SECRET" "$SECRET_FILE" || fail "unable to stage tunnel runtime key file"
-  mesh_log INFO secret_file "status=staged value_logged=false"
+  fail "OpenAI tunnel runtime key file is missing; provision it with: sudo sh $TUNNEL_PROVISION_SCRIPT"
 fi
 mesh_apply_secret_permissions "$MESH_IMAGE_TAG" "$MESH_UID" "$MESH_GID" "$APP_ROOT/secrets" || fail "constrained Docker helper could not set governed secret ownership/mode"
 mesh_log INFO secret_file "owner=$MESH_UID:$MESH_GID mode=0400 value_logged=false"

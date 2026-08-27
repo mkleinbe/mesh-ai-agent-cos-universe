@@ -17,6 +17,7 @@ MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
+PROVISION_SCRIPT="$SCRIPT_ROOT/mesh-cos-slack-hitl-provision.sh"
 MESH_COS_SCRIPT=mesh-cos-slack-hitl-configure.sh
 export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT MESH_UID MESH_GID MESH_COS_SCRIPT
 
@@ -28,24 +29,6 @@ mesh_obs_init slack-hitl-configure || { echo "ERROR: unable to initialize deploy
 
 fail() { mesh_fail 1 "${MESH_COS_STAGE:-slack_hitl_configure}" "$1"; }
 info() { mesh_log INFO info "$1"; }
-
-read_secret_tty() {
-  prompt=$1
-  label=$2
-  [ -r /dev/tty ] || fail "$label input requires a TTY"
-  command -v stty >/dev/null 2>&1 || fail "stty is required for hidden secret input"
-  printf '%s' "$prompt" > /dev/tty
-  trap 'stty echo < /dev/tty >/dev/null 2>&1 || true' 0 1 2 15
-  stty -echo < /dev/tty || fail "unable to disable terminal echo"
-  IFS= read -r SECRET_VALUE < /dev/tty || {
-    stty echo < /dev/tty >/dev/null 2>&1 || true
-    fail "unable to read $label"
-  }
-  stty echo < /dev/tty >/dev/null 2>&1 || true
-  printf '\n' > /dev/tty
-  trap - 0 1 2 15
-  mesh_log INFO secret_input "kind=$label status=captured value_logged=false"
-}
 
 write_protected_file() {
   target=$1
@@ -65,6 +48,26 @@ validate_approver_user_id() {
   unset APPROVER_VALUE_TO_VALIDATE
 }
 
+validate_verifier_file() {
+  [ -s "$VERIFIER_FILE" ] || fail "Slack verifier token file is missing; provision it with: sudo sh $PROVISION_SCRIPT"
+  VERIFIER_VALUE=$(cat "$VERIFIER_FILE") || fail "unable to read existing Slack verifier token file"
+  case "$VERIFIER_VALUE" in
+    xoxb-*) ;;
+    *) unset VERIFIER_VALUE; fail "Slack verifier token file is invalid; expected a bot token beginning with xoxb-" ;;
+  esac
+  unset VERIFIER_VALUE
+}
+
+validate_socket_file() {
+  [ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing; provision it with: sudo sh $PROVISION_SCRIPT"
+  SOCKET_VALUE=$(cat "$SOCKET_APP_FILE") || fail "unable to read existing Slack Socket Mode app token file"
+  case "$SOCKET_VALUE" in
+    xapp-*) ;;
+    *) unset SOCKET_VALUE; fail "Slack Socket Mode app token file is invalid; expected an app-level token beginning with xapp-" ;;
+  esac
+  unset SOCKET_VALUE
+}
+
 mesh_set_stage prepared_release
 [ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run mesh-cos-mcp-prepare.sh first"
 set -a
@@ -78,8 +81,12 @@ mesh_set_stage filesystem
 mkdir -p "$SECRET_DIR" || fail "unable to create Slack HITL secrets directory"
 chmod 0700 "$SECRET_DIR" 2>/dev/null || fail "unable to set Slack HITL secrets directory mode"
 
+if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ]; then
+  fail "forced Slack credential reconfiguration is not allowed in the deploy path; run: sudo sh $PROVISION_SCRIPT"
+fi
+
 mesh_set_stage approver_identity
-if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ] || [ ! -s "$APPROVER_FILE" ]; then
+if [ ! -s "$APPROVER_FILE" ]; then
   APPROVER_VALUE=$DEFAULT_APPROVER_USER_ID
   validate_approver_user_id "$APPROVER_VALUE"
   write_protected_file "$APPROVER_FILE" "$APPROVER_VALUE"
@@ -93,28 +100,12 @@ else
 fi
 
 mesh_set_stage verifier_token
-if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ] || [ ! -s "$VERIFIER_FILE" ]; then
-  read_secret_tty "Slack read-only verifier bot token (input hidden): " "Slack verifier token"
-  [ -n "$SECRET_VALUE" ] || fail "Slack verifier token cannot be empty"
-  printf '%s' "$SECRET_VALUE" | grep -Eq '^xoxb-' || { unset SECRET_VALUE; fail "Slack verifier must use a bot token"; }
-  write_protected_file "$VERIFIER_FILE" "$SECRET_VALUE"
-  unset SECRET_VALUE
-  mesh_log INFO slack_verifier_file "status=staged value_logged=false"
-else
-  info "preserving existing Slack verifier token file"
-fi
+validate_verifier_file
+info "preserving existing validated Slack verifier token file"
 
 mesh_set_stage socket_app_token
-if [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" = "1" ] || [ ! -s "$SOCKET_APP_FILE" ]; then
-  read_secret_tty "Slack Socket Mode app-level token (input hidden): " "Slack Socket Mode app token"
-  [ -n "$SECRET_VALUE" ] || fail "Slack Socket Mode app token cannot be empty"
-  printf '%s' "$SECRET_VALUE" | grep -Eq '^xapp-' || { unset SECRET_VALUE; fail "Slack Socket Mode requires an app-level xapp token"; }
-  write_protected_file "$SOCKET_APP_FILE" "$SECRET_VALUE"
-  unset SECRET_VALUE
-  mesh_log INFO slack_socket_app_file "status=staged value_logged=false"
-else
-  info "preserving existing Slack Socket Mode app token file"
-fi
+validate_socket_file
+info "preserving existing validated Slack Socket Mode app token file"
 
 mesh_set_stage permissions
 mesh_apply_secret_permissions "$MESH_IMAGE" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize Slack HITL secret ownership/modes"
@@ -125,4 +116,4 @@ mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values
 
 mesh_set_stage complete
 info "Slack HITL protected runtime configuration complete"
-mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false"
+mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true"

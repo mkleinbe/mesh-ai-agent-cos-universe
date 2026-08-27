@@ -1,0 +1,102 @@
+#!/bin/sh
+set -u
+
+SCRIPT_ROOT=${QNAP_SCRIPT_ROOT:-}
+if [ -z "$SCRIPT_ROOT" ]; then
+  SCRIPT_ROOT=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd -P) || { echo "ERROR: unable to resolve deployment bundle root" >&2; exit 1; }
+fi
+BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}
+APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
+CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
+SECRET_DIR="$APP_ROOT/secrets"
+VERIFIER_FILE=${QNAP_SLACK_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
+SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
+MESH_UID=${MESH_UID:-65532}
+MESH_GID=${MESH_GID:-65532}
+OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
+PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
+SECRET_INPUT_LIB="$SCRIPT_ROOT/mesh-cos-qnap-secret-input.sh"
+MESH_COS_SCRIPT=mesh-cos-slack-hitl-provision.sh
+export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT MESH_UID MESH_GID MESH_COS_SCRIPT
+
+[ -r "$OBS_LIB" ] || { echo "ERROR: observability helper missing: $OBS_LIB" >&2; exit 1; }
+. "$OBS_LIB"
+mesh_obs_init slack-hitl-provision || { echo "ERROR: unable to initialize deployment logging" >&2; exit 1; }
+[ -r "$PERM_LIB" ] || mesh_fail 1 bootstrap "runtime permission helper missing: $PERM_LIB"
+. "$PERM_LIB"
+[ -r "$SECRET_INPUT_LIB" ] || mesh_fail 1 bootstrap "protected secret input helper missing: $SECRET_INPUT_LIB"
+. "$SECRET_INPUT_LIB"
+
+fail() { mesh_fail 1 "${MESH_COS_STAGE:-slack_hitl_provision}" "$1"; }
+info() { mesh_log INFO info "$1"; }
+
+write_protected_file() {
+  target=$1
+  value=$2
+  incoming="$target.incoming.$$"
+  umask 077
+  printf '%s' "$value" > "$incoming" || fail "unable to write protected runtime file"
+  chmod 0400 "$incoming" 2>/dev/null || { rm -f "$incoming"; fail "unable to set protected runtime file mode"; }
+  mv "$incoming" "$target" || { rm -f "$incoming"; fail "unable to install protected runtime file"; }
+}
+
+provision_verifier() {
+  if [ -s "$VERIFIER_FILE" ] && [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" != "1" ]; then
+    info "preserving existing Slack verifier token file"
+    return 0
+  fi
+  mesh_read_secret_tty "Slack read-only verifier bot token (input hidden): " "Slack verifier token" || fail "unable to capture Slack verifier token securely"
+  [ -n "$MESH_SECRET_VALUE" ] || fail "Slack verifier token cannot be empty"
+  case "$MESH_SECRET_VALUE" in
+    xoxb-*) ;;
+    *) unset MESH_SECRET_VALUE; fail "Slack verifier must use a bot token beginning with xoxb-" ;;
+  esac
+  write_protected_file "$VERIFIER_FILE" "$MESH_SECRET_VALUE"
+  unset MESH_SECRET_VALUE
+  mesh_log INFO slack_verifier_file "status=provisioned value_logged=false"
+}
+
+provision_socket() {
+  if [ -s "$SOCKET_APP_FILE" ] && [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" != "1" ]; then
+    info "preserving existing Slack Socket Mode app token file"
+    return 0
+  fi
+  mesh_read_secret_tty "Slack Socket Mode app-level token (input hidden): " "Slack Socket Mode app token" || fail "unable to capture Slack Socket Mode app token securely"
+  [ -n "$MESH_SECRET_VALUE" ] || fail "Slack Socket Mode app token cannot be empty"
+  case "$MESH_SECRET_VALUE" in
+    xapp-*) ;;
+    *) unset MESH_SECRET_VALUE; fail "Slack Socket Mode requires an app-level token beginning with xapp-" ;;
+  esac
+  write_protected_file "$SOCKET_APP_FILE" "$MESH_SECRET_VALUE"
+  unset MESH_SECRET_VALUE
+  mesh_log INFO slack_socket_app_file "status=provisioned value_logged=false"
+}
+
+mesh_set_stage prepared_release
+[ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run the normal deploy command once before provisioning"
+set -a
+. "$CANDIDATE_ENV_FILE"
+set +a
+MESH_IMAGE=${MESH_COS_IMAGE:-}
+[ -n "$MESH_IMAGE" ] || fail "prepared candidate release does not define MESH_COS_IMAGE"
+docker image inspect "$MESH_IMAGE" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable"
+
+mesh_set_stage filesystem
+mkdir -p "$SECRET_DIR" || fail "unable to create Slack HITL secrets directory"
+chmod 0700 "$SECRET_DIR" 2>/dev/null || fail "unable to set Slack HITL secrets directory mode"
+
+mesh_set_stage verifier_token
+provision_verifier
+
+mesh_set_stage socket_app_token
+provision_socket
+
+mesh_set_stage permissions
+mesh_apply_secret_permissions "$MESH_IMAGE" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize Slack HITL secret ownership/modes"
+[ -s "$VERIFIER_FILE" ] || fail "Slack verifier token file is missing or empty after provisioning"
+[ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing or empty after provisioning"
+mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false"
+
+mesh_set_stage complete
+info "Slack HITL protected credentials provisioned; rerun the normal deployment command"
+mesh_log INFO slack_hitl_provision_complete "result=PASS values_logged=false"

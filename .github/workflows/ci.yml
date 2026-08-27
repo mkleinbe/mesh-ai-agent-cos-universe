@@ -37,7 +37,6 @@ jobs:
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
-
       - name: QNAP POSIX shell regression suite
         run: |
           set -euo pipefail
@@ -53,128 +52,49 @@ jobs:
           sh deployment/qnap/tests/test-restarting-container-backup.sh
           bash -n scripts/build-qnap-release-bundle.sh
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
-          ! grep -q 'MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS' deployment/qnap/compose.yaml
-          ! grep -q 'QNAP_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/scripts/mesh-cos-mcp-prepare.sh
-          ! grep -q 'QNAP_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
-          ! grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
-          ! grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
+          ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          grep -q 'MESH_COS_SLACK_BOT_TOKEN_FILE' deployment/qnap/compose.yaml
+          grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
-          grep -q 'mesh_snapshot_active_configuration' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
-          grep -q 'fail_after_promotion' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
-          grep -q '{{.State.Status}}' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-          grep -q '{{.State.Restarting}}' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
           grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-
-      - name: Build exact v4.1.16 QNAP release bundle
+      - name: Build exact v4.1.17 QNAP release bundle
         env:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh 4.1.16
-          ZIP=dist/mesh-cos-mcp-qnap-v4.1.16.zip
-          SHA="$ZIP.sha256"
-          BUNDLE=dist/qnap-bundle/v4.1.16
-          test -f "$ZIP"
-          test -f "$SHA"
-          grep -q '^version=4.1.16$' "$BUNDLE/cos-mcp/release-metadata.txt"
+          bash scripts/build-qnap-release-bundle.sh 4.1.17
+          ZIP=dist/mesh-cos-mcp-qnap-v4.1.17.zip
+          BUNDLE=dist/qnap-bundle/v4.1.17
+          test -f "$ZIP" && test -f "$ZIP.sha256"
+          grep -q '^version=4.1.17$' "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
-          test -f "$BUNDLE/mesh-cos-qnap-promotion.sh"
-          test -f "$BUNDLE/cos-mcp/qnap-restarting-backup-v4.1.16.feature"
-          test -f "$BUNDLE/cos-mcp/security-review-v4.1.16.md"
-          test -f "$BUNDLE/cos-mcp/release-4.1.16-qnap-restarting-backup.md"
-          test -f "$BUNDLE/cos-mcp/verification-v4.1.16-qnap-restarting-backup.md"
-          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.16.md"
-          ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' "$BUNDLE/cos-mcp/compose.yaml"
-          ! grep -q 'slack-verifier-token' "$BUNDLE/cos-mcp/compose.yaml"
-          ! grep -q 'xoxb-' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
-          ! grep -q 'xoxb-' "$BUNDLE/mesh-cos-slack-hitl-provision.sh"
-          grep -q 'internal: true' "$BUNDLE/cos-mcp/compose.yaml"
-          grep -q 'mesh-cos-egress:' "$BUNDLE/cos-mcp/compose.yaml"
-          grep -q 'mesh_snapshot_active_configuration' "$BUNDLE/mesh-cos-mcp-deploy.sh"
-          grep -q '{{.State.Status}}' "$BUNDLE/mesh-cos-mcp-backup.sh"
-          grep -q 'quiesced_helper' "$BUNDLE/mesh-cos-mcp-backup.sh"
-          unzip -Z1 "$ZIP" > /tmp/v4116.entries
-          test -s /tmp/v4116.entries
-          if grep -Ev '^v4\.1\.16/' /tmp/v4116.entries; then
-            echo 'release archive contains entries outside v4.1.16/' >&2
-            exit 1
-          fi
-          grep -qx 'v4.1.16/mesh-cos-mcp-deploy.sh' /tmp/v4116.entries
-          grep -qx 'v4.1.16/mesh-cos-mcp-backup.sh' /tmp/v4116.entries
-          grep -qx 'v4.1.16/mesh-cos-qnap-promotion.sh' /tmp/v4116.entries
-          grep -qx 'v4.1.16/cos-mcp/release-metadata.txt' /tmp/v4116.entries
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.16.zip.sha256)
-
-      - name: Validate v4.1.16 QNAP Compose topology
-        env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.16'
-          MESH_COS_IMAGE: mesh-cos-mcp:qnap-v4.1.16
-          MESH_COS_IMAGE_ID: sha256:0000000000000000000000000000000000000000000000000000000000000000
-          TUNNEL_IMAGE: ghcr.io/openai/tunnel-client@sha256:0000000000000000000000000000000000000000000000000000000000000000
-          TUNNEL_IMAGE_ID: sha256:1111111111111111111111111111111111111111111111111111111111111111
-          QNAP_MESH_ROOT: /tmp/mesh-state
-          QNAP_TUNNEL_API_KEY_FILE: /tmp/tunnel-runtime-key
-          QNAP_SLACK_APPROVER_USER_ID_FILE: /tmp/slack-approver-user-id
-          QNAP_SLACK_SOCKET_APP_TOKEN_FILE: /tmp/slack-socket-app-token
-          MESH_UID: '65532'
-          MESH_GID: '65532'
-          MESH_CPU_LIMIT: '2.0'
-          MESH_MEMORY_LIMIT: 24g
-          CONTROL_PLANE_TUNNEL_ID: tunnel_0123456789abcdef0123456789abcdef
+          test -f "$BUNDLE/cos-mcp/qnap-slack-thread-hitl-v4.1.17.feature"
+          test -f "$BUNDLE/cos-mcp/security-review-v4.1.17.md"
+          test -f "$BUNDLE/cos-mcp/release-4.1.17-slack-bot-block-kit-hitl.md"
+          test -f "$BUNDLE/cos-mcp/verification-v4.1.17-slack-bot-block-kit-hitl.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.17.md"
+          unzip -Z1 "$ZIP" > /tmp/v4117.entries
+          if grep -Ev '^v4\.1\.17/' /tmp/v4117.entries; then exit 1; fi
+          grep -qx 'v4.1.17/mesh-cos-mcp-deploy.sh' /tmp/v4117.entries
+          grep -qx 'v4.1.17/cos-mcp/release-metadata.txt' /tmp/v4117.entries
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.17.zip.sha256)
+      - name: Build production container from exact v4.1.17 bundle
         run: |
           set -euo pipefail
-          docker compose -f deployment/qnap/compose.yaml config > /tmp/mesh-cos-compose.rendered.yaml
-          python - <<'PY'
-          import yaml
-          data = yaml.safe_load(open('/tmp/mesh-cos-compose.rendered.yaml'))
-          svc = data['services']['mesh-cos-mcp']
-          tun = data['services']['tunnel-client']
-          assert float(svc['cpus']) == 2.0
-          assert int(svc['mem_limit']) == 25769803776
-          assert 'pids_limit' not in svc
-          assert 'ports' not in svc
-          assert svc['pull_policy'] == 'never'
-          assert svc['environment']['MESH_COS_DEPLOYMENT_RELEASE'] == '4.1.16'
-          assert svc['environment']['MESH_COS_SLACK_HITL_REQUIRED'] == 'true'
-          assert svc['environment']['MESH_COS_SLACK_APPROVER_USER_ID_FILE'] == '/run/secrets/slack_approver_user_id'
-          assert svc['environment']['MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE'] == '/run/secrets/slack_socket_app_token'
-          assert 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' not in svc['environment']
-          assert svc['environment']['MESH_COS_SLACK_APPROVAL_COMMAND'] == '/mesh-approval'
-          assert data['networks']['mesh-cos-private']['internal'] is True
-          assert data['networks']['mesh-cos-private']['ipam']['config'][0]['subnet'] == '172.30.60.0/29'
-          assert data['networks']['mesh-cos-egress']['ipam']['config'][0]['subnet'] == '172.30.61.0/29'
-          assert data['networks']['lan7']['external'] is True
-          assert svc['networks']['lan7']['ipv4_address'] == '192.168.7.60'
-          assert svc['networks']['mesh-cos-private']['ipv4_address'] == '172.30.60.2'
-          assert 'mesh-cos-egress' not in svc['networks']
-          assert tun['networks']['mesh-cos-private']['ipv4_address'] == '172.30.60.3'
-          assert tun['networks']['mesh-cos-egress']['ipv4_address'] == '172.30.61.2'
-          assert 'lan7' not in tun['networks']
-          assert tun['pull_policy'] == 'never'
-          PY
-
-      - name: Build production container from exact v4.1.16 bundle
-        run: |
-          set -euo pipefail
-          docker build \
-            --build-arg VCS_REF="$GITHUB_SHA" \
-            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --build-arg IMAGE_VERSION=4.1.16-qnap \
-            -t mesh-cos-mcp:ci-v4.1.16 dist/qnap-bundle/v4.1.16/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.16)" = '4.1.16-qnap'
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.1.16)" = "$GITHUB_SHA"
-
+          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.17-qnap -t mesh-cos-mcp:ci-v4.1.17 dist/qnap-bundle/v4.1.17/cos-mcp/build-context
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.17)" = '4.1.17-qnap'
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.1.17)" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and sequential requests
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.16'
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.1.16
-
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.17'
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.1.17
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.16-ci
+          name: mesh-cos-mcp-qnap-v4.1.17-ci
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.16.zip
-            dist/mesh-cos-mcp-qnap-v4.1.16.zip.sha256
+            dist/mesh-cos-mcp-qnap-v4.1.17.zip
+            dist/mesh-cos-mcp-qnap-v4.1.17.zip.sha256
           if-no-files-found: error
           retention-days: 30

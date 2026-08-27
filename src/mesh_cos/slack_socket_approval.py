@@ -134,11 +134,11 @@ class SlackSocketApprovalService:
                 return prior_thread
             raise ValueError("Slack approval thread is already bound to another approval")
 
-        for prior in self.ledger.list_records(_THREAD_BINDING_KIND):
-            if prior.get("approval_id") == approval_id:
-                if prior.get("thread_ts") == thread_ts:
-                    return dict(prior)
-                raise ValueError("Approval is already bound to another Slack thread")
+        if any(
+            prior.get("approval_id") == approval_id
+            for prior in self.ledger.list_records(_THREAD_BINDING_KIND)
+        ):
+            raise ValueError("Approval is already bound to another Slack thread")
 
         approval = self.ledger.get_record("approval", approval_id)
         if approval is None:

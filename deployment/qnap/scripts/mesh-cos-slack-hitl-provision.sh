@@ -11,7 +11,6 @@ CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
 SECRET_DIR="$APP_ROOT/secrets"
 SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
 BOT_TOKEN_FILE=${QNAP_SLACK_BOT_TOKEN_FILE:-$SECRET_DIR/slack-bot-token}
-LEGACY_BOT_FILE=${QNAP_SLACK_LEGACY_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
@@ -64,18 +63,6 @@ provision_bot() {
     unset BOT_VALUE
     info "preserving existing Slack bot OAuth token file"
     return 0
-  fi
-  if [ -s "$LEGACY_BOT_FILE" ] && [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" != "1" ]; then
-    BOT_VALUE=$(cat "$LEGACY_BOT_FILE") || fail "unable to read legacy Slack bot token file"
-    case "$BOT_VALUE" in
-      xoxb-*)
-        write_protected_file "$BOT_TOKEN_FILE" "$BOT_VALUE"
-        unset BOT_VALUE
-        mesh_log INFO slack_bot_token_file "status=migrated_from_legacy value_logged=false"
-        return 0
-        ;;
-      *) unset BOT_VALUE ;;
-    esac
   fi
   mesh_read_secret_tty "Slack bot OAuth token (input hidden): " "Slack bot OAuth token" || fail "unable to capture Slack bot OAuth token securely"
   [ -n "$MESH_SECRET_VALUE" ] || fail "Slack bot OAuth token cannot be empty"

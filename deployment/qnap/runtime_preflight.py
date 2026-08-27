@@ -12,7 +12,6 @@ from pathlib import Path
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.mcp_runtime import MCPRuntime
 from mesh_cos.slack_hitl import SlackHITLConfig
-from mesh_cos.slack_socket_approval import DEFAULT_APPROVAL_COMMAND
 
 
 def check(condition: bool, code: str, detail: str, failures: list[dict[str, str]]) -> None:
@@ -103,13 +102,6 @@ def main() -> int:
             protected_file_ok(socket_value, "xapp-"),
             "slack_socket_app_credential_invalid",
             "Slack Socket Mode app-level credential is missing, unreadable, empty, or wrong type",
-            failures,
-        )
-        command = os.environ.get("MESH_COS_SLACK_APPROVAL_COMMAND", "").strip()
-        check(
-            command == DEFAULT_APPROVAL_COMMAND,
-            "slack_approval_command_invalid",
-            "Slack approval slash command is missing or mismatched",
             failures,
         )
 

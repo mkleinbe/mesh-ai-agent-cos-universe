@@ -2,7 +2,7 @@
 
 `v4.2.0` replaces the QNAP-hosted Slack Socket Mode approval ingress used by v4.1.17 and v4.1.18 with ChatGPT-native Slack new-message task triggers.
 
-The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. OpenAI Secure MCP Tunnel remains the production remote MCP transport. TaskLedger remains canonical approval state.
+The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. OpenAI Secure MCP Tunnel remains the production remote MCP transport. TaskLedger remains canonical approval state. **Message Operations** remains the tenth registered agent. **Mesh Devil's Advocate** remains a governed shared Skill and is not an eleventh agent.
 
 ## Architecture
 

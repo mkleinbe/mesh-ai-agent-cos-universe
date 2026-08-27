@@ -50,7 +50,7 @@ def test_native_trigger_adapter_passes_only_provider_locators(
     monkeypatch.setenv("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", CHANNEL_ID)
     monkeypatch.setenv("MESH_COS_SLACK_APPROVER_USER_ID", "U01KG3CNYHK")
     monkeypatch.setenv("MESH_COS_SLACK_APPROVER_PRINCIPAL", "michael")
-    monkeypatch.setenv("MESH_COS_SLACK_APP_ID", "A0B49RNF4K0")
+    monkeypatch.setenv("MESH_COS_SLACK_APP_ID", "A0B49RNE4K0")
     result = _registry().execute(
         "cos",
         "slack-adapter",

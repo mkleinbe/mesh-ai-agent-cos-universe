@@ -12,7 +12,7 @@ from mesh_cos.slack_socket_approval import SlackSocketApprovalConfig
 
 CHANNEL = "C0BRL4GCL3A"
 USER = "U01KG3CNYHK"
-APP = "A0B49RNF4K0"
+APP = "A0B49RNE4K0"
 ROOT = "1787843216.789639"
 MESSAGE = "1787843300.046169"
 FINGERPRINT = "e" * 64

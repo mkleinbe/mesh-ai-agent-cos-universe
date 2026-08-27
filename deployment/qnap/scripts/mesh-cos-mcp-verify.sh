@@ -43,6 +43,11 @@ mesh_run runtime_readiness readyz docker exec -e EXPECTED_RELEASE="$MESH_COS_DEP
 mesh_run runtime_readiness runtime-preflight docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py || fail "canonical runtime preflight failed"
 pass "runtime health, readiness, dual release identity, and canonical preflight"
 
+mesh_set_stage slack_provider_read
+SLACK_PROVIDER_CHECK="const fs=require('fs');const token=fs.readFileSync('/run/secrets/slack_bot_token','utf8').trim();const channel=process.env.MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID;const url=new URL('https://slack.com/api/conversations.history');url.searchParams.set('channel',channel);url.searchParams.set('limit','1');fetch(url,{headers:{Authorization:'Bearer '+token}}).then(async r=>{const j=await r.json();if(!j||j.ok!==true){const code=j&&typeof j.error==='string'&&/^[a-z0-9_]+$/.test(j.error)?j.error:'unknown_error';console.error('slack_provider_read_failed:'+code);process.exit(1)}}).catch(()=>{console.error('slack_provider_read_failed:network_error');process.exit(1)})"
+mesh_run slack_provider_read conversations-history docker exec mesh-cos-mcp node -e "$SLACK_PROVIDER_CHECK" || fail "Slack bot cannot read the governed private channel; verify bot groups:history scope, workspace reinstall, token reprovisioning, and channel membership"
+pass "Slack bot provider read scope and governed-channel access"
+
 MCP_ENVELOPE_CHECK="const expected=process.env.EXPECTED_RELEASE;const meta={'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'mesh-qnap-verify',version:expected}};const body={jsonrpc:'2.0',id:'verify-envelope',method:'tools/call',params:{name:'registry.get_agent',arguments:{agent_id:'cos'},_meta:meta}};fetch('http://172.30.60.2:8080/mcp',{method:'POST',headers:{'content-type':'application/json','accept':'application/json, text/event-stream','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'registry.get_agent'},body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error('http_'+r.status);const outer=JSON.parse(await r.text());const content=outer&&outer.result&&outer.result.content;if(!Array.isArray(content))throw new Error('missing_content');const item=content.find(x=>x&&x.type==='text');if(!item||typeof item.text!=='string')throw new Error('missing_text');const envelope=JSON.parse(item.text);if(envelope.ok!==true||envelope.mcp_version!=='4.0.0'||envelope.deployment_release!==expected||envelope.agent_id!=='cos'||!envelope.result)throw new Error('identity_mismatch')}).catch(()=>process.exit(1))"
 mesh_run runtime_readiness governed-tool-envelope \
   docker run --rm \
@@ -102,4 +107,4 @@ echo "Mesh image ID: $RUNNING_MESH_ID"
 echo "Tunnel image ID: $RUNNING_TUNNEL_ID"
 docker network inspect lan7 --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || true
 echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
-echo "NEXT: complete CHATGPT-ACCEPTANCE.md through the Secure MCP Tunnel."
+echo "NEXT: verify the ChatGPT-native Mesh Slack HITL Dispatcher is enabled, then run CHATGPT-ACCEPTANCE.md for deployment release $MESH_COS_DEPLOYMENT_RELEASE."

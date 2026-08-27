@@ -1,69 +1,64 @@
 # Upgrade Checklist
 
-- [ ] Exact v4.1.16 candidate passes ready QNAP-112 through QNAP-115, retained QNAP-104 through QNAP-111, and retained historical behavior contracts
-- [ ] Candidate passes dependency integrity, TypeScript MCP/Socket Mode checks, contract/package/document drift checks, Ruff, mypy, 100% Python coverage, Bandit, POSIX shell regressions, bundle layout, Compose, OCI provenance, container/runtime, backup, and full security gates
-- [ ] `test-restarting-container-backup.sh` passes the `running=true` + `status=restarting` reproduction and helper-failure restoration path
+- [ ] Exact v4.2.2 candidate passes Python, Node, contract/doc drift, security, QNAP shell, bundle, container provenance, and modern MCP gates
+- [ ] Slack provider transport regression proves `conversations.replies` uses GET/query parameters
+- [ ] regression proves Slack write methods remain POST/JSON
+- [ ] regression proves OAuth token is Authorization-header only and absent from provider-read URLs
+- [ ] regression proves only sanitized provider error codes are surfaced
 - [ ] SQLite schema compatibility evaluated; no schema migration required
-- [ ] Approved v4.1.16 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] approved v4.2.2 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
 - [ ] ZIP checksum verifies before extraction
-- [ ] extraction creates `v4.1.16/` automatically
-- [ ] no manual version-directory creation, payload copy/move, helper copy, or chmod is required
+- [ ] extraction creates `v4.2.2/` automatically
 - [ ] human release/deployment authority is valid
-- [ ] operator uses `sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh`
-- [ ] deployment validates `v4.1.16` beneath the canonical releases root and matches staged metadata
-- [ ] any existing `mesh-cos-mcp` triggers the pre-deploy backup gate
-- [ ] stable `status=running` with `.State.Restarting=false` retains online SQLite backup
-- [ ] restarting source is not given `docker exec`; it is stopped before canonical SQLite state is read
-- [ ] quiesced helper uses the exact active Mesh image, `--network none`, non-root UID/GID, read-only root filesystem, dropped capabilities, and `no-new-privileges`
-- [ ] quiesced helper receives no protected Slack/tunnel credentials
-- [ ] quiesced helper uses SQLite backup semantics and passes `PRAGMA integrity_check`
-- [ ] helper/export failure removes temporary/partial backup state and fails closed
-- [ ] prior running intent is restored after both successful and failed quiesced backup attempts
-- [ ] canonical TaskLedger is preserved
-- [ ] Secure MCP tunnel ID and runtime-key file are preserved
-- [ ] missing tunnel runtime key fails closed to `mesh-cos-tunnel-key-provision.sh`
-- [ ] Slack approver identity is bootstrapped/validated without interactive user-ID entry
-- [ ] governed Michael/MK Slack user principal remains `U01KG3CNYHK`
-- [ ] a `D...` conversation ID is rejected as an approver principal
-- [ ] only Slack Socket Mode `xapp-` credential is required
-- [ ] legacy Slack verifier file, if present, is unused and unmounted
-- [ ] no active script/Compose/preflight path references `MESH_COS_SLACK_VERIFIER_TOKEN_FILE` or `xoxb-`
-- [ ] protected files remain runtime UID/GID `65532:65532` and mode `0400`
-- [ ] staged `release-metadata.txt` reports `version=4.1.16` and exact release commit
-- [ ] candidate release identity derives from staged metadata; true mismatch remains fail-closed
-- [ ] same-tag image reuse requires matching OCI version/revision
-- [ ] provenance mismatch forces rebuild from staged v4.1.16 build context
+- [ ] operator uses `sudo sh ./v4.2.2/mesh-cos-mcp-deploy.sh`
+- [ ] deployment validates `v4.2.2` beneath the canonical releases root and matches staged metadata
+- [ ] pre-deploy backup gate passes and canonical TaskLedger is preserved
+- [ ] Secure MCP tunnel identity/runtime key are preserved
+- [ ] governed Michael/MK Slack user principal remains protected and valid
+- [ ] Slack App ID is provider-verified `A0B49RNE4K0`
+- [ ] dedicated bot remains a member of `#mesh-agent-ops`
+- [ ] bot token scopes include only the required collaboration/read scopes, including `chat:write` and `groups:history`
+- [ ] if scopes changed, Slack app reauthorization/reinstall and QNAP bot-token reprovisioning are complete
+- [ ] protected bot credential is `xoxb-`, runtime UID/GID `65532:65532`, mode `0400`, read-only mounted
+- [ ] no `xapp-` Socket Mode credential is configured/mounted
+- [ ] staged `release-metadata.txt` reports `version=4.2.2` and exact release commit
+- [ ] same-tag image reuse requires matching OCI version/revision; mismatch forces rebuild
 - [ ] staged `.env.runtime` contains no tunnel or Slack credential value
-- [ ] `mesh-cos-private` is `internal: true` on `172.30.60.0/29`
-- [ ] MCP uses private `172.30.60.2` plus qnet `192.168.7.60` as its only external-capable network
-- [ ] tunnel uses private `172.30.60.3` plus dedicated egress `172.30.61.2`
-- [ ] tunnel does not consume a second qnet LAN address
-- [ ] no unsupported gateway-priority feature is required on Docker Engine 27
+- [ ] staged `.env.runtime` contains `MESH_COS_SLACK_APP_ID=A0B49RNE4K0`
+- [ ] `mesh-cos-private` remains internal `172.30.60.0/29`
+- [ ] MCP remains private `172.30.60.2` plus qnet `192.168.7.60`
+- [ ] tunnel remains private `172.30.60.3` plus dedicated egress `172.30.61.2`
 - [ ] no direct MCP host port is published
-- [ ] staged-candidate host/runtime preflight passes
+- [ ] candidate host/runtime preflight passes
 - [ ] candidate application and tunnel containers become healthy
-- [ ] a failed activation/health check before promotion restores prior active stack when available
-- [ ] active `.env`, Compose, and release metadata are snapshotted before promotion
-- [ ] partial promotion or post-promotion verification failure restores exact pre-promotion state and prior stack
-- [ ] incomplete rollback preserves the recovery `.release-rollback.*` snapshot
-- [ ] successful post-deploy verification is the promotion transaction commit point
-- [ ] automated least-privilege/image/resource verification and post-deploy backup pass
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.16`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] transactional promotion and rollback controls remain intact
+- [ ] post-deploy verification is the promotion commit point
+- [ ] live Slack provider-read verification runs inside the actual `mesh-cos-mcp` container
+- [ ] live provider-read verification passes `conversations.history` for `C0BRL4GCL3A`
+- [ ] live provider-read verification fails closed for missing scope/auth/channel access/network errors
+- [ ] live provider-read diagnostics never expose token, Authorization header, or full provider response
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.2`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
-- [ ] public `tools/list` remains the exact 27-tool CoS projection
 - [ ] exactly 10 agents remain registered and Devil's Advocate remains a shared Skill
 - [ ] human-only `approval.record_decision` and `reliability.human_override` remain unavailable to agents
-- [ ] CoS `slack-adapter` accepts `operation: handoff` only and returns `CHATGPT_CONNECTOR_HANDOFF` / `COLLABORATION_ONLY`
-- [ ] connected Slack collaboration and ordinary Slack messages cannot create approval authority
-- [ ] canonical approval action requires immutable 64-hex `payload_fingerprint`
-- [ ] verified human `/mesh-approval` records canonical principal `michael`; wrong user/channel/command fails closed
-- [ ] same provider-envelope replay is idempotent; distinct conflicting interaction cannot re-decide
+- [ ] one ChatGPT Work **Mesh Slack HITL Dispatcher** remains enabled
+- [ ] dispatcher remains event-triggered only, not scheduled/polled
+- [ ] dispatcher prompt remains `Mesh CoS MCP v4.x`
+- [ ] dispatcher passes only `thread_ts` and `message_ts`
+- [ ] dispatcher never forwards Slack text, user ID, decision, principal, approval status, or consequential instructions
+- [ ] fresh synthetic approval notice is posted by dedicated bot and bound to canonical thread/fingerprint
+- [ ] provider-retrieved `*APPROVE*` passes through GET/query `conversations.replies`
+- [ ] exact synthetic approval becomes APPROVED and task READY_FOR_ACTION exactly once
+- [ ] same provider locator replay is idempotent
+- [ ] DENY and CHANGE positive paths pass
+- [ ] wrong user, bot/app reply, edited/unavailable reply, root/unbound thread, nested/partial/unknown decision, fingerprint drift, conflicting decision, and provider failure all fail closed
+- [ ] CHANGE follow-up produces governed change input and requires a new approval/fingerprint before consequential action
 - [ ] `COMPLETED != VERIFIED` remains enforced
-- [ ] verified dated backup exists under `"/share/QNAP NAS/Mike Home/MCP/CoS/Backups"`
+- [ ] verified dated backup exists under `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`
 - [ ] long-running application remains UID/GID 65532 despite host-side sudo deployment
 - [ ] direct non-tunnel `/mcp` ingress remains denied
+- [ ] final governance audit chain verifies
 - [ ] run `CHATGPT-ACCEPTANCE.md` through installed **Mesh CoS MCP** app
-- [ ] run `chatgpt-published-app-production-acceptance-v4.1.16.md`
-- [ ] provider/network outage leaves MCP HTTP process alive, `/readyz` fail-closed, and bounded Slack reconnect active
+- [ ] run `docs/chatgpt-published-app-production-acceptance-v4.2.2.md`
 - [ ] production certification occurs only with zero open CRITICAL/HIGH defects and no required live acceptance blocker

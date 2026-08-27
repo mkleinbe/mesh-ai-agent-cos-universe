@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
@@ -8,14 +9,10 @@ from typing import Any
 from .approval import ApprovalService
 from .ledger import TaskLedger
 from .models import utcnow
-from .slack_hitl import (
-    DEFAULT_ALLOWED_NOTICE_AUTHORS,
-    MICHAEL_PRINCIPAL,
-    SlackHITLConfig,
-    _parse_decision,
-)
+from .slack_hitl import MICHAEL_PRINCIPAL, SlackHITLConfig, _parse_decision
 
 DEFAULT_APPROVAL_COMMAND = "/mesh-approval"
+_PAYLOAD_FINGERPRINT_RE = re.compile(r"\bpayload_fingerprint=(?P<fingerprint>[A-Fa-f0-9]{64})\b")
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,11 +52,11 @@ class SlackSocketApprovalConfig:
 class SlackSocketApprovalService:
     """Trusted human-principal ingress for Slack Socket Mode slash commands.
 
-    Ordinary Slack messages are deliberately outside this boundary. A message carrying
-    the configured human Slack user ID is not proof of human presence because Slack apps
-    can post with user attribution. Only a ``slash_commands`` envelope received over the
-    separately authenticated Socket Mode connection is eligible to become a canonical
-    human approval decision.
+    Slack collaboration and approval-request messages are informational only. They may be
+    created by the connected Slack integration and are deliberately outside the approval
+    authority boundary. Only a provider-authenticated ``slash_commands`` envelope received
+    over the separately authenticated Socket Mode connection can become a canonical human
+    approval decision.
     """
 
     def __init__(self, ledger: TaskLedger, config: SlackSocketApprovalConfig) -> None:
@@ -74,23 +71,15 @@ class SlackSocketApprovalService:
             raise PermissionError(f"Slack Socket Mode envelope is missing {field}")
         return value
 
-    def _validated_binding(self, approval_id: str, approval: dict[str, Any]) -> dict[str, Any]:
-        binding = self.ledger.get_record("approval_slack_binding", approval_id)
-        if binding is None:
-            raise PermissionError("Approval has no provider-verified Slack notice binding")
-        binding = dict(binding)
-        if binding.get("channel_id") != self.config.channel_id:
-            raise PermissionError("Slack notice binding channel mismatch")
-        if binding.get("approver_identity_verified") is not True:
-            raise PermissionError("Slack notice binding approver identity was not provider-verified")
-        if binding.get("approver_principal") != self.config.approver_principal:
-            raise PermissionError("Slack notice binding principal mismatch")
-        if binding.get("notice_author_user_id") not in DEFAULT_ALLOWED_NOTICE_AUTHORS:
-            raise PermissionError("Slack notice was not provider-verified as an OpenAI bot")
-        fingerprint = str(binding.get("payload_fingerprint") or "").strip()
-        if not fingerprint or fingerprint not in str(approval.get("action") or ""):
-            raise PermissionError("Slack notice payload fingerprint no longer matches canonical approval")
-        return binding
+    @staticmethod
+    def _canonical_fingerprint(approval: Mapping[str, Any]) -> str:
+        action = str(approval.get("action") or "")
+        match = _PAYLOAD_FINGERPRINT_RE.search(action)
+        if match is None:
+            raise PermissionError(
+                "Canonical approval is missing an immutable payload_fingerprint binding"
+            )
+        return match.group("fingerprint").lower()
 
     def handle_envelope(self, envelope: Mapping[str, Any]) -> dict[str, Any]:
         if str(envelope.get("type") or "") != "slash_commands":
@@ -129,7 +118,7 @@ class SlackSocketApprovalService:
             raise ValueError("Approval already decided")
         if approval.get("approval_owner") != self.config.approver_principal:
             raise PermissionError("Canonical approval owner is not the configured human principal")
-        binding = self._validated_binding(approval_id, approval)
+        payload_fingerprint = self._canonical_fingerprint(approval)
 
         approved = disposition == "APPROVE"
         reason = (
@@ -145,7 +134,7 @@ class SlackSocketApprovalService:
             reason=reason,
         )
         record = {
-            "version": "mesh.cos.slack-human-decision.v2",
+            "version": "mesh.cos.slack-human-decision.v3",
             "source": "SLACK_SOCKET_MODE_SLASH_COMMAND",
             "approval_id": approval_id,
             "task_id": decided.task_id,
@@ -157,9 +146,7 @@ class SlackSocketApprovalService:
             "command": self.config.command,
             "envelope_id": envelope_id,
             "trigger_id": trigger_id,
-            "thread_ts": binding["thread_ts"],
-            "notice_author_user_id": binding["notice_author_user_id"],
-            "payload_fingerprint": binding["payload_fingerprint"],
+            "payload_fingerprint": payload_fingerprint,
             "recorded_at": utcnow(),
         }
         self.ledger.save_record("approval_slack_socket_decision", approval_id, record)

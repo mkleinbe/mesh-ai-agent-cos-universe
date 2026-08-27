@@ -1,98 +1,90 @@
-# v4.1.15 QNAP Slack Plugin HITL Simplification
+# v4.1.16 QNAP Restarting-Runtime Backup Hotfix
 
-`v4.1.15` supersedes v4.1.14 for QNAP deployment.
+`v4.1.16` supersedes v4.1.15 for QNAP deployment.
 
-The release removes the unnecessary Slack verifier-bot layer. The connected Slack integration is now the collaboration and approval-notification surface. The custom Slack app remains only as a narrow provider-authenticated `/mesh-approval` Socket Mode ingress for consequential human decisions.
+A live v4.1.14 -> v4.1.15 upgrade exposed a QNAP Docker 27 state edge case: Docker reported `.State.Running=true` while `mesh-cos-mcp` was actually in `.State.Status=restarting`. The v4.1.15 pre-deploy backup gate therefore attempted `docker exec` against a restarting container and blocked the deployment before the v4.1.15 network remediation could be installed.
 
-The same production run that exposed the architectural overreach also exposed a QNAP Docker Engine 27 network defect: `mesh-cos-mcp` could start but failed outbound Slack HTTPS connections with `ETIMEDOUT`/`EHOSTUNREACH`. v4.1.15 fixes the dual-network route ambiguity without depending on newer Compose gateway-priority features.
-
-The final engineering loop also closed release-integrity defects. v4.1.15 restores the previously active stack when a candidate fails before promotion and adds snapshot-backed transactional recovery for partial active-file promotion or post-promotion verification failure.
-
-The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 agents. Human-only operations remain human-only. Message Operations remains agent 10; Mesh Devil's Advocate remains a shared Skill rather than agent 11.
+v4.1.16 fixes that failure without weakening the canonical TaskLedger backup gate.
 
 ## Core changes
 
-- CoS `slack-adapter` uses `operation: handoff` and returns `CHATGPT_CONNECTOR_HANDOFF` with `COLLABORATION_ONLY` authority.
-- Removes Slack notice-thread verification, OpenAI-bot author allowlists, `approval_slack_binding`, and active `xoxb-` verifier dependency.
-- QNAP mounts only the governed approver identity and `xapp-` Socket Mode app-level token for Slack HITL.
-- `/mesh-approval` provider envelopes remain the only Slack interactions eligible to become canonical human decisions.
-- Approval ingress validates exact user, channel, command, PENDING state, owner, replay state, and canonical 64-hex `payload_fingerprint`.
-- Slack provider/network outage no longer terminates the MCP HTTP process. `/healthz` stays available, `/readyz` fails closed, and reconnect uses bounded exponential backoff.
-- `mesh-cos-private` becomes `internal: true`.
-- MCP keeps qnet `192.168.7.60` as its only external-capable network.
-- Tunnel keeps the private bridge for MCP ingress and gains a dedicated Docker egress bridge for the OpenAI control plane.
-- Failed candidate activation or pre-promotion health verification restores the previously active stack and does not promote candidate release metadata.
-- Active `.env`, Compose, and release metadata are snapshotted before promotion. Partial promotion or post-promotion verification failure restores the exact pre-promotion state and previous active stack.
-- Failed rollback preserves its recovery snapshot; cleanup paths are constrained; successful post-deploy verification is the promotion transaction commit point.
+- Stable `status=running` plus `.State.Restarting=false` retains the existing online SQLite backup path.
+- Restarting or otherwise non-running existing runtimes use a quiesced backup path rather than `docker exec`.
+- A restarting runtime is stopped before canonical SQLite state is read.
+- The exact active Mesh image is used as a one-shot backup helper with `--network none`, non-root UID/GID, read-only root filesystem, all capabilities dropped, and `no-new-privileges`.
+- The one-shot helper mounts canonical state only, does not receive Slack/tunnel secrets, uses SQLite backup semantics, and requires `PRAGMA integrity_check` success.
+- Failed helper/export attempts remove temporary and partial backup state and fail closed.
+- If the old runtime had running intent before quiescence, that intent is restored after both successful and failed backup attempts.
+- Deployment now performs pre-deploy backup whenever `mesh-cos-mcp` exists, rather than relying on `.State.Running=true` as the existence/readiness test.
 
-## Security boundary
+## v4.1.15 retained
 
-Security applicability is **FULL_REVIEW**. See `docs/security-review-v4.1.15.md` and `SECURITY.md`.
+v4.1.16 includes the full v4.1.15 Slack HITL simplification and QNAP network remediation:
 
-The connected Slack integration can collaborate but cannot carry human approval authority. The custom Slack app has one purpose: authenticated slash-command ingress over Socket Mode. No direct agent call can record human approval.
+- connected Slack remains collaboration-only with `CHATGPT_CONNECTOR_HANDOFF` / `COLLABORATION_ONLY`;
+- provider-authenticated `/mesh-approval` Socket Mode remains the consequential human decision boundary;
+- no active `xoxb-` verifier dependency exists;
+- Slack provider/network failure is non-fatal to the MCP HTTP process while `/readyz` fails closed;
+- the MCP keeps qnet `192.168.7.60` as its only external-capable network;
+- the tunnel uses the internal MCP bridge plus dedicated Docker egress;
+- failed candidate activation restores the previous stack;
+- active configuration promotion remains snapshot-backed and transactional.
 
-The deployment recovery path is also security-relevant because active configuration determines the runtime identity, network boundary, release provenance, and secret mounts. Recovery is therefore fail-closed, snapshot-backed, and preserves evidence when rollback itself is incomplete.
+The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. Message Operations remains agent 10; Mesh Devil's Advocate remains a shared Skill rather than agent 11. **COMPLETED != VERIFIED.**
 
 ## BDD and TDD evidence
 
-Ready scenarios QNAP-104 through QNAP-111 in `specs/qnap-slack-plugin-hitl-v4.1.15.feature` cover:
+Ready scenarios QNAP-112 through QNAP-115 in `specs/qnap-restarting-backup-v4.1.16.feature` cover stable online backup, restarting-runtime quiesced backup, fail-closed restoration, and deployment backup selection for any existing runtime.
 
-- collaboration-only Slack integration;
-- authenticated human decision ingress;
-- ordinary/wrong/replayed Slack interactions failing closed;
-- non-fatal Slack network/provider degradation;
-- verifier credential removal;
-- Docker Engine 27 deterministic egress;
-- failed-candidate rollback before promotion;
-- transactional rollback after partial promotion or post-promotion verification failure.
+The regression suite includes a Docker mock that deliberately reports `running=true`, `status=restarting`, and `restarting=true`; `docker exec` is configured to fail if the implementation incorrectly chooses it.
 
-Implementation is driven through RED, GREEN, refactor, affected regression, full CI, security review, independent release verification, merge-SHA verification, and immutable release publication.
+## Security boundary
+
+Security applicability is **FULL_REVIEW**. See `docs/security-review-v4.1.16.md` and `SECURITY.md`.
+
+The fallback backup helper cannot reach the network, does not mount protected credentials, runs non-root from the exact active Mesh image, and uses the existing SQLite backup/integrity helper. The canonical TaskLedger remains the source of truth and is never replaced or raw-copied as a live database workaround.
 
 ## Release assets
 
-- `mesh-cos-mcp-qnap-v4.1.15.zip`
-- `mesh-cos-mcp-qnap-v4.1.15.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.1.16.zip`
+- `mesh-cos-mcp-qnap-v4.1.16.zip.sha256`
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.1.15`
-- Semantic tag: `v4.1.15`
-- Container image label: `4.1.15-qnap`
+- Repository/QNAP deployment release: `4.1.16`
+- Semantic tag: `v4.1.16`
+- Container image label: `4.1.16-qnap`
 - Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
 - Workforce: exactly 10 agents
 - Production transport: OpenAI Secure MCP Tunnel
-- Human Slack approval ingress: authenticated `/mesh-approval` Socket Mode envelope
 
 Successful live readiness after deployment must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.15
+deployment_release: 4.1.16
 agent_id: cos
 slack_hitl_ready: true
 ```
 
 ## QNAP deployment
 
-Normal upgrade with the existing Socket Mode credential:
-
 ```sh
 cd /share/Docker/cos-mcp/releases
-sudo sh ./v4.1.15/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.1.16.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.1.16.zip
+sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
 ```
 
-If the `xapp-` Socket Mode credential is missing, provision it explicitly and rerun deployment:
+If the protected `xapp-` Socket Mode credential is missing, provision it explicitly and rerun deployment:
 
 ```sh
-cd /share/Docker/cos-mcp/releases
-sudo sh ./v4.1.15/mesh-cos-slack-hitl-provision.sh
-sudo sh ./v4.1.15/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.1.16/mesh-cos-slack-hitl-provision.sh
+sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
 ```
-
-No Slack `xoxb-` verifier credential is required by v4.1.15. A legacy verifier file may remain on the host for rollback compatibility with older releases, but it is unused and unmounted.
 
 ## Verification and live acceptance
 
-The exact candidate must pass the verification gates recorded in `docs/verification-v4.1.15-slack-plugin-hitl.md` before release integration. The merge SHA must then pass the post-merge release workflow before the semantic tag and immutable GitHub release are accepted as complete.
+The exact candidate must pass `docs/verification-v4.1.16-qnap-restarting-backup.md` before integration. The merge SHA must pass the v4.1.16 main-branch release workflow before the semantic tag and GitHub release are complete.
 
-After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.15.md`. Repository/release verification does not substitute for live QNAP networking, hosted MCP, and real provider-authenticated Slack acceptance.
+After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.16.md`. Repository/release verification does not substitute for live QNAP deployment, Secure MCP Tunnel, hosted MCP, and provider-authenticated Slack acceptance.

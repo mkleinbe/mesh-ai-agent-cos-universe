@@ -10,7 +10,7 @@ from mesh_cos.preflight import ProductionPreflight
 
 ROOT = Path(__file__).resolve().parents[2]
 APPROVER_USER_ID = "U0TESTAPPROVER"
-APP_ID = "A0B49RNF4K0"
+APP_ID = "A0B49RNE4K0"
 
 
 def production_env(tmp_path: Path) -> dict[str, str]:

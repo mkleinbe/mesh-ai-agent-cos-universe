@@ -24,7 +24,10 @@ services:
       MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID: ${MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID:-C0BRL4GCL3A}
       MESH_COS_SLACK_APPROVER_USER_ID_FILE: /run/secrets/slack_approver_user_id
       MESH_COS_SLACK_APPROVER_PRINCIPAL: ${MESH_COS_SLACK_APPROVER_PRINCIPAL:-michael}
+      MESH_COS_SLACK_APP_ID: ${MESH_COS_SLACK_APP_ID:?Slack app ID required}
       MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: /run/secrets/slack_socket_app_token
+      MESH_COS_SLACK_BOT_TOKEN_FILE: /run/secrets/slack_bot_token
+      MESH_COS_SLACK_BRIDGE_TIMEOUT_MS: ${MESH_COS_SLACK_BRIDGE_TIMEOUT_MS:-2500}
       MCP_BIND_HOST: 0.0.0.0
       MCP_PORT: 8080
       MCP_AUTH_MODE: tunnel
@@ -33,6 +36,7 @@ services:
       - ${QNAP_MESH_ROOT:-/share/Docker/cos-mcp/state}:/var/lib/mesh:rw
       - ${QNAP_SLACK_APPROVER_USER_ID_FILE:-/share/Docker/cos-mcp/secrets/slack-approver-user-id}:/run/secrets/slack_approver_user_id:ro
       - ${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-/share/Docker/cos-mcp/secrets/slack-socket-app-token}:/run/secrets/slack_socket_app_token:ro
+      - ${QNAP_SLACK_BOT_TOKEN_FILE:-/share/Docker/cos-mcp/secrets/slack-bot-token}:/run/secrets/slack_bot_token:ro
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=64m
     networks:

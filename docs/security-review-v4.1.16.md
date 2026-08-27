@@ -1,42 +1,56 @@
 # Security Review v4.1.16
 
-Status: IN PROGRESS
+Status: PASS
 Applicability: FULL_REVIEW
 Subject: QNAP restarting-runtime pre-deploy backup hotfix
+Reviewed implementation/configuration revision: `1c4c6b6e2e01dd9fd00646c753fa9c0b7c05bc7c`
 
-## Security properties
+## Security properties verified
 
-1. Canonical TaskLedger integrity must not be weakened to bypass a broken active runtime.
-2. A restarting container must never be treated as a stable `docker exec` target merely because Docker reports `.State.Running=true`.
-3. Fallback backup must quiesce potential writers before reading canonical SQLite state.
-4. The one-shot helper must use the exact already-trusted active Mesh image, no network, non-root UID/GID, read-only root filesystem, dropped capabilities, and no-new-privileges.
-5. The helper may write only the governed state mount required to materialize a temporary SQLite backup.
-6. The SQLite backup helper must open the canonical source read-only, use SQLite backup semantics, and pass `PRAGMA integrity_check` before export.
-7. A failed helper or export must remove temporary and partial backup artifacts and must not claim success.
-8. If the source runtime had running intent before quiescence, that intent must be restored after either success or failure.
-9. No protected Slack or tunnel credential may be mounted into or exposed to the backup helper.
-10. Existing v4.1.15 authentication, approval, network-ingress, secret, and transactional-promotion controls remain unchanged.
+1. Canonical TaskLedger integrity is preserved; the hotfix does not bypass or raw-copy the live database.
+2. A restarting container is not treated as a stable `docker exec` target merely because Docker reports `.State.Running=true`.
+3. The fallback path quiesces a restarting writer before canonical SQLite state is read.
+4. The one-shot helper uses the exact active Mesh image ID, `--network none`, runtime UID/GID, read-only root filesystem, all capabilities dropped, and `no-new-privileges`.
+5. The helper receives the canonical state mount required to materialize the temporary SQLite backup and receives no protected Slack or tunnel credential mount.
+6. `sqlite_backup.py` opens the source read-only, uses SQLite backup semantics, and requires `PRAGMA integrity_check=ok` before export.
+7. Helper/export failure removes temporary and partial backup artifacts and returns failure.
+8. Prior running intent is restored after both successful and failed quiesced backup attempts.
+9. Deployment invokes the backup gate for any existing `mesh-cos-mcp`; only an absent container skips existing-runtime backup.
+10. v4.1.15 authentication, approval, network-ingress, secret, and transactional-promotion controls remain unchanged.
 
 ## Trust boundaries reviewed
 
-- QNAP host root deployment process -> Docker daemon
+- QNAP root deployment process -> Docker daemon
 - Docker daemon -> exact active Mesh image
-- helper container -> canonical TaskLedger bind mount
+- one-shot helper -> canonical TaskLedger state mount
 - canonical state -> governed backup root
 - deployment backup gate -> candidate preparation
+- connected Slack collaboration -> non-authoritative collaboration only
+- provider-authenticated Socket Mode -> canonical human approval ingress
 
-## Required evidence
+## Evidence
 
-- RED evidence from QNAP-112..QNAP-115 before implementation
-- behavioral shell regression for `status=restarting` with `.State.Running=true`
-- behavioral failure regression proving helper failure restores running intent and leaves no successful partial backup
-- stable online backup path retained
-- POSIX shell syntax regression
-- 100% Python test gate retained
-- Bandit and dependency gates retained
-- exact v4.1.16 bundle and container provenance verification
-- no secret mounts or network access in the quiesced helper command
+- RED characterization: commit `84a4900a0ec199981dabfe558f44982b2c148c38`, CI run `33080019523`, where the new QNAP-112..QNAP-115 contract failed against the v4.1.15 backup selection behavior.
+- Exact implementation/configuration CI: run `33081915546` PASS.
+- Exact v4.1.16 release-candidate verification: run `33081915446`, verify job PASS.
+- Python test suite: PASS at 100% coverage.
+- TypeScript build/tests and npm high-severity audit: PASS.
+- Contract, runtime-documentation, and ChatGPT package drift checks: PASS.
+- Ruff, mypy, Bandit, compileall: PASS.
+- QNAP POSIX regression suite: PASS, including `test-restarting-container-backup.sh` and transactional-promotion tests.
+- Exact v4.1.16 bundle/checksum construction: PASS.
+- QNAP Compose topology validation: PASS.
+- Production container OCI version/revision provenance: PASS.
+- Modern MCP discovery and sequential requests: PASS.
 
-## Release rule
+## Findings
 
-This receipt may move to PASS only when the exact release candidate has fresh evidence for every required check and no open CRITICAL/HIGH security finding. Live QNAP production acceptance remains separate from repository security verification.
+No open CRITICAL or HIGH security finding was identified in the reviewed v4.1.16 candidate. No authority widening, new credential dependency, direct MCP ingress, secret exposure, or fallback-to-ordinary-Slack approval path was introduced.
+
+## Residual boundary
+
+Repository security verification does not prove the live QNAP state transition, Secure MCP Tunnel route, Slack provider availability, or a real provider-authenticated `/mesh-approval` interaction. Those remain mandatory live production-acceptance checks after deployment.
+
+## Release decision
+
+PASS for release engineering, subject to one final receipt-only exact-head CI/release-candidate verification after this evidence record is committed. Live production certification remains separate.

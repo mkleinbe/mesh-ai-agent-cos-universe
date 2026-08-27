@@ -2,91 +2,88 @@
 
 ## Verified environment
 
-- [x] QNAP probe captured on 2026-08-25
-- [x] linux/amd64 confirmed
-- [x] 4 CPU cores and approximately 62.7 GiB RAM confirmed
-- [x] QTS 5.2.10 build 20260731 confirmed
-- [x] Docker 27.1.2-qnap8 and Compose 2.29.1-qnap2 confirmed
-- [x] `lan7` verified as QNAP qnet on `eth1`, subnet `192.168.7.0/24`
+- [x] QNAP linux/amd64 environment confirmed
+- [x] QNAP Container Station Docker/Compose runtime confirmed
+- [x] `lan7` qnet on `192.168.7.0/24` confirmed
 - [x] `172.30.60.0/29` and `172.30.61.0/29` reserved for Mesh private/egress bridges
 - [x] QNAP operator requires `sudo` for Docker access
 
 ## Human/platform inputs
 
 - [ ] Secure MCP Tunnel exists and is associated with the target OpenAI Platform organization and ChatGPT workspace
-- [ ] Operator has required tunnel permissions
 - [ ] Approved existing canonical TaskLedger source is identified if the target ledger is absent
 - [ ] OpenAI `tunnel_id` is available
 - [ ] OpenAI tunnel runtime API key is available for protected entry if not already preserved
 - [x] Verified Slack human user principal for Michael/MK is `U01KG3CNYHK`
-- [ ] Slack Socket Mode app-level `xapp-` credential is available if not already preserved
-- [ ] Slack app exposes `/mesh-approval` through Socket Mode
-- [ ] Connected Slack integration is available for collaboration and approval-request delivery
+- [x] Provider-verified Slack App ID is `A0B49RNE4K0`
+- [ ] Dedicated Slack bot is a member of `#mesh-agent-ops`
+- [ ] Bot Token Scopes include `chat:write` and `groups:history`
+- [ ] If bot scopes changed, Slack app was reinstalled/reauthorized and the resulting `xoxb-` token was reprovisioned to QNAP
+- [ ] Single ChatGPT Work **Mesh Slack HITL Dispatcher** exists and is enabled
 
-No Slack `xoxb-` verifier credential is required by v4.1.16.
+No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.2.2 HITL path.
 
-## v4.1.16 release-root staging
+## v4.2.2 release-root staging
 
-- [ ] `mesh-cos-mcp-qnap-v4.1.16.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] `mesh-cos-mcp-qnap-v4.2.2.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
-- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.1.16.zip.sha256` passes
-- [ ] extraction creates `v4.1.16/` automatically
+- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.2.2.zip.sha256` passes
+- [ ] extraction creates `v4.2.2/` automatically
 - [ ] no manual release-directory creation, helper copy, payload move, or chmod is required
-- [ ] `v4.1.16/cos-mcp/release-metadata.txt` reports `version=4.1.16` and a valid 40-character commit
+- [ ] `v4.2.2/cos-mcp/release-metadata.txt` reports `version=4.2.2` and a valid 40-character commit
 - [ ] release-directory basename agrees with staged metadata
 
 ## Automated deployment
 
 ```sh
-sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.2.2/mesh-cos-mcp-deploy.sh
 ```
 
-- [ ] release root is validated before candidate preparation
 - [ ] canonical `/share/Docker/cos-mcp` state/secrets tree is preserved
-- [ ] any existing `mesh-cos-mcp` receives a pre-deploy backup attempt
-- [ ] stable `running` and non-restarting source uses online SQLite backup
-- [ ] restarting source is not given `docker exec`; it is quiesced first
-- [ ] quiesced helper uses exact active Mesh image, `--network none`, non-root, read-only root, dropped capabilities, and no protected credential mounts
-- [ ] quiesced helper passes SQLite integrity validation and records `state_export_method=quiesced_helper`
-- [ ] prior running intent is restored after both successful and failed quiesced backup attempts
-- [ ] failed backup leaves no successful partial backup artifact
-- [ ] release identity derives from staged metadata
-- [ ] same-tag image reuse requires matching OCI version/revision; mismatch rebuilds
-- [ ] tunnel image resolves to immutable RepoDigest
-- [ ] canonical ledger is staged only if missing and validated before deployment
-- [ ] tunnel runtime key remains outside candidate/active env values and mode `0400`
-- [ ] missing approver identity is bootstrapped non-interactively from `U01KG3CNYHK`
-- [ ] `D...` conversation IDs are rejected as human principals
-- [ ] only Socket Mode token is required as a Slack credential
-- [ ] Slack verifier token is not mounted, validated, prompted for, or used
-- [ ] protected Slack files are runtime-owned, mode `0400`, and read-only mounted
-- [ ] `mesh-cos-private` is internal-only `172.30.60.0/29`
-- [ ] MCP is `172.30.60.2` private plus qnet `192.168.7.60`
-- [ ] tunnel is `172.30.60.3` private plus egress `172.30.61.2`
-- [ ] no second qnet tunnel address and no direct MCP host port exist
-- [ ] staged-candidate preflight passes
-- [ ] both candidate containers become healthy
-- [ ] active `.env`, Compose, and metadata are snapshotted before promotion
-- [ ] partial promotion/post-promotion verification failure restores exact pre-promotion configuration and previous stack
-- [ ] incomplete rollback preserves its `.release-rollback.*` snapshot
-- [ ] post-deploy verification passes before promotion is committed
+- [ ] any existing runtime receives the required pre-deploy backup attempt
+- [ ] canonical TaskLedger is preserved and passes integrity checks
+- [ ] tunnel runtime key remains protected and outside environment values
+- [ ] protected Slack approver identity and `xoxb-` bot token remain separate, runtime-owned, mode `0400`, and read-only mounted
+- [ ] no `xapp-` credential is configured or mounted
+- [ ] staged `.env.runtime` uses Slack App ID `A0B49RNE4K0`
+- [ ] staged `.env.runtime` contains no Slack/tunnel credential values
+- [ ] `mesh-cos-private` remains internal-only `172.30.60.0/29`
+- [ ] MCP remains `172.30.60.2` private plus qnet `192.168.7.60`
+- [ ] tunnel remains `172.30.60.3` private plus egress `172.30.61.2`
+- [ ] no direct MCP host port exists
+- [ ] candidate application and tunnel become healthy
+- [ ] transactional promotion/rollback controls pass
+- [ ] post-deploy verification passes before promotion commit
 - [ ] post-deploy backup and SHA-256 verification pass
+
+## Live Slack provider-read gate
+
+- [ ] QNAP verification runs the provider-read probe inside the running `mesh-cos-mcp` container
+- [ ] probe uses the mounted `xoxb-` credential without printing it
+- [ ] probe calls `conversations.history` for `C0BRL4GCL3A` with limit 1
+- [ ] verification reports `Slack bot provider read scope and governed-channel access`
+- [ ] `missing_scope`, invalid auth, missing channel membership/access, or provider/network failure blocks deployment verification
+- [ ] provider diagnostics expose only a sanitized error code, never token/header/full response metadata
 
 ## Runtime and authority acceptance
 
-- [ ] active release/image are `4.1.16` / `mesh-cos-mcp:qnap-v4.1.16`
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.1.16`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] active release/image are `4.2.2` / `mesh-cos-mcp:qnap-v4.2.2`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.2`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
-- [ ] public CoS tool surface remains exactly 27 governed tools
-- [ ] exactly 10 agents remain registered; Devil's Advocate remains a shared Skill
-- [ ] human-only tools remain absent from agent-facing catalogs
-- [ ] CoS `slack-adapter` returns `CHATGPT_CONNECTOR_HANDOFF` with `COLLABORATION_ONLY` authority for `operation: handoff`
-- [ ] ordinary Slack text cannot mutate canonical approval state
-- [ ] verified MK `/mesh-approval` succeeds for the synthetic approval; another user/channel fails closed
-- [ ] replay is idempotent and conflicting second interaction fails closed
-- [ ] fresh `approval.get` reflects the exact canonical decision
+- [ ] exactly 10 agents remain registered
+- [ ] human-only tools remain unavailable to agents
+- [ ] ChatGPT Work dispatcher remains one event-triggered task, not a schedule/polling loop
+- [ ] dispatcher prompt remains `Mesh CoS MCP v4.x`
+- [ ] dispatcher passes only `thread_ts` and `message_ts`
+- [ ] governed Slack approval notice is posted by the dedicated bot and bound to canonical approval state
+- [ ] QNAP provider reread uses GET/query `conversations.replies`
+- [ ] provider-retrieved `*APPROVE*` creates exactly one canonical APPROVED decision for a fresh synthetic approval
+- [ ] same locator replay is idempotent
+- [ ] DENY and CHANGE synthetic cases behave as documented
+- [ ] wrong user, bot/app author, root/unbound thread, edited/unavailable message, malformed formatting, fingerprint drift, and provider failure all fail closed
 - [ ] `COMPLETED != VERIFIED` remains enforced
 - [ ] application remains UID/GID 65532, read-only, no-new-privileges, no Docker socket
 - [ ] direct non-tunnel MCP request is denied
+- [ ] final governance audit chain verifies
 - [ ] no consequential external action occurs during acceptance
 - [ ] production certification closes only with zero open CRITICAL/HIGH defects and no required live acceptance blocker

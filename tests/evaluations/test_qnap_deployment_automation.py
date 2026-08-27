@@ -39,7 +39,7 @@ def test_prepare_automates_candidate_without_protected_secret_input_or_legacy_ve
     assert "value_logged=false" in tunnel_provision
 
 
-def test_deploy_rolls_back_failed_candidate_before_promotion() -> None:
+def test_deploy_rolls_back_failed_candidate_before_promotion_and_points_to_native_acceptance() -> None:
     deploy = text(SCRIPTS / "mesh-cos-mcp-deploy.sh")
     execution = deploy[deploy.index("mesh_set_stage pre_backup") :]
     required_order = [
@@ -71,6 +71,8 @@ def test_deploy_rolls_back_failed_candidate_before_promotion() -> None:
     assert "previously active stack restored" in deploy
     assert "verification_complete=true" in deploy
     assert "mesh_validate_release_root" in deploy
+    assert "verify the ChatGPT-native Mesh Slack HITL Dispatcher is enabled" in deploy
+    assert "/mesh-approval Socket Mode ingress" not in deploy
 
 
 def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
@@ -192,18 +194,18 @@ def test_backup_excludes_secrets_and_supports_restarting_runtime() -> None:
     assert "/run/secrets" not in backup
 
 
-def test_release_builders_package_v420_without_runtime_secrets() -> None:
+def test_release_builders_package_v421_without_runtime_secrets() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    wrapper = text(ROOT / "scripts" / "build-qnap-release-v4.2.0.sh")
+    wrapper = text(ROOT / "scripts" / "build-qnap-release-v4.2.1.sh")
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
-    assert "VERSION=4.2.0" in wrapper
-    assert "native-slack-event-hitl-v4.2.0.feature" in wrapper
-    assert "slack-app-manifest.v4.2.0.json" in wrapper
-    assert "security-review-v4.2.0.md" in wrapper
-    assert "release-4.2.0-native-slack-event-hitl.md" in wrapper
-    assert "chatgpt-native-slack-dispatcher-v4.2.0.md" in wrapper
-    assert "chatgpt-published-app-production-acceptance-v4.2.0.md" in wrapper
+    assert "VERSION=4.2.1" in wrapper
+    assert "native-slack-event-hitl-v4.2.1.feature" in wrapper
+    assert "slack-app-manifest.v4.2.1.json" in wrapper
+    assert "security-review-v4.2.1.md" in wrapper
+    assert "release-4.2.1-slack-rendered-decision.md" in wrapper
+    assert "chatgpt-native-slack-dispatcher-v4.2.1.md" in wrapper
+    assert "chatgpt-published-app-production-acceptance-v4.2.1.md" in wrapper
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder

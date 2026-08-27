@@ -62,6 +62,21 @@ function messageEnvelope(id = 'env-1'): Record<string, unknown> {
   };
 }
 
+function interactiveEnvelope(id = 'env-action'): Record<string, unknown> {
+  return {
+    envelope_id: id,
+    type: 'interactive',
+    payload: {
+      type: 'block_actions',
+      api_app_id: 'A0TEST',
+      user: { id: 'U0TEST' },
+      channel: { id: 'C0TEST' },
+      container: { type: 'message', channel_id: 'C0TEST', message_ts: '1787843216.789639' },
+      actions: [{ action_id: 'mesh_approval_approve', value: 'approval-test' }],
+    },
+  };
+}
+
 test('Socket Mode app token is protected and must be an app-level xapp token', () => {
   const good = tempSecret('xapp-test-token\n');
   assert.equal(readSlackSocketAppToken(env(good)), 'xapp-test-token');
@@ -71,7 +86,7 @@ test('Socket Mode app token is protected and must be an app-level xapp token', (
   assert.throws(() => readSlackSocketAppToken({}), /APP_TOKEN_FILE/);
 });
 
-test('listener authenticates to apps.connections.open and dispatches Events API envelopes', async () => {
+test('listener authenticates and dispatches Events API plus Block Kit interactive envelopes', async () => {
   const socket = new FakeSocket();
   const bridged: unknown[] = [];
   const tokenFile = tempSecret('xapp-test-token');
@@ -102,11 +117,17 @@ test('listener authenticates to apps.connections.open and dispatches Events API 
   await tick();
   assert.equal(bridged.length, 0);
 
-  const envelope = messageEnvelope();
-  socket.message(envelope);
+  const eventEnvelope = messageEnvelope();
+  socket.message(eventEnvelope);
   await tick();
-  assert.deepEqual(bridged, [envelope]);
+  assert.deepEqual(bridged, [eventEnvelope]);
   assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), { envelope_id: 'env-1' });
+
+  const actionEnvelope = interactiveEnvelope();
+  socket.message(actionEnvelope);
+  await tick();
+  assert.deepEqual(bridged, [eventEnvelope, actionEnvelope]);
+  assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), { envelope_id: 'env-action' });
   await listener.stop();
 });
 
@@ -122,7 +143,7 @@ test('structured authorization rejection is acknowledged without exposing intern
   await tick();
   socket.open();
 
-  socket.message(messageEnvelope('env-rejected'));
+  socket.message(interactiveEnvelope('env-rejected'));
   await tick();
   assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), { envelope_id: 'env-rejected' });
   assert.equal(socket.sent.some(value => value.includes('PermissionError')), false);
@@ -142,7 +163,7 @@ test('bridge transport failure is not acknowledged and listener degrades on disc
   await tick();
   socket.open();
 
-  socket.message(messageEnvelope('env-fail'));
+  socket.message(interactiveEnvelope('env-fail'));
   await tick();
   assert.equal(socket.sent.length, 0);
 

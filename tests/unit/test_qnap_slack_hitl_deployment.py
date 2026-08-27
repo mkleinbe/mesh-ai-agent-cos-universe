@@ -60,7 +60,7 @@ def test_qnap_reference_env_uses_only_required_protected_slack_paths() -> None:
     assert "QNAP_SLACK_BOT_TOKEN_FILE=" in text
     assert "MESH_COS_SLACK_APP_ID=A0B49RNE4K0" in text
     assert "MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER" in text
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.2.2" in text
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.2.3" in text
     assert "QNAP_SLACK_VERIFIER_TOKEN_FILE=" not in text
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS=" not in text
     assert "MESH_COS_SLACK_APPROVER_USER_ID=" not in text
@@ -68,3 +68,15 @@ def test_qnap_reference_env_uses_only_required_protected_slack_paths() -> None:
     assert "MESH_COS_SLACK_APPROVAL_COMMAND=" not in text
     assert "hooks.slack.com/services/" not in text
     assert "xoxb-" not in text
+
+
+def test_qnap_slack_provider_verification_retries_only_network_failures() -> None:
+    text = (ROOT / "deployment/qnap/scripts/mesh-cos-mcp-verify.sh").read_text(encoding="utf-8")
+
+    assert "const maxAttempts=6" in text
+    assert "const retryDelayMs=5000" in text
+    assert "slack_provider_read_retry:network_error:attempt=" in text
+    assert "slack_provider_read_failed:network_error" in text
+    assert "slack_provider_read_failed:invalid_response" in text
+    assert "slack_provider_read_failed:'+code" in text
+    assert "Slack bot provider read scope, governed-channel access, and qnet egress readiness" in text

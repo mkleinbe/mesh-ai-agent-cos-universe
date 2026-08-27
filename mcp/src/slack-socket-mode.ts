@@ -7,7 +7,7 @@ const CONNECTIONS_OPEN_URL = 'https://slack.com/api/apps.connections.open';
 const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
 const DEFAULT_RECONNECT_BASE_MS = 1_000;
 const DEFAULT_RECONNECT_MAX_MS = 30_000;
-const DEFAULT_BRIDGE_TIMEOUT_MS = 5_000;
+const DEFAULT_BRIDGE_TIMEOUT_MS = 2_500;
 const MAX_BRIDGE_RESPONSE_BYTES = 1_000_000;
 
 export type SocketLike = {
@@ -119,9 +119,6 @@ async function invokeTrustedBridge(
   } catch {
     throw new Error('Slack approval bridge returned invalid JSON');
   }
-  // A structured ok:false response is a bounded authorization/validation disposition,
-  // not a transport failure. Return it so the provider event can be acknowledged without
-  // creating a retry storm. Process, timeout, and malformed-response failures still throw.
   return response;
 }
 
@@ -181,7 +178,6 @@ export class SlackSocketModeApprovalListener {
       this.active = true;
       return;
     }
-    // Configuration errors remain fatal. Provider/network failures do not.
     readSlackSocketAppToken(this.env);
     this.active = false;
     void this.connect().catch(() => this.scheduleReconnectAttempt());
@@ -303,17 +299,16 @@ export class SlackSocketModeApprovalListener {
       this.socket?.close();
       return;
     }
-    if (type !== 'events_api') return;
+    if (type !== 'events_api' && type !== 'interactive') return;
     const envelopeId = typeof envelope.envelope_id === 'string' ? envelope.envelope_id : '';
     if (!envelopeId) return;
     try {
       await this.bridge(envelope);
-      // Events API acknowledgement contains only the provider envelope ID. The Python
-      // bridge may return ok:false for an intentionally rejected interaction; it is still
-      // acknowledged because fail-closed rejection is final, not a transient transport fault.
+      // Canonical state is written by the trusted bridge before acknowledgement. Structured
+      // fail-closed rejections are final and are acknowledged; transport/process failures
+      // are not acknowledged so Slack can redeliver them.
       this.socket?.send(JSON.stringify({ envelope_id: envelopeId }));
     } catch {
-      // Transport/process failure is not acknowledged so Slack may redeliver the event.
       // No internal error text is exposed to Slack or the caller.
     }
   }

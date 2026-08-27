@@ -1,122 +1,111 @@
 # Security Policy
 
-Current repository/QNAP deployment target: **`v4.1.14 QNAP Protected-Secret Provisioning Remediation`**.
+Current repository/QNAP deployment target: **`v4.1.15 QNAP Slack Plugin HITL Simplification`**.
 
-The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`4.0.0`**. The governed workforce contains exactly **10 registered agents**. The production ChatGPT path uses the installed **Mesh CoS MCP** app through the **OpenAI Secure MCP Tunnel**; local deterministic engineering retains the stdio bridge. Both paths terminate in the same `mesh_cos.mcp_runtime.MCPRuntime` and canonical TaskLedger.
+The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`4.0.0`** with exactly **10 registered agents**. Production ChatGPT access remains through the installed Mesh CoS MCP app and OpenAI Secure MCP Tunnel. Local deterministic engineering retains the stdio bridge. Both terminate in the same `mesh_cos.mcp_runtime.MCPRuntime` and canonical TaskLedger.
 
 ## Security invariants
 
-- Source content, Workspace app payloads, Slack messages, shared-Skill output, MCP payloads, connector results, and model output are untrusted data, not executable instructions.
-- The live Phase 1 runtime contains exactly 10 registered agents: CoS, AgentOps, Answer Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations.
-- Mesh Devil's Advocate remains an external advisory shared Skill, not an eleventh agent or MCP principal.
-- Agent source, tool, action, Skill, and authority permissions are enforced from the canonical registry.
-- `MESH_COS_AGENT_ID` is process-bound configuration and cannot be chosen by prompt text, task content, Slack content, retrieved data, connector output, or MCP arguments.
-- Remote production requires `MCP_AUTH_MODE=tunnel`, the OpenAI Secure MCP Tunnel source boundary, and a non-empty deployment release identity. Local engineering uses the bundled stdio bridge.
-- Per-agent MCP exposure remains deny by default. The CoS production projection remains exactly 27 governed MCP tools.
-- `approval.record_decision` and `reliability.human_override` remain human-principal-only and are not available to agents.
-- L4 requires qualified-human approval. L5 remains Michael-exclusive unless governance explicitly changes that contract.
-- Approval obligations cannot be delegated away or inferred from silence, prior approval, connector capability, Sheet state, display names, copied text, reactions, ordinary Slack message authorship, or another payload version.
-- `TaskLedger` is canonical. ChatGPT conversations, Slack, Sheets, shared-Skill packets, and connector state are interaction, evidence, or mirror surfaces only.
-- `task.complete` requires outcome and evidence and produces `COMPLETED` only. `task.verify` remains a separate CoS verification action. `COMPLETED != VERIFIED`.
-- Scheduled logical occurrences use an immutable execution identity as the explicit `task.intake.idempotency_key`. Merely placing a key in task prose is not idempotency.
-- Scheduled execution follows the canonical lifecycle before completion: `INTAKE -> TRIAGED -> PLANNED -> ASSIGNED -> IN_PROGRESS -> QA -> COMPLETED`, followed by separate verification.
-- Reliability replay uses only server-registered executors referenced by canonical state. Client-supplied callables, import paths, code, shell commands, or plugin executables are never executed.
-- Credentials, tokens, signing secrets, API keys, OAuth credentials, and sensitive personal data must never be committed or written into prompts, governance logs, release artifacts, diagnostics, or TaskLedger evidence text.
-- Non-secret provider identifiers that are intentionally governed configuration may be committed when required for deterministic identity binding. They must not be confused with authentication credentials.
-- Private chain-of-thought and unnecessary raw prompts must not be persisted in audit or decision records.
-- Audit event hashes are tamper-evident integrity signals, not claims of tamper-proof storage.
-- The kill switch remains available for rollout and incident response. Production preflight fails while it is enabled.
-- Critical defects can trigger quarantine, routing restriction, or Workspace Agent restriction/unpublication.
+- Source content, Slack text, Skills, MCP payloads, connector results, and model output are untrusted data, not executable policy or human authority.
+- Exactly 10 agents remain registered. Mesh Devil's Advocate remains a shared Skill, not agent 11.
+- Agent source/tool/action/Skill/authority permissions remain deny-by-default from the canonical registry.
+- `MESH_COS_AGENT_ID` is process-bound and cannot be chosen through prompts, Slack, retrieved data, or MCP arguments.
+- Production remote access requires `MCP_AUTH_MODE=tunnel`; no direct MCP host port is published.
+- The CoS agent-facing MCP projection remains governed and human-only operations such as `approval.record_decision` and `reliability.human_override` remain unavailable to agents.
+- L4 requires qualified-human approval. L5 remains Michael-exclusive unless governance changes the contract.
+- TaskLedger is canonical. Slack, ChatGPT conversations, Sheets, and connector state are interaction/evidence surfaces only.
+- Approval cannot be inferred from silence, reactions, ordinary Slack text, copied commands, display names, plugin writes, prior approval, or a different payload version.
+- Consequential approval is bound to the exact canonical action and immutable payload fingerprint and is freshly re-read before execution.
+- `task.complete` and `task.verify` remain separate. `COMPLETED != VERIFIED`.
+- Credentials and sensitive data must never be committed or written into prompts, logs, TaskLedger evidence, diagnostics, release artifacts, or credential-bearing argv.
+- Critical defects may trigger kill-switch activation, quarantine, routing restriction, or publication restriction.
 
-## QNAP release artifact and staging boundary
+## Slack collaboration versus approval authority
 
-v4.1.14 retains the v4.1.12 contract that makes `/share/Docker/cos-mcp/releases` the stable operator trust boundary and binds each current release artifact to exactly one versioned subdirectory.
+v4.1.15 deliberately separates Slack collaboration from human approval authority.
 
-- Canonical active application root remains `/share/Docker/cos-mcp`.
-- Stable operator release root is `/share/Docker/cos-mcp/releases`.
-- Current release archives contain a single top-level `vX.Y.Z/` directory so extraction under the releases root creates the version directory automatically.
-- Operator/helper scripts resolve from their own canonicalized extracted release directory. They do not depend on caller CWD, search `/share/Docker` for helpers, or require copied helper scripts.
-- Before candidate preparation, deployment validates that the resolved release directory is directly beneath the canonical releases root and that its `vX.Y.Z` basename agrees with staged `release-metadata.txt`.
-- A missing, malformed, outside-root, or metadata-mismatched release directory fails closed before candidate mutation.
-- Candidate release metadata, build context, Compose, and `.env.runtime` remain within the versioned release directory until candidate health succeeds.
-- Candidate identity derives from staged `release-metadata.txt`; active `.env` cannot silently redefine the candidate release.
-- Git tag form `vX.Y.Z` may normalize only its leading `v` to runtime `X.Y.Z`. Invalid semantic versions and true requested-versus-staged mismatches fail closed.
-- OCI image version and revision remain bound to staged release metadata and the exact release commit.
-- Active `.env`, Compose, and release metadata are promoted only after both candidate containers are healthy.
-- Canonical state, credential secrets, tunnel identity, qnet/static networking, deployment logs, and pre-deploy rollback evidence remain outside the versioned release payload.
-- Historical already-published 4.1.0 through 4.1.13 artifacts remain immutable. v4.1.14 is a new semantic patch release and does not rewrite prior release assets.
+### Connected Slack integration
 
-Release artifacts must not contain a generated `.env`, `.env.runtime`, `state/`, canonical TaskLedger, tunnel runtime key, Slack verifier token, or Socket Mode token. The verified Slack approver user ID may be present as non-secret governed configuration in deployment code; it is not an authentication credential.
+The connected Slack integration is the normal collaboration surface for approval requests, status, coordination, and thread reads. The CoS `slack-adapter` can authorize only a `CHATGPT_CONNECTOR_HANDOFF` with authority `COLLABORATION_ONLY`.
 
-## Slack HITL approval boundary
+It cannot carry, infer, or record `approved`, `approval_status`, `actor`, `principal`, `record_decision`, or `ingest_decision`. An ordinary Slack message attributed to the configured human user is still not proof of human presence because connected applications can write into Slack.
 
-Slack approval uses **two distinct trust boundaries**. A provider-verified OpenAI bot notice is evidence that an approval request was presented correctly. A provider-authenticated Socket Mode slash-command interaction is the separate human-principal ingress that can change canonical approval state.
+### Authenticated human ingress
 
-- Governed HITL notices must be provider-authored by the official Slack identity for ChatGPT (`U0BKV7Z8M96`) or ChatGPT Agents (`U0BN8V2BU9Z`). A human-authored message, custom bot, or copied display name does not satisfy the notice control.
-- The verified Slack user ID for Michael/MK is `U01KG3CNYHK`. It is non-secret governed identity configuration and maps to canonical principal `michael` only inside the trusted human-interaction boundary.
-- Slack `D...` identifiers are direct-message/conversation channel identifiers, not user principals. A configured or persisted `D...` approver identifier fails closed.
-- Eligible Slack human-principal identifier forms begin with `U` or `W` and must pass the deployment/runtime validation contract.
-- QNAP materializes the governed approver user ID into a protected read-only runtime identity file for compatibility and tamper resistance. The file's protection does not make the identifier a credential.
-- A server-owned verifier reads the bound Slack thread from provider state using a protected verifier credential file. The verifier credential has no governed outbound-notice or human-decision role.
-- `skills.invoke_governed` capability `slack-adapter` exposes **`bind_notice` only**. No agent-callable adapter operation can record or infer a human decision.
-- `bind_notice` requires the canonical Approval ID, immutable payload fingerprint, configured MK mention, exact governed channel/thread, and a provider-authored OpenAI bot parent.
-- An ordinary Slack message, reaction, copied `APPROVE` text, or message attributed to the configured human Slack user is non-authoritative. Slack applications can post with user attribution, so `message.user` is not accepted as proof of human presence.
-- Canonical Slack human decisions enter only through a separately authenticated outbound Slack Socket Mode connection using a protected app-level `xapp-` credential.
-- The only canonical Slack interaction command is `/mesh-approval APPROVE|REJECT|CHANGES <Approval ID>...`, delivered as a provider `slash_commands` envelope.
-- The non-MCP human-ingress service validates the governed channel, configured human user ID, exact command and Approval ID, PENDING canonical approval owned by `michael`, provider-verified official OpenAI bot notice binding, exact payload fingerprint, and replay state before invoking the canonical approval service.
-- Direct agent invocation of `approval.record_decision` remains prohibited. The Socket Mode human-ingress bridge is deliberately not an MCP tool.
-- If the official OpenAI Workspace Agent Slack delivery surface is unavailable, the affected notice action fails closed as `BLOCKED_CHATGPT_AGENT_TRANSPORT`; it never falls back to sending the governed notice as MK.
-- If Socket Mode or `/mesh-approval` is unavailable, canonical approval remains PENDING. Ordinary Slack text never substitutes for the unavailable interaction boundary.
+The custom Slack app remains only for the provider-authenticated `/mesh-approval` Socket Mode boundary.
+
+- Governed human Slack user ID maps to canonical principal `michael`.
+- User identity must be a Slack `U...` or `W...` principal. A `D...` direct-message/conversation ID fails closed.
+- QNAP mounts the approver identity read-only and one protected Socket Mode app-level token beginning `xapp-`.
+- v4.1.15 does **not** require, mount, validate, prompt for, or use a Slack `xoxb-` verifier bot token.
+- The only Slack interaction eligible to become a canonical decision is a provider `slash_commands` envelope for `/mesh-approval APPROVE|REJECT|CHANGES <Approval ID>...`.
+- The non-MCP ingress validates envelope ID/replay state, governed channel, configured human user ID, exact command, PENDING canonical approval, owner `michael`, and the canonical 64-hex `payload_fingerprint` before calling ApprovalService.
+- Same-envelope replay is idempotent. A distinct second interaction cannot re-decide an approval.
+- The Socket Mode bridge remains outside the agent-callable MCP surface.
+
+## Provider/network degradation
+
+A missing or malformed local Socket Mode credential is a configuration error and fails startup. A Slack provider/network outage is not allowed to terminate the MCP HTTP process.
+
+- `/healthz` remains available with `slack_hitl_ready=false`.
+- `/readyz` fails closed while required Slack HITL is unavailable.
+- Consequential human approval remains blocked.
+- Socket Mode retries use bounded exponential backoff rather than a tight loop.
+- Ordinary Slack messages never substitute for the unavailable authenticated ingress.
+
+## QNAP network boundary
+
+QNAP Docker Engine 27 does not receive an architecture that depends on newer Compose gateway-priority features.
+
+- `mesh-cos-private` is an `internal: true` bridge shared only for MCP/tunnel private traffic.
+- `mesh-cos-mcp` is dual-homed on the internal bridge and qnet `lan7` at `192.168.7.60`; qnet is its only external-capable network and therefore its Slack HTTPS/WSS egress path.
+- `mesh-cos-tunnel` is dual-homed on the internal bridge and a dedicated ordinary Docker egress bridge. It reaches MCP privately at `172.30.60.2` and remains the trusted MCP source at `172.30.60.3` while reaching the OpenAI control plane through its egress bridge.
+- The tunnel does not consume a second qnet LAN address.
 
 ## QNAP secret and runtime boundary
 
 - Long-running runtime UID/GID is 65532 with read-only root filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, 2 CPU, 24 GiB RAM, and no PID limit.
 - Canonical SQLite TaskLedger is the application container's writable operating-state boundary.
-- Tunnel runtime key, Slack verifier token, and Slack Socket Mode app token remain outside environment values and release assets.
-- The Slack approver user ID is non-secret governed configuration but continues to be mounted through a read-only runtime identity file. The verifier token and Socket Mode app-level token are credentials.
-- Normal v4.1.14 upgrades never request protected Slack or tunnel secrets interactively. Existing protected files are validated/preserved, or deployment fails closed with an explicit provisioning command.
-- First-time or deliberate Slack credential entry is isolated in `mesh-cos-slack-hitl-provision.sh`; tunnel runtime-key entry is isolated in `mesh-cos-tunnel-key-provision.sh`.
-- Both explicit provisioners use the shared `mesh-cos-qnap-secret-input.sh` helper. It reads only from a controlling TTY, requires a no-echo mechanism, prefers shell-native silent read, falls back only to an explicitly resolved `stty`, and fails closed if terminal echo cannot be disabled safely.
-- Protected values are never passed as command-line arguments or intentionally logged. Temporary writes use restrictive umask/mode and are atomically moved into canonical protected runtime files.
-- QNAP normalizes the approver identity file and governed credential files to runtime UID/GID with mode `0400`.
-- `MESH_COS_SLACK_HITL_REQUIRED=true` makes the production runtime fail construction/readiness when bot-notice verification or the active Socket Mode human-interaction boundary cannot initialize/remain available.
-- Production `/mcp` accepts only the Secure MCP Tunnel private source identity. The MCP port is not directly published by production Compose.
-- Deployment diagnostics may collect bounded path ownership, capacity, Docker/Compose, and application status evidence, but must not collect credential contents, generated environment contents, credential-bearing argv, or tunnel logs containing credentials. Routine logs also omit the configured human user ID even though it is not secret.
+- Tunnel runtime key and Slack Socket Mode app token remain outside environment values and release assets.
+- The Slack approver user ID is non-secret governed configuration but is still mounted through a protected read-only identity file.
+- A legacy `slack-verifier-token` host file may remain solely for rollback compatibility with older releases. v4.1.15 does not mount or depend on it.
+- Normal upgrades never request protected secrets interactively. Missing secrets fail closed and route to explicit provisioners.
+- Explicit provisioners read from a controlling TTY with a no-echo mechanism and never intentionally log protected values.
+- Protected files are normalized to runtime UID/GID with mode `0400`.
+- Production diagnostics collect bounded metadata only and exclude secret contents, generated environment contents, credential-bearing argv, and tunnel credentials.
 
-## Commercial authority
+## Release staging and rollback boundary
 
-Mesh Revenue Intelligence remains authoritative for canonical account identity, evidence classes, scores, lifecycle, queue state, activation readiness, and prioritization. Shared Skills, Slack activity, engagement signals, or email replies may not silently rewrite those facts.
+- Stable operator release root remains `/share/Docker/cos-mcp/releases` and active application root remains `/share/Docker/cos-mcp`.
+- Release archives contain one top-level `vX.Y.Z/` directory and are bound to exact semantic release metadata and commit provenance.
+- Candidate `.env.runtime`, Compose, metadata, and build context remain in the versioned release directory until activation health succeeds.
+- Active release files are promoted only after both candidate containers are healthy.
+- If candidate Compose activation or pre-promotion health fails and a previous active configuration exists, deployment removes the failed candidate stack, restores the previous active Compose stack, verifies both previous containers healthy, and reports candidate failure without promoting release metadata.
+- TaskLedger, qnet identity, tunnel identity/key, protected secrets, logs, and backup evidence remain outside versioned release payloads.
+- Historical published releases remain immutable.
 
-## Release security gate
+## v4.1.15 release security gate
 
-A v4.1.14 candidate must pass, on the exact candidate revision:
+The exact candidate revision must pass:
 
-- Python dependency integrity and compile checks;
-- TypeScript MCP build/tests including Socket Mode transport and npm security audit;
-- contract, runtime-documentation, and ChatGPT package drift checks;
-- Ruff and mypy;
-- 100% branch-aware `mesh_cos` coverage;
-- high-severity Bandit scanning;
-- POSIX QNAP shell syntax and regressions, including release-root, Slack approver bootstrap, protected-file, provenance, permissions, and observability tests;
-- behavior-level reproduction of the v4.1.13 missing-verifier condition with `stty` unavailable to the normal Slack configuration path;
-- proof the normal Slack configuration and QNAP prepare paths contain no hidden secret-entry or mandatory `stty` dependency;
-- deterministic v4.1.14 bundle/checksum generation and archive inspection proving every current-release entry is under `v4.1.14/`;
-- proof the bundle omits generated environment, credential secrets, and canonical state;
-- proof explicit Slack and tunnel provisioners plus the shared no-echo helper are packaged;
-- release-directory-to-metadata mismatch rejection before candidate preparation;
-- Compose rendering and OCI release provenance;
-- modern MCP discovery and sequential requests;
-- non-root ownership, read-only runtime, ingress denial, restart, persistence, and SQLite backup integrity;
-- Slack bot-notice positive/negative tests;
-- Socket Mode human-ingress positive/negative tests, including proof ordinary Slack messages cannot approve;
-- post-deploy published-app acceptance against the actual QNAP serving release.
+- dependency integrity, TypeScript checks/tests, contract/package/document drift checks;
+- Ruff, mypy, 100% `mesh_cos` coverage, Bandit, and compileall;
+- QNAP POSIX shell syntax and regression suite;
+- BDD scenarios QNAP-104 through QNAP-110;
+- adversarial approval tests for ordinary messages, wrong user/channel/command, missing fingerprint, replay, and conflicting decisions;
+- Slack provider/network degradation and bounded-reconnect tests;
+- verifier-token absence from active runtime/configuration and exact release bundle;
+- deterministic Docker Engine 27-compatible network topology checks;
+- failed-candidate rollback checks;
+- exact v4.1.15 bundle/checksum generation and archive inspection;
+- production container build from the exact bundle with OCI version/revision labels bound to candidate SHA;
+- modern MCP discovery and sequential request regression;
+- independent diff review for authority widening, credential leakage, obsolete verifier dependencies, debug debris, and temporary files.
 
-Security applicability for the v4.1.14 deployment correction is **TARGETED**. The release-specific receipt is `docs/qnap-security-review-v4.1.14.md`.
+Security applicability for v4.1.15 is **FULL_REVIEW**. The release-specific review is `docs/security-review-v4.1.15.md`.
 
-A repository test PASS is not production certification. The actual hosted runtime, official OpenAI Slack bot-authored HITL notice path, active Socket Mode `/mesh-approval` path, canonical approval readback, and required operating-mirror reconciliation must all be proven before production certification.
+A repository/release PASS is not live production acceptance. QNAP network behavior, hosted MCP surface, and an actual provider-authenticated `/mesh-approval` interaction must be proven after deployment before production acceptance is declared.
 
 ## Reporting
 
 Do not open a public issue containing credentials, secrets, sensitive client information, exploit details, private reasoning traces, or other confidential material. Use the repository owner's approved private security channel for disclosure.
-
-See `docs/security-governance.md`, `docs/production-readiness.md`, `docs/qnap-security-review-v4.1.14.md`, `docs/slack-agent-protocol.md`, `deployment/qnap/DEPLOYMENT-STEPS.md`, and the v4.1.14 release/verification/acceptance records.

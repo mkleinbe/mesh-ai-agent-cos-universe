@@ -1,6 +1,6 @@
 # mesh-cos-mcp on QNAP Container Station
 
-**Current deployment release: v4.2.2 Native Slack HITL Provider Transport Repair.**  
+**Current deployment release: v4.2.3 QNAP qnet Egress Readiness.**  
 **Canonical Phase 1 authority/runtime contract: 4.0.0.**
 
 ## Production topology
@@ -26,27 +26,24 @@ QNAP does not run Slack Socket Mode, does not mount an `xapp-` credential, and d
 
 The provider-verified Slack App ID is `A0B49RNE4K0`.
 
-The dedicated bot requires Bot Token Scopes:
+The dedicated bot requires Bot Token Scopes `chat:write` and `groups:history`. The protected `xoxb-` Bot User OAuth Token is stored under `/share/Docker/cos-mcp/secrets/slack-bot-token` and mounted read-only to the runtime. The protected MK approver identity is stored separately. Secret values are never written to `.env.runtime`, release bundles, logs, or TaskLedger.
 
-- `chat:write`
-- `groups:history`
+If Slack scopes are added or changed, reinstall/reauthorize the app and reprovision the resulting bot token.
 
-The protected `xoxb-` Bot User OAuth Token is stored under `/share/Docker/cos-mcp/secrets/slack-bot-token` and mounted read-only to the runtime. The protected MK approver identity is stored separately. Secret values are never written to `.env.runtime`, release bundles, logs, or TaskLedger.
+## v4.2.3 provider and qnet readiness behavior
 
-If Slack scopes are added or changed, reinstall/reauthorize the app and reprovision the resulting bot token. v4.2.2 post-deploy verification performs a live `conversations.history` read against the governed private channel using the actual mounted token so stale scopes, invalid credentials, or missing channel access fail before ChatGPT acceptance.
+Slack read methods used by the HITL path retain the v4.2.2 authenticated GET/query transport. `conversations.replies` sends channel/thread/message locator parameters in the query string and keeps the OAuth token only in the Authorization header. Slack write methods such as `chat.postMessage` and `chat.update` remain POST/JSON.
 
-## v4.2.2 provider transport
+QNAP post-deploy verification performs a live `conversations.history` read against the governed private channel using the actual mounted token. A fresh qnet namespace can become locally healthy before external egress is established, so v4.2.3 retries only a pre-provider network exception, bounded to six total attempts with five-second delay. A Slack `ok:false` response, malformed response, invalid credential, missing scope, or missing channel access fails immediately. Exhausted network readiness fails deployment and triggers transactional rollback.
 
-Slack read methods used by the HITL path use authenticated GET/query transport. `conversations.replies` sends channel/thread/message locator parameters in the query string and keeps the OAuth token only in the Authorization header. Slack write methods such as `chat.postMessage` and `chat.update` remain POST/JSON.
-
-Slack API failures fail closed. Runtime and deployment diagnostics may expose only a sanitized provider error code such as `missing_scope` or `invalid_arguments`; full provider metadata and credentials are not emitted.
+Slack API failures remain fail closed. Runtime and deployment diagnostics expose only sanitized machine error codes and retry attempt metadata; full provider metadata and credentials are not emitted.
 
 ## Canonical QNAP paths
 
 - Operator release root: `/share/Docker/cos-mcp/releases`
-- Current release directory: `/share/Docker/cos-mcp/releases/v4.2.2`
-- Candidate payload: `/share/Docker/cos-mcp/releases/v4.2.2/cos-mcp`
-- Candidate runtime environment: `/share/Docker/cos-mcp/releases/v4.2.2/cos-mcp/.env.runtime`
+- Current release directory: `/share/Docker/cos-mcp/releases/v4.2.3`
+- Candidate payload: `/share/Docker/cos-mcp/releases/v4.2.3/cos-mcp`
+- Candidate runtime environment: `/share/Docker/cos-mcp/releases/v4.2.3/cos-mcp/.env.runtime`
 - Canonical application root: `/share/Docker/cos-mcp`
 - Canonical state: `/share/Docker/cos-mcp/state`
 - Canonical ledger: `/share/Docker/cos-mcp/state/ledger/taskledger.sqlite3`
@@ -55,11 +52,11 @@ Slack API failures fail closed. Runtime and deployment diagnostics may expose on
 - Deployment logs: `/share/Docker/cos-mcp/logs/deployment`
 - Backup root: `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`
 
-The operator remains in `/share/Docker/cos-mcp/releases` for staging and execution. The ZIP creates `v4.2.2/` automatically.
+The operator remains in `/share/Docker/cos-mcp/releases` for staging and execution. The ZIP creates `v4.2.3/` automatically.
 
 ## Release-root and transactional promotion controls
 
-1. The archive contains one top-level `v4.2.2/` directory.
+1. The archive contains one top-level `v4.2.3/` directory.
 2. Operator scripts self-resolve their own versioned release directory.
 3. Deployment validates the release directory beneath the canonical releases root and matches it to staged metadata.
 4. Existing runtime state is backed up before candidate preparation whenever the application exists.
@@ -68,7 +65,7 @@ The operator remains in `/share/Docker/cos-mcp/releases` for staging and executi
 7. Candidate containers must become healthy before active-file promotion.
 8. Active `.env`, Compose, and release metadata are snapshotted before promotion.
 9. Partial promotion or post-promotion verification failure restores the pre-promotion snapshot and prior stack when available.
-10. Successful post-deploy verification is the promotion transaction commit point.
+10. Successful post-deploy verification, including live provider-read/qnet readiness, is the promotion transaction commit point.
 11. Canonical TaskLedger, tunnel identity/key, Slack protected files, logs, and backups remain outside the release directory.
 
 ## Runtime controls
@@ -77,7 +74,7 @@ The operator remains in `/share/Docker/cos-mcp/releases` for staging and executi
 - `mesh-cos-tunnel`: 0.25 CPU, 256 MiB RAM, no PID limit
 - long-running containers: non-root, read-only root filesystem, capabilities dropped, no-new-privileges, no Docker socket, no host networking
 - `MESH_COS_AGENT_ID=cos` is process-bound
-- `MESH_COS_DEPLOYMENT_RELEASE=4.2.2` is required by the remote process
+- `MESH_COS_DEPLOYMENT_RELEASE=4.2.3` is required by the remote process
 - `MESH_COS_SLACK_HITL_REQUIRED=true` and `MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER` are required by production Compose
 - protected approver identity and bot token are read-only runtime mounts
 - `/healthz` remains available through provider degradation; authority reconciliation itself fails closed without provider evidence
@@ -86,13 +83,13 @@ Successful governed responses must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.2.2
+deployment_release: 4.2.3
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
 ```
 
-Hosted production readiness additionally requires `slack_hitl_ready=true` and successful live Slack provider-read verification.
+Hosted production readiness additionally requires `slack_hitl_ready=true` and successful live Slack provider-read/qnet readiness verification.
 
 ## Authority boundary
 
@@ -105,9 +102,9 @@ Human authority requires all of the following after provider reread: correct cha
 From `/share/Docker/cos-mcp/releases`:
 
 ```sh
-sha256sum -c mesh-cos-mcp-qnap-v4.2.2.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.2.2.zip
-sudo sh ./v4.2.2/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.2.3.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.2.3.zip
+sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
 ```
 
 Host-side sudo does not alter the long-running application identity, which remains UID/GID `65532:65532`.
@@ -122,4 +119,4 @@ Do not delete or recreate state after a failed candidate. Use `rollback-checklis
 
 Use `DEPLOYMENT-STEPS.md`. The release staging working directory is `/share/Docker/cos-mcp/releases`.
 
-After local deployment verification, including the live Slack provider-read gate, run `CHATGPT-ACCEPTANCE.md` and `docs/chatgpt-published-app-production-acceptance-v4.2.2.md`. Repository/release verification is not production certification; the actual QNAP serving instance plus hosted ChatGPT and Slack acceptance must pass separately.
+After local deployment verification, including the live Slack provider-read/qnet readiness gate, run `CHATGPT-ACCEPTANCE.md` and `docs/chatgpt-published-app-production-acceptance-v4.2.3.md`. Repository/release verification is not production certification; the actual QNAP serving instance plus hosted ChatGPT and Slack acceptance must pass separately.

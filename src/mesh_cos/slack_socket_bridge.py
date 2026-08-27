@@ -18,6 +18,7 @@ def execute_socket_envelope(
     payload: Any,
     *,
     env: Mapping[str, str] | None = None,
+    notifier: SlackApprovalNotifier | None = None,
 ) -> dict[str, Any]:
     environment = env if env is not None else os.environ
     assert_runtime_enabled(environment)
@@ -26,11 +27,11 @@ def execute_socket_envelope(
     ledger = TaskLedger(_ledger_target(environment))
     try:
         config = SlackSocketApprovalConfig.from_env(environment)
-        notifier = SlackApprovalNotifier.from_env(ledger, environment)
+        effective_notifier = notifier or SlackApprovalNotifier.from_env(ledger, environment)
         result = SlackSocketApprovalService(
             ledger,
             config,
-            notifier=notifier,
+            notifier=effective_notifier,
         ).handle_envelope(payload)
         return {
             "ok": True,

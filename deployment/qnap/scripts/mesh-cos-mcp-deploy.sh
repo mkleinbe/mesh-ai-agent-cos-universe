@@ -189,10 +189,10 @@ mesh_log INFO deployment_start "bundle_root=$SCRIPT_ROOT candidate_root=$BUNDLE_
 mesh_log INFO rollback_preflight "available=$ACTIVE_ROLLBACK_AVAILABLE active_configuration_promoted=false"
 
 mesh_set_stage pre_backup
-if docker inspect mesh-cos-mcp >/dev/null 2>&1 && [ "$(docker inspect -f '{{.State.Running}}' mesh-cos-mcp 2>/dev/null || echo false)" = "true" ]; then
-  run_child pre_backup "$SCRIPT_ROOT/mesh-cos-mcp-backup.sh" pre-deploy || fail "pre-deploy online state/configuration backup failed"
+if docker inspect mesh-cos-mcp >/dev/null 2>&1; then
+  run_child pre_backup "$SCRIPT_ROOT/mesh-cos-mcp-backup.sh" pre-deploy || fail "pre-deploy state/configuration backup failed"
 else
-  mesh_log INFO pre_backup "status=skipped reason=no-running-mesh-cos-mcp"
+  mesh_log INFO pre_backup "status=skipped reason=no-mesh-cos-mcp-container"
 fi
 
 run_child prepare "$SCRIPT_ROOT/mesh-cos-mcp-prepare.sh" || fail "prepare failed"

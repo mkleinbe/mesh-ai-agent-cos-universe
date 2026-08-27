@@ -110,7 +110,7 @@ rollback_promoted_candidate() {
   if [ "$PROMOTION_SNAPSHOT_READY" -eq 1 ]; then
     if ! mesh_restore_active_configuration "$APP_ROOT" "$ROLLBACK_SNAPSHOT"; then
       rollback_ok=0
-      mesh_log ERROR promotion_config_restore "result=FAIL"
+      mesh_log ERROR promotion_config_restore "result=FAIL snapshot_preserved=true snapshot=$ROLLBACK_SNAPSHOT"
     else
       mesh_log INFO promotion_config_restore "result=PASS"
     fi
@@ -122,15 +122,23 @@ rollback_promoted_candidate() {
   if [ "$ACTIVE_ROLLBACK_AVAILABLE" -eq 1 ]; then
     if ! restore_active_stack "$reason"; then
       rollback_ok=0
-      mesh_log ERROR promotion_stack_restore "result=FAIL"
+      mesh_log ERROR promotion_stack_restore "result=FAIL snapshot=$ROLLBACK_SNAPSHOT"
     fi
   else
     stop_candidate_stack || rollback_ok=0
     mesh_log INFO promotion_stack_restore "result=NO_PREVIOUS_STACK candidate_stopped=true"
   fi
 
-  mesh_cleanup_configuration_snapshot "$ROLLBACK_SNAPSHOT" >/dev/null 2>&1 || rollback_ok=0
-  PROMOTION_SNAPSHOT_READY=0
+  if [ "$rollback_ok" -eq 1 ]; then
+    if ! mesh_cleanup_configuration_snapshot "$ROLLBACK_SNAPSHOT"; then
+      rollback_ok=0
+      mesh_log ERROR promotion_snapshot_cleanup "result=FAIL snapshot=$ROLLBACK_SNAPSHOT"
+    else
+      PROMOTION_SNAPSHOT_READY=0
+    fi
+  else
+    mesh_log WARN promotion_snapshot_preserved "snapshot=$ROLLBACK_SNAPSHOT reason=rollback_incomplete"
+  fi
   PROMOTION_IN_FLIGHT=0
   [ "$rollback_ok" -eq 1 ]
 }
@@ -152,7 +160,7 @@ fail_after_promotion() {
   if rollback_promoted_candidate "$reason"; then
     fail "$reason; active configuration and previously active stack restored"
   fi
-  fail "$reason; transactional rollback did not complete cleanly"
+  fail "$reason; transactional rollback did not complete cleanly; recovery snapshot preserved at $ROLLBACK_SNAPSHOT"
 }
 
 on_signal() {
@@ -224,10 +232,16 @@ if ! run_child verify "$SCRIPT_ROOT/mesh-cos-mcp-verify.sh"; then
   fail_after_promotion "post-deploy verification failed"
 fi
 
-mesh_cleanup_configuration_snapshot "$ROLLBACK_SNAPSHOT" || fail_after_promotion "unable to commit candidate promotion by removing rollback snapshot"
-PROMOTION_SNAPSHOT_READY=0
+# Post-deploy verification is the transaction commit point. From here forward the
+# candidate is the verified active release; cleanup failures must not attempt to
+# restore a potentially partial snapshot and replace a valid running release.
 PROMOTION_IN_FLIGHT=0
-mesh_log INFO candidate_promotion_commit "result=PASS rollback_snapshot_removed=true"
+mesh_log INFO candidate_promotion_commit "result=PASS verification_complete=true"
+if ! mesh_cleanup_configuration_snapshot "$ROLLBACK_SNAPSHOT"; then
+  fail "verified candidate is active but rollback snapshot cleanup failed: $ROLLBACK_SNAPSHOT"
+fi
+PROMOTION_SNAPSHOT_READY=0
+mesh_log INFO candidate_promotion_cleanup "result=PASS rollback_snapshot_removed=true"
 
 run_child post_backup "$SCRIPT_ROOT/mesh-cos-mcp-backup.sh" post-deploy || fail "post-deploy backup failed after verified candidate promotion"
 

@@ -13,6 +13,7 @@ def text(path: Path) -> str:
 
 def test_prepare_automates_staged_candidate_without_leaking_secret() -> None:
     prepare = text(SCRIPTS / "mesh-cos-mcp-prepare.sh")
+    tunnel_provision = text(SCRIPTS / "mesh-cos-tunnel-key-provision.sh")
     assert 'BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}' in prepare
     assert 'BUILD_CONTEXT="$BUNDLE_APP_ROOT/build-context"' in prepare
     assert 'CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"' in prepare
@@ -24,7 +25,10 @@ def test_prepare_automates_staged_candidate_without_leaking_secret() -> None:
     assert "MESH_IMAGE_ID=$(docker image inspect" in prepare
     assert "TUNNEL_IMAGE=$(docker image inspect" in prepare
     assert "MESH_COS_LEDGER_SOURCE" in prepare
-    assert 'stty -echo < /dev/tty' in prepare
+    assert "read_secret_tty" not in prepare
+    assert "command -v stty" not in prepare
+    assert "mesh-cos-tunnel-key-provision.sh" in prepare
+    assert "OpenAI tunnel runtime key file is missing" in prepare
     assert "OPENAI_TUNNEL_RUNTIME_KEY=" not in prepare
     assert "CONTROL_PLANE_API_KEY=" not in prepare
     assert "mesh_resolve_compose" in prepare
@@ -44,6 +48,10 @@ def test_prepare_automates_staged_candidate_without_leaking_secret() -> None:
     assert "QNAP_SLACK_VERIFIER_TOKEN_FILE=" in prepare
     assert "QNAP_SLACK_SOCKET_APP_TOKEN_FILE=" in prepare
     assert "MESH_COS_SLACK_APPROVER_USER_ID=" not in prepare
+    assert "OpenAI tunnel runtime API key (input hidden)" in tunnel_provision
+    assert "mesh_read_secret_tty" in tunnel_provision
+    assert "mesh_apply_secret_permissions" in tunnel_provision
+    assert "value_logged=false" in tunnel_provision
 
 
 def test_deploy_is_single_orchestrated_operator_path_with_safe_promotion() -> None:
@@ -82,6 +90,7 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
         "mesh-cos-mcp-verify.sh",
         "mesh-cos-slack-hitl-configure.sh",
         "mesh-cos-slack-hitl-provision.sh",
+        "mesh-cos-tunnel-key-provision.sh",
     ]:
         script = text(SCRIPTS / filename)
         assert "QNAP_SCRIPT_ROOT:-/share/Docker" not in script
@@ -92,6 +101,7 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
 def test_slack_hitl_configuration_is_candidate_bound_protected_and_noninteractive_for_approver() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
+    secret_input = text(SCRIPTS / "mesh-cos-qnap-secret-input.sh")
     assert 'CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}' in script
     assert "prepared candidate release .env.runtime is required" in script
     assert "DEFAULT_APPROVER_USER_ID" in script
@@ -112,11 +122,14 @@ def test_slack_hitl_configuration_is_candidate_bound_protected_and_noninteractiv
     assert "MESH_COS_FORCE_SLACK_HITL_RECONFIGURE" in script
     assert "Slack read-only verifier bot token (input hidden)" in provision
     assert "Slack Socket Mode app-level token (input hidden)" in provision
-    assert "shell_supports_silent_read" in provision
-    assert "/bin/stty /usr/bin/stty" in provision
+    assert "mesh_read_secret_tty" in provision
     assert "xoxb-*" in provision
     assert "xapp-*" in provision
     assert "value_logged=false" in provision
+    assert "mesh_shell_supports_silent_read" in secret_input
+    assert "mesh_read_secret_tty" in secret_input
+    assert "/bin/stty /usr/bin/stty" in secret_input
+    assert "MESH_SECRET_VALUE" in secret_input
 
 
 def test_compose_discovery_is_qnap_aware_and_v2_only() -> None:

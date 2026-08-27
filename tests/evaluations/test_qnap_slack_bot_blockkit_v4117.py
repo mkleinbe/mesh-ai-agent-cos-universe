@@ -15,7 +15,9 @@ def test_qnap_122_dedicated_bot_is_canonical_outbound_slack_path() -> None:
     assert (ROOT / "src/mesh_cos/slack_bot.py").is_file()
     source = read("src/mesh_cos/slack_bot.py")
     adapters = read("src/mesh_cos/adapters.py")
-    assert "https://slack.com/api/chat.postMessage" in source
+    assert 'SLACK_API_BASE = "https://slack.com/api"' in source
+    assert 'post_message(' in source
+    assert '"chat.postMessage"' in source
     assert "MESH_COS_SLACK_BOT_TOKEN_FILE" in source
     assert "xoxb-" in source
     assert "username" not in source
@@ -27,15 +29,7 @@ def test_qnap_122_dedicated_bot_is_canonical_outbound_slack_path() -> None:
 
 def test_qnap_122_123_approval_blocks_use_rich_text_and_three_buttons() -> None:
     source = read("src/mesh_cos/slack_bot.py")
-    for token in (
-        '"type": "rich_text"',
-        '"type": "actions"',
-        '"mesh_approval_approve"',
-        '"mesh_approval_deny"',
-        '"mesh_approval_change"',
-        '"style": "primary"',
-        '"style": "danger"',
-    ):
+    for token in ('"type": "rich_text"', '"type": "actions"', '"mesh_approval_approve"', '"mesh_approval_deny"', '"mesh_approval_change"', '"style": "primary"', '"style": "danger"'):
         assert token in source
 
 
@@ -51,7 +45,9 @@ def test_qnap_123_124_socket_mode_dispatches_block_actions_and_change_prompt() -
 
 def test_qnap_125_change_instruction_is_governed_and_not_direct_authority() -> None:
     service = read("src/mesh_cos/slack_socket_approval.py")
-    assert "approval_change_request" in service
+    bot = read("src/mesh_cos/slack_bot.py")
+    assert "CHANGE_REQUEST_KIND" in service
+    assert "approval_change_request" in bot
     assert "PENDING_AGENT_REVISION" in service
     assert "SUPERSEDED_BY_CHANGE" in service
     assert "change_instruction" in service
@@ -86,12 +82,7 @@ def test_qnap_120_bot_token_is_protected_and_slash_command_is_absent() -> None:
 
 
 def test_qnap_128_no_webhook_secret_is_committed() -> None:
-    for path in (
-        "deployment/qnap/.env.example",
-        "deployment/qnap/compose.yaml",
-        "deployment/qnap/slack-app-manifest.v4.1.17.json",
-        "src/mesh_cos/slack_bot.py",
-    ):
+    for path in ("deployment/qnap/.env.example", "deployment/qnap/compose.yaml", "deployment/qnap/slack-app-manifest.v4.1.17.json", "src/mesh_cos/slack_bot.py"):
         text = read(path)
         assert "hooks.slack.com/services/" not in text
         assert "incoming_webhook_url" not in text

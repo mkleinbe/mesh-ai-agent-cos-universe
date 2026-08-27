@@ -12,13 +12,17 @@ function statusPayload(ok:boolean,contract:MCPContract,agentId:string,deployment
   return {ok,mcp_version:contract.runtime_release,deployment_release:deploymentRelease,agent_id:agentId,transport:'SECURE_MCP_TUNNEL',slack_hitl_ready:slackHitlReady};
 }
 
-async function runtimeReady(env:NodeJS.ProcessEnv,slack:SlackSocketModeApprovalListener):Promise<void>{
+async function runtimeCoreReady(env:NodeJS.ProcessEnv):Promise<void>{
   const contract=loadContract();
   const agent=requireAgentId(contract,env);
   const r=await callPythonBridge({tool_name:'registry.get_agent',arguments:{agent_id:agent}},env);
   const record=r.result as {status?:string};
   if(record?.status!=='ACTIVE') throw new Error('bound_agent_not_active');
   await callPythonBridge({tool_name:'governance.verify_audit_chain',arguments:{}},env);
+}
+
+async function runtimeReady(env:NodeJS.ProcessEnv,slack:SlackSocketModeApprovalListener):Promise<void>{
+  await runtimeCoreReady(env);
   if(!slack.isActive()) throw new Error('slack_hitl_unavailable');
 }
 
@@ -62,8 +66,12 @@ export async function startRemote(env:NodeJS.ProcessEnv=process.env){
   const handler=createMcpHandler(()=>createServer(env,contract));
   const nodeHandler=toNodeHandler(handler);
   const slackHitl=new SlackSocketModeApprovalListener(env);
+
+  // Validate local Slack configuration and start the provider connection loop, but do not
+  // make Slack availability a process-startup dependency. Consequential readiness remains
+  // fail-closed through /readyz while /healthz proves the MCP process itself is alive.
   await slackHitl.start();
-  await runtimeReady(env,slackHitl);
+  await runtimeCoreReady(env);
   await protocolReady(handler,deploymentRelease);
 
   const app=http.createServer(async(req,res)=>{

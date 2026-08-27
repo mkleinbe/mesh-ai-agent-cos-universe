@@ -38,7 +38,7 @@ def _run_configure_in_pty(tmp_path: Path) -> tuple[int, str, Path]:
     (app / "logs/deployment").mkdir(parents=True)
     bundle.mkdir(parents=True)
     (bundle / ".env.runtime").write_text(
-        "MESH_COS_IMAGE=image:test\nMESH_COS_DEPLOYMENT_RELEASE=4.1.14\n",
+        "MESH_COS_IMAGE=image:test\nMESH_COS_DEPLOYMENT_RELEASE=4.1.15\n",
         encoding="utf-8",
     )
     (app / "secrets/slack-socket-app-token").write_text(
@@ -97,10 +97,14 @@ def _run_configure_in_pty(tmp_path: Path) -> tuple[int, str, Path]:
             ), app
 
 
-def test_missing_verifier_fails_closed_without_stty_dependency(tmp_path: Path) -> None:
+def test_v4115_missing_legacy_verifier_is_ignored_without_stty_dependency(
+    tmp_path: Path,
+) -> None:
     rc, output, app = _run_configure_in_pty(tmp_path)
-    assert rc != 0
+    assert rc == 0
     assert "stty is required for hidden secret input" not in output
-    assert "Slack verifier token file is missing" in output
-    assert "mesh-cos-slack-hitl-provision.sh" in output
+    assert "Slack verifier token file is missing" not in output
+    assert "xoxb-" not in output
+    assert "verifier_required=false" in output
     assert not (app / "secrets/slack-verifier-token").exists()
+    assert (app / "secrets/slack-socket-app-token").is_file()

@@ -48,6 +48,7 @@ jobs:
           sh deployment/qnap/tests/test-runtime-permissions.sh
           sh deployment/qnap/tests/test-image-provenance.sh
           sh deployment/qnap/tests/test-slack-hitl-configure.sh
+          sh deployment/qnap/tests/test-transactional-promotion.sh
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           bash -n scripts/build-qnap-release-bundle.sh
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
@@ -58,7 +59,8 @@ jobs:
           ! grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
-          grep -q 'restore_active_stack()' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
+          grep -q 'mesh_snapshot_active_configuration' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
+          grep -q 'fail_after_promotion' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
 
       - name: Build exact v4.1.15 QNAP release bundle
         env:
@@ -73,6 +75,7 @@ jobs:
           test -f "$SHA"
           grep -q '^version=4.1.15$' "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
+          test -f "$BUNDLE/mesh-cos-qnap-promotion.sh"
           test -f "$BUNDLE/cos-mcp/qnap-slack-plugin-hitl-v4.1.15.feature"
           test -f "$BUNDLE/cos-mcp/release-4.1.15-slack-plugin-hitl.md"
           test -f "$BUNDLE/cos-mcp/verification-v4.1.15-slack-plugin-hitl.md"
@@ -83,7 +86,7 @@ jobs:
           ! grep -q 'xoxb-' "$BUNDLE/mesh-cos-slack-hitl-provision.sh"
           grep -q 'internal: true' "$BUNDLE/cos-mcp/compose.yaml"
           grep -q 'mesh-cos-egress:' "$BUNDLE/cos-mcp/compose.yaml"
-          grep -q 'restore_active_stack()' "$BUNDLE/mesh-cos-mcp-deploy.sh"
+          grep -q 'mesh_snapshot_active_configuration' "$BUNDLE/mesh-cos-mcp-deploy.sh"
           unzip -Z1 "$ZIP" > /tmp/v4115.entries
           test -s /tmp/v4115.entries
           if grep -Ev '^v4\.1\.15/' /tmp/v4115.entries; then
@@ -91,6 +94,7 @@ jobs:
             exit 1
           fi
           grep -qx 'v4.1.15/mesh-cos-mcp-deploy.sh' /tmp/v4115.entries
+          grep -qx 'v4.1.15/mesh-cos-qnap-promotion.sh' /tmp/v4115.entries
           grep -qx 'v4.1.15/mesh-cos-slack-hitl-configure.sh' /tmp/v4115.entries
           grep -qx 'v4.1.15/mesh-cos-slack-hitl-provision.sh' /tmp/v4115.entries
           grep -qx 'v4.1.15/cos-mcp/release-metadata.txt' /tmp/v4115.entries

@@ -15,6 +15,7 @@ APP_DIR="$RELEASE_DIR/cos-mcp"
 ZIP="dist/mesh-cos-mcp-qnap-v${VERSION}.zip"
 
 for required in \
+  CHANGELOG-v4.2.1.md \
   deployment/qnap/slack-app-manifest.v4.2.1.json \
   specs/native-slack-event-hitl-v4.2.1.feature \
   docs/security-review-v4.2.1.md \
@@ -25,6 +26,7 @@ for required in \
 done
 
 rm -f "$APP_DIR/slack-app-manifest.v4.1.17.json" "$APP_DIR/slack-app-manifest.v4.2.0.json"
+cp CHANGELOG-v4.2.1.md "$APP_DIR/"
 cp deployment/qnap/slack-app-manifest.v4.2.1.json "$APP_DIR/"
 cp specs/native-slack-event-hitl-v4.2.1.feature "$APP_DIR/"
 cp docs/security-review-v4.2.1.md "$APP_DIR/"
@@ -41,6 +43,7 @@ grep -q 'MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER' "$APP_DIR/compo
 ! grep -q 'MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:' "$APP_DIR/compose.yaml"
 ! grep -q 'slack_socket_app_token' "$APP_DIR/compose.yaml"
 ! grep -q '/mesh-approval Socket Mode ingress' "$RELEASE_DIR/mesh-cos-mcp-deploy.sh"
+test -f "$APP_DIR/CHANGELOG-v4.2.1.md"
 test -f "$APP_DIR/slack-app-manifest.v4.2.1.json"
 test ! -f "$APP_DIR/slack-app-manifest.v4.1.17.json"
 test ! -f "$APP_DIR/slack-app-manifest.v4.2.0.json"
@@ -61,6 +64,7 @@ if grep -Ev '^v4\.2\.1/' /tmp/mesh-cos-v421.entries; then
   echo 'ERROR: v4.2.1 archive contains entries outside the immutable release root' >&2
   exit 1
 fi
+grep -qx 'v4.2.1/cos-mcp/CHANGELOG-v4.2.1.md' /tmp/mesh-cos-v421.entries
 grep -qx 'v4.2.1/cos-mcp/slack-app-manifest.v4.2.1.json' /tmp/mesh-cos-v421.entries
 grep -qx 'v4.2.1/cos-mcp/native-slack-event-hitl-v4.2.1.feature' /tmp/mesh-cos-v421.entries
 grep -qx 'v4.2.1/cos-mcp/security-review-v4.2.1.md' /tmp/mesh-cos-v421.entries

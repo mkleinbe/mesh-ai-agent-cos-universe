@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 
 from .governance import GovernanceJournal
 from .security import assert_agent_invocation_allowed
-from .slack_hitl import SlackApprovalHITLService
 
 
 @dataclass(slots=True)
@@ -51,12 +50,9 @@ class GovernedAdapterRegistry:
         self,
         registry: dict[str, dict],
         governance: GovernanceJournal | None = None,
-        *,
-        slack_hitl: SlackApprovalHITLService | None = None,
     ) -> None:
         self.registry = registry
         self.governance = governance
-        self._slack_hitl = slack_hitl
         self.adapters: dict[tuple[str, str], SkillAdapter] = {}
         self._known_capabilities = {
             str(capability)
@@ -66,13 +62,6 @@ class GovernedAdapterRegistry:
         }
         self._bind_declared_skill_handoffs()
         self._bind_server_owned_tools()
-        if str(os.environ.get("MESH_COS_SLACK_HITL_REQUIRED", "")).strip().lower() in {
-            "1",
-            "true",
-            "yes",
-            "on",
-        }:
-            self._slack_hitl_service()
 
     @staticmethod
     def _skill_handoff_executor(agent_id: str, capability: str) -> Callable[[dict], dict]:
@@ -98,40 +87,49 @@ class GovernedAdapterRegistry:
                     self._skill_handoff_executor(agent_id, capability),
                 )
 
-    def _slack_hitl_service(self) -> SlackApprovalHITLService:
-        if self._slack_hitl is not None:
-            return self._slack_hitl
-        if self.governance is None:
-            raise RuntimeError("Slack HITL requires canonical governance persistence")
-        self._slack_hitl = SlackApprovalHITLService.from_env(self.governance.ledger)
-        return self._slack_hitl
-
     @staticmethod
-    def _require_exact_payload(payload: dict, required: set[str]) -> None:
-        fields = set(payload)
-        unexpected = sorted(fields - required)
-        missing = sorted(required - fields)
-        if unexpected:
-            raise ValueError("Unexpected Slack HITL payload fields: " + ", ".join(unexpected))
-        if missing:
-            raise ValueError("Missing Slack HITL payload fields: " + ", ".join(missing))
+    def _slack_connector_handoff_executor() -> Callable[[dict], dict]:
+        """Authorize collaboration-only use of the connected Slack integration.
 
-    def _slack_hitl_executor(self) -> Callable[[dict], dict]:
+        This adapter never talks to Slack and never records approval. It returns a
+        handoff contract to the ChatGPT-side connected Slack integration. Canonical human
+        approval remains exclusively on the non-MCP Socket Mode slash-command boundary.
+        """
+
         def execute(payload: dict) -> dict:
-            operation = str(payload.get("operation") or "")
-            if operation != "bind_notice":
+            if str(payload.get("operation") or "") != "handoff":
                 raise PermissionError(
-                    "Agent Slack adapter may verify bot-authored notices but cannot record human decisions"
+                    "Slack adapter is collaboration-only and may only create a connected-Slack handoff"
                 )
-            required = {"operation", "approval_id", "thread_ts", "payload_fingerprint"}
-            self._require_exact_payload(payload, required)
-            service = self._slack_hitl_service()
-            return service.bind_notice(
-                str(payload["approval_id"]),
-                channel_id=service.config.channel_id,
-                thread_ts=str(payload["thread_ts"]),
-                payload_fingerprint=str(payload["payload_fingerprint"]),
-            )
+            configured_channel = str(
+                os.environ.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "C0BRL4GCL3A")
+            ).strip()
+            channel_id = str(payload.get("channel_id") or "").strip()
+            if channel_id != configured_channel:
+                raise PermissionError("Slack connector handoff channel mismatch")
+            forbidden = {
+                "approved",
+                "approval_status",
+                "actor",
+                "principal",
+                "record_decision",
+                "ingest_decision",
+            }
+            if forbidden.intersection(payload):
+                raise PermissionError(
+                    "Connected Slack collaboration handoff cannot carry canonical approval authority"
+                )
+            handoff_payload = payload.get("payload", {})
+            if not isinstance(handoff_payload, dict):
+                raise ValueError("Slack connector handoff payload must be an object")
+            return {
+                "status": "AUTHORIZED",
+                "execution_mode": "CHATGPT_CONNECTOR_HANDOFF",
+                "connector": "Slack",
+                "channel_id": configured_channel,
+                "authority": "COLLABORATION_ONLY",
+                "payload": dict(handoff_payload),
+            }
 
         return execute
 
@@ -139,7 +137,13 @@ class GovernedAdapterRegistry:
         record = self.registry.get("cos")
         if record is None or "slack-adapter" not in record.get("tools", []):
             return
-        self.register(SkillAdapter("cos", "slack-adapter", self._slack_hitl_executor()))
+        self.register(
+            SkillAdapter(
+                "cos",
+                "slack-adapter",
+                self._slack_connector_handoff_executor(),
+            )
+        )
 
     def register(self, adapter: SkillAdapter) -> None:
         if adapter.agent_id not in self.registry:

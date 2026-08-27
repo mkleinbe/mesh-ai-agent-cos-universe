@@ -42,20 +42,27 @@ def test_conversation_ids_fail_with_specific_diagnostic() -> None:
     assert "grep -Eq '^[UW][A-Z0-9]+$'" in script
 
 
-def test_existing_identity_is_preserved_unless_reconfigure_requested() -> None:
+def test_existing_identity_is_preserved_and_forced_secret_reconfigure_is_separate() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     assert 'MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0' in script
     assert '[ ! -s "$APPROVER_FILE" ]' in script
     assert "preserving existing Slack approver identity file" in script
+    assert "forced Slack credential reconfiguration is not allowed in the deploy path" in script
+    assert "mesh-cos-slack-hitl-provision.sh" in script
 
 
-def test_secret_tokens_remain_hidden_runtime_inputs() -> None:
-    script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
-    assert "Slack read-only verifier bot token (input hidden)" in script
-    assert "Slack Socket Mode app-level token (input hidden)" in script
-    assert "stty -echo" in script
-    assert "xoxb-" in script
-    assert "xapp-" in script
+def test_secret_tokens_remain_protected_runtime_inputs() -> None:
+    configure = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
+    provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
+    assert "read_secret_tty" not in configure
+    assert "command -v stty" not in configure
+    assert "Slack verifier token file is missing" in configure
+    assert "Slack Socket Mode app token file is missing" in configure
+    assert "Slack read-only verifier bot token (input hidden)" in provision
+    assert "Slack Socket Mode app-level token (input hidden)" in provision
+    assert "shell_supports_silent_read" in provision
+    assert "xoxb-" in provision
+    assert "xapp-" in provision
     assert "U01KG3CNYHK" not in text(ROOT / "deployment" / "qnap" / "compose.yaml")
 
 

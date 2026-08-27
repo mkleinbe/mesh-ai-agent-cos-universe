@@ -1,6 +1,6 @@
 # Security Policy
 
-Current repository/QNAP deployment target: **`v4.1.15 QNAP Slack Plugin HITL Simplification`**.
+Current repository/QNAP deployment target: **`v4.1.16 QNAP Restarting-Runtime Backup Hotfix`**.
 
 The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`4.0.0`** with exactly **10 registered agents**. Production ChatGPT access remains through the installed Mesh CoS MCP app and OpenAI Secure MCP Tunnel. Local deterministic engineering retains the stdio bridge. Both terminate in the same `mesh_cos.mcp_runtime.MCPRuntime` and canonical TaskLedger.
 
@@ -20,9 +20,24 @@ The canonical Mesh Chief of Staff Phase 1 authority/runtime contract remains **`
 - Credentials and sensitive data must never be committed or written into prompts, logs, TaskLedger evidence, diagnostics, release artifacts, or credential-bearing argv.
 - Critical defects may trigger kill-switch activation, quarantine, routing restriction, or publication restriction.
 
+## v4.1.16 canonical backup boundary
+
+A Docker container is not considered a stable online-backup target merely because `.State.Running=true`. v4.1.16 also evaluates `.State.Status` and `.State.Restarting`.
+
+- Stable `status=running` with `.State.Restarting=false` uses the existing in-container SQLite online backup helper.
+- Restarting or non-running existing runtimes do not receive `docker exec` for backup.
+- A restarting runtime is quiesced before canonical SQLite state is read so no application writer remains active during the fallback backup.
+- The fallback uses the exact already-trusted active Mesh image ID as a one-shot helper, not an arbitrary image reference.
+- The helper has `--network none`, non-root runtime UID/GID, read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, bounded tmpfs, and no Docker socket.
+- The helper receives only the canonical state bind mount needed to create the temporary SQLite backup. Protected Slack and tunnel credentials are not mounted.
+- `sqlite_backup.py` opens the source database read-only, uses SQLite backup semantics, and requires `PRAGMA integrity_check=ok` before the artifact is accepted.
+- Failed helper/export operations remove temporary state and partial governed backup directories and return failure.
+- If the prior runtime had running intent before quiescence, the backup path restores that intent after either success or failure before returning control to deployment.
+- Deployment attempts backup for any existing `mesh-cos-mcp` container. Only an absent container skips the pre-deploy runtime backup gate.
+
 ## Slack collaboration versus approval authority
 
-v4.1.15 deliberately separates Slack collaboration from human approval authority.
+v4.1.15 deliberately separated Slack collaboration from human approval authority; v4.1.16 preserves that boundary unchanged.
 
 ### Connected Slack integration
 
@@ -37,7 +52,7 @@ The custom Slack app remains only for the provider-authenticated `/mesh-approval
 - Governed human Slack user ID maps to canonical principal `michael`.
 - User identity must be a Slack `U...` or `W...` principal. A `D...` direct-message/conversation ID fails closed.
 - QNAP mounts the approver identity read-only and one protected Socket Mode app-level token beginning `xapp-`.
-- v4.1.15 does **not** require, mount, validate, prompt for, or use a Slack `xoxb-` verifier bot token.
+- v4.1.16 does **not** require, mount, validate, prompt for, or use a Slack `xoxb-` verifier bot token.
 - The only Slack interaction eligible to become a canonical decision is a provider `slash_commands` envelope for `/mesh-approval APPROVE|REJECT|CHANGES <Approval ID>...`.
 - The non-MCP ingress validates envelope ID/replay state, governed channel, configured human user ID, exact command, PENDING canonical approval, owner `michael`, and the canonical 64-hex `payload_fingerprint` before calling ApprovalService.
 - Same-envelope replay is idempotent. A distinct second interaction cannot re-decide an approval.
@@ -68,7 +83,7 @@ QNAP Docker Engine 27 does not receive an architecture that depends on newer Com
 - Canonical SQLite TaskLedger is the application container's writable operating-state boundary.
 - Tunnel runtime key and Slack Socket Mode app token remain outside environment values and release assets.
 - The Slack approver user ID is non-secret governed configuration but is still mounted through a protected read-only identity file.
-- A legacy `slack-verifier-token` host file may remain solely for rollback compatibility with older releases. v4.1.15 does not mount or depend on it.
+- A legacy `slack-verifier-token` host file may remain solely for rollback compatibility with older releases. v4.1.16 does not mount or depend on it.
 - Normal upgrades never request protected secrets interactively. Missing secrets fail closed and route to explicit provisioners.
 - Explicit provisioners read from a controlling TTY with a no-echo mechanism and never intentionally log protected values.
 - Protected files are normalized to runtime UID/GID with mode `0400`.
@@ -88,29 +103,28 @@ QNAP Docker Engine 27 does not receive an architecture that depends on newer Com
 - TaskLedger, qnet identity, tunnel identity/key, protected secrets, logs, and backup evidence remain outside versioned release payloads.
 - Historical published releases remain immutable.
 
-## v4.1.15 release security gate
+## v4.1.16 release security gate
 
 The exact candidate revision must pass:
 
 - dependency integrity, TypeScript checks/tests, contract/package/document drift checks;
 - Ruff, mypy, 100% `mesh_cos` coverage, Bandit, and compileall;
-- QNAP POSIX shell syntax and regression suite;
-- BDD scenarios QNAP-104 through QNAP-111;
-- adversarial approval tests for ordinary messages, wrong user/channel/command, missing fingerprint, replay, and conflicting decisions;
-- Slack provider/network degradation and bounded-reconnect tests;
-- verifier-token absence from active runtime/configuration and exact release bundle;
-- deterministic Docker Engine 27-compatible network topology checks;
-- pre-promotion failed-candidate rollback checks;
-- transactional partial-promotion and post-verification-failure recovery checks;
-- constrained rollback-snapshot cleanup and preservation-on-failed-recovery checks;
-- exact v4.1.15 bundle/checksum generation and archive inspection;
+- QNAP POSIX shell syntax and regression suite, including `test-restarting-container-backup.sh`;
+- BDD scenarios QNAP-112 through QNAP-115 plus retained QNAP-104 through QNAP-111;
+- stable-running online SQLite backup regression;
+- restarting-container regression with `.State.Running=true`, `.State.Status=restarting`, and `.State.Restarting=true` proving no `docker exec` is attempted;
+- helper-failure regression proving prior running intent is restored and no partial successful backup remains;
+- no network or protected-secret mounts in the quiesced helper command;
+- retained Slack verifier-token absence and deterministic Docker Engine 27 network topology checks;
+- transactional promotion and rollback checks;
+- exact v4.1.16 bundle/checksum generation and archive inspection;
 - production container build from the exact bundle with OCI version/revision labels bound to candidate SHA;
 - modern MCP discovery and sequential request regression;
-- independent diff review for authority widening, credential leakage, obsolete verifier dependencies, debug debris, temporary files, and stale release documentation.
+- independent diff review for authority widening, credential leakage, backup-state corruption, debug debris, temporary files, and stale release documentation.
 
-Security applicability for v4.1.15 is **FULL_REVIEW**. The release-specific review is `docs/security-review-v4.1.15.md`.
+Security applicability for v4.1.16 is **FULL_REVIEW**. The release-specific review is `docs/security-review-v4.1.16.md`.
 
-A repository/release PASS is not live production acceptance. QNAP network behavior, hosted MCP surface, and an actual provider-authenticated `/mesh-approval` interaction must be proven after deployment before production acceptance is declared.
+A repository/release PASS is not live production acceptance. QNAP state transitions, live network behavior, hosted MCP surface, and an actual provider-authenticated `/mesh-approval` interaction must be proven after deployment before production acceptance is declared.
 
 ## Reporting
 

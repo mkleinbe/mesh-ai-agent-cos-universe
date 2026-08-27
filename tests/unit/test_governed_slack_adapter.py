@@ -88,6 +88,29 @@ def test_slack_adapter_rejects_wrong_channel_and_non_object_payload() -> None:
         )
 
 
+def test_slack_adapter_rejects_incomplete_or_unexpected_collaboration_fields() -> None:
+    registry = GovernedAdapterRegistry(load_registry(), GovernanceJournal(TaskLedger()))
+
+    with pytest.raises(ValueError, match="Missing Slack collaboration payload fields: payload"):
+        registry.execute(
+            "cos",
+            "slack-adapter",
+            {"operation": "handoff", "channel_id": CHANNEL_ID},
+        )
+
+    with pytest.raises(ValueError, match="Unexpected Slack collaboration payload fields: note"):
+        registry.execute(
+            "cos",
+            "slack-adapter",
+            {
+                "operation": "handoff",
+                "channel_id": CHANNEL_ID,
+                "payload": {},
+                "note": "uncontracted field",
+            },
+        )
+
+
 def test_server_owned_tool_binding_is_absent_without_cos_or_declared_tool() -> None:
     no_cos = {
         "worker": {

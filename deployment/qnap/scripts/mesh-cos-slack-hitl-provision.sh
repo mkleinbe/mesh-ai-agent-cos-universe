@@ -15,6 +15,7 @@ MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 PERM_LIB="$SCRIPT_ROOT/mesh-cos-qnap-permissions.sh"
+SECRET_INPUT_LIB="$SCRIPT_ROOT/mesh-cos-qnap-secret-input.sh"
 MESH_COS_SCRIPT=mesh-cos-slack-hitl-provision.sh
 export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT MESH_UID MESH_GID MESH_COS_SCRIPT
 
@@ -23,58 +24,11 @@ export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT MESH_UID MESH_GID MES
 mesh_obs_init slack-hitl-provision || { echo "ERROR: unable to initialize deployment logging" >&2; exit 1; }
 [ -r "$PERM_LIB" ] || mesh_fail 1 bootstrap "runtime permission helper missing: $PERM_LIB"
 . "$PERM_LIB"
+[ -r "$SECRET_INPUT_LIB" ] || mesh_fail 1 bootstrap "protected secret input helper missing: $SECRET_INPUT_LIB"
+. "$SECRET_INPUT_LIB"
 
 fail() { mesh_fail 1 "${MESH_COS_STAGE:-slack_hitl_provision}" "$1"; }
 info() { mesh_log INFO info "$1"; }
-
-find_stty() {
-  STTY_BIN=
-  candidate=$(command -v stty 2>/dev/null || true)
-  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
-    STTY_BIN=$candidate
-    return 0
-  fi
-  for candidate in /bin/stty /usr/bin/stty; do
-    if [ -x "$candidate" ]; then
-      STTY_BIN=$candidate
-      return 0
-    fi
-  done
-  return 1
-}
-
-shell_supports_silent_read() {
-  (IFS= read -r -s _mesh_probe < /dev/null) 2>/dev/null
-  rc=$?
-  [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ]
-}
-
-read_secret_tty() {
-  prompt=$1
-  label=$2
-  [ -r /dev/tty ] && [ -w /dev/tty ] || fail "$label provisioning requires a readable and writable controlling TTY"
-  printf '%s' "$prompt" > /dev/tty
-  SECRET_VALUE=
-
-  if shell_supports_silent_read; then
-    IFS= read -r -s SECRET_VALUE < /dev/tty || fail "unable to read $label"
-  elif find_stty; then
-    trap '"$STTY_BIN" echo < /dev/tty >/dev/null 2>&1 || true' 0 1 2 15
-    "$STTY_BIN" -echo < /dev/tty || fail "unable to disable terminal echo for $label"
-    IFS= read -r SECRET_VALUE < /dev/tty || {
-      "$STTY_BIN" echo < /dev/tty >/dev/null 2>&1 || true
-      fail "unable to read $label"
-    }
-    "$STTY_BIN" echo < /dev/tty >/dev/null 2>&1 || true
-    trap - 0 1 2 15
-  else
-    printf '\n' > /dev/tty
-    fail "$label cannot be provisioned safely: this shell lacks silent read and no usable stty binary was found"
-  fi
-
-  printf '\n' > /dev/tty
-  mesh_log INFO secret_input "kind=$label status=captured value_logged=false"
-}
 
 write_protected_file() {
   target=$1
@@ -91,14 +45,14 @@ provision_verifier() {
     info "preserving existing Slack verifier token file"
     return 0
   fi
-  read_secret_tty "Slack read-only verifier bot token (input hidden): " "Slack verifier token"
-  [ -n "$SECRET_VALUE" ] || fail "Slack verifier token cannot be empty"
-  case "$SECRET_VALUE" in
+  mesh_read_secret_tty "Slack read-only verifier bot token (input hidden): " "Slack verifier token" || fail "unable to capture Slack verifier token securely"
+  [ -n "$MESH_SECRET_VALUE" ] || fail "Slack verifier token cannot be empty"
+  case "$MESH_SECRET_VALUE" in
     xoxb-*) ;;
-    *) unset SECRET_VALUE; fail "Slack verifier must use a bot token beginning with xoxb-" ;;
+    *) unset MESH_SECRET_VALUE; fail "Slack verifier must use a bot token beginning with xoxb-" ;;
   esac
-  write_protected_file "$VERIFIER_FILE" "$SECRET_VALUE"
-  unset SECRET_VALUE
+  write_protected_file "$VERIFIER_FILE" "$MESH_SECRET_VALUE"
+  unset MESH_SECRET_VALUE
   mesh_log INFO slack_verifier_file "status=provisioned value_logged=false"
 }
 
@@ -107,14 +61,14 @@ provision_socket() {
     info "preserving existing Slack Socket Mode app token file"
     return 0
   fi
-  read_secret_tty "Slack Socket Mode app-level token (input hidden): " "Slack Socket Mode app token"
-  [ -n "$SECRET_VALUE" ] || fail "Slack Socket Mode app token cannot be empty"
-  case "$SECRET_VALUE" in
+  mesh_read_secret_tty "Slack Socket Mode app-level token (input hidden): " "Slack Socket Mode app token" || fail "unable to capture Slack Socket Mode app token securely"
+  [ -n "$MESH_SECRET_VALUE" ] || fail "Slack Socket Mode app token cannot be empty"
+  case "$MESH_SECRET_VALUE" in
     xapp-*) ;;
-    *) unset SECRET_VALUE; fail "Slack Socket Mode requires an app-level token beginning with xapp-" ;;
+    *) unset MESH_SECRET_VALUE; fail "Slack Socket Mode requires an app-level token beginning with xapp-" ;;
   esac
-  write_protected_file "$SOCKET_APP_FILE" "$SECRET_VALUE"
-  unset SECRET_VALUE
+  write_protected_file "$SOCKET_APP_FILE" "$MESH_SECRET_VALUE"
+  unset MESH_SECRET_VALUE
   mesh_log INFO slack_socket_app_file "status=provisioned value_logged=false"
 }
 

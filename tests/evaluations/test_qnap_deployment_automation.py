@@ -39,6 +39,7 @@ def test_prepare_automates_candidate_without_protected_secret_input_or_verifier_
 
 def test_deploy_rolls_back_failed_candidate_before_promotion() -> None:
     deploy = text(SCRIPTS / "mesh-cos-mcp-deploy.sh")
+    execution = deploy[deploy.index("mesh_set_stage pre_backup") :]
     required_order = [
         "mesh-cos-mcp-backup.sh\" pre-deploy",
         "mesh-cos-mcp-prepare.sh",
@@ -47,20 +48,26 @@ def test_deploy_rolls_back_failed_candidate_before_promotion() -> None:
         "mesh_compose --env-file \"$CANDIDATE_ENV\" -f \"$CANDIDATE_COMPOSE\" up -d --no-build",
         "wait_healthy mesh-cos-mcp",
         "wait_healthy mesh-cos-tunnel",
-        "candidate_promote",
+        "mesh_set_stage candidate_promote",
         "mesh-cos-mcp-verify.sh",
         "mesh-cos-mcp-backup.sh\" post-deploy",
     ]
-    positions = [deploy.index(token) for token in required_order]
+    positions = [execution.index(token) for token in required_order]
     assert positions == sorted(positions)
     assert 'ACTIVE_ENV="$APP_ROOT/.env"' in deploy
     assert 'ACTIVE_COMPOSE="$APP_ROOT/compose.yaml"' in deploy
     assert "restore_active_stack()" in deploy
     assert "fail_candidate_before_promotion()" in deploy
+    assert "rollback_promoted_candidate()" in deploy
+    assert "fail_after_promotion()" in deploy
+    assert "mesh_snapshot_active_configuration" in deploy
+    assert "mesh_promote_candidate_configuration" in deploy
+    assert "mesh_restore_active_configuration" in deploy
     assert 'mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" down --remove-orphans' in deploy
     assert 'mesh_compose --env-file "$ACTIVE_ENV" -f "$ACTIVE_COMPOSE" up -d --no-build' in deploy
     assert "active_release_preserved=true" in deploy
     assert "previously active stack restored" in deploy
+    assert "verification_complete=true" in deploy
     assert "mesh_validate_release_root" in deploy
 
 

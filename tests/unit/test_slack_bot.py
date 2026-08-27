@@ -110,18 +110,15 @@ def test_bot_api_posts_without_identity_override_and_updates(tmp_path: Path) -> 
     assert calls[-1][1]["ts"] == "123.456"
 
 
-def test_block_factories_use_rich_text_and_bound_buttons() -> None:
+def test_block_factories_use_reply_driven_rich_text_without_buttons() -> None:
     blocks = approval_blocks("approval-abc", "Send this exact message")
     assert any(block.get("type") == "rich_text" for block in blocks)
-    actions = next(block for block in blocks if block.get("type") == "actions")
-    assert [element["action_id"] for element in actions["elements"]] == [
-        "mesh_approval_approve",
-        "mesh_approval_deny",
-        "mesh_approval_change",
-    ]
-    assert all(element["value"] == "approval-abc" for element in actions["elements"])
-    assert actions["elements"][0]["style"] == "primary"
-    assert actions["elements"][1]["style"] == "danger"
+    assert not any(block.get("type") == "actions" for block in blocks)
+    rendered = str(blocks)
+    assert "APPROVE" in rendered
+    assert "DENY" in rendered
+    assert "CHANGE" in rendered
+    assert "re-checks Slack provider state" in rendered
     assert "..." in str(approval_blocks("approval-long", "x" * 3000))
     assert "APPROVE" in str(resolved_blocks("approval-abc", "APPROVE"))
 
@@ -144,9 +141,10 @@ def test_notifier_posts_and_binds_pending_approval_idempotently() -> None:
         "approval_id": approval_id,
         "channel_id": CHANNEL,
         "thread_ts": "123.456",
-        "format": "BLOCK_KIT_RICH_TEXT_V1",
+        "format": "BLOCK_KIT_REPLY_DRIVEN_V2",
     }
     binding = ledger.get_record(THREAD_BINDING_KIND, "123.456")
+    assert binding["version"] == "mesh.cos.slack-thread-binding.v3"
     assert binding["approval_id"] == approval_id
     assert binding["task_id"] == task_id
     assert binding["payload_fingerprint"] == FINGERPRINT
@@ -312,7 +310,7 @@ def test_notifier_failure_edges_for_thread_and_change_revision() -> None:
         notifier.mark_change_request_revised("change-pending", "approval-missing")
 
     other_ledger = TaskLedger()
-    other_task, other_approval = _pending(other_ledger)
+    _, other_approval = _pending(other_ledger)
     other_record = other_ledger.get_record("approval", other_approval)
     ledger.save_record("approval", other_approval, dict(other_record))
     with pytest.raises(PermissionError, match="same task"):

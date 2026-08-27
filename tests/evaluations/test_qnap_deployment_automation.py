@@ -28,7 +28,6 @@ def test_prepare_automates_candidate_without_protected_secret_input_or_legacy_ve
     assert "read_secret_tty" not in prepare
     assert "command -v stty" not in prepare
     assert "QNAP_SLACK_APPROVER_USER_ID_FILE=" in prepare
-    assert "QNAP_SLACK_SOCKET_APP_TOKEN_FILE=" in prepare
     assert "QNAP_SLACK_BOT_TOKEN_FILE=" in prepare
     assert "MESH_COS_SLACK_APP_ID=" in prepare
     assert "QNAP_SLACK_VERIFIER_TOKEN_FILE=" not in prepare
@@ -91,7 +90,7 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
         assert "pwd -P" in script
 
 
-def test_slack_hitl_configuration_is_bot_bound_candidate_bound_and_secret_safe() -> None:
+def test_slack_hitl_configuration_is_native_trigger_bound_and_secret_safe() -> None:
     configure = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
     secret_input = text(SCRIPTS / "mesh-cos-qnap-secret-input.sh")
@@ -100,8 +99,8 @@ def test_slack_hitl_configuration_is_bot_bound_candidate_bound_and_secret_safe()
     assert "U01KG3CNYHK" in configure
     assert "Slack conversation/DM channel ID is not a user ID" in configure
     assert "grep -Eq '^[UW][A-Z0-9]+$'" in configure
-    assert "Slack Socket Mode app token file is missing" in configure
-    assert "slack-socket-app-token" in configure
+    assert "CHATGPT_NATIVE_EVENT_TRIGGER" in configure
+    assert "legacy Slack Socket Mode must not be configured" in configure
     assert "Slack bot OAuth token file is missing" in configure
     assert "slack-bot-token" in configure
     assert "Slack verifier" not in configure
@@ -109,23 +108,27 @@ def test_slack_hitl_configuration_is_bot_bound_candidate_bound_and_secret_safe()
     assert "read_secret_tty" not in configure
     assert "command -v stty" not in configure
     assert "value_logged=false" in configure
+    assert "socket_required=false" in configure
     assert "bot_required=true" in configure
-    assert "Slack Socket Mode app-level token (input hidden)" in provision
+    assert "Slack Socket Mode app-level token (input hidden)" not in provision
     assert "Slack bot OAuth token (input hidden)" in provision
     assert "xoxb-*" in provision
-    assert "xapp-*" in provision
+    assert "xapp-*" not in provision
     assert "mesh_read_secret_tty" in provision
     assert "value_logged=false" in provision
+    assert "socket_required=false" in provision
     assert "mesh_shell_supports_silent_read" in secret_input
     assert "/bin/stty /usr/bin/stty" in secret_input
 
 
-def test_qnap_compose_has_deterministic_egress_and_dedicated_slack_bot_mounts() -> None:
+def test_qnap_compose_has_deterministic_egress_and_native_slack_mounts() -> None:
     compose = text(QNAP / "compose.yaml")
     assert compose.count("pull_policy: never") == 2
     assert 'MESH_COS_SLACK_HITL_REQUIRED: "true"' in compose
+    assert "MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER" in compose
     assert "MESH_COS_SLACK_APPROVER_USER_ID_FILE: /run/secrets/slack_approver_user_id" in compose
-    assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: /run/secrets/slack_socket_app_token" in compose
+    assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE" not in compose
+    assert "slack_socket_app_token" not in compose
     assert "MESH_COS_SLACK_BOT_TOKEN_FILE: /run/secrets/slack_bot_token" in compose
     assert "MESH_COS_SLACK_APP_ID:" in compose
     assert "/run/secrets/slack_bot_token:ro" in compose
@@ -157,8 +160,10 @@ def test_preflight_and_verify_remain_fail_closed_around_runtime_identity() -> No
     assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE" in runtime_preflight
     assert "MESH_COS_SLACK_BOT_TOKEN_FILE" in runtime_preflight
     assert "MESH_COS_SLACK_APP_ID" in runtime_preflight
-    assert "xapp-" in runtime_preflight
+    assert "CHATGPT_NATIVE_EVENT_TRIGGER" in runtime_preflight
+    assert "xapp-" not in runtime_preflight
     assert "xoxb-" in runtime_preflight
+    assert "slack_native_trigger_mode_invalid" in runtime_preflight
     assert "slack_bot_credential_invalid" in runtime_preflight
     assert "slack_app_identity_invalid" in runtime_preflight
     assert "slack_approval_command_invalid" not in runtime_preflight
@@ -187,17 +192,18 @@ def test_backup_excludes_secrets_and_supports_restarting_runtime() -> None:
     assert "/run/secrets" not in backup
 
 
-def test_v4117_release_builder_packages_current_contract_without_runtime_secrets() -> None:
+def test_release_builders_package_v420_without_runtime_secrets() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.17}' in builder
+    wrapper = text(ROOT / "scripts" / "build-qnap-release-v4.2.0.sh")
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
-    assert "qnap-slack-thread-hitl-v4.1.17.feature" in builder
-    assert "slack-app-manifest.v4.1.17.json" in builder
-    assert "security-review-v4.1.17.md" in builder
-    assert "release-4.1.17-slack-bot-block-kit-hitl.md" in builder
-    assert "verification-v4.1.17-slack-bot-block-kit-hitl.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.17.md" in builder
+    assert "VERSION=4.2.0" in wrapper
+    assert "native-slack-event-hitl-v4.2.0.feature" in wrapper
+    assert "slack-app-manifest.v4.2.0.json" in wrapper
+    assert "security-review-v4.2.0.md" in wrapper
+    assert "release-4.2.0-native-slack-event-hitl.md" in wrapper
+    assert "chatgpt-native-slack-dispatcher-v4.2.0.md" in wrapper
+    assert "chatgpt-published-app-production-acceptance-v4.2.0.md" in wrapper
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder

@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from .governance import GovernanceJournal
 from .security import assert_agent_invocation_allowed
 from .slack_bot import SLACK_BOT_API, SlackApprovalNotifier
+from .slack_native_trigger import SlackNativeTriggerApprovalService
+from .slack_socket_approval import SlackSocketApprovalConfig
 
 
 @dataclass(slots=True)
@@ -110,7 +112,7 @@ class GovernedAdapterRegistry:
         return self.slack_notifier
 
     def _slack_bot_executor(self) -> Callable[[dict], dict]:
-        """Execute governed Slack collaboration as the dedicated installed Slack bot."""
+        """Execute governed Slack collaboration and provider reconciliation."""
 
         def execute(payload: dict) -> dict:
             forbidden = {
@@ -120,10 +122,13 @@ class GovernedAdapterRegistry:
                 "principal",
                 "record_decision",
                 "ingest_decision",
+                "decision",
+                "text",
+                "user_id",
             }
             if forbidden.intersection(payload):
                 raise PermissionError(
-                    "Slack bot collaboration cannot carry canonical approval authority"
+                    "Slack collaboration cannot carry canonical approval authority"
                 )
             required = {"operation", "channel_id", "payload"}
             GovernedAdapterRegistry._require_exact_payload(payload, required)
@@ -144,6 +149,22 @@ class GovernedAdapterRegistry:
                     handoff_payload, {"approval_id"}
                 )
                 return notifier.post_approval(str(handoff_payload["approval_id"]))
+
+            if operation == "reconcile_triggered_message":
+                GovernedAdapterRegistry._require_exact_payload(
+                    handoff_payload, {"thread_ts", "message_ts"}
+                )
+                if self.governance is None:
+                    raise RuntimeError("Slack reconciliation requires the canonical TaskLedger")
+                service = SlackNativeTriggerApprovalService(
+                    self.governance.ledger,
+                    SlackSocketApprovalConfig.from_env(),
+                    notifier,
+                )
+                return service.reconcile(
+                    thread_ts=str(handoff_payload["thread_ts"]),
+                    message_ts=str(handoff_payload["message_ts"]),
+                )
 
             if operation == "post_message":
                 unexpected = sorted(set(handoff_payload) - {"text", "thread_ts"})
@@ -291,6 +312,7 @@ class GovernedAdapterRegistry:
             actor_type="AGENT",
             actor_id=adapter.agent_id,
             actor_role=record.get("role", adapter.agent_id),
+            skill_agent_version=str(record.get("version", "unknown")),
             task_id=task_id,
             correlation_id=correlation_id,
             decision_id=payload.get("decision_id"),
@@ -315,7 +337,6 @@ class GovernedAdapterRegistry:
             error_summary=error_summary,
             model_provider=payload.get("model_provider"),
             model_id_version=payload.get("model_id_version"),
-            skill_agent_version=str(record.get("version", "unknown")),
             environment=payload.get("environment", "RUNTIME"),
             retention_class=payload.get("retention_class", "GOVERNANCE_LONG_TERM"),
         )

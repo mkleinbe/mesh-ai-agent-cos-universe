@@ -6,6 +6,7 @@ DEPLOYMENT_RELEASE=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.7}
 NAME=mesh-cos-modern-transport-test
 ROOT=${TMPDIR:-/tmp}/mesh-cos-modern-transport-$$
 STATE=$ROOT/state
+SECRETS=$ROOT/secrets
 PORT=${MESH_COS_MODERN_TEST_PORT:-18081}
 
 cleanup() {
@@ -14,7 +15,10 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-mkdir -p "$STATE/ledger" "$STATE/governance" "$STATE/audit" "$STATE/runtime"
+mkdir -p "$STATE/ledger" "$STATE/governance" "$STATE/audit" "$STATE/runtime" "$SECRETS"
+printf '%s' 'U01KG3CNYHK' > "$SECRETS/slack-approver-user-id"
+printf '%s' 'xoxb-ci-native-slack-hitl' > "$SECRETS/slack-bot-token"
+chmod 0444 "$SECRETS/slack-approver-user-id" "$SECRETS/slack-bot-token"
 
 docker run --rm \
   --network none \
@@ -55,7 +59,15 @@ docker run -d --name "$NAME" \
   -e MCP_TRUSTED_CLIENT_IP=127.0.0.1 \
   -e MESH_COS_BRIDGE_TIMEOUT_MS=30000 \
   -e MESH_COS_MAX_BRIDGE_QUEUE=32 \
+  -e MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER \
+  -e MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A \
+  -e MESH_COS_SLACK_APPROVER_PRINCIPAL=michael \
+  -e MESH_COS_SLACK_APP_ID=A0B49RNF4K0 \
+  -e MESH_COS_SLACK_APPROVER_USER_ID_FILE=/run/secrets/slack_approver_user_id \
+  -e MESH_COS_SLACK_BOT_TOKEN_FILE=/run/secrets/slack_bot_token \
   -v "$STATE:/var/lib/mesh:rw" \
+  -v "$SECRETS/slack-approver-user-id:/run/secrets/slack_approver_user_id:ro" \
+  -v "$SECRETS/slack-bot-token:/run/secrets/slack_bot_token:ro" \
   --tmpfs /tmp:rw,noexec,nosuid,nodev,size=32m \
   "$IMAGE" >/dev/null
 
@@ -77,7 +89,9 @@ for OUT in "$HEALTH_OUT" "$READY_OUT"; do
   grep -Fq "\"deployment_release\":\"$DEPLOYMENT_RELEASE\"" "$OUT" || { echo 'FAIL status response missing deployment_release' >&2; cat "$OUT" >&2; exit 1; }
   grep -Fq '"agent_id":"cos"' "$OUT" || { echo 'FAIL status response missing cos identity' >&2; cat "$OUT" >&2; exit 1; }
   grep -Fq '"transport":"SECURE_MCP_TUNNEL"' "$OUT" || { echo 'FAIL status response missing tunnel transport identity' >&2; cat "$OUT" >&2; exit 1; }
+  grep -Fq '"slack_hitl_mode":"CHATGPT_NATIVE_EVENT_TRIGGER"' "$OUT" || { echo 'FAIL status response missing native Slack HITL mode' >&2; cat "$OUT" >&2; exit 1; }
 done
+grep -Fq '"slack_hitl_ready":true' "$READY_OUT" || { echo 'FAIL readiness response missing native Slack HITL readiness' >&2; cat "$READY_OUT" >&2; exit 1; }
 
 META="{\"io.modelcontextprotocol/protocolVersion\":\"2026-07-28\",\"io.modelcontextprotocol/clientCapabilities\":{},\"io.modelcontextprotocol/clientInfo\":{\"name\":\"mesh-ci\",\"version\":\"$DEPLOYMENT_RELEASE\"}}"
 DISCOVER_BODY="{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"server/discover\",\"params\":{\"_meta\":$META}}"
@@ -139,7 +153,16 @@ docker run -d --name "$NAME" \
   -e MCP_BIND_HOST=127.0.0.1 \
   -e MCP_PORT="$PORT" \
   -e MCP_TRUSTED_CLIENT_IP=192.0.2.1 \
-  -v "$STATE:/var/lib/mesh:rw" --tmpfs /tmp:rw,noexec,nosuid,nodev,size=32m \
+  -e MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER \
+  -e MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A \
+  -e MESH_COS_SLACK_APPROVER_PRINCIPAL=michael \
+  -e MESH_COS_SLACK_APP_ID=A0B49RNF4K0 \
+  -e MESH_COS_SLACK_APPROVER_USER_ID_FILE=/run/secrets/slack_approver_user_id \
+  -e MESH_COS_SLACK_BOT_TOKEN_FILE=/run/secrets/slack_bot_token \
+  -v "$STATE:/var/lib/mesh:rw" \
+  -v "$SECRETS/slack-approver-user-id:/run/secrets/slack_approver_user_id:ro" \
+  -v "$SECRETS/slack-bot-token:/run/secrets/slack_bot_token:ro" \
+  --tmpfs /tmp:rw,noexec,nosuid,nodev,size=32m \
   "$IMAGE" >/dev/null
 sleep 2
 STATUS=$(curl -sS -o "$ROOT/forbidden.json" -w '%{http_code}' \
@@ -147,4 +170,4 @@ STATUS=$(curl -sS -o "$ROOT/forbidden.json" -w '%{http_code}' \
   --data "$DISCOVER_BODY" "http://127.0.0.1:$PORT/mcp")
 [ "$STATUS" = 403 ] || { echo "FAIL untrusted direct MCP ingress expected HTTP 403, got $STATUS" >&2; exit 1; }
 
-echo "PASS modern server/discover, dual release identity, 10 sequential stateless MCP requests, cos identity, and tunnel-only ingress regression for deployment $DEPLOYMENT_RELEASE"
+echo "PASS modern server/discover, native Slack readiness, dual release identity, 10 sequential stateless MCP requests, cos identity, and tunnel-only ingress regression for deployment $DEPLOYMENT_RELEASE"

@@ -10,7 +10,6 @@ APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
 SECRET_DIR="$APP_ROOT/secrets"
 APPROVER_FILE=${QNAP_SLACK_APPROVER_USER_ID_FILE:-$SECRET_DIR/slack-approver-user-id}
-SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
 BOT_TOKEN_FILE=${QNAP_SLACK_BOT_TOKEN_FILE:-$SECRET_DIR/slack-bot-token}
 DEFAULT_APPROVER_USER_ID=${MESH_COS_SLACK_APPROVER_USER_ID:-U01KG3CNYHK}
 MESH_UID=${MESH_UID:-65532}
@@ -40,6 +39,19 @@ write_protected_file() {
   mv "$incoming" "$target" || { rm -f "$incoming"; fail "unable to install protected runtime file"; }
 }
 
+normalize_native_trigger_env() {
+  incoming="$CANDIDATE_ENV_FILE.native.$$"
+  sed \
+    -e '/^QNAP_SLACK_SOCKET_APP_TOKEN_FILE=/d' \
+    -e '/^MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE=/d' \
+    -e '/^MESH_COS_SLACK_BRIDGE_TIMEOUT_MS=/d' \
+    -e '/^MESH_COS_SLACK_HITL_MODE=/d' \
+    "$CANDIDATE_ENV_FILE" > "$incoming" || fail "unable to normalize candidate Slack HITL environment"
+  printf '%s\n' 'MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER' >> "$incoming" || { rm -f "$incoming"; fail "unable to set native Slack HITL mode"; }
+  chmod 0640 "$incoming" 2>/dev/null || { rm -f "$incoming"; fail "unable to protect normalized candidate environment"; }
+  mv "$incoming" "$CANDIDATE_ENV_FILE" || { rm -f "$incoming"; fail "unable to install normalized candidate environment"; }
+}
+
 validate_approver_user_id() {
   APPROVER_VALUE_TO_VALIDATE=$1
   case "$APPROVER_VALUE_TO_VALIDATE" in
@@ -47,16 +59,6 @@ validate_approver_user_id() {
   esac
   printf '%s' "$APPROVER_VALUE_TO_VALIDATE" | grep -Eq '^[UW][A-Z0-9]+$' || fail "Slack approver user ID format is invalid; expected a Slack user ID beginning with U or W"
   unset APPROVER_VALUE_TO_VALIDATE
-}
-
-validate_socket_file() {
-  [ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing; provision it with: sudo sh $PROVISION_SCRIPT"
-  SOCKET_VALUE=$(cat "$SOCKET_APP_FILE") || fail "unable to read existing Slack Socket Mode app token file"
-  case "$SOCKET_VALUE" in
-    xapp-*) ;;
-    *) unset SOCKET_VALUE; fail "Slack Socket Mode app token file is invalid; expected an app-level token beginning with xapp-" ;;
-  esac
-  unset SOCKET_VALUE
 }
 
 validate_bot_file() {
@@ -71,12 +73,16 @@ validate_bot_file() {
 
 mesh_set_stage prepared_release
 [ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run mesh-cos-mcp-prepare.sh first"
+normalize_native_trigger_env
 set -a
 . "$CANDIDATE_ENV_FILE"
 set +a
 MESH_IMAGE=${MESH_COS_IMAGE:-}
 [ -n "$MESH_IMAGE" ] || fail "prepared candidate release does not define MESH_COS_IMAGE"
 docker image inspect "$MESH_IMAGE" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable"
+[ "${MESH_COS_SLACK_HITL_MODE:-}" = "CHATGPT_NATIVE_EVENT_TRIGGER" ] || fail "prepared release is not configured for ChatGPT native Slack event-triggered HITL"
+[ -z "${MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:-}" ] || fail "legacy Slack Socket Mode must not be configured for v4.2.0"
+[ -z "${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-}" ] || fail "legacy QNAP Slack Socket Mode path must not remain after normalization"
 
 mesh_set_stage filesystem
 mkdir -p "$SECRET_DIR" || fail "unable to create Slack HITL secrets directory"
@@ -100,10 +106,6 @@ else
   info "preserving existing Slack approver identity file"
 fi
 
-mesh_set_stage socket_app_token
-validate_socket_file
-info "preserving existing validated Slack Socket Mode app token file"
-
 mesh_set_stage bot_oauth_token
 validate_bot_file
 info "preserving existing validated Slack bot OAuth token file"
@@ -111,10 +113,9 @@ info "preserving existing validated Slack bot OAuth token file"
 mesh_set_stage permissions
 mesh_apply_secret_permissions "$MESH_IMAGE" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize Slack HITL secret ownership/modes"
 [ -s "$APPROVER_FILE" ] || fail "Slack approver identity file is missing or empty"
-[ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing or empty"
 [ -s "$BOT_TOKEN_FILE" ] || fail "Slack bot OAuth token file is missing or empty"
-mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false socket_required=true bot_required=true"
+mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false socket_required=false bot_required=true"
 
 mesh_set_stage complete
-info "Slack HITL protected runtime configuration complete"
-mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true socket_required=true bot_required=true"
+info "Slack HITL protected runtime configuration complete for ChatGPT native event-trigger mode"
+mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true socket_required=false bot_required=true"

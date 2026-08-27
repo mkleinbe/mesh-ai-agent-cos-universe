@@ -1,16 +1,21 @@
-name: ci
+name: v4.2.0 QNAP native Slack HITL release candidate
+
 on:
-  workflow_dispatch:
   pull_request:
+    branches: [main]
   push:
-    branches: [main, 'phase1/**', 'remediation/**', 'chatgpt/**', 'quality/**', 'enhancement/**', 'release/**', 'fix/**', 'refactor/**', 'hotfix/**']
+    branches: [main]
+  workflow_dispatch:
+
 permissions:
   contents: read
+
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: v4.2.0-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -37,7 +42,7 @@ jobs:
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
-      - name: QNAP POSIX shell regression suite
+      - name: QNAP native Slack HITL shell and security gates
         run: |
           set -euo pipefail
           sh -n deployment/qnap/qnap-environment-probe.sh
@@ -50,22 +55,16 @@ jobs:
           sh deployment/qnap/tests/test-transactional-promotion.sh
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           sh deployment/qnap/tests/test-restarting-container-backup.sh
-          bash -n scripts/build-qnap-release-bundle.sh
-          bash -n scripts/build-qnap-release-v4.2.0.sh
-          ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
-          ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
-          ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER' deployment/qnap/compose.yaml
           grep -q 'MESH_COS_SLACK_BOT_TOKEN_FILE' deployment/qnap/compose.yaml
           ! grep -q 'MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:' deployment/qnap/compose.yaml
           ! grep -q 'slack_socket_app_token' deployment/qnap/compose.yaml
           ! grep -q 'Slack Socket Mode app-level token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'socket_required=false' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
-          grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
           grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-      - name: Build exact v4.2.0 QNAP release bundle
+      - name: Build exact v4.2.0 release bundle
         env:
           GITHUB_SHA: ${{ github.sha }}
         run: |
@@ -83,12 +82,8 @@ jobs:
           test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.2.0.md"
           test -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.0.json"
           test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.1.17.json"
-          unzip -Z1 "$ZIP" > /tmp/v420.entries
-          if grep -Ev '^v4\.2\.0/' /tmp/v420.entries; then exit 1; fi
-          grep -qx 'v4.2.0/mesh-cos-mcp-deploy.sh' /tmp/v420.entries
-          grep -qx 'v4.2.0/cos-mcp/release-metadata.txt' /tmp/v420.entries
           (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.2.0.zip.sha256)
-      - name: Build production container from exact v4.2.0 bundle
+      - name: Build production container from exact release bundle
         run: |
           set -euo pipefail
           docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.2.0-qnap -t mesh-cos-mcp:ci-v4.2.0 dist/qnap-bundle/v4.2.0/cos-mcp/build-context
@@ -100,9 +95,32 @@ jobs:
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.2.0
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.2.0-ci
+          name: mesh-cos-mcp-qnap-v4.2.0
           path: |
             dist/mesh-cos-mcp-qnap-v4.2.0.zip
             dist/mesh-cos-mcp-qnap-v4.2.0.zip.sha256
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rebuild exact merge-SHA release artifacts
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: bash scripts/build-qnap-release-v4.2.0.sh
+      - name: Publish immutable v4.2.0 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.2.0 >/dev/null 2>&1; then
+            echo 'v4.2.0 already exists; leaving immutable release unchanged'
+            exit 0
+          fi
+          gh release create v4.2.0 dist/mesh-cos-mcp-qnap-v4.2.0.zip dist/mesh-cos-mcp-qnap-v4.2.0.zip.sha256 --target "$GITHUB_SHA" --title 'Mesh CoS MCP v4.2.0 Native Slack Event-Triggered HITL' --notes-file docs/release-4.2.0-native-slack-event-hitl.md

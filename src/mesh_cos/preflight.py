@@ -25,6 +25,7 @@ EXPECTED_AGENT_IDS = {
     "message-ops",
 }
 EXPECTED_SLACK_APP_ID = "A0B49RNF4K0"
+EXPECTED_SLACK_HITL_MODE = "CHATGPT_NATIVE_EVENT_TRIGGER"
 
 
 def _protected_file_matches(path_value: str, prefix: str) -> bool:
@@ -95,15 +96,15 @@ class ProductionPreflight:
                 self.root / "mcp" / "src" / "index.ts",
                 self.root / "mcp" / "src" / "server.ts",
                 self.root / "mcp" / "src" / "python-bridge.ts",
-                self.root / "mcp" / "src" / "slack-socket-mode.ts",
                 self.root / "src" / "mesh_cos" / "slack_bot.py",
+                self.root / "src" / "mesh_cos" / "slack_native_trigger.py",
             )
         )
         checks.append(
             self._result(
                 "mcp_local_package",
                 local_package_ok,
-                "bundled local MCP and Slack bot/Socket Mode source package present"
+                "bundled MCP, Slack bot, and native-trigger reconciliation source present"
                 if local_package_ok
                 else "bundled local MCP package is incomplete",
             )
@@ -204,15 +205,16 @@ class ProductionPreflight:
                 )
             )
 
+            hitl_mode = str(env.get("MESH_COS_SLACK_HITL_MODE", "")).strip()
             socket_path = str(env.get("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE", "")).strip()
-            socket_ok = _protected_file_matches(socket_path, "xapp-")
+            native_mode_ok = hitl_mode == EXPECTED_SLACK_HITL_MODE and not socket_path
             checks.append(
                 self._result(
-                    "slack_socket_app_credential",
-                    socket_ok,
-                    "Socket Mode app-level credential file is mounted"
-                    if socket_ok
-                    else "Socket Mode app-level credential file is missing or invalid",
+                    "slack_native_trigger_mode",
+                    native_mode_ok,
+                    "ChatGPT native Slack event trigger mode configured without Socket Mode credential"
+                    if native_mode_ok
+                    else "native Slack trigger mode is missing or legacy Socket Mode remains configured",
                 )
             )
 
@@ -222,7 +224,7 @@ class ProductionPreflight:
                 self._result(
                     "slack_bot_credential",
                     bot_ok,
-                    "dedicated Slack bot OAuth credential file is mounted"
+                    "dedicated Slack bot OAuth credential file is mounted for outbound and reconciliation"
                     if bot_ok
                     else "Slack bot OAuth credential file is missing or invalid",
                 )

@@ -1,83 +1,103 @@
-# v4.1.18 QNAP Slack Bot Secret Permission Hotfix
+# v4.2.0 Native Slack Event-Triggered HITL
 
-`v4.1.18` supersedes v4.1.17 for QNAP deployment after live v4.1.17 acceptance exposed a protected-file ownership defect in the new dedicated Slack bot credential path.
+`v4.2.0` replaces the QNAP-hosted Slack Socket Mode approval ingress used by v4.1.17 and v4.1.18 with ChatGPT-native Slack new-message task triggers.
 
-The v4.1.17 provisioner correctly accepted and stored a valid `xoxb-` Slack bot OAuth token with mode `0400`. However, the shared QNAP secret-permission helper did not include `slack-bot-token` in its ownership normalization loop. Provisioning runs as root while the Mesh runtime runs as UID/GID `65532:65532`, so the candidate container mounted the file but canonical runtime preflight could not read it.
+The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. OpenAI Secure MCP Tunnel remains the production remote MCP transport. TaskLedger remains canonical approval state. **Message Operations** remains the tenth registered agent. **Mesh Devil's Advocate** remains a governed shared Skill and is not an eleventh agent.
 
-Transactional promotion behaved correctly and restored the previously active stack after verification failed.
+## Architecture
 
-## v4.1.18 fix
+```text
+MK replies in #mesh-agent-ops
+        |
+        v
+ChatGPT native Slack new-message trigger
+        |
+        v
+One Mesh Slack HITL Dispatcher task
+        |
+        v
+Mesh CoS MCP
+        |
+        v
+Server-side Slack provider reconciliation
+        |
+        v
+Canonical TaskLedger approval state
+```
 
-- Add `slack-bot-token` to the constrained QNAP secret ownership/mode normalization helper.
-- Normalize the protected file to runtime owner `65532:65532` while preserving mode `0400`.
-- Preserve the existing valid `xoxb-` token across deployment. Operators do not need to re-enter it solely to repair v4.1.17 ownership.
-- Preserve fail-closed runtime validation for missing, unreadable, empty, or wrong-type bot credentials.
-- Preserve no-network, read-only, capability-bounded permission-helper execution.
-- Add ready BDD scenarios QNAP-129 and QNAP-130 plus a shell regression proving the bot token is included in the secret permission helper.
-- Add targeted security review `SEC-4.1.18-001` and exact-head v4.1.18 release verification.
+The ChatGPT trigger is a wake-up and locator only. It cannot supply approval text, asserted human identity, approval status, actor, principal, or an approval boolean to the governed Slack adapter. The QNAP runtime independently retrieves the exact Slack reply and revalidates provider user, channel, thread, message timestamp, manual-human authorship, edit state, canonical approval status, approval owner, immutable payload fingerprint, and replay state before authority changes.
 
-No Slack credential value is logged, packaged, or copied into runtime environment variables. No approval, agent, TaskLedger, or MCP authority is widened.
+## Behavioral changes
 
-## Inherited controls
-
-v4.1.18 preserves the complete v4.1.17 Slack Bot + Block Kit HITL behavior contract: dedicated **ChatGPT Enterprise AI Agent** bot authorship, provider-authenticated Socket Mode replies and Block Kit actions, case-insensitive `approve`, `deny`/`reject`, and `change` thread fallbacks, immutable payload fingerprint validation, replay protection, fail-closed provider degradation, and TaskLedger as canonical approval state.
-
-It also preserves the **v4.1.16 QNAP Restarting-Runtime Backup Hotfix**, including quiesced backup handling for restarting containers, transactional recovery, and canonical SQLite integrity checks.
-
-The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. Message Operations remains agent 10; Mesh Devil's Advocate remains a shared Skill rather than agent 11. **COMPLETED != VERIFIED.**
+- Approval notices are reply-driven with `APPROVE`, `DENY`, and `CHANGE`.
+- Non-functional Block Kit approval buttons are removed.
+- QNAP no longer starts a Slack WebSocket listener.
+- The Slack `xapp-` Socket Mode credential is removed from runtime, provisioning, compose mounts, and readiness.
+- The protected `xoxb-` bot token remains required for bot-authored notices and server-side `conversations.replies` reconciliation.
+- Edited, deleted/unavailable, bot-authored, wrong-user, wrong-thread, root-message, ambiguous, stale-fingerprint, and conflicting replay cases fail closed.
+- Duplicate delivery of the same Slack reply is idempotent.
+- CHANGE remains a two-step governed revision loop and requires a new payload fingerprint before consequential action.
 
 ## Security boundary
 
-Security applicability for v4.1.18 is **TARGETED** because the change touches an OAuth credential file and runtime ownership. See `docs/security-review-v4.1.18.md`.
+Security applicability is **FULL REVIEW** because v4.2.0 changes Slack event ingress, approval identity evidence, consequential authority routing, MCP/agent boundaries, secrets, replay behavior, and runtime readiness.
 
-The intended least-privilege state is owner `65532:65532`, mode `0400`. The constrained helper receives no network, runs with a read-only root filesystem, and uses only the already-approved CHOWN/FOWNER/DAC_OVERRIDE capabilities required to normalize bind-mounted protected files.
+See:
+
+- `docs/security-review-v4.2.0.md`
+- `specs/native-slack-event-hitl-v4.2.0.feature`
+- `docs/chatgpt-native-slack-dispatcher-v4.2.0.md`
+- `docs/chatgpt-published-app-production-acceptance-v4.2.0.md`
+- `docs/verification-v4.2.0-native-slack-event-hitl.md`
 
 ## Release assets
 
-- `mesh-cos-mcp-qnap-v4.1.18.zip`
-- `mesh-cos-mcp-qnap-v4.1.18.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.2.0.zip`
+- `mesh-cos-mcp-qnap-v4.2.0.zip.sha256`
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.1.18`
-- Semantic tag: `v4.1.18`
-- Container image label: `4.1.18-qnap`
+- Repository/QNAP deployment release: `4.2.0`
+- Semantic tag: `v4.2.0`
+- Container image label: `4.2.0-qnap`
 - Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
 - Workforce: exactly 10 agents
 - CoS catalog: exactly 27 governed tools
 - Production transport: OpenAI Secure MCP Tunnel
 
-Successful live readiness after deployment must report:
+Successful live readiness after deployment must report the equivalent of:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.18
+deployment_release: 4.2.0
 agent_id: cos
+transport: SECURE_MCP_TUNNEL
+slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
 slack_hitl_ready: true
 ```
 
 ## QNAP deployment
 
-Place the release ZIP and checksum directly in `/share/Docker/cos-mcp/releases`, then run:
+Place the immutable release ZIP and checksum directly in `/share/Docker/cos-mcp/releases`, verify the checksum, and deploy the complete versioned release unit:
 
 ```sh
 cd /share/Docker/cos-mcp/releases
-sha256sum -c mesh-cos-mcp-qnap-v4.1.18.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.1.18.zip
-sudo sh ./v4.1.18/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.2.0.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.2.0.zip
+sudo sh ./v4.2.0/mesh-cos-mcp-deploy.sh
 ```
 
-If a valid bot OAuth token was provisioned during the failed v4.1.17 attempt, do not re-enter it. v4.1.18 is designed to repair its ownership during normal preparation/configuration.
+The existing valid Slack bot OAuth credential and protected approver identity should be preserved. v4.2.0 does not require a Slack Socket Mode app token.
 
-Only if deployment reports a genuinely missing or invalid Slack credential:
+Only if the dedicated bot credential is genuinely missing or invalid:
 
 ```sh
-sudo sh ./v4.1.18/mesh-cos-slack-hitl-provision.sh
-sudo sh ./v4.1.18/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.2.0/mesh-cos-slack-hitl-provision.sh
+sudo sh ./v4.2.0/mesh-cos-mcp-deploy.sh
 ```
 
-## Verification and live acceptance
+## Production acceptance
 
-The exact candidate must pass `docs/verification-v4.1.18-qnap-slack-bot-secret-permissions.md` before integration. The merge SHA must pass the v4.1.18 main-branch release workflow before the semantic tag and GitHub release are complete.
+Repository and release verification do not prove the ChatGPT-native Slack task is configured or firing in the production workspace. After QNAP deployment, configure exactly one Mesh Slack HITL Dispatcher task using `docs/chatgpt-native-slack-dispatcher-v4.2.0.md`, then execute the synthetic acceptance matrix in `docs/chatgpt-published-app-production-acceptance-v4.2.0.md` before any consequential approval uses this path.
 
-After QNAP deployment, execute `deployment/qnap/CHATGPT-ACCEPTANCE.md` and `docs/chatgpt-published-app-production-acceptance-v4.1.18.md`. Repository/release verification does not substitute for live QNAP deployment, Secure MCP Tunnel, hosted MCP, and provider-authenticated Slack acceptance.
+**COMPLETED != VERIFIED.** v4.2.0 is not production-accepted until the native event-trigger path, provider reconciliation, canonical state change, negative cases, and audit chain are proven live.

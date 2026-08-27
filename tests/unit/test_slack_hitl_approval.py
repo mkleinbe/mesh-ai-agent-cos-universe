@@ -68,3 +68,20 @@ def test_thread_reply_parser_is_case_insensitive_and_requires_minimal_vocabulary
         _parse_thread_decision("looks good")
     with pytest.raises(PermissionError, match="Only CHANGE"):
         _parse_thread_decision("APPROVE: because I said so")
+
+
+def test_thread_reply_parser_accepts_one_slack_whole_message_bold_wrapper_only() -> None:
+    assert _parse_thread_decision("*APPROVE*") == ("APPROVE", None)
+    assert _parse_thread_decision("*deny*") == ("DENY", None)
+    assert _parse_thread_decision("*CHANGE*") == ("CHANGE", None)
+    assert _parse_thread_decision("*CHANGES: remove recipient*") == (
+        "CHANGE",
+        "remove recipient",
+    )
+
+    with pytest.raises(PermissionError, match="APPROVE, DENY, or CHANGE"):
+        _parse_thread_decision("**APPROVE**")
+    with pytest.raises(PermissionError, match="APPROVE, DENY, or CHANGE"):
+        _parse_thread_decision("*looks good*")
+    with pytest.raises(PermissionError, match="APPROVE, DENY, or CHANGE"):
+        _parse_thread_decision("*APPROVE* extra")

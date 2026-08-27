@@ -50,7 +50,7 @@ def _default_transport(method: str, payload: dict[str, Any], token: str) -> dict
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:  # noqa: S310 - fixed Slack API host
+        with urllib.request.urlopen(request, timeout=10) as response:
             body = response.read(1_000_001)
     except (OSError, urllib.error.URLError) as exc:
         raise RuntimeError("Slack Web API request failed") from exc

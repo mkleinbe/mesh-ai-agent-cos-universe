@@ -27,7 +27,7 @@ slack_hitl_ready: true
 
 ## 2. Slack protected configuration
 
-The governed human principal is Michael/MK. The protected QNAP Slack bindings are the approver user ID and `xoxb-` bot OAuth token. No `xapp-` Socket Mode token is required or mounted. The installed app and visible bot identity remain **ChatGPT Enterprise AI Agent**.
+The governed human principal is Michael/MK. The protected QNAP Slack bindings are the approver user ID and `xoxb-` bot OAuth token. The legacy `xapp-` Socket Mode token is **not required or mounted** in v4.2.0. The installed app and visible bot identity remain **ChatGPT Enterprise AI Agent**.
 
 Do not print or cat protected credential files during acceptance.
 

@@ -11,7 +11,6 @@ from .mcp_policy import WorkspaceAgentMCPPolicy
 from .mcp_runtime import MCPRuntime
 from .registry import load_registry
 from .slack_hitl import SlackHITLConfig
-from .slack_socket_approval import DEFAULT_APPROVAL_COMMAND
 
 EXPECTED_AGENT_IDS = {
     "cos",
@@ -201,16 +200,6 @@ class ProductionPreflight:
                     "Socket Mode app-level credential file is mounted"
                     if socket_ok
                     else "Socket Mode app-level credential file is missing or invalid",
-                )
-            )
-            command = str(env.get("MESH_COS_SLACK_APPROVAL_COMMAND", "")).strip()
-            checks.append(
-                self._result(
-                    "slack_approval_command",
-                    command == DEFAULT_APPROVAL_COMMAND,
-                    "dedicated approval slash command configured"
-                    if command == DEFAULT_APPROVAL_COMMAND
-                    else "approval slash command is missing or mismatched",
                 )
             )
 

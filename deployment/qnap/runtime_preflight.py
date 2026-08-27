@@ -13,6 +13,8 @@ from mesh_cos.ledger import TaskLedger
 from mesh_cos.mcp_runtime import MCPRuntime
 from mesh_cos.slack_hitl import SlackHITLConfig
 
+EXPECTED_SLACK_APP_ID = "A0B49RNF4K0"
+
 
 def check(condition: bool, code: str, detail: str, failures: list[dict[str, str]]) -> None:
     if not condition:
@@ -97,11 +99,25 @@ def main() -> int:
             "Slack approver identity binding is missing or invalid",
             failures,
         )
+        app_id = os.environ.get("MESH_COS_SLACK_APP_ID", "").strip()
+        check(
+            app_id == EXPECTED_SLACK_APP_ID,
+            "slack_app_identity_invalid",
+            "dedicated ChatGPT Enterprise AI Agent app identity is missing or mismatched",
+            failures,
+        )
         socket_value = os.environ.get("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE", "").strip()
         check(
             protected_file_ok(socket_value, "xapp-"),
             "slack_socket_app_credential_invalid",
             "Slack Socket Mode app-level credential is missing, unreadable, empty, or wrong type",
+            failures,
+        )
+        bot_value = os.environ.get("MESH_COS_SLACK_BOT_TOKEN_FILE", "").strip()
+        check(
+            protected_file_ok(bot_value, "xoxb-"),
+            "slack_bot_credential_invalid",
+            "Slack bot OAuth credential is missing, unreadable, empty, or wrong type",
             failures,
         )
 

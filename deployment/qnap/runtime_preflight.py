@@ -14,6 +14,7 @@ from mesh_cos.mcp_runtime import MCPRuntime
 from mesh_cos.slack_hitl import SlackHITLConfig
 
 EXPECTED_SLACK_APP_ID = "A0B49RNF4K0"
+EXPECTED_SLACK_HITL_MODE = "CHATGPT_NATIVE_EVENT_TRIGGER"
 
 
 def check(condition: bool, code: str, detail: str, failures: list[dict[str, str]]) -> None:
@@ -106,11 +107,12 @@ def main() -> int:
             "dedicated ChatGPT Enterprise AI Agent app identity is missing or mismatched",
             failures,
         )
+        hitl_mode = os.environ.get("MESH_COS_SLACK_HITL_MODE", "").strip()
         socket_value = os.environ.get("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE", "").strip()
         check(
-            protected_file_ok(socket_value, "xapp-"),
-            "slack_socket_app_credential_invalid",
-            "Slack Socket Mode app-level credential is missing, unreadable, empty, or wrong type",
+            hitl_mode == EXPECTED_SLACK_HITL_MODE and not socket_value,
+            "slack_native_trigger_mode_invalid",
+            "native ChatGPT Slack event trigger mode must be configured without Socket Mode",
             failures,
         )
         bot_value = os.environ.get("MESH_COS_SLACK_BOT_TOKEN_FILE", "").strip()
@@ -199,6 +201,7 @@ def main() -> int:
         "architecture": normalized,
         "auth_mode": auth_mode or None,
         "slack_hitl_required": slack_hitl_required,
+        "slack_hitl_mode": os.environ.get("MESH_COS_SLACK_HITL_MODE", "").strip() or None,
         "failures": failures,
     }
     print(json.dumps(result, separators=(",", ":"), sort_keys=True))

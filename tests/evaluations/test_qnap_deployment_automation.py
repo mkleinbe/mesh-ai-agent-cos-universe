@@ -155,7 +155,7 @@ def test_preflight_and_verify_remain_fail_closed_around_runtime_identity() -> No
     assert "registry.get_agent" in verify
 
 
-def test_backup_excludes_secrets_and_preserves_recoverable_state() -> None:
+def test_backup_excludes_secrets_and_supports_restarting_runtime() -> None:
     backup = text(SCRIPTS / "mesh-cos-mcp-backup.sh")
     assert "docker cp" in backup
     assert 'cp "$APP_ROOT/.env" "$DEST/.env"' in backup
@@ -164,18 +164,26 @@ def test_backup_excludes_secrets_and_preserves_recoverable_state() -> None:
     assert "SHA256SUMS" in backup
     assert "secrets_included=false" in backup
     assert 'cp "$APP_ROOT/secrets' not in backup
+    assert "{{.State.Status}}" in backup
+    assert "{{.State.Restarting}}" in backup
+    assert "quiesced_helper" in backup
+    assert "docker stop" in backup
+    assert "docker start" in backup
+    assert "--network none" in backup
+    assert '"$STATE_ROOT:/var/lib/mesh:rw"' in backup
+    assert "/run/secrets" not in backup
 
 
-def test_v4115_release_builder_packages_current_contract_without_runtime_secrets() -> None:
+def test_v4116_release_builder_packages_current_contract_without_runtime_secrets() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.15}' in builder
+    assert 'VERSION=${1:-4.1.16}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
-    assert "qnap-slack-plugin-hitl-v4.1.15.feature" in builder
-    assert "engineering-contract-v4.1.15.md" in builder
-    assert "security-review-v4.1.15.md" in builder
-    assert "release-4.1.15-slack-plugin-hitl.md" in builder
-    assert "verification-v4.1.15-slack-plugin-hitl.md" in builder
+    assert "qnap-restarting-backup-v4.1.16.feature" in builder
+    assert "security-review-v4.1.16.md" in builder
+    assert "release-4.1.16-qnap-restarting-backup.md" in builder
+    assert "verification-v4.1.16-qnap-restarting-backup.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.16.md" in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder

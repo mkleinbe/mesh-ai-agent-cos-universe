@@ -16,6 +16,6 @@ def test_qnap_slack_hitl_protected_provisioning_script() -> None:
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert (
-        "PASS Slack HITL uses governed non-interactive approver bootstrap"
+        "PASS Slack HITL deploy path is non-interactive"
         in result.stdout
     )

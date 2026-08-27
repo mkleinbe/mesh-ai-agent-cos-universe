@@ -51,7 +51,7 @@ def test_existing_identity_is_preserved_and_forced_secret_reconfigure_is_separat
     assert "mesh-cos-slack-hitl-provision.sh" in script
 
 
-def test_v4115_keeps_only_socket_mode_as_protected_slack_runtime_secret() -> None:
+def test_current_release_keeps_only_socket_mode_as_protected_slack_runtime_secret() -> None:
     configure = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
     secret_input = text(SCRIPTS / "mesh-cos-qnap-secret-input.sh")
@@ -71,15 +71,15 @@ def test_v4115_keeps_only_socket_mode_as_protected_slack_runtime_secret() -> Non
     assert "U01KG3CNYHK" not in compose
 
 
-def test_v4113_release_evidence_remains_historical_while_current_default_is_v4115() -> None:
+def test_v4113_release_evidence_remains_historical_while_current_default_is_v4116() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
     legacy_workflow = text(ROOT / ".github" / "workflows" / "release-production-readiness.yml")
-    current_workflow = text(ROOT / ".github" / "workflows" / "release-v4.1.15.yml")
-    assert 'VERSION=${1:-4.1.15}' in builder
+    current_workflow = text(ROOT / ".github" / "workflows" / "release-v4.1.16.yml")
+    assert 'VERSION=${1:-4.1.16}' in builder
     assert "TAG: v4.1.13" in legacy_workflow
     assert "v4.1.13 Slack Approver Bootstrap" in legacy_workflow
-    assert "v4.1.15 QNAP release candidate" in current_workflow
-    assert "4.1.15" in text(ROOT / "README.md")
+    assert "v4.1.16 QNAP release candidate" in current_workflow
+    assert "4.1.16" in text(ROOT / "README.md")
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10

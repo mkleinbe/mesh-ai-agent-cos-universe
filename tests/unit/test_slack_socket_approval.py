@@ -16,6 +16,7 @@ from mesh_cos.slack_socket_approval import (
 CHANNEL_ID = "C0TESTAGENTOPS"
 APPROVER_USER_ID = "U0TESTAPPROVER"
 FINGERPRINT = "d" * 64
+ROOT_TS = "1787843216.789639"
 
 
 def _pending(*, action: str | None = None) -> tuple[TaskLedger, str, str]:
@@ -54,140 +55,193 @@ def _config() -> SlackSocketApprovalConfig:
         channel_id=CHANNEL_ID,
         approver_user_id=APPROVER_USER_ID,
         approver_principal="michael",
-        command="/mesh-approval",
     )
 
 
-def _envelope(approval_id: str, *, text: str | None = None) -> dict:
+def _root(
+    approval_id: str,
+    *,
+    envelope_id: str = "env-root",
+    event_id: str = "Ev-root",
+    ts: str = ROOT_TS,
+    text: str | None = None,
+) -> dict:
     return {
-        "envelope_id": "env-001",
-        "type": "slash_commands",
-        "accepts_response_payload": True,
+        "envelope_id": envelope_id,
+        "type": "events_api",
         "payload": {
-            "team_id": "T0TEST",
-            "channel_id": CHANNEL_ID,
-            "channel_name": "mesh-agent-ops",
-            "user_id": APPROVER_USER_ID,
-            "user_name": "human-approver",
-            "command": "/mesh-approval",
-            "text": text or f"APPROVE {approval_id}",
-            "trigger_id": "trigger-001",
+            "type": "event_callback",
+            "event_id": event_id,
+            "event": {
+                "type": "message",
+                "channel": CHANNEL_ID,
+                "user": APPROVER_USER_ID,
+                "app_id": "A0CHATGPT",
+                "text": text or f"Synthetic approval\nApproval ID: `{approval_id}`",
+                "ts": ts,
+                "event_ts": ts,
+            },
         },
     }
 
 
-def test_socket_slash_command_can_record_canonical_human_approval_idempotently() -> None:
-    ledger, task_id, approval_id = _pending()
+def _reply(
+    text: str,
+    *,
+    envelope_id: str = "env-reply",
+    event_id: str = "Ev-reply",
+    thread_ts: str = ROOT_TS,
+    ts: str = "1787843300.046169",
+) -> dict:
+    return {
+        "envelope_id": envelope_id,
+        "type": "events_api",
+        "payload": {
+            "type": "event_callback",
+            "event_id": event_id,
+            "event": {
+                "type": "message",
+                "channel": CHANNEL_ID,
+                "user": APPROVER_USER_ID,
+                "text": text,
+                "thread_ts": thread_ts,
+                "ts": ts,
+                "event_ts": ts,
+            },
+        },
+    }
+
+
+def test_root_notice_binds_thread_without_deciding_and_is_idempotent() -> None:
+    ledger, _, approval_id = _pending()
     service = SlackSocketApprovalService(ledger, _config())
 
-    decision = service.handle_envelope(_envelope(approval_id))
-    replay = service.handle_envelope(_envelope(approval_id))
+    binding = service.handle_envelope(_root(approval_id))
+    replay = service.handle_envelope(_root(approval_id, envelope_id="env-root-2"))
+
+    assert replay == binding
+    assert binding["version"] == "mesh.cos.slack-thread-binding.v1"
+    assert binding["source"] == "SLACK_SOCKET_MODE_THREAD_BINDING"
+    assert binding["approval_id"] == approval_id
+    assert binding["thread_ts"] == ROOT_TS
+    assert binding["payload_fingerprint"] == FINGERPRINT
+    assert APPROVER_USER_ID not in str(binding)
+    assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
+
+
+def test_non_approval_root_message_is_ignored_without_state_change() -> None:
+    ledger, _, approval_id = _pending()
+    service = SlackSocketApprovalService(ledger, _config())
+
+    result = service.handle_envelope(_root(approval_id, text="ordinary collaboration"))
+
+    assert result["status"] == "IGNORED"
+    assert ledger.list_records("approval_slack_thread_binding") == []
+    assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
+
+
+def test_manual_thread_approve_records_canonical_human_approval_idempotently() -> None:
+    ledger, task_id, approval_id = _pending()
+    service = SlackSocketApprovalService(ledger, _config())
+    service.handle_envelope(_root(approval_id))
+
+    decision = service.handle_envelope(_reply("approve"))
+    replay = service.handle_envelope(_reply("APPROVE"))
 
     assert replay == decision
-    assert decision["version"] == "mesh.cos.slack-human-decision.v3"
-    assert decision["source"] == "SLACK_SOCKET_MODE_SLASH_COMMAND"
-    assert decision["envelope_id"] == "env-001"
-    assert decision["trigger_id"] == "trigger-001"
+    assert decision["version"] == "mesh.cos.slack-human-decision.v4"
+    assert decision["source"] == "SLACK_SOCKET_MODE_THREAD_REPLY"
     assert decision["disposition"] == "APPROVE"
     assert decision["canonical_principal"] == "michael"
     assert decision["provider_identity_verified"] is True
     assert decision["payload_fingerprint"] == FINGERPRINT
-    assert "thread_ts" not in decision
-    assert "notice_author_user_id" not in decision
+    assert decision["thread_ts"] == ROOT_TS
     assert APPROVER_USER_ID not in str(decision)
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
     assert ledger.get_record("approval", approval_id)["decided_by"] == "michael"
     assert ledger.get_task(task_id).status == TaskStatus.READY_FOR_ACTION
 
 
-def test_ordinary_message_envelope_cannot_become_human_approval() -> None:
-    ledger, _, approval_id = _pending()
-    service = SlackSocketApprovalService(ledger, _config())
-    fabricated = {
-        "envelope_id": "env-chat-message",
-        "type": "events_api",
-        "payload": {
-            "event": {
-                "type": "message",
-                "channel": CHANNEL_ID,
-                "user": APPROVER_USER_ID,
-                "text": f"APPROVE {approval_id}",
-            }
-        },
-    }
-
-    with pytest.raises(PermissionError, match="slash_commands"):
-        service.handle_envelope(fabricated)
-    assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
-
-
 @pytest.mark.parametrize(
-    ("field", "value", "error"),
+    ("reply", "disposition", "change"),
     [
-        ("user_id", "U0NOTAPPROVER", "approver"),
-        ("channel_id", "C0OTHER", "channel"),
-        ("command", "/not-mesh-approval", "command"),
+        ("DENY", "DENY", None),
+        ("reject", "DENY", None),
+        ("CHANGE", "CHANGE", None),
+        ("changes: remove recipient", "CHANGE", "remove recipient"),
     ],
 )
-def test_wrong_provider_interaction_identity_or_route_fails_closed(
-    field: str,
-    value: str,
-    error: str,
+def test_deny_and_change_are_provider_authenticated_human_decisions(
+    reply: str,
+    disposition: str,
+    change: str | None,
 ) -> None:
-    ledger, _, approval_id = _pending()
-    service = SlackSocketApprovalService(ledger, _config())
-    envelope = _envelope(approval_id)
-    envelope["payload"][field] = value
-
-    with pytest.raises(PermissionError, match=error):
-        service.handle_envelope(envelope)
-    assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
-
-
-def test_canonical_approval_must_contain_immutable_payload_fingerprint() -> None:
-    ledger, _, approval_id = _pending(action="Execute exact payload without a fingerprint")
-    service = SlackSocketApprovalService(ledger, _config())
-
-    with pytest.raises(PermissionError, match="payload_fingerprint"):
-        service.handle_envelope(_envelope(approval_id))
-    assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
-
-
-def test_reject_and_changes_are_exact_provider_authenticated_human_decisions() -> None:
     ledger, task_id, approval_id = _pending()
     service = SlackSocketApprovalService(ledger, _config())
-    rejected = service.handle_envelope(
-        _envelope(approval_id, text=f"REJECT {approval_id}")
-    )
-    assert rejected["disposition"] == "REJECT"
+    service.handle_envelope(_root(approval_id))
+
+    decision = service.handle_envelope(_reply(reply))
+
+    assert decision["disposition"] == disposition
+    assert decision["requested_change"] == change
     assert ledger.get_record("approval", approval_id)["status"] == "REJECTED"
     assert ledger.get_task(task_id).status == TaskStatus.IN_PROGRESS
-
-    ledger2, task_id2, approval_id2 = _pending()
-    service2 = SlackSocketApprovalService(ledger2, _config())
-    changed = service2.handle_envelope(
-        _envelope(approval_id2, text=f"CHANGES {approval_id2}: remove recipient")
-        | {"envelope_id": "env-002"}
-    )
-    assert changed["disposition"] == "CHANGES"
-    assert changed["requested_change"] == "remove recipient"
-    assert ledger2.get_record("approval", approval_id2)["status"] == "REJECTED"
-    assert ledger2.get_task(task_id2).status == TaskStatus.IN_PROGRESS
+    if change:
+        assert change in ledger.get_record("approval", approval_id)["decision_reason"]
 
 
-def test_second_distinct_interaction_cannot_redecide_an_approval() -> None:
+def test_app_or_bot_authored_and_subtyped_replies_fail_closed() -> None:
+    for field, value, error in (
+        ("app_id", "A0CHATGPT", "app-authored"),
+        ("bot_id", "B0BOT", "app-authored"),
+        ("bot_profile", {"id": "B0BOT"}, "app-authored"),
+        ("subtype", "bot_message", "subtype"),
+    ):
+        ledger, _, approval_id = _pending()
+        service = SlackSocketApprovalService(ledger, _config())
+        service.handle_envelope(_root(approval_id))
+        envelope = _reply("APPROVE")
+        envelope["payload"]["event"][field] = value
+        with pytest.raises(PermissionError, match=error):
+            service.handle_envelope(envelope)
+        assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
+
+
+def test_wrong_user_channel_unbound_thread_and_unknown_reply_fail_closed() -> None:
     ledger, _, approval_id = _pending()
     service = SlackSocketApprovalService(ledger, _config())
-    service.handle_envelope(_envelope(approval_id))
-    second = _envelope(approval_id, text=f"REJECT {approval_id}") | {
-        "envelope_id": "env-distinct",
-    }
 
-    with pytest.raises(ValueError, match="already decided"):
-        service.handle_envelope(second)
+    with pytest.raises(PermissionError, match="bound"):
+        service.handle_envelope(_reply("APPROVE"))
+
+    service.handle_envelope(_root(approval_id))
+    wrong_user = _reply("APPROVE")
+    wrong_user["payload"]["event"]["user"] = "U0OTHER"
+    with pytest.raises(PermissionError, match="configured approver"):
+        service.handle_envelope(wrong_user)
+
+    wrong_channel = _reply("APPROVE")
+    wrong_channel["payload"]["event"]["channel"] = "C0OTHER"
+    with pytest.raises(PermissionError, match="channel"):
+        service.handle_envelope(wrong_channel)
+
+    with pytest.raises(PermissionError, match="APPROVE, DENY, or CHANGE"):
+        service.handle_envelope(_reply("looks good"))
 
 
-def test_config_can_read_protected_approver_identity_file(tmp_path: Path) -> None:
+def test_second_distinct_provider_event_cannot_redecide_an_approval() -> None:
+    ledger, _, approval_id = _pending()
+    service = SlackSocketApprovalService(ledger, _config())
+    service.handle_envelope(_root(approval_id))
+    service.handle_envelope(_reply("APPROVE"))
+
+    with pytest.raises(ValueError, match="different provider interaction"):
+        service.handle_envelope(
+            _reply("DENY", envelope_id="env-second", event_id="Ev-second")
+        )
+
+
+def test_config_reads_protected_approver_identity_file_without_slash_command(tmp_path: Path) -> None:
     approver_file = tmp_path / "approver-id"
     approver_file.write_text(APPROVER_USER_ID + "\n", encoding="utf-8")
     config = SlackSocketApprovalConfig.from_env(
@@ -195,7 +249,6 @@ def test_config_can_read_protected_approver_identity_file(tmp_path: Path) -> Non
             "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": CHANNEL_ID,
             "MESH_COS_SLACK_APPROVER_USER_ID_FILE": str(approver_file),
             "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
-            "MESH_COS_SLACK_APPROVAL_COMMAND": "/mesh-approval",
         }
     )
     assert config == _config()
@@ -214,66 +267,172 @@ def test_config_can_read_protected_approver_identity_file(tmp_path: Path) -> Non
             },
             "principal",
         ),
-        (
-            {
-                "channel_id": CHANNEL_ID,
-                "approver_user_id": APPROVER_USER_ID,
-                "command": "/other",
-            },
-            "command",
-        ),
     ],
 )
-def test_socket_config_rejects_authority_widening_or_missing_identity(
-    kwargs: dict,
-    error: str,
-) -> None:
+def test_socket_config_rejects_missing_or_widened_human_identity(kwargs: dict, error: str) -> None:
     with pytest.raises(RuntimeError, match=error):
         SlackSocketApprovalConfig(**kwargs)
 
 
-def test_socket_envelope_requires_provider_fields_and_mapping_payload() -> None:
+def test_provider_envelope_validation_is_strict_and_bounded() -> None:
     ledger, _, approval_id = _pending()
     service = SlackSocketApprovalService(ledger, _config())
 
-    missing_envelope_id = _envelope(approval_id)
-    missing_envelope_id.pop("envelope_id")
-    with pytest.raises(PermissionError, match="missing envelope_id"):
-        service.handle_envelope(missing_envelope_id)
+    cases = []
+    wrong_type = _root(approval_id)
+    wrong_type["type"] = "slash_commands"
+    cases.append((wrong_type, "events_api"))
 
-    invalid_payload = _envelope(approval_id)
-    invalid_payload["payload"] = "not-a-mapping"
-    with pytest.raises(PermissionError, match="payload is invalid"):
-        service.handle_envelope(invalid_payload)
+    missing_envelope = _root(approval_id)
+    missing_envelope.pop("envelope_id")
+    cases.append((missing_envelope, "envelope_id"))
+
+    invalid_payload = _root(approval_id)
+    invalid_payload["payload"] = "invalid"
+    cases.append((invalid_payload, "payload is invalid"))
+
+    wrong_callback = _root(approval_id)
+    wrong_callback["payload"]["type"] = "url_verification"
+    cases.append((wrong_callback, "event_callback"))
+
+    missing_event_id = _root(approval_id)
+    missing_event_id["payload"].pop("event_id")
+    cases.append((missing_event_id, "event_id"))
+
+    invalid_event = _root(approval_id)
+    invalid_event["payload"]["event"] = "invalid"
+    cases.append((invalid_event, "event payload is invalid"))
+
+    wrong_event_type = _root(approval_id)
+    wrong_event_type["payload"]["event"]["type"] = "reaction_added"
+    cases.append((wrong_event_type, "message events only"))
+
+    missing_channel = _root(approval_id)
+    missing_channel["payload"]["event"].pop("channel")
+    cases.append((missing_channel, "channel"))
+
+    for envelope, error in cases:
+        with pytest.raises(PermissionError, match=error):
+            service.handle_envelope(envelope)
 
 
-def test_socket_command_requires_exact_approval_id() -> None:
+def test_root_binding_rejects_ambiguity_conflicts_and_invalid_canonical_state() -> None:
     ledger, _, approval_id = _pending()
     service = SlackSocketApprovalService(ledger, _config())
 
-    with pytest.raises(PermissionError, match="missing an Approval ID"):
-        service.handle_envelope(_envelope(approval_id, text="APPROVE"))
+    with pytest.raises(PermissionError, match="ambiguous"):
+        service.handle_envelope(
+            _root(
+                approval_id,
+                text=f"Approval ID: {approval_id} Approval ID: approval-other",
+            )
+        )
 
     with pytest.raises(KeyError):
-        service.handle_envelope(_envelope("approval-unknown"))
+        service.handle_envelope(_root("approval-unknown"))
 
-
-def test_socket_cannot_mutate_nonpending_or_wrong_owner_approval() -> None:
-    ledger, _, approval_id = _pending()
-    ApprovalService(ledger).decide(
-        approval_id,
-        actor="michael",
-        approved=False,
-        reason="synthetic prior human decision",
-    )
-    service = SlackSocketApprovalService(ledger, _config())
-    with pytest.raises(ValueError, match="already decided"):
-        service.handle_envelope(_envelope(approval_id) | {"envelope_id": "env-late"})
+    binding = service.handle_envelope(_root(approval_id))
+    assert binding["approval_id"] == approval_id
 
     ledger2, _, approval_id2 = _pending()
-    approval = dict(ledger2.get_record("approval", approval_id2))
-    approval["approval_owner"] = "other-principal"
-    ledger2.save_record("approval", approval_id2, approval)
     service2 = SlackSocketApprovalService(ledger2, _config())
-    with pytest.raises(PermissionError, match="approval owner"):
-        service2.handle_envelope(_envelope(approval_id2))
+    ledger2.save_record(
+        "approval_slack_thread_binding",
+        ROOT_TS,
+        {"approval_id": "approval-other", "thread_ts": ROOT_TS},
+    )
+    with pytest.raises(ValueError, match="another approval"):
+        service2.handle_envelope(_root(approval_id2))
+
+    ledger3, _, approval_id3 = _pending()
+    service3 = SlackSocketApprovalService(ledger3, _config())
+    ledger3.save_record(
+        "approval_slack_thread_binding",
+        "different-thread",
+        {"approval_id": approval_id3, "thread_ts": "different-thread"},
+    )
+    with pytest.raises(ValueError, match="another Slack thread"):
+        service3.handle_envelope(_root(approval_id3))
+
+
+def test_root_binding_requires_pending_michael_owned_fingerprinted_approval() -> None:
+    ledger, _, approval_id = _pending(action="No immutable binding")
+    service = SlackSocketApprovalService(ledger, _config())
+    with pytest.raises(PermissionError, match="payload_fingerprint"):
+        service.handle_envelope(_root(approval_id))
+
+    ledger2, _, approval_id2 = _pending()
+    approval2 = dict(ledger2.get_record("approval", approval_id2))
+    approval2["approval_owner"] = "other"
+    ledger2.save_record("approval", approval_id2, approval2)
+    with pytest.raises(PermissionError, match="owner"):
+        SlackSocketApprovalService(ledger2, _config()).handle_envelope(_root(approval_id2))
+
+    ledger3, _, approval_id3 = _pending()
+    ApprovalService(ledger3).decide(
+        approval_id3,
+        actor="michael",
+        approved=False,
+        reason="prior decision",
+    )
+    with pytest.raises(ValueError, match="not pending"):
+        SlackSocketApprovalService(ledger3, _config()).handle_envelope(_root(approval_id3))
+
+
+def test_reply_revalidates_binding_canonical_owner_fingerprint_and_message_fields() -> None:
+    ledger, _, approval_id = _pending()
+    service = SlackSocketApprovalService(ledger, _config())
+    service.handle_envelope(_root(approval_id))
+
+    binding = dict(ledger.get_record("approval_slack_thread_binding", ROOT_TS))
+    binding["approval_id"] = ""
+    ledger.save_record("approval_slack_thread_binding", ROOT_TS, binding)
+    with pytest.raises(PermissionError, match="binding is invalid"):
+        service.handle_envelope(_reply("APPROVE"))
+
+    ledger2, _, approval_id2 = _pending()
+    service2 = SlackSocketApprovalService(ledger2, _config())
+    service2.handle_envelope(_root(approval_id2))
+    ledger2.delete_record("approval", approval_id2)
+    with pytest.raises(KeyError):
+        service2.handle_envelope(_reply("APPROVE"))
+
+    ledger3, _, approval_id3 = _pending()
+    service3 = SlackSocketApprovalService(ledger3, _config())
+    service3.handle_envelope(_root(approval_id3))
+    approval3 = dict(ledger3.get_record("approval", approval_id3))
+    approval3["approval_owner"] = "other"
+    ledger3.save_record("approval", approval_id3, approval3)
+    with pytest.raises(PermissionError, match="owner"):
+        service3.handle_envelope(_reply("APPROVE"))
+
+    ledger4, _, approval_id4 = _pending()
+    service4 = SlackSocketApprovalService(ledger4, _config())
+    service4.handle_envelope(_root(approval_id4))
+    binding4 = dict(ledger4.get_record("approval_slack_thread_binding", ROOT_TS))
+    binding4["payload_fingerprint"] = "0" * 64
+    ledger4.save_record("approval_slack_thread_binding", ROOT_TS, binding4)
+    with pytest.raises(PermissionError, match="fingerprint changed"):
+        service4.handle_envelope(_reply("APPROVE"))
+
+    ledger5, _, approval_id5 = _pending()
+    service5 = SlackSocketApprovalService(ledger5, _config())
+    service5.handle_envelope(_root(approval_id5))
+    approval5 = dict(ledger5.get_record("approval", approval_id5))
+    approval5["status"] = "REJECTED"
+    ledger5.save_record("approval", approval_id5, approval5)
+    with pytest.raises(ValueError, match="already decided"):
+        service5.handle_envelope(_reply("APPROVE"))
+
+    ledger6, _, approval_id6 = _pending()
+    service6 = SlackSocketApprovalService(ledger6, _config())
+    service6.handle_envelope(_root(approval_id6))
+    missing_user = _reply("APPROVE")
+    missing_user["payload"]["event"].pop("user")
+    with pytest.raises(PermissionError, match="user"):
+        service6.handle_envelope(missing_user)
+
+    missing_ts = _reply("APPROVE")
+    missing_ts["payload"]["event"].pop("ts")
+    with pytest.raises(PermissionError, match="ts"):
+        service6.handle_envelope(missing_ts)

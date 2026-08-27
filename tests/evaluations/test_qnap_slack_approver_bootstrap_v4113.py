@@ -54,13 +54,16 @@ def test_existing_identity_is_preserved_and_forced_secret_reconfigure_is_separat
 def test_secret_tokens_remain_protected_runtime_inputs() -> None:
     configure = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
+    secret_input = text(SCRIPTS / "mesh-cos-qnap-secret-input.sh")
     assert "read_secret_tty" not in configure
     assert "command -v stty" not in configure
     assert "Slack verifier token file is missing" in configure
     assert "Slack Socket Mode app token file is missing" in configure
     assert "Slack read-only verifier bot token (input hidden)" in provision
     assert "Slack Socket Mode app-level token (input hidden)" in provision
-    assert "shell_supports_silent_read" in provision
+    assert "mesh_read_secret_tty" in provision
+    assert "mesh_shell_supports_silent_read" in secret_input
+    assert "/bin/stty /usr/bin/stty" in secret_input
     assert "xoxb-" in provision
     assert "xapp-" in provision
     assert "U01KG3CNYHK" not in text(ROOT / "deployment" / "qnap" / "compose.yaml")

@@ -11,6 +11,8 @@ CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
 SECRET_DIR="$APP_ROOT/secrets"
 APPROVER_FILE=${QNAP_SLACK_APPROVER_USER_ID_FILE:-$SECRET_DIR/slack-approver-user-id}
 SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
+BOT_TOKEN_FILE=${QNAP_SLACK_BOT_TOKEN_FILE:-$SECRET_DIR/slack-bot-token}
+LEGACY_BOT_FILE=${QNAP_SLACK_LEGACY_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
 DEFAULT_APPROVER_USER_ID=${MESH_COS_SLACK_APPROVER_USER_ID:-U01KG3CNYHK}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
@@ -35,7 +37,8 @@ write_protected_file() {
   incoming="$target.incoming.$$"
   umask 077
   printf '%s' "$value" > "$incoming" || fail "unable to write protected runtime file"
-  mv "$incoming" "$target" || fail "unable to install protected runtime file"
+  chmod 0400 "$incoming" 2>/dev/null || { rm -f "$incoming"; fail "unable to set protected runtime file mode"; }
+  mv "$incoming" "$target" || { rm -f "$incoming"; fail "unable to install protected runtime file"; }
 }
 
 validate_approver_user_id() {
@@ -55,6 +58,27 @@ validate_socket_file() {
     *) unset SOCKET_VALUE; fail "Slack Socket Mode app token file is invalid; expected an app-level token beginning with xapp-" ;;
   esac
   unset SOCKET_VALUE
+}
+
+validate_or_migrate_bot_file() {
+  if [ ! -s "$BOT_TOKEN_FILE" ] && [ -s "$LEGACY_BOT_FILE" ]; then
+    BOT_VALUE=$(cat "$LEGACY_BOT_FILE") || fail "unable to read legacy Slack bot token file"
+    case "$BOT_VALUE" in
+      xoxb-*)
+        write_protected_file "$BOT_TOKEN_FILE" "$BOT_VALUE"
+        unset BOT_VALUE
+        mesh_log INFO slack_bot_token_file "status=migrated_from_legacy value_logged=false"
+        ;;
+      *) unset BOT_VALUE ;;
+    esac
+  fi
+  [ -s "$BOT_TOKEN_FILE" ] || fail "Slack bot OAuth token file is missing; provision it with: sudo sh $PROVISION_SCRIPT"
+  BOT_VALUE=$(cat "$BOT_TOKEN_FILE") || fail "unable to read existing Slack bot OAuth token file"
+  case "$BOT_VALUE" in
+    xoxb-*) ;;
+    *) unset BOT_VALUE; fail "Slack bot OAuth token file is invalid; expected an xoxb token" ;;
+  esac
+  unset BOT_VALUE
 }
 
 mesh_set_stage prepared_release
@@ -92,12 +116,17 @@ mesh_set_stage socket_app_token
 validate_socket_file
 info "preserving existing validated Slack Socket Mode app token file"
 
+mesh_set_stage bot_oauth_token
+validate_or_migrate_bot_file
+info "preserving existing validated Slack bot OAuth token file"
+
 mesh_set_stage permissions
 mesh_apply_secret_permissions "$MESH_IMAGE" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize Slack HITL secret ownership/modes"
 [ -s "$APPROVER_FILE" ] || fail "Slack approver identity file is missing or empty"
 [ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing or empty"
-mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false verifier_required=false"
+[ -s "$BOT_TOKEN_FILE" ] || fail "Slack bot OAuth token file is missing or empty"
+mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false socket_required=true bot_required=true"
 
 mesh_set_stage complete
 info "Slack HITL protected runtime configuration complete"
-mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true verifier_required=false"
+mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true socket_required=true bot_required=true"

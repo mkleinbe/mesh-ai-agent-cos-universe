@@ -46,7 +46,7 @@ test ! -f "$APP_DIR/slack-app-manifest.v4.1.17.json"
 rm -f "$ZIP" "$ZIP.sha256"
 (
   cd dist/qnap-bundle
-  zip -rq "../../mesh-cos-mcp-qnap-v${VERSION}.zip" "v${VERSION}"
+  zip -rq "../mesh-cos-mcp-qnap-v${VERSION}.zip" "v${VERSION}"
 )
 (
   cd dist

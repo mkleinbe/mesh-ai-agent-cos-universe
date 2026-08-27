@@ -20,6 +20,7 @@ _THREAD_DECISION_RE = re.compile(
     r"^(?P<verb>APPROVE|DENY|REJECT|CHANGE|CHANGES)(?::\s*(?P<change>\S(?:.*\S)?))?\s*$",
     re.IGNORECASE,
 )
+_SLACK_WHOLE_MESSAGE_BOLD_RE = re.compile(r"^\*(?P<body>.+)\*$", re.DOTALL)
 _SLACK_USER_ID_RE = re.compile(r"^[UW][A-Z0-9]+$")
 
 
@@ -45,8 +46,7 @@ class SlackHITLConfig:
 
     Slack collaboration and approval notices are handled by the connected Slack
     integration. They are informational and never create approval authority. The QNAP
-    runtime needs only the governed channel, the human approver identity, and the
-    separately authenticated Socket Mode event boundary.
+    runtime needs only the governed channel and the protected human approver identity.
     """
 
     channel_id: str
@@ -88,14 +88,31 @@ def _parse_decision(text: str, approval_id: str) -> tuple[str, str | None]:
     raise PermissionError("Slack decision command is not exact or attributable")
 
 
+def _normalize_thread_decision_text(text: str) -> str:
+    """Normalize only Slack's observed whole-message bold wrapper.
+
+    v4.2.1 accepts the provider representation ``*APPROVE*`` because Slack can return
+    an exact human decision token with whole-message mrkdwn emphasis. This is not a
+    general Markdown sanitizer: only one matching outer ``*`` pair is removed, and the
+    existing exact decision grammar must still match the remaining text.
+    """
+    clean = text.strip()
+    match = _SLACK_WHOLE_MESSAGE_BOLD_RE.fullmatch(clean)
+    if match is not None:
+        clean = match.group("body").strip()
+    return clean
+
+
 def _parse_thread_decision(text: str) -> tuple[str, str | None]:
-    """Parse the v4.1.17 human thread-reply grammar.
+    """Parse the provider-authenticated human thread-reply grammar.
 
     The Approval ID is intentionally absent from the reply. The already-bound Slack
     thread supplies routing context while provider-authenticated event identity supplies
-    human attribution. Only CHANGE/CHANGES may carry free-text detail.
+    human attribution. Only CHANGE/CHANGES may carry free-text detail. v4.2.1 also
+    tolerates the observed Slack provider representation ``*<exact command>*`` while
+    preserving the same minimal vocabulary and fail-closed semantics.
     """
-    match = _THREAD_DECISION_RE.fullmatch(text.strip())
+    match = _THREAD_DECISION_RE.fullmatch(_normalize_thread_decision_text(text))
     if match is None:
         raise PermissionError("Slack approval reply must be APPROVE, DENY, or CHANGE")
     verb = match.group("verb").upper()

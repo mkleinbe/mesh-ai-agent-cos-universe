@@ -251,4 +251,4 @@ mesh_set_stage complete
 info "deployment, transactional promotion, verification, and post-deploy backup complete"
 mesh_log INFO deployment_complete "release=$DEPLOYMENT_RELEASE bundle_root=$SCRIPT_ROOT log=$MESH_COS_LOG_FILE"
 echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
-echo "NEXT: verify connected Slack collaboration and the authenticated /mesh-approval Socket Mode ingress, then run CHATGPT-ACCEPTANCE.md for deployment release $DEPLOYMENT_RELEASE."
+echo "NEXT: verify the ChatGPT-native Mesh Slack HITL Dispatcher is enabled, then run CHATGPT-ACCEPTANCE.md for deployment release $DEPLOYMENT_RELEASE."

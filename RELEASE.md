@@ -1,65 +1,60 @@
-# v4.2.0 Native Slack Event-Triggered HITL
+# v4.2.1 Native Slack HITL Decision Compatibility
 
-`v4.2.0` replaces the QNAP-hosted Slack Socket Mode approval ingress used by v4.1.17 and v4.1.18 with ChatGPT-native Slack new-message task triggers.
+`v4.2.1` is a patch release for the v4.2.0 ChatGPT-native Slack event-triggered HITL architecture.
 
-The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. OpenAI Secure MCP Tunnel remains the production remote MCP transport. TaskLedger remains canonical approval state. **Message Operations** remains the tenth registered agent. **Mesh Devil's Advocate** remains a governed shared Skill and is not an eleventh agent.
+The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. OpenAI Secure MCP Tunnel remains the production remote MCP transport. TaskLedger remains canonical approval state.
+
+## Incident fixed
+
+The first live v4.2.0 production acceptance proved that the ChatGPT Work dispatcher fired and reached Mesh CoS MCP, but reconciliation failed closed with `INVALID_ARGUMENT / execution_failed`. Slack provider evidence showed the human reply as `*APPROVE*`; the v4.2.0 parser accepted only the bare exact token `APPROVE`.
+
+v4.2.1 accepts exactly one whole-message Slack `*...*` wrapper and then applies the unchanged exact decision grammar. This means `*APPROVE*`, `*DENY*`, and `*CHANGE*` are compatible while `**APPROVE**`, `*APPROVE* extra`, `*looks good*`, and fuzzy natural-language approvals remain rejected.
 
 ## Architecture
 
-```text
-MK replies in #mesh-agent-ops
-        |
-        v
-ChatGPT native Slack new-message trigger
-        |
-        v
-One Mesh Slack HITL Dispatcher task
-        |
-        v
-Mesh CoS MCP
-        |
-        v
-Server-side Slack provider reconciliation
-        |
-        v
-Canonical TaskLedger approval state
+```mermaid
+flowchart LR
+    A[MK thread reply] --> B[ChatGPT Work event trigger]
+    B -->|thread_ts + message_ts| C[Mesh CoS MCP]
+    C --> D[Slack provider re-read]
+    D --> E[Identity/thread/edit validation]
+    E --> F[Normalize one *...* wrapper]
+    F --> G[Exact decision grammar]
+    G --> H[TaskLedger owner/fingerprint/replay validation]
+    H --> I[Canonical decision]
 ```
 
-The ChatGPT trigger is a wake-up and locator only. It cannot supply approval text, asserted human identity, approval status, actor, principal, or an approval boolean to the governed Slack adapter. The QNAP runtime independently retrieves the exact Slack reply and revalidates provider user, channel, thread, message timestamp, manual-human authorship, edit state, canonical approval status, approval owner, immutable payload fingerprint, and replay state before authority changes.
+## Invariants
 
-## Behavioral changes
+- Dispatcher remains locator-only and non-authoritative.
+- No new public MCP tool is added.
+- `approval.record_decision` remains human-only and unavailable to agents.
+- Slack bot scopes remain `chat:write` and `groups:history`.
+- No Slack Socket Mode listener or `xapp-` credential is used.
+- Edited, deleted/unavailable, bot-authored, wrong-user, wrong-thread, root-message, stale-fingerprint, nested/partial-formatting, and conflicting-replay cases fail closed.
+- Duplicate delivery remains idempotent.
+- CHANGE remains a two-step governed revision loop requiring a new fingerprint before consequential action.
 
-- Approval notices are reply-driven with `APPROVE`, `DENY`, and `CHANGE`.
-- Non-functional Block Kit approval buttons are removed.
-- QNAP no longer starts a Slack WebSocket listener.
-- The Slack `xapp-` Socket Mode credential is removed from runtime, provisioning, compose mounts, and readiness.
-- The protected `xoxb-` bot token remains required for bot-authored notices and server-side `conversations.replies` reconciliation.
-- Edited, deleted/unavailable, bot-authored, wrong-user, wrong-thread, root-message, ambiguous, stale-fingerprint, and conflicting replay cases fail closed.
-- Duplicate delivery of the same Slack reply is idempotent.
-- CHANGE remains a two-step governed revision loop and requires a new payload fingerprint before consequential action.
+## Dispatcher
+
+The existing **Mesh Slack HITL Dispatcher** trigger configuration does not change. After deployment, edit only the prompt's release label from `v4.2.0` to `v4.2.1`. Do not create a second dispatcher.
+
+See `docs/chatgpt-native-slack-dispatcher-v4.2.1.md`.
 
 ## Security boundary
 
-Security applicability is **FULL REVIEW** because v4.2.0 changes Slack event ingress, approval identity evidence, consequential authority routing, MCP/agent boundaries, secrets, replay behavior, and runtime readiness.
-
-See:
-
-- `docs/security-review-v4.2.0.md`
-- `specs/native-slack-event-hitl-v4.2.0.feature`
-- `docs/chatgpt-native-slack-dispatcher-v4.2.0.md`
-- `docs/chatgpt-published-app-production-acceptance-v4.2.0.md`
-- `docs/verification-v4.2.0-native-slack-event-hitl.md`
+Security applicability is **FULL REVIEW** because this patch changes parsing at the human approval authority boundary. See `docs/security-review-v4.2.1.md` and `specs/native-slack-event-hitl-v4.2.1.feature`.
 
 ## Release assets
 
-- `mesh-cos-mcp-qnap-v4.2.0.zip`
-- `mesh-cos-mcp-qnap-v4.2.0.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.2.1.zip`
+- `mesh-cos-mcp-qnap-v4.2.1.zip.sha256`
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.2.0`
-- Semantic tag: `v4.2.0`
-- Container image label: `4.2.0-qnap`
+- Repository/QNAP deployment release: `4.2.1`
+- Semantic tag: `v4.2.1`
+- Container image label: `4.2.1-qnap`
 - Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
 - Workforce: exactly 10 agents
 - CoS catalog: exactly 27 governed tools
@@ -69,7 +64,7 @@ Successful live readiness after deployment must report the equivalent of:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.2.0
+deployment_release: 4.2.1
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
@@ -78,26 +73,19 @@ slack_hitl_ready: true
 
 ## QNAP deployment
 
-Place the immutable release ZIP and checksum directly in `/share/Docker/cos-mcp/releases`, verify the checksum, and deploy the complete versioned release unit:
+Place the immutable release ZIP and checksum directly in `/share/Docker/cos-mcp/releases` and deploy the versioned unit:
 
 ```sh
 cd /share/Docker/cos-mcp/releases
-sha256sum -c mesh-cos-mcp-qnap-v4.2.0.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.2.0.zip
-sudo sh ./v4.2.0/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.2.1.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.2.1.zip
+sudo sh ./v4.2.1/mesh-cos-mcp-deploy.sh
 ```
 
-The existing valid Slack bot OAuth credential and protected approver identity should be preserved. v4.2.0 does not require a Slack Socket Mode app token.
-
-Only if the dedicated bot credential is genuinely missing or invalid:
-
-```sh
-sudo sh ./v4.2.0/mesh-cos-slack-hitl-provision.sh
-sudo sh ./v4.2.0/mesh-cos-mcp-deploy.sh
-```
+Existing protected Slack and tunnel credentials are preserved. No Slack reauthorization or new OAuth scope is required by this patch.
 
 ## Production acceptance
 
-Repository and release verification do not prove the ChatGPT-native Slack task is configured or firing in the production workspace. After QNAP deployment, configure exactly one Mesh Slack HITL Dispatcher task using `docs/chatgpt-native-slack-dispatcher-v4.2.0.md`, then execute the synthetic acceptance matrix in `docs/chatgpt-published-app-production-acceptance-v4.2.0.md` before any consequential approval uses this path.
+After QNAP deployment, update the existing dispatcher prompt release label to `v4.2.1`, then execute `docs/chatgpt-published-app-production-acceptance-v4.2.1.md`. The first live case must reproduce Slack provider text `*APPROVE*` and prove a single canonical APPROVED / READY_FOR_ACTION transition before the rest of the positive/negative matrix runs.
 
-**COMPLETED != VERIFIED.** v4.2.0 is not production-accepted until the native event-trigger path, provider reconciliation, canonical state change, negative cases, and audit chain are proven live.
+**COMPLETED != VERIFIED.** v4.2.1 is not production-accepted until that live event-trigger/provider reconciliation path and the complete acceptance matrix pass.

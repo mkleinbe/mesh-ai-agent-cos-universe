@@ -66,13 +66,15 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     legacy = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
     assert "TAG: v4.1.13" in legacy
     assert '--title "v4.1.13 Slack Approver Bootstrap"' in legacy
-    current = (ROOT / ".github" / "workflows" / "release-v4.2.0.yml").read_text()
-    assert "v4.2.0 QNAP native Slack HITL release candidate" in current
-    assert "gh release create v4.2.0" in current
+    current = (ROOT / ".github" / "workflows" / "release-v4.2.1.yml").read_text()
+    assert "v4.2.1 QNAP Slack decision compatibility release candidate" in current
+    assert "gh release create v4.2.1" in current
+    historical_v420 = (ROOT / ".github" / "workflows" / "release-v4.2.0.yml").read_text()
+    assert "v4.2.0 historical QNAP native Slack HITL release" in historical_v420
     historical_v414 = (ROOT / ".github" / "workflows" / "release-v4.1.14.yml").read_text()
     assert "v4.1.14 historical QNAP verification" in historical_v414
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.2.0 Native Slack Event-Triggered HITL" in release_notes
+    assert "v4.2.1 Native Slack HITL Decision Compatibility" in release_notes
     assert "canonical Phase 1 authority/runtime contract remains **`4.0.0`**" in release_notes
-    assert "Mesh Devil's Advocate" in release_notes
-    assert "Message Operations" in release_notes
+    assert "Mesh Devil's Advocate" in (ROOT / "README.md").read_text()
+    assert "Message Operations" in (ROOT / "README.md").read_text()

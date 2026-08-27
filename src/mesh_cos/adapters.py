@@ -102,18 +102,11 @@ class GovernedAdapterRegistry:
         """Authorize a connected Slack connector handoff without conferring approval authority."""
 
         def execute(payload: dict) -> dict:
-            required = {"operation", "channel_id", "payload"}
-            GovernedAdapterRegistry._require_exact_payload(payload, required)
-            if str(payload.get("operation") or "") != "handoff":
+            operation = str(payload.get("operation") or "")
+            if operation != "handoff":
                 raise PermissionError(
                     "Slack collaboration adapter authorizes collaboration-only handoff"
                 )
-            configured_channel = str(
-                os.environ.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "C0BRL4GCL3A")
-            ).strip()
-            channel_id = str(payload.get("channel_id") or "").strip()
-            if channel_id != configured_channel:
-                raise PermissionError("Slack connector handoff channel mismatch")
             forbidden = {
                 "approved",
                 "approval_status",
@@ -126,6 +119,14 @@ class GovernedAdapterRegistry:
                 raise PermissionError(
                     "Connected Slack collaboration handoff cannot carry canonical approval authority"
                 )
+            required = {"operation", "channel_id", "payload"}
+            GovernedAdapterRegistry._require_exact_payload(payload, required)
+            configured_channel = str(
+                os.environ.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "C0BRL4GCL3A")
+            ).strip()
+            channel_id = str(payload.get("channel_id") or "").strip()
+            if channel_id != configured_channel:
+                raise PermissionError("Slack connector handoff channel mismatch")
             handoff_payload = payload.get("payload", {})
             if not isinstance(handoff_payload, dict):
                 raise TypeError("Slack connector handoff payload must be an object")

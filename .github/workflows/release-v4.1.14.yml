@@ -105,8 +105,8 @@ jobs:
             --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --build-arg IMAGE_VERSION=4.1.14-qnap \
             -t mesh-cos-mcp:ci-v4.1.14 dist/qnap-bundle/v4.1.14/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels \"org.opencontainers.image.version\" }}' mesh-cos-mcp:ci-v4.1.14)" = '4.1.14-qnap'
-          test "$(docker image inspect -f '{{ index .Config.Labels \"org.opencontainers.image.revision\" }}' mesh-cos-mcp:ci-v4.1.14)" = "$GITHUB_SHA"
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.14)" = '4.1.14-qnap'
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.1.14)" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and sequential requests
         env:
           MESH_COS_DEPLOYMENT_RELEASE: '4.1.14'

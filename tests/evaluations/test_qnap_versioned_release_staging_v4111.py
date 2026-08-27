@@ -90,4 +90,4 @@ def test_v4111_release_evidence_remains_historical_and_current_default_advances(
     assert "v4.1.11" in historical_release
     assert "QNAP-074" in historical_spec
     assert "QNAP-082" in historical_spec
-    assert 'VERSION=${1:-4.1.15}' in builder
+    assert 'VERSION=${1:-4.1.16}' in builder

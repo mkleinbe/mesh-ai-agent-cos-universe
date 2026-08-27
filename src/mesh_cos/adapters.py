@@ -209,7 +209,7 @@ class GovernedAdapterRegistry:
                 "slack-adapter",
                 self._slack_bot_executor(),
                 source="Slack",
-                tool="chat.postMessage",
+                tool="slack-adapter",
                 action="GOVERNED_SLACK_BOT",
             )
         )

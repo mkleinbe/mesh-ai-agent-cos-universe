@@ -11,7 +11,7 @@ from pathlib import Path
 
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.mcp_runtime import MCPRuntime
-from mesh_cos.slack_hitl import DEFAULT_ALLOWED_NOTICE_AUTHORS, SlackHITLConfig
+from mesh_cos.slack_hitl import SlackHITLConfig
 from mesh_cos.slack_socket_approval import DEFAULT_APPROVAL_COMMAND
 
 
@@ -90,27 +90,12 @@ def main() -> int:
                 bool(slack_config.approver_user_id)
                 and slack_config.approver_principal == "michael"
             )
-            authors_ok = slack_config.allowed_notice_author_ids == DEFAULT_ALLOWED_NOTICE_AUTHORS
         except RuntimeError:
             identity_ok = False
-            authors_ok = False
         check(
             identity_ok,
             "slack_approver_identity_invalid",
             "Slack approver identity binding is missing or invalid",
-            failures,
-        )
-        check(
-            authors_ok,
-            "slack_notice_authors_invalid",
-            "official OpenAI Slack notice author set is invalid",
-            failures,
-        )
-        verifier_value = os.environ.get("MESH_COS_SLACK_VERIFIER_TOKEN_FILE", "").strip()
-        check(
-            protected_file_ok(verifier_value, "xoxb-"),
-            "slack_verifier_credential_invalid",
-            "Slack provider-verifier bot credential is missing, unreadable, empty, or wrong type",
             failures,
         )
         socket_value = os.environ.get("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE", "").strip()

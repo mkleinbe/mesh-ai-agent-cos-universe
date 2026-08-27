@@ -119,7 +119,9 @@ async function invokeTrustedBridge(
   } catch {
     throw new Error('Slack approval bridge returned invalid JSON');
   }
-  if (response.ok !== true) throw new Error('Slack approval bridge rejected the interaction');
+  // A structured ok:false response is a bounded authorization/validation disposition,
+  // not a transport failure. Return it so the provider event can be acknowledged without
+  // creating a retry storm. Process, timeout, and malformed-response failures still throw.
   return response;
 }
 
@@ -301,19 +303,18 @@ export class SlackSocketModeApprovalListener {
       this.socket?.close();
       return;
     }
-    if (type !== 'slash_commands') return;
+    if (type !== 'events_api') return;
     const envelopeId = typeof envelope.envelope_id === 'string' ? envelope.envelope_id : '';
     if (!envelopeId) return;
-    let success = false;
     try {
       await this.bridge(envelope);
-      success = true;
+      // Events API acknowledgement contains only the provider envelope ID. The Python
+      // bridge may return ok:false for an intentionally rejected interaction; it is still
+      // acknowledged because fail-closed rejection is final, not a transient transport fault.
+      this.socket?.send(JSON.stringify({ envelope_id: envelopeId }));
     } catch {
-      success = false;
+      // Transport/process failure is not acknowledged so Slack may redeliver the event.
+      // No internal error text is exposed to Slack or the caller.
     }
-    this.socket?.send(JSON.stringify({
-      envelope_id: envelopeId,
-      payload: { text: success ? 'Approval recorded.' : 'Approval not recorded.' },
-    }));
   }
 }

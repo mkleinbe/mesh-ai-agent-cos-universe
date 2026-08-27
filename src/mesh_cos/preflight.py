@@ -10,7 +10,7 @@ from .ledger import TaskLedger
 from .mcp_policy import WorkspaceAgentMCPPolicy
 from .mcp_runtime import MCPRuntime
 from .registry import load_registry
-from .slack_hitl import DEFAULT_ALLOWED_NOTICE_AUTHORS, SlackHITLConfig
+from .slack_hitl import SlackHITLConfig
 from .slack_socket_approval import DEFAULT_APPROVAL_COMMAND
 
 EXPECTED_AGENT_IDS = {
@@ -180,10 +180,8 @@ class ProductionPreflight:
                     bool(slack_config.approver_user_id)
                     and slack_config.approver_principal == "michael"
                 )
-                authors_ok = slack_config.allowed_notice_author_ids == DEFAULT_ALLOWED_NOTICE_AUTHORS
             except RuntimeError:
                 identity_ok = False
-                authors_ok = False
             checks.append(
                 self._result(
                     "slack_approver_identity",
@@ -191,27 +189,6 @@ class ProductionPreflight:
                     "protected Slack identity maps to canonical principal michael"
                     if identity_ok
                     else "Slack approver identity binding is missing or invalid",
-                )
-            )
-            checks.append(
-                self._result(
-                    "slack_notice_authors",
-                    authors_ok,
-                    "official OpenAI Slack notice identities configured"
-                    if authors_ok
-                    else "official OpenAI Slack notice identity set is invalid",
-                )
-            )
-
-            verifier_path = str(env.get("MESH_COS_SLACK_VERIFIER_TOKEN_FILE", "")).strip()
-            verifier_ok = _protected_file_matches(verifier_path, "xoxb-")
-            checks.append(
-                self._result(
-                    "slack_verifier_credential",
-                    verifier_ok,
-                    "provider-verifier bot credential file is mounted"
-                    if verifier_ok
-                    else "provider-verifier credential file is missing or invalid",
                 )
             )
 

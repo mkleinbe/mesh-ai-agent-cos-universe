@@ -49,7 +49,7 @@ class SlackNativeTriggerApprovalService:
         )
         messages = response.get("messages")
         if not isinstance(messages, list):
-            raise RuntimeError("Slack did not return a message collection")
+            raise TypeError("Slack did not return a message collection")
         exact = [item for item in messages if isinstance(item, Mapping) and str(item.get("ts") or "") == message_ts]
         if len(exact) != 1:
             raise PermissionError("Slack trigger message could not be reconciled exactly")

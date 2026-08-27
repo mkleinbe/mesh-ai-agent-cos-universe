@@ -76,3 +76,15 @@ Feature: Slack plugin collaboration with narrow authenticated human approval ing
       And verifies both previously active containers become healthy
       And leaves active release metadata unpromoted
       And reports the candidate deployment as failed
+
+    @QNAP-111 @priority-critical @rollback @transactional
+    Scenario: Partial promotion or post-promotion verification failure restores the previous release
+      Given the candidate containers are healthy
+      And the deployment snapshots the active environment, Compose configuration, and release metadata before promotion
+      When promotion fails after changing only part of the active configuration
+      Or post-deploy verification fails before the promotion is committed
+      Then the deployment restores the exact pre-promotion active configuration snapshot
+      And restores the previously active Compose stack when one existed
+      And removes any originally absent active metadata that the failed candidate introduced
+      And does not commit the candidate promotion
+      And reports the candidate deployment as failed

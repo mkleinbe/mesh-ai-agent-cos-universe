@@ -1,6 +1,14 @@
 #!/bin/sh
 # Sourced helper for transactional promotion of active QNAP release configuration.
 
+mesh_safe_rollback_dir() {
+  rollback_dir=$1
+  [ -n "$rollback_dir" ] || return 1
+  [ "$rollback_dir" != "/" ] || return 1
+  [ "$rollback_dir" != "." ] || return 1
+  [ "$rollback_dir" != ".." ] || return 1
+}
+
 mesh_snapshot_path() {
   source=$1
   snapshot=$2
@@ -17,11 +25,15 @@ mesh_snapshot_active_configuration() {
   app_root=$1
   rollback_dir=$2
 
+  mesh_safe_rollback_dir "$rollback_dir" || return 64
   mkdir -p "$rollback_dir" || return 1
-  chmod 0700 "$rollback_dir" 2>/dev/null || return 1
-  mesh_snapshot_path "$app_root/.env" "$rollback_dir/.env" "$rollback_dir/.env.absent" || return 1
-  mesh_snapshot_path "$app_root/compose.yaml" "$rollback_dir/compose.yaml" "$rollback_dir/compose.yaml.absent" || return 1
-  mesh_snapshot_path "$app_root/release-metadata.txt" "$rollback_dir/release-metadata.txt" "$rollback_dir/release-metadata.txt.absent" || return 1
+  chmod 0700 "$rollback_dir" 2>/dev/null || { rm -rf "$rollback_dir"; return 1; }
+  if ! mesh_snapshot_path "$app_root/.env" "$rollback_dir/.env" "$rollback_dir/.env.absent" \
+    || ! mesh_snapshot_path "$app_root/compose.yaml" "$rollback_dir/compose.yaml" "$rollback_dir/compose.yaml.absent" \
+    || ! mesh_snapshot_path "$app_root/release-metadata.txt" "$rollback_dir/release-metadata.txt" "$rollback_dir/release-metadata.txt.absent"; then
+    rm -rf "$rollback_dir"
+    return 1
+  fi
 }
 
 mesh_promote_one() {
@@ -65,6 +77,8 @@ mesh_restore_active_configuration() {
   app_root=$1
   rollback_dir=$2
 
+  mesh_safe_rollback_dir "$rollback_dir" || return 64
+  [ -d "$rollback_dir" ] || return 66
   mesh_restore_one "$rollback_dir/.env" "$rollback_dir/.env.absent" "$app_root/.env" 0640 || return 1
   mesh_restore_one "$rollback_dir/compose.yaml" "$rollback_dir/compose.yaml.absent" "$app_root/compose.yaml" 0644 || return 1
   mesh_restore_one "$rollback_dir/release-metadata.txt" "$rollback_dir/release-metadata.txt.absent" "$app_root/release-metadata.txt" 0644 || return 1
@@ -72,5 +86,6 @@ mesh_restore_active_configuration() {
 
 mesh_cleanup_configuration_snapshot() {
   rollback_dir=$1
+  mesh_safe_rollback_dir "$rollback_dir" || return 64
   rm -rf "$rollback_dir"
 }

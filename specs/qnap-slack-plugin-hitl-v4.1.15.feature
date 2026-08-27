@@ -54,3 +54,25 @@ Feature: Slack plugin collaboration with narrow authenticated human approval ing
       Then the runtime requires the configured approver identity and Socket Mode app token
       And it does not mount, validate, prompt for, or depend on a Slack verifier bot token
       And it does not log any protected Slack credential value
+
+  Rule: QNAP multi-network routing is deterministic on Docker Engine 27
+    @QNAP-109 @priority-critical @network
+    Scenario: MCP and tunnel retain required egress without an ambiguous default bridge
+      Given QNAP Container Station runs Docker Engine 27
+      When the v4.1.15 Compose topology is rendered
+      Then the MCP and tunnel share an internal-only private bridge for MCP ingress
+      And the MCP uses qnet lan7 as its only external-capable network
+      And the tunnel uses a dedicated external-capable bridge for control-plane egress
+      And the tunnel does not consume a second qnet LAN address
+      And no unsupported gateway-priority feature is required
+
+  Rule: A failed candidate does not strand production in the failed state
+    @QNAP-110 @priority-critical @rollback
+    Scenario: Candidate activation or health verification fails before promotion
+      Given a previously active deployment has a readable active environment and Compose configuration
+      And the candidate has not been promoted
+      When candidate Compose activation or candidate health verification fails
+      Then the deployment restores the previously active Compose stack
+      And verifies both previously active containers become healthy
+      And leaves active release metadata unpromoted
+      And reports the candidate deployment as failed

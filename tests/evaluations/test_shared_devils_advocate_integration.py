@@ -69,12 +69,16 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     assert "TAG: v4.1.13" in legacy_release_workflow
     assert '--title "v4.1.13 Slack Approver Bootstrap"' in legacy_release_workflow
     current_release_workflow = (
+        ROOT / ".github" / "workflows" / "release-v4.1.15.yml"
+    ).read_text()
+    assert "v4.1.15 QNAP release candidate" in current_release_workflow
+    assert "gh release create v4.1.15" in current_release_workflow
+    historical_v414 = (
         ROOT / ".github" / "workflows" / "release-v4.1.14.yml"
     ).read_text()
-    assert "v4.1.14 QNAP release candidate" in current_release_workflow
-    assert "gh release create v4.1.14" in current_release_workflow
+    assert "v4.1.14 historical QNAP verification" in historical_v414
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.1.14 QNAP Protected-Secret Provisioning Remediation" in release_notes
+    assert "v4.1.15 QNAP Slack Plugin HITL Simplification" in release_notes
     assert "canonical Phase 1 authority/runtime contract remains **`4.0.0`**" in release_notes
     assert "Mesh Devil's Advocate" in release_notes
     assert "Message Operations" in release_notes

@@ -88,18 +88,25 @@ class GovernedAdapterRegistry:
                 )
 
     @staticmethod
-    def _slack_connector_handoff_executor() -> Callable[[dict], dict]:
-        """Authorize collaboration-only use of the connected Slack integration.
+    def _require_exact_payload(payload: dict, required: set[str]) -> None:
+        fields = set(payload)
+        unexpected = sorted(fields - required)
+        missing = sorted(required - fields)
+        if unexpected:
+            raise ValueError("Unexpected Slack collaboration payload fields: " + ", ".join(unexpected))
+        if missing:
+            raise ValueError("Missing Slack collaboration payload fields: " + ", ".join(missing))
 
-        This adapter never talks to Slack and never records approval. It returns a
-        handoff contract to the ChatGPT-side connected Slack integration. Canonical human
-        approval remains exclusively on the non-MCP Socket Mode slash-command boundary.
-        """
+    @staticmethod
+    def _slack_collaboration_executor() -> Callable[[dict], dict]:
+        """Authorize a connected Slack connector handoff without conferring approval authority."""
 
         def execute(payload: dict) -> dict:
-            if str(payload.get("operation") or "") != "handoff":
+            required = {"operation", "channel_id", "payload"}
+            GovernedAdapterRegistry._require_exact_payload(payload, required)
+            if str(payload.get("operation") or "") != "connector_handoff":
                 raise PermissionError(
-                    "Slack adapter is collaboration-only and may only create a connected-Slack handoff"
+                    "Slack collaboration adapter authorizes connector handoff only"
                 )
             configured_channel = str(
                 os.environ.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "C0BRL4GCL3A")
@@ -121,7 +128,7 @@ class GovernedAdapterRegistry:
                 )
             handoff_payload = payload.get("payload", {})
             if not isinstance(handoff_payload, dict):
-                raise ValueError("Slack connector handoff payload must be an object")
+                raise TypeError("Slack connector handoff payload must be an object")
             return {
                 "status": "AUTHORIZED",
                 "execution_mode": "CHATGPT_CONNECTOR_HANDOFF",
@@ -141,7 +148,7 @@ class GovernedAdapterRegistry:
             SkillAdapter(
                 "cos",
                 "slack-adapter",
-                self._slack_connector_handoff_executor(),
+                self._slack_collaboration_executor(),
             )
         )
 

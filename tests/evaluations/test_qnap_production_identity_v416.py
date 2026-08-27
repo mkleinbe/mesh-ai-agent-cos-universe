@@ -42,27 +42,27 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     )
 
 
-def test_active_release_train_is_v4115_and_ci_uses_setup_node_v7() -> None:
+def test_active_release_train_is_v4116_and_ci_uses_setup_node_v7() -> None:
     dockerfile = read("Dockerfile")
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
     builder = read("scripts/build-qnap-release-bundle.sh")
     ci = read(".github/workflows/ci.yml")
-    current_release = read(".github/workflows/release-v4.1.15.yml")
+    current_release = read(".github/workflows/release-v4.1.16.yml")
     legacy_release = read(".github/workflows/release-production-readiness.yml")
 
-    assert "IMAGE_VERSION=4.1.15-qnap" in dockerfile
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.15" in env_example
+    assert "IMAGE_VERSION=4.1.16-qnap" in dockerfile
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.1.16" in env_example
     assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
     assert "mesh_candidate_release" in prepare
-    assert "VERSION=${1:-4.1.15}" in builder
+    assert "VERSION=${1:-4.1.16}" in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "Build exact v4.1.15 QNAP release bundle" in ci
-    assert "mesh-cos-mcp-qnap-v4.1.15.zip" in ci
-    assert "v4.1.15 QNAP release candidate" in current_release
-    assert "gh release create v4.1.15" in current_release
+    assert "Build exact v4.1.16 QNAP release bundle" in ci
+    assert "mesh-cos-mcp-qnap-v4.1.16.zip" in ci
+    assert "v4.1.16 QNAP release candidate" in current_release
+    assert "gh release create v4.1.16" in current_release
     assert "TAG: v4.1.13" in legacy_release
     assert "v4.1.13 Slack Approver Bootstrap" in legacy_release
 
@@ -118,27 +118,31 @@ def test_historical_and_current_docs_are_packaged() -> None:
         "docs/verification-v4.1.15-slack-plugin-hitl.md",
         "docs/chatgpt-published-app-production-acceptance-v4.1.15.md",
         "specs/qnap-slack-plugin-hitl-v4.1.15.feature",
+        "docs/security-review-v4.1.16.md",
+        "docs/release-4.1.16-qnap-restarting-backup.md",
+        "docs/verification-v4.1.16-qnap-restarting-backup.md",
+        "docs/chatgpt-published-app-production-acceptance-v4.1.16.md",
+        "specs/qnap-restarting-backup-v4.1.16.feature",
     ]:
         assert (ROOT / path).is_file()
         assert Path(path).name in builder
 
 
-def test_chatgpt_acceptance_requires_dual_identity_after_v4115_deploy() -> None:
+def test_chatgpt_acceptance_requires_dual_identity_after_v4116_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.1.15",
+        "v4.1.16",
         "mcp_version",
         "4.0.0",
         "deployment_release",
         "agent_id",
         "SECURE_MCP_TUNNEL",
         "27 agent-facing tools",
-        "exactly 10 agents",
-        "validation_failed",
-        "CHATGPT_SKILL_HANDOFF",
+        "10 registered agents",
         "slack-adapter",
         "CHATGPT_CONNECTOR_HANDOFF",
         "COLLABORATION_ONLY",
         "/mesh-approval",
+        "quiesced_helper",
     ]:
         assert token in acceptance

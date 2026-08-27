@@ -43,6 +43,25 @@ async function tick(): Promise<void> {
   await new Promise(resolve => setImmediate(resolve));
 }
 
+function messageEnvelope(id = 'env-1'): Record<string, unknown> {
+  return {
+    envelope_id: id,
+    type: 'events_api',
+    payload: {
+      type: 'event_callback',
+      event_id: `Ev-${id}`,
+      event: {
+        type: 'message',
+        channel: 'C0TEST',
+        user: 'U0TEST',
+        text: 'APPROVE',
+        thread_ts: '1787843216.789639',
+        ts: '1787843300.046169',
+      },
+    },
+  };
+}
+
 test('Socket Mode app token is protected and must be an app-level xapp token', () => {
   const good = tempSecret('xapp-test-token\n');
   assert.equal(readSlackSocketAppToken(env(good)), 'xapp-test-token');
@@ -52,7 +71,7 @@ test('Socket Mode app token is protected and must be an app-level xapp token', (
   assert.throws(() => readSlackSocketAppToken({}), /APP_TOKEN_FILE/);
 });
 
-test('listener authenticates to apps.connections.open and dispatches only slash command envelopes', async () => {
+test('listener authenticates to apps.connections.open and dispatches Events API envelopes', async () => {
   const socket = new FakeSocket();
   const bridged: unknown[] = [];
   const tokenFile = tempSecret('xapp-test-token');
@@ -79,33 +98,38 @@ test('listener authenticates to apps.connections.open and dispatches only slash 
   assert.equal(listener.isActive(), true);
 
   socket.message({ type: 'hello' });
-  socket.message({ envelope_id: 'noise', type: 'events_api', payload: { event: { type: 'message' } } });
+  socket.message({ envelope_id: 'noise', type: 'slash_commands', payload: {} });
   await tick();
   assert.equal(bridged.length, 0);
 
-  const envelope = {
-    envelope_id: 'env-1',
-    type: 'slash_commands',
-    accepts_response_payload: true,
-    payload: {
-      command: '/mesh-approval',
-      text: 'APPROVE approval-test',
-      channel_id: 'C0TEST',
-      user_id: 'U0TEST',
-      trigger_id: 'trigger-1',
-    },
-  };
+  const envelope = messageEnvelope();
   socket.message(envelope);
   await tick();
   assert.deepEqual(bridged, [envelope]);
-  assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), {
-    envelope_id: 'env-1',
-    payload: { text: 'Approval recorded.' },
-  });
+  assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), { envelope_id: 'env-1' });
   await listener.stop();
 });
 
-test('listener acknowledges bridge failure without exposing internals and degrades on disconnect', async () => {
+test('structured authorization rejection is acknowledged without exposing internals', async () => {
+  const socket = new FakeSocket();
+  const tokenFile = tempSecret('xapp-test-token');
+  const listener = new SlackSocketModeApprovalListener(env(tokenFile), {
+    fetchImpl: async () => ({ ok: true, json: async () => ({ ok: true, url: 'wss://socket.test/link' }) }) as Response,
+    socketFactory: () => socket,
+    bridge: async () => ({ ok: false, error: { type: 'PermissionError' } }),
+  });
+  await listener.start();
+  await tick();
+  socket.open();
+
+  socket.message(messageEnvelope('env-rejected'));
+  await tick();
+  assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), { envelope_id: 'env-rejected' });
+  assert.equal(socket.sent.some(value => value.includes('PermissionError')), false);
+  await listener.stop();
+});
+
+test('bridge transport failure is not acknowledged and listener degrades on disconnect', async () => {
   const socket = new FakeSocket();
   const tokenFile = tempSecret('xapp-test-token');
   const listener = new SlackSocketModeApprovalListener(env(tokenFile), {
@@ -118,18 +142,9 @@ test('listener acknowledges bridge failure without exposing internals and degrad
   await tick();
   socket.open();
 
-  socket.message({
-    envelope_id: 'env-fail',
-    type: 'slash_commands',
-    accepts_response_payload: true,
-    payload: {},
-  });
+  socket.message(messageEnvelope('env-fail'));
   await tick();
-  assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), {
-    envelope_id: 'env-fail',
-    payload: { text: 'Approval not recorded.' },
-  });
-  assert.equal(socket.sent.some(value => value.includes('sensitive internal failure')), false);
+  assert.equal(socket.sent.length, 0);
 
   socket.close();
   assert.equal(listener.isActive(), false);

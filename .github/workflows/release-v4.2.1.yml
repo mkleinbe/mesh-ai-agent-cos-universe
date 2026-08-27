@@ -1,0 +1,131 @@
+name: v4.2.1 QNAP Slack decision compatibility release candidate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v4.2.1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: ruff check src
+      - run: ruff check tests scripts --select E9,F63,F7,F82
+      - run: mypy src --check-untyped-defs
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - run: python -m compileall -q src
+      - name: QNAP native Slack HITL shell and security gates
+        run: |
+          set -euo pipefail
+          sh -n deployment/qnap/qnap-environment-probe.sh
+          for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
+          sh deployment/qnap/tests/test-compose-discovery.sh
+          sh deployment/qnap/tests/test-observability.sh
+          sh deployment/qnap/tests/test-runtime-permissions.sh
+          sh deployment/qnap/tests/test-image-provenance.sh
+          sh deployment/qnap/tests/test-slack-hitl-configure.sh
+          sh deployment/qnap/tests/test-transactional-promotion.sh
+          sh deployment/qnap/tests/test-versioned-release-layout.sh
+          sh deployment/qnap/tests/test-restarting-container-backup.sh
+          bash -n scripts/build-qnap-release-bundle.sh
+          bash -n scripts/build-qnap-release-v4.2.1.sh
+          grep -q 'MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER' deployment/qnap/compose.yaml
+          grep -q 'MESH_COS_SLACK_BOT_TOKEN_FILE' deployment/qnap/compose.yaml
+          ! grep -q 'MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:' deployment/qnap/compose.yaml
+          ! grep -q 'slack_socket_app_token' deployment/qnap/compose.yaml
+          ! grep -q 'Slack Socket Mode app-level token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          ! grep -q '/mesh-approval Socket Mode ingress' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
+          grep -q 'verify the ChatGPT-native Mesh Slack HITL Dispatcher is enabled' deployment/qnap/scripts/mesh-cos-mcp-deploy.sh
+          grep -q 'socket_required=false' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          grep -q 'internal: true' deployment/qnap/compose.yaml
+          grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
+          grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
+      - name: Build exact v4.2.1 release bundle
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-qnap-release-v4.2.1.sh
+          ZIP=dist/mesh-cos-mcp-qnap-v4.2.1.zip
+          BUNDLE=dist/qnap-bundle/v4.2.1
+          test -f "$ZIP" && test -f "$ZIP.sha256"
+          grep -q '^version=4.2.1$' "$BUNDLE/cos-mcp/release-metadata.txt"
+          grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
+          test -f "$BUNDLE/cos-mcp/native-slack-event-hitl-v4.2.1.feature"
+          test -f "$BUNDLE/cos-mcp/security-review-v4.2.1.md"
+          test -f "$BUNDLE/cos-mcp/release-4.2.1-slack-rendered-decision.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-native-slack-dispatcher-v4.2.1.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.2.1.md"
+          test -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.1.json"
+          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.1.17.json"
+          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.0.json"
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.2.1.zip.sha256)
+      - name: Build production container from exact release bundle
+        run: |
+          set -euo pipefail
+          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.2.1-qnap -t mesh-cos-mcp:ci-v4.2.1 dist/qnap-bundle/v4.2.1/cos-mcp/build-context
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.2.1)" = '4.2.1-qnap'
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.2.1)" = "$GITHUB_SHA"
+      - name: Verify modern MCP discovery and sequential requests
+        env:
+          MESH_COS_DEPLOYMENT_RELEASE: '4.2.1'
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.2.1
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mesh-cos-mcp-qnap-v4.2.1
+          path: |
+            dist/mesh-cos-mcp-qnap-v4.2.1.zip
+            dist/mesh-cos-mcp-qnap-v4.2.1.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rebuild exact merge-SHA release artifacts
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: bash scripts/build-qnap-release-v4.2.1.sh
+      - name: Publish immutable v4.2.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.2.1 >/dev/null 2>&1; then
+            echo 'v4.2.1 already exists; leaving immutable release unchanged'
+            exit 0
+          fi
+          gh release create v4.2.1 dist/mesh-cos-mcp-qnap-v4.2.1.zip dist/mesh-cos-mcp-qnap-v4.2.1.zip.sha256 --target "$GITHUB_SHA" --title 'Mesh CoS MCP v4.2.1 Slack Rendered Decision Compatibility' --notes-file docs/release-4.2.1-slack-rendered-decision.md

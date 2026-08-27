@@ -4,7 +4,6 @@ from mesh_cos.approval import ApprovalService
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
-from mesh_cos.slack_hitl import CHATGPT_AGENTS_SLACK_USER_ID
 from mesh_cos.slack_socket_approval import (
     SlackSocketApprovalConfig,
     SlackSocketApprovalService,
@@ -42,20 +41,6 @@ def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() 
         AuthorityLevel.L4,
         f"Synthetic payload_fingerprint={fingerprint}",
     )
-    ledger.save_record(
-        "approval_slack_binding",
-        approval.approval_id,
-        {
-            "approval_id": approval.approval_id,
-            "task_id": task.task_id,
-            "channel_id": channel_id,
-            "thread_ts": "1788000000.000001",
-            "notice_author_user_id": CHATGPT_AGENTS_SLACK_USER_ID,
-            "approver_identity_verified": True,
-            "approver_principal": "michael",
-            "payload_fingerprint": fingerprint,
-        },
-    )
     service = SlackSocketApprovalService(
         ledger,
         SlackSocketApprovalConfig(
@@ -77,16 +62,14 @@ def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() 
         }
     )
 
-    binding = dict(ledger.get_record("approval_slack_binding", approval.approval_id))
     durable = dict(
         ledger.get_record("approval_slack_socket_decision", approval.approval_id)
     )
-    assert binding["approver_identity_verified"] is True
-    assert "approver_user_id" not in binding
-    assert approver_user_id not in str(binding)
+    assert ledger.get_record("approval_slack_binding", approval.approval_id) is None
     assert decision["provider_identity_verified"] is True
     assert durable["provider_identity_verified"] is True
     assert durable["canonical_principal"] == "michael"
+    assert durable["payload_fingerprint"] == fingerprint
     assert "slack_user_id" not in durable
     assert "approver_user_id" not in durable
     assert approver_user_id not in str(durable)

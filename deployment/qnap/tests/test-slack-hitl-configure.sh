@@ -6,14 +6,13 @@ trap 'rm -rf "$TMP"' 0 1 2 15
 APP="$TMP/app"
 BUNDLE="$TMP/release/cos-mcp"
 mkdir -p "$APP/secrets" "$APP/logs/deployment" "$BUNDLE"
-printf 'MESH_COS_IMAGE=image:test\nMESH_COS_DEPLOYMENT_RELEASE=4.1.13\n' > "$BUNDLE/.env.runtime"
+printf 'MESH_COS_IMAGE=image:test\nMESH_COS_DEPLOYMENT_RELEASE=4.1.14\n' > "$BUNDLE/.env.runtime"
 printf 'tunnel-test-value\n' > "$APP/secrets/openai-tunnel-runtime-key"
 printf 'xoxb-test-verifier\n' > "$APP/secrets/slack-verifier-token"
 printf 'xapp-test-socket\n' > "$APP/secrets/slack-socket-app-token"
 CALLS="$TMP/docker.calls"
 : > "$CALLS"
 
-# Execute in the current shell so the constrained Docker stub is visible to sourced helpers.
 docker() {
   printf '%s\n' "$*" >> "$CALLS"
   return 0
@@ -32,8 +31,9 @@ export QNAP_SCRIPT_ROOT QNAP_BUNDLE_APP_ROOT QNAP_APP_ROOT QNAP_SLACK_APPROVER_U
 export QNAP_SLACK_VERIFIER_TOKEN_FILE QNAP_SLACK_SOCKET_APP_TOKEN_FILE
 export MESH_COS_LOG_ROOT MESH_UID MESH_GID
 
-# The approver file intentionally does not exist. v4.1.13 must bootstrap the
-# governed user principal without a visible TTY prompt.
+# The approver file intentionally does not exist. The governed user principal
+# must bootstrap without any terminal interaction while existing protected
+# Slack credentials are validated and preserved.
 . "$QNAP_SCRIPT_ROOT/mesh-cos-slack-hitl-configure.sh"
 
 [ -s "$APP/secrets/slack-approver-user-id" ]
@@ -50,11 +50,18 @@ grep -q -- 'slack-verifier-token' "$CALLS"
 grep -q -- 'slack-socket-app-token' "$CALLS"
 
 CONFIGURE="$QNAP_SCRIPT_ROOT/mesh-cos-slack-hitl-configure.sh"
+PROVISION="$QNAP_SCRIPT_ROOT/mesh-cos-slack-hitl-provision.sh"
+! grep -q 'read_secret_tty' "$CONFIGURE"
+! grep -q 'command -v stty' "$CONFIGURE"
 ! grep -q 'read_visible_tty' "$CONFIGURE"
 ! grep -q 'Slack user ID for the human approval principal' "$CONFIGURE"
 grep -q 'DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK' "$CONFIGURE"
 grep -q 'Slack conversation/DM channel ID is not a user ID' "$CONFIGURE"
 grep -q "grep -Eq '\^\[UW\]\[A-Z0-9\]+\$'" "$CONFIGURE"
+grep -q 'non_interactive=true' "$CONFIGURE"
+test -f "$PROVISION"
+grep -q 'shell_supports_silent_read' "$PROVISION"
+grep -q '/bin/stty /usr/bin/stty' "$PROVISION"
 
 LOGS=$(find "$APP/logs/deployment" -type f -print)
 [ -n "$LOGS" ]
@@ -63,4 +70,4 @@ if grep -R -q 'U01KG3CNYHK\|xoxb-test-verifier\|xapp-test-socket\|tunnel-test-va
   exit 1
 fi
 
-echo 'PASS Slack HITL uses governed non-interactive approver bootstrap and does not log protected values'
+echo 'PASS Slack HITL deploy path is non-interactive, preserves governed identity and protected credentials, and does not log protected values'

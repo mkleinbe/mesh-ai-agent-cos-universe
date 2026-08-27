@@ -16,6 +16,6 @@ def test_qnap_slack_hitl_protected_provisioning_script() -> None:
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert (
-        "PASS Slack HITL deploy path is non-interactive"
+        "PASS Slack HITL deploy path requires only governed approver identity and Socket Mode credential and does not log protected values"
         in result.stdout
     )

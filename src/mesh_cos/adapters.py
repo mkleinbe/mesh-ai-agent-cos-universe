@@ -104,9 +104,9 @@ class GovernedAdapterRegistry:
         def execute(payload: dict) -> dict:
             required = {"operation", "channel_id", "payload"}
             GovernedAdapterRegistry._require_exact_payload(payload, required)
-            if str(payload.get("operation") or "") != "connector_handoff":
+            if str(payload.get("operation") or "") != "handoff":
                 raise PermissionError(
-                    "Slack collaboration adapter authorizes connector handoff only"
+                    "Slack collaboration adapter authorizes collaboration-only handoff"
                 )
             configured_channel = str(
                 os.environ.get("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", "C0BRL4GCL3A")

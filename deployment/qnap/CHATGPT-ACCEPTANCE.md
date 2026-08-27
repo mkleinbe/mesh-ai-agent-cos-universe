@@ -1,8 +1,8 @@
-# ChatGPT Secure MCP Tunnel Connection and Acceptance
+# ChatGPT Secure MCP Tunnel and Native Slack HITL Acceptance
 
-Run this only after the **v4.1.18** QNAP deployment passes local deployment, preflight, verification, and backup. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP runtime remains **4.0.0** and the deployment release is **4.1.18**.
+Run this only after the **v4.2.0** QNAP deployment passes local deployment, preflight, verification, and backup. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP runtime remains **4.0.0** and the deployment release is **4.2.0**.
 
-v4.1.18 preserves the v4.1.17 dedicated **ChatGPT Enterprise AI Agent** bot, Block Kit buttons, and provider-authenticated Socket Mode thread interactions while repairing QNAP protected-file ownership for the bot OAuth credential.
+v4.2.0 replaces QNAP-hosted Slack Socket Mode ingress with one ChatGPT-native Slack new-message dispatcher task. The trigger is non-authoritative. QNAP independently re-reads the exact Slack provider message before TaskLedger authority can change.
 
 ## 1. Local deployment identity
 
@@ -14,50 +14,74 @@ sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires image `mesh-cos-mcp:qnap-v4.1.18`, healthy application/tunnel containers, and:
+PASS requires image `mesh-cos-mcp:qnap-v4.2.0`, healthy application/tunnel containers, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.18
+deployment_release: 4.2.0
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
+slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
 slack_hitl_ready: true
 ```
 
 ## 2. Slack protected configuration
 
-The governed human principal is Michael/MK. The protected Slack bindings are the approver user ID, `xapp-` Socket Mode app token, and `xoxb-` bot OAuth token. The retired verifier token and slash-command path must not be used. The installed app and visible bot identity must be **ChatGPT Enterprise AI Agent**.
+The governed human principal is Michael/MK. The protected QNAP Slack bindings are the approver user ID and `xoxb-` bot OAuth token. No `xapp-` Socket Mode token is required or mounted. The installed app and visible bot identity remain **ChatGPT Enterprise AI Agent**.
 
-The v4.1.18 permission hotfix must leave the bot token readable by runtime UID/GID `65532:65532` with mode `0400`. Do not print or cat the credential file to prove this property.
+Do not print or cat protected credential files during acceptance.
 
 ## 3. Tool catalog and authority
 
-The CoS-bound app exposes exactly **27 agent-facing tools** and 10 registered agents. Human-only `approval.record_decision` and `reliability.human_override` remain excluded. The connected ChatGPT Slack integration is not approval authority.
+The CoS-bound app exposes exactly **27 agent-facing tools** and 10 registered agents. Human-only `approval.record_decision` and `reliability.human_override` remain excluded from agent execution. The ChatGPT Slack trigger is not approval authority.
 
 ## 4. Governed Slack outbound gate
 
-Create a synthetic PENDING L4 approval owned by canonical principal `michael` with an immutable 64-hex `payload_fingerprint`. Invoke the CoS `slack-adapter` using `operation: post_approval`. PASS requires `execution_mode: SLACK_BOT_API`, a Slack-returned root thread binding, and unchanged PENDING approval state.
+Create a synthetic PENDING L4 approval owned by canonical principal `michael` with an immutable 64-hex `payload_fingerprint`. Invoke the CoS `slack-adapter` using `operation: post_approval`.
 
-## 5. Human interaction gate
+PASS requires:
 
-From the bound Slack thread, verify **Approve**, **Deny**, and **Change** buttons. Also verify case-insensitive typed `approve`, `deny`/`reject`, and `change` fallbacks. The human never types an approval ID.
+- `execution_mode: SLACK_BOT_API`;
+- a Slack-returned root thread binding;
+- a reply-driven approval notice instructing `APPROVE`, `DENY`, or `CHANGE`;
+- no approval buttons;
+- unchanged PENDING approval state.
 
-PASS requires wrong user, wrong channel, wrong app, app/bot-authored replies, unbound thread, stale button value, malformed interaction, and conflicting second decision to fail closed. Same provider-event replay is idempotent.
+## 5. Native dispatcher gate
 
-For **Change**, the bot asks `What would you like to change?`; the next authenticated human reply becomes governed change input, supersedes the old approval, returns the task to `IN_PROGRESS`, and requires a new immutable approval before consequential action.
+Configure exactly one Mesh Slack HITL Dispatcher using `docs/chatgpt-native-slack-dispatcher-v4.2.0.md`.
 
-## 6. Provider degradation gate
+Preferred Slack trigger filter:
 
-Slack provider/network outage must not terminate the MCP HTTP process. `/healthz` remains available, `/readyz` fails closed when Slack HITL is required, consequential approval remains blocked, and reconnect remains bounded.
+- new channel message;
+- channel `C0BRL4GCL3A`;
+- sender `U01KG3CNYHK`;
+- thread reply when supported.
 
-## 7. Audit and lifecycle
+The dispatcher must pass only root-thread timestamp and reply-message timestamp to `skills.invoke_governed` / `slack-adapter` / `reconcile_triggered_message`. It must not pass decision text, asserted sender identity, approval state, actor, principal, or an approval boolean.
+
+## 6. Human interaction gate
+
+From a bound synthetic Slack thread, verify case-insensitive typed `APPROVE`, `DENY`, and `CHANGE`.
+
+PASS requires server-side provider reconciliation of the exact Slack reply and canonical TaskLedger state before mutation. Wrong user, wrong channel, app/bot-authored reply, root message, unbound thread, edited message, deleted/unavailable message, malformed locator, unrecognized decision, stale payload fingerprint, and conflicting second decision all fail closed. Same-message trigger replay is idempotent.
+
+For **CHANGE**, the bot asks what should change; the next independently reconciled human reply becomes untrusted governed change input, supersedes the old approval, returns the task to `IN_PROGRESS`, and requires a new immutable approval before consequential action.
+
+## 7. Provider degradation gate
+
+Slack provider/network failure must not be converted into approval authority. Reconciliation fails closed and the approval remains unresolved. MCP HTTP health must remain independently observable. QNAP does not reconnect a Slack WebSocket because no Slack WebSocket listener exists in v4.2.0.
+
+## 8. Audit and lifecycle
 
 Verify `governance.verify_audit_chain` before and after synthetic writes. Lifecycle must preserve `COMPLETED != VERIFIED`. Synthetic task idempotency and bounded validation errors must remain intact.
 
-## 8. Consequential-action exclusion
+## 9. Consequential-action exclusion
 
 Do not perform prospect sends, public publishing, client commitments, pricing/discount approvals, final staffing commitments, reliability overrides, or other real-world consequential actions during acceptance.
 
-## 9. Pass rule
+## 10. Pass rule
 
-Hosted acceptance passes only when the actual v4.1.18 QNAP serving instance demonstrates release identity, healthy tunnel/runtime, `slack_hitl_ready=true`, dedicated-bot outbound identity, authenticated thread/button decisions, change workflow, authorization boundaries, TaskLedger persistence, and valid audit chain. Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.18.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.
+Hosted acceptance passes only when the actual v4.2.0 QNAP serving instance demonstrates release identity, healthy Secure MCP Tunnel/runtime, native HITL mode, dedicated-bot outbound identity, ChatGPT-native event dispatch, server-side provider reconciliation, positive and negative synthetic decisions, CHANGE workflow, replay idempotency, authorization boundaries, TaskLedger persistence, and a valid audit chain.
+
+Full production certification additionally requires `docs/chatgpt-published-app-production-acceptance-v4.2.0.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.

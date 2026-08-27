@@ -13,14 +13,14 @@ def text(path: Path) -> str:
     return path.read_text()
 
 
-def test_v4113_bdd_contract_is_ready_and_complete() -> None:
+def test_v4113_bdd_contract_remains_historical_and_complete() -> None:
     feature = text(FEATURE)
     assert "@ready" in feature
     for scenario_id in range(92, 100):
         assert f"Scenario: QNAP-{scenario_id:03d}" in feature
 
 
-def test_verified_human_approver_is_built_in_as_slack_user_id() -> None:
+def test_verified_human_approver_remains_built_in_as_slack_user_id() -> None:
     script = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     assert "U01KG3CNYHK" in script
     assert "D01K4CL2F8F" not in script
@@ -51,31 +51,35 @@ def test_existing_identity_is_preserved_and_forced_secret_reconfigure_is_separat
     assert "mesh-cos-slack-hitl-provision.sh" in script
 
 
-def test_secret_tokens_remain_protected_runtime_inputs() -> None:
+def test_v4115_keeps_only_socket_mode_as_protected_slack_runtime_secret() -> None:
     configure = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
     secret_input = text(SCRIPTS / "mesh-cos-qnap-secret-input.sh")
+    compose = text(QNAP / "compose.yaml")
     assert "read_secret_tty" not in configure
     assert "command -v stty" not in configure
-    assert "Slack verifier token file is missing" in configure
     assert "Slack Socket Mode app token file is missing" in configure
-    assert "Slack read-only verifier bot token (input hidden)" in provision
+    assert "Slack verifier token file is missing" not in configure
     assert "Slack Socket Mode app-level token (input hidden)" in provision
+    assert "Slack read-only verifier bot token (input hidden)" not in provision
     assert "mesh_read_secret_tty" in provision
     assert "mesh_shell_supports_silent_read" in secret_input
     assert "/bin/stty /usr/bin/stty" in secret_input
-    assert "xoxb-" in provision
+    assert "xoxb-" not in provision
     assert "xapp-" in provision
-    assert "U01KG3CNYHK" not in text(ROOT / "deployment" / "qnap" / "compose.yaml")
+    assert "MESH_COS_SLACK_VERIFIER_TOKEN_FILE" not in compose
+    assert "U01KG3CNYHK" not in compose
 
 
-def test_v4113_release_defaults_advance_without_authority_change() -> None:
+def test_v4113_release_evidence_remains_historical_while_current_default_is_v4115() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    workflow = text(ROOT / ".github" / "workflows" / "release-production-readiness.yml")
-    assert 'VERSION=${1:-4.1.13}' in builder
-    assert "Build v4.1.13 QNAP deployment bundle" in workflow
-    assert "TAG: v4.1.13" in workflow
-    assert "4.1.13" in text(ROOT / "README.md")
+    legacy_workflow = text(ROOT / ".github" / "workflows" / "release-production-readiness.yml")
+    current_workflow = text(ROOT / ".github" / "workflows" / "release-v4.1.15.yml")
+    assert 'VERSION=${1:-4.1.15}' in builder
+    assert "TAG: v4.1.13" in legacy_workflow
+    assert "v4.1.13 Slack Approver Bootstrap" in legacy_workflow
+    assert "v4.1.15 QNAP release candidate" in current_workflow
+    assert "4.1.15" in text(ROOT / "README.md")
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10

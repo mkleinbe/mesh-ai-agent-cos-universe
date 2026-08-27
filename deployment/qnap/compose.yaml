@@ -24,8 +24,6 @@ services:
       MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID: ${MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID:-C0BRL4GCL3A}
       MESH_COS_SLACK_APPROVER_USER_ID_FILE: /run/secrets/slack_approver_user_id
       MESH_COS_SLACK_APPROVER_PRINCIPAL: ${MESH_COS_SLACK_APPROVER_PRINCIPAL:-michael}
-      MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS: ${MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS:-U0BKV7Z8M96,U0BN8V2BU9Z}
-      MESH_COS_SLACK_VERIFIER_TOKEN_FILE: /run/secrets/slack_verifier_token
       MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: /run/secrets/slack_socket_app_token
       MESH_COS_SLACK_APPROVAL_COMMAND: /mesh-approval
       MCP_BIND_HOST: 0.0.0.0
@@ -35,7 +33,6 @@ services:
     volumes:
       - ${QNAP_MESH_ROOT:-/share/Docker/cos-mcp/state}:/var/lib/mesh:rw
       - ${QNAP_SLACK_APPROVER_USER_ID_FILE:-/share/Docker/cos-mcp/secrets/slack-approver-user-id}:/run/secrets/slack_approver_user_id:ro
-      - ${QNAP_SLACK_VERIFIER_TOKEN_FILE:-/share/Docker/cos-mcp/secrets/slack-verifier-token}:/run/secrets/slack_verifier_token:ro
       - ${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-/share/Docker/cos-mcp/secrets/slack-socket-app-token}:/run/secrets/slack_socket_app_token:ro
     tmpfs:
       - /tmp:rw,noexec,nosuid,nodev,size=64m
@@ -81,6 +78,8 @@ services:
     networks:
       mesh-cos-private:
         ipv4_address: 172.30.60.3
+      mesh-cos-egress:
+        ipv4_address: 172.30.61.2
     depends_on:
       mesh-cos-mcp:
         condition: service_healthy
@@ -99,9 +98,15 @@ services:
 networks:
   mesh-cos-private:
     driver: bridge
+    internal: true
     ipam:
       config:
         - subnet: 172.30.60.0/29
+  mesh-cos-egress:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.61.0/29
   lan7:
     external: true
     name: lan7

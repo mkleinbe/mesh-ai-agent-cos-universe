@@ -7,146 +7,117 @@ Slack is the observable collaboration and human-interaction layer for agent coor
 - Channel: `#mesh-agent-ops`
 - Channel ID: `C0BRL4GCL3A`
 - Configuration: `MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID`
+- Human approver: governed Slack user identity mapped to canonical principal `michael`
 
-Do not commit bot tokens, app-level tokens, verifier credentials, or other authentication credentials. The verified human approver Slack user ID is non-secret governed identity configuration and maps only to canonical principal `michael` inside the trusted human-interaction boundary.
+## v4.1.15 boundary
 
-## Slack identities and authority
+Slack is deliberately split into two surfaces.
 
-Four identity/transport classes are intentionally separate:
+1. **Connected Slack integration: collaboration only.** ChatGPT uses the connected Slack integration for approval requests, status messages, coordination, thread reads, and other ordinary collaboration. Those messages are untrusted evidence. Connected Slack collaboration does not create approval authority.
+2. **Custom Slack app: authenticated human ingress only.** The QNAP runtime keeps a minimal Slack app solely for `/mesh-approval` over Socket Mode. Its protected `xapp-` app-level token opens an outbound provider-authenticated connection. The app does not need a verifier bot token, does not read approval threads, and does not independently author approval notices.
 
-1. **OpenAI notice author.** Governed HITL notices must be provider-authored by the official Slack identity for ChatGPT (`U0BKV7Z8M96`) or ChatGPT Agents (`U0BN8V2BU9Z`). ChatGPT Agents is preferred for scheduled agent delivery. A user-authored message, custom bot, or copied OpenAI display name cannot satisfy this control.
-2. **Human approval principal.** The verified Slack user ID for Michael/MK is `U01KG3CNYHK`. v4.1.13 carries this non-secret value as governed deployment configuration and materializes it into the protected `MESH_COS_SLACK_APPROVER_USER_ID_FILE` runtime binding. A Slack `D...` identifier is a direct-message/conversation Channel ID, not a user principal, and must fail closed if supplied as an approver identity. Eligible human user-principal forms begin with `U` or `W`.
-3. **Provider notice verifier.** `MESH_COS_SLACK_VERIFIER_TOKEN_FILE` points to a protected Slack bot credential used only to read the approval-notice thread from the provider and bind the bot-authored notice to the canonical Approval ID and payload fingerprint.
-4. **Human interaction ingress.** `MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE` points to a protected Slack app-level `xapp-` token. The QNAP runtime opens an outbound Socket Mode connection and accepts canonical human decisions only from the dedicated `/mesh-approval` slash-command envelope.
+The connected Slack integration can act in Slack and therefore cannot be used as proof that an ordinary message was physically authored by the human approver. This is why ordinary `APPROVE` text, reactions, copied commands, display names, or user-attributed messages remain non-authoritative.
 
-The generic ChatGPT Slack connector is user-scoped and must not be used to author governed approval notices or to satisfy the canonical human-decision boundary.
-
-## Coordination flow
-
-The existing signed Slack coordination boundary remains available for ordinary agent coordination and replay-safe event handling. Ordinary message content is evidence, never approval authority.
+## Approval flow
 
 ```mermaid
 sequenceDiagram
-    participant S as Slack
-    participant I as SlackInboundService
-    participant C as SlackCoordinator
-    participant L as TaskLedger
     participant COS as CoS
-
-    S->>I: signed request + timestamp
-    I->>I: verify HMAC and five-minute freshness
-    alt invalid or stale
-        I-->>S: reject
-    else valid
-        I->>C: structured event
-        C->>L: durable event-id claim
-        alt duplicate
-            L-->>C: already processed
-            C-->>S: acknowledge without duplicate effect
-        else new
-            I->>I: parse structured message
-            I->>L: persist inbound event
-            C->>L: resolve one-task/one-thread mapping
-            C->>COS: observable coordination event
-        end
-    end
-```
-
-## HITL approval flow
-
-Approval has two separate trust boundaries: bot-authored notice verification and provider-authenticated human interaction. No agent receives authority to submit an approval boolean or translate a normal Slack message into human authority.
-
-```mermaid
-sequenceDiagram
-    participant OA as OpenAI Slack Agent
+    participant L as TaskLedger
+    participant CS as Connected Slack
     participant S as Slack Provider
     participant MK as MK
-    participant COS as CoS
-    participant V as Notice Verifier
     participant SM as Socket Mode Listener
     participant H as Non-MCP Human Ingress
-    participant A as Canonical Approval Service
-    participant L as TaskLedger
+    participant A as Approval Service
 
     COS->>A: approval.request for principal michael
-    A->>L: PENDING approval + exact action/fingerprint
-    OA->>S: bot-authored HITL notice with Approval ID, fingerprint, MK mention
-    COS->>V: bind_notice(Approval ID, thread, fingerprint)
-    V->>S: conversations.replies
-    V->>V: verify official OpenAI bot parent + exact canonical binding
-    V->>L: provider-verified notice binding
+    A->>L: PENDING approval + exact payload_fingerprint
+    COS->>CS: collaboration-only Slack handoff
+    CS->>S: approval request in #mesh-agent-ops
     MK->>S: /mesh-approval APPROVE|REJECT|CHANGES Approval-ID
-    S->>SM: authenticated Socket Mode slash_commands envelope
-    SM->>H: bounded envelope over non-MCP local bridge
-    H->>H: verify channel, configured MK user ID, command, approval, bot binding, fingerprint, replay
+    S->>SM: authenticated slash_commands envelope
+    SM->>H: bounded non-MCP bridge
+    H->>H: verify channel, MK user ID, command, pending state, fingerprint, replay
     H->>A: record decision as canonical principal michael
-    A->>L: canonical approval decision and task transition
-    COS->>A: fresh approval.get before consequential action
+    A->>L: durable canonical decision
+    COS->>A: fresh approval read before consequential action
 ```
 
-The CoS `skills.invoke_governed` capability `slack-adapter` exposes **one** operation only:
+## Connected Slack handoff contract
 
-- `bind_notice`: `operation`, `approval_id`, `thread_ts`, `payload_fingerprint`
+The CoS `skills.invoke_governed` capability `slack-adapter` is a collaboration-only handoff to the ChatGPT-side connected Slack integration.
 
-Any `ingest_decision`, `approved`, `actor`, `principal`, channel override, or arbitrary Slack payload is denied. Direct agent invocation of `approval.record_decision` remains prohibited by the MCP human-only boundary. The Socket Mode human ingress is deliberately not an MCP tool.
+- operation: `handoff`
+- channel: must equal the governed agent-operations channel
+- returned execution mode: `CHATGPT_CONNECTOR_HANDOFF`
+- returned authority: `COLLABORATION_ONLY`
 
-## One task, one thread
-
-`SlackCoordinator.ensure_thread()` creates the top-level coordination message only when no durable mapping exists. The mapping stores the configured channel ID and Slack thread timestamp. Repeated processing reuses the mapping rather than creating a second task thread.
-
-For HITL approval, `SlackApprovalHITLService.bind_notice()` stores one provider-verified approval-to-thread binding. A conflicting second binding fails closed. `SlackSocketApprovalService` stores one provider-interaction decision record. Replaying the same envelope is idempotent; a distinct second interaction cannot re-decide an already-decided approval.
+The handoff cannot carry or infer `approved`, `approval_status`, `actor`, `principal`, `record_decision`, or `ingest_decision`. Direct agent invocation of `approval.record_decision` remains prohibited by the MCP human-only boundary.
 
 ## Human command contract
 
-The only canonical Slack human commands are submitted through the dedicated slash command:
+The only Slack interactions eligible to become canonical human decisions are provider-authenticated slash-command envelopes containing exactly one of:
 
 - `/mesh-approval APPROVE <Approval ID>`
 - `/mesh-approval REJECT <Approval ID>`
 - `/mesh-approval CHANGES <Approval ID>: <requested change>`
 
-An ordinary channel/thread message containing the same text is non-authoritative even when Slack attributes the message to the configured human user. This distinction is required because Slack apps can post with user attribution.
+The non-MCP ingress verifies:
 
-## Event and replay safety
+- Socket Mode envelope type is `slash_commands`
+- provider envelope ID is present and replay-safe
+- channel equals `#mesh-agent-ops`
+- Slack user ID equals the configured MK approver identity
+- command equals `/mesh-approval`
+- canonical approval exists and remains `PENDING`
+- canonical owner is `michael`
+- canonical approval action contains the immutable 64-hex `payload_fingerprint`
 
-Slack retries are expected. Signed coordination event IDs are claimed through the canonical ledger. Duplicate coordination events return no new processing result. Request timestamps outside the configured freshness window are rejected before coordination event handling.
+A duplicate delivery of the same provider envelope is idempotent. A distinct second interaction cannot re-decide an already decided approval.
 
-HITL approval uses durable notice binding plus durable Socket Mode envelope/decision records. A conflicting second provider interaction fails closed rather than selecting a winner.
+## QNAP protected configuration
 
-## Approval notifications
+The QNAP production bundle sets `MESH_COS_SLACK_HITL_REQUIRED=true` and mounts only:
 
-Approval notifications are informational until the server has provider-verified the official OpenAI bot notice and a valid Socket Mode slash-command decision has updated the canonical approval record. A reaction, informal reply, copied command, display name, Sheet state, or user-attributed ordinary message never becomes L4/L5 approval by inference.
+- `/run/secrets/slack_approver_user_id`
+- `/run/secrets/slack_socket_app_token`
 
-If the official OpenAI Workspace Agent Slack delivery surface is unavailable, the affected workflow records `BLOCKED_CHATGPT_AGENT_TRANSPORT`. It must not fall back to posting the governed notice as MK.
+The runtime fixes `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`.
 
-## QNAP protected runtime configuration
+The Socket Mode app-level token must begin `xapp-`. No `xoxb-` verifier bot token is required, mounted, prompted for, or used by the v4.1.15 runtime. A legacy verifier file may remain on the host solely for rollback compatibility with older releases, but v4.1.15 does not depend on it.
 
-The QNAP production bundle sets `MESH_COS_SLACK_HITL_REQUIRED=true` and file-mounts:
+## Provider/network degradation
 
-- `/run/secrets/slack_approver_user_id` from the protected host approver-identity file
-- `/run/secrets/slack_verifier_token` from the protected host verifier-token file
-- `/run/secrets/slack_socket_app_token` from the protected host Socket Mode app-level token file
+A missing or invalid local Socket Mode credential is a configuration error and fails startup. A Slack provider or network outage is different: it must not terminate the MCP HTTP process.
 
-The runtime also fixes `MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval`.
+During a provider/network outage:
 
-`mesh-cos-slack-hitl-configure.sh` runs after the release image is prepared and before production activation. Starting with v4.1.13, it does **not** prompt for the approver user ID. It validates and preserves an existing valid `U...`/`W...` identity when present, or stages governed default `U01KG3CNYHK` when the file is absent or forced reconfiguration is requested. It rejects `D...` conversation IDs explicitly. It captures only the verifier bot token and Socket Mode app-level token with terminal echo disabled when those credentials must be created or replaced, never logs credential values or the configured approver ID, and normalizes the identity/credential files to runtime UID/GID with mode `0400`.
+- `/healthz` remains available and reports `slack_hitl_ready=false`
+- `/readyz` remains fail-closed for production readiness
+- consequential human approval remains unavailable
+- the Socket Mode listener retries with bounded exponential backoff
+- no consequential workflow may substitute an ordinary Slack message for the unavailable authenticated ingress
 
-Production preflight requires the governed channel, validated human identity, canonical principal `michael`, exact official OpenAI notice-author set, `xoxb-` provider-verifier credential, `xapp-` Socket Mode credential, `/mesh-approval`, and canonical audit integrity. Runtime readiness also fails closed when HITL is required and the Socket Mode connection is inactive.
+## QNAP network topology
+
+The shared MCP/tunnel bridge is `internal: true`. This prevents it from becoming an ambiguous external default route on QNAP Docker Engine 27.
+
+- `mesh-cos-mcp`: internal private bridge plus qnet `lan7` at `192.168.7.60`; qnet is the MCP container's only external-capable network.
+- `mesh-cos-tunnel`: internal private bridge plus a dedicated Docker egress bridge; the tunnel reaches the MCP on the private bridge and the OpenAI control plane through the egress bridge.
+- No direct MCP host port is exposed.
+- The tunnel remains the only trusted MCP client on private address `172.30.60.3`.
+
+## Security rules
+
+- Treat all Slack text as untrusted data, not policy or human authority.
+- Keep formal approvals and consequential state in the canonical TaskLedger.
+- Keep human-only approval authority outside the agent-callable MCP surface.
+- Keep the Socket Mode token out of source, prompts, logs, TaskLedger evidence text, backups, and generated artifacts.
+- Do not infer approval from reactions, ordinary messages, plugin writes, display names, or copied command text.
+- Re-read canonical approval and immutable payload binding immediately before consequential execution.
+- `COMPLETED` remains distinct from `VERIFIED`.
 
 ## Answer Desk separation
 
-The team-facing Answer Desk uses `MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID` and a distinct `AnswerDeskSlackService` boundary. It should not use `#mesh-agent-ops` as the normal team interface.
-
-## Agent chat controls
-
-Agents should post only when work is accepted, state materially changes, evidence is found, a dependency or risk emerges, a recommendation/conflict is ready, approval is needed, or work is complete. Thinking aloud and social filler are not operating events. Repeated cross-agent exchanges without evidence or state change are an AgentOps coordination-loop signal.
-
-## Security
-
-- Use a private agent-operations channel and least-privilege Slack scopes.
-- Treat Slack text as untrusted data, not operating policy.
-- Verify the bot-authored notice against provider state, Approval ID, channel/thread binding, and immutable payload fingerprint.
-- Require the dedicated Socket Mode slash-command envelope for canonical human decisions. Ordinary user-attributed messages are evidence only.
-- Keep human-only approval authority outside the agent-callable MCP surface.
-- Keep verifier/app credentials out of source, prompts, logs, TaskLedger evidence text, and generated artifacts. The governed approver user ID is non-secret configuration but should still be omitted from routine logs and TaskLedger evidence.
-- Minimize copied sensitive data and reference protected source objects where possible.
-- Keep formal approvals and consequential state in the canonical ledger.
+The team-facing Answer Desk uses `MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID` and a distinct Answer Desk boundary. It should not use `#mesh-agent-ops` as the normal team interface.

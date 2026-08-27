@@ -10,7 +10,6 @@ from mesh_cos.approval import ApprovalService
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
-from mesh_cos.slack_hitl import CHATGPT_AGENTS_SLACK_USER_ID
 from mesh_cos.slack_socket_bridge import (
     _read_stdin,
     _safe_error,
@@ -51,20 +50,6 @@ def _seed(path: Path) -> str:
         AuthorityLevel.L4,
         f"Execute payload_fingerprint={FINGERPRINT}",
     )
-    ledger.save_record(
-        "approval_slack_binding",
-        approval.approval_id,
-        {
-            "approval_id": approval.approval_id,
-            "task_id": task.task_id,
-            "channel_id": CHANNEL_ID,
-            "thread_ts": "1788000000.000001",
-            "notice_author_user_id": CHATGPT_AGENTS_SLACK_USER_ID,
-            "approver_identity_verified": True,
-            "approver_principal": "michael",
-            "payload_fingerprint": FINGERPRINT,
-        },
-    )
     ledger.conn.close()
     return approval.approval_id
 
@@ -95,7 +80,9 @@ def _envelope(approval_id: str) -> dict:
     }
 
 
-def test_execute_socket_envelope_round_trips_canonical_state(tmp_path: Path) -> None:
+def test_execute_socket_envelope_round_trips_canonical_state_without_notice_binding(
+    tmp_path: Path,
+) -> None:
     path = tmp_path / "ledger.sqlite3"
     approval_id = _seed(path)
     response = execute_socket_envelope(_envelope(approval_id), env=_env(path))
@@ -104,9 +91,11 @@ def test_execute_socket_envelope_round_trips_canonical_state(tmp_path: Path) -> 
     result = response["result"]
     assert result["disposition"] == "APPROVE"
     assert result["provider_identity_verified"] is True
+    assert result["payload_fingerprint"] == FINGERPRINT
     assert APPROVER_USER_ID not in str(result)
     ledger = TaskLedger(path)
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
+    assert ledger.get_record("approval_slack_binding", approval_id) is None
     ledger.conn.close()
 
 

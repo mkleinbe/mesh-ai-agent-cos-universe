@@ -13,8 +13,6 @@ APPROVER_USER_ID = "U0TESTAPPROVER"
 
 
 def production_env(tmp_path: Path) -> dict[str, str]:
-    verifier_file = tmp_path / "slack-verifier-token"
-    verifier_file.write_text("xoxb-test-secret\n", encoding="utf-8")
     socket_file = tmp_path / "slack-socket-app-token"
     socket_file.write_text("xapp-test-secret\n", encoding="utf-8")
     return {
@@ -25,8 +23,6 @@ def production_env(tmp_path: Path) -> dict[str, str]:
         "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": "C0BRL4GCL3A",
         "MESH_COS_SLACK_APPROVER_USER_ID": APPROVER_USER_ID,
         "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
-        "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS": "U0BKV7Z8M96,U0BN8V2BU9Z",
-        "MESH_COS_SLACK_VERIFIER_TOKEN_FILE": str(verifier_file),
         "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE": str(socket_file),
         "MESH_COS_SLACK_APPROVAL_COMMAND": "/mesh-approval",
         "MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID": "CANSWER",
@@ -45,7 +41,6 @@ def test_production_preflight_passes_without_exposing_secrets(tmp_path: Path) ->
     assert result["ready"] is True
     assert all(check["status"] == "PASS" for check in result["checks"])
     rendered = str(result)
-    assert "xoxb-test-secret" not in rendered
     assert "xapp-test-secret" not in rendered
     assert APPROVER_USER_ID not in rendered
     assert ".mesh-cos/test-task-ledger.sqlite3" not in rendered
@@ -77,7 +72,6 @@ def test_production_preflight_fails_closed_for_missing_local_runtime_config(tmp_
 def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: Path) -> None:
     env = production_env(tmp_path)
     env.pop("MESH_COS_SLACK_APPROVER_USER_ID")
-    env.pop("MESH_COS_SLACK_VERIFIER_TOKEN_FILE")
     env.pop("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE")
     env.pop("MESH_COS_SLACK_APPROVAL_COMMAND")
     env.pop("MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID")
@@ -88,7 +82,6 @@ def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: P
     assert slack["ready"] is False
     for name in (
         "slack_approver_identity",
-        "slack_verifier_credential",
         "slack_socket_app_credential",
         "slack_approval_command",
     ):
@@ -109,7 +102,7 @@ def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: P
     )
 
 
-def test_production_preflight_rejects_slack_identity_author_and_credential_drift(
+def test_production_preflight_rejects_slack_identity_and_socket_credential_drift(
     tmp_path: Path,
 ) -> None:
     wrong_channel = production_env(tmp_path)
@@ -128,26 +121,8 @@ def test_production_preflight_rejects_slack_identity_author_and_credential_drift
         for check in result["checks"]
     )
 
-    wrong_authors = production_env(tmp_path)
-    wrong_authors["MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS"] = "U0BKV7Z8M96"
-    result = ProductionPreflight(root=ROOT, env=wrong_authors, require_slack=True).check()
-    assert any(
-        check["name"] == "slack_notice_authors" and check["status"] == "FAIL"
-        for check in result["checks"]
-    )
-
-    bad_verifier = tmp_path / "bad-verifier"
-    bad_verifier.write_text("xapp-wrong-type\n", encoding="utf-8")
-    bad_verifier_env = production_env(tmp_path)
-    bad_verifier_env["MESH_COS_SLACK_VERIFIER_TOKEN_FILE"] = str(bad_verifier)
-    result = ProductionPreflight(root=ROOT, env=bad_verifier_env, require_slack=True).check()
-    assert any(
-        check["name"] == "slack_verifier_credential" and check["status"] == "FAIL"
-        for check in result["checks"]
-    )
-
     bad_socket = tmp_path / "bad-socket"
-    bad_socket.write_text("xoxb-wrong-type\n", encoding="utf-8")
+    bad_socket.write_text("not-an-app-token\n", encoding="utf-8")
     bad_socket_env = production_env(tmp_path)
     bad_socket_env["MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE"] = str(bad_socket)
     result = ProductionPreflight(root=ROOT, env=bad_socket_env, require_slack=True).check()
@@ -165,24 +140,24 @@ def test_production_preflight_rejects_slack_identity_author_and_credential_drift
     )
 
 
-def test_production_preflight_fails_closed_when_protected_file_read_raises(
+def test_production_preflight_fails_closed_when_socket_secret_read_raises(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     env = production_env(tmp_path)
-    verifier = Path(env["MESH_COS_SLACK_VERIFIER_TOKEN_FILE"])
+    socket_file = Path(env["MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE"])
     original = Path.read_text
 
     def read_text(path: Path, *args: object, **kwargs: object) -> str:
-        if path == verifier:
-            raise OSError("simulated unreadable verifier")
+        if path == socket_file:
+            raise OSError("simulated unreadable Socket Mode credential")
         return original(path, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", read_text)
     result = ProductionPreflight(root=ROOT, env=env, require_slack=True).check()
     assert result["ready"] is False
     assert any(
-        check["name"] == "slack_verifier_credential" and check["status"] == "FAIL"
+        check["name"] == "slack_socket_app_credential" and check["status"] == "FAIL"
         for check in result["checks"]
     )
 

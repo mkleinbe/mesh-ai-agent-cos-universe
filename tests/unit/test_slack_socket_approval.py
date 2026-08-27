@@ -8,7 +8,6 @@ from mesh_cos.approval import ApprovalService
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
-from mesh_cos.slack_hitl import CHATGPT_AGENTS_SLACK_USER_ID
 from mesh_cos.slack_socket_approval import (
     SlackSocketApprovalConfig,
     SlackSocketApprovalService,
@@ -16,11 +15,10 @@ from mesh_cos.slack_socket_approval import (
 
 CHANNEL_ID = "C0TESTAGENTOPS"
 APPROVER_USER_ID = "U0TESTAPPROVER"
-THREAD_TS = "1788000000.000001"
 FINGERPRINT = "d" * 64
 
 
-def _pending() -> tuple[TaskLedger, str, str]:
+def _pending(*, action: str | None = None) -> tuple[TaskLedger, str, str]:
     ledger = TaskLedger()
     cos = ChiefOfStaffService(ledger)
     task = cos.intake(
@@ -46,23 +44,7 @@ def _pending() -> tuple[TaskLedger, str, str]:
         "cos",
         "michael",
         AuthorityLevel.L4,
-        f"Execute exact payload_fingerprint={FINGERPRINT}",
-    )
-    ledger.save_record(
-        "approval_slack_binding",
-        approval.approval_id,
-        {
-            "version": "mesh.cos.approval-slack-binding.v1",
-            "approval_id": approval.approval_id,
-            "task_id": task.task_id,
-            "channel_id": CHANNEL_ID,
-            "thread_ts": THREAD_TS,
-            "notice_author_user_id": CHATGPT_AGENTS_SLACK_USER_ID,
-            "approver_identity_verified": True,
-            "approver_principal": "michael",
-            "payload_fingerprint": FINGERPRINT,
-            "bound_at": "2026-08-26T15:00:00+00:00",
-        },
+        action or f"Execute exact payload_fingerprint={FINGERPRINT}",
     )
     return ledger, task.task_id, approval.approval_id
 
@@ -102,13 +84,16 @@ def test_socket_slash_command_can_record_canonical_human_approval_idempotently()
     replay = service.handle_envelope(_envelope(approval_id))
 
     assert replay == decision
-    assert decision["version"] == "mesh.cos.slack-human-decision.v2"
+    assert decision["version"] == "mesh.cos.slack-human-decision.v3"
     assert decision["source"] == "SLACK_SOCKET_MODE_SLASH_COMMAND"
     assert decision["envelope_id"] == "env-001"
     assert decision["trigger_id"] == "trigger-001"
     assert decision["disposition"] == "APPROVE"
     assert decision["canonical_principal"] == "michael"
     assert decision["provider_identity_verified"] is True
+    assert decision["payload_fingerprint"] == FINGERPRINT
+    assert "thread_ts" not in decision
+    assert "notice_author_user_id" not in decision
     assert APPROVER_USER_ID not in str(decision)
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
     assert ledger.get_record("approval", approval_id)["decided_by"] == "michael"
@@ -159,30 +144,11 @@ def test_wrong_provider_interaction_identity_or_route_fails_closed(
     assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
 
 
-def test_unbound_or_non_openai_notice_cannot_be_decided() -> None:
-    ledger, _, approval_id = _pending()
-    service = SlackSocketApprovalService(ledger, _config())
-    ledger.delete_record("approval_slack_binding", approval_id)
-    with pytest.raises(PermissionError, match="provider-verified Slack notice"):
-        service.handle_envelope(_envelope(approval_id))
-
-    ledger2, _, approval_id2 = _pending()
-    binding = dict(ledger2.get_record("approval_slack_binding", approval_id2))
-    binding["notice_author_user_id"] = "U0FAKEBOT"
-    ledger2.save_record("approval_slack_binding", approval_id2, binding)
-    service2 = SlackSocketApprovalService(ledger2, _config())
-    with pytest.raises(PermissionError, match="OpenAI"):
-        service2.handle_envelope(_envelope(approval_id2))
-
-
-def test_binding_and_canonical_payload_must_still_reconcile() -> None:
-    ledger, _, approval_id = _pending()
-    binding = dict(ledger.get_record("approval_slack_binding", approval_id))
-    binding["payload_fingerprint"] = "e" * 64
-    ledger.save_record("approval_slack_binding", approval_id, binding)
+def test_canonical_approval_must_contain_immutable_payload_fingerprint() -> None:
+    ledger, _, approval_id = _pending(action="Execute exact payload without a fingerprint")
     service = SlackSocketApprovalService(ledger, _config())
 
-    with pytest.raises(PermissionError, match="fingerprint"):
+    with pytest.raises(PermissionError, match="payload_fingerprint"):
         service.handle_envelope(_envelope(approval_id))
     assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
 
@@ -279,22 +245,6 @@ def test_socket_envelope_requires_provider_fields_and_mapping_payload() -> None:
     invalid_payload["payload"] = "not-a-mapping"
     with pytest.raises(PermissionError, match="payload is invalid"):
         service.handle_envelope(invalid_payload)
-
-
-def test_socket_binding_must_match_governed_channel_verified_approver_and_principal() -> None:
-    for field, value, error in (
-        ("channel_id", "C0OTHER", "channel mismatch"),
-        ("approver_identity_verified", False, "provider-verified"),
-        ("approver_principal", "other", "principal mismatch"),
-    ):
-        ledger, _, approval_id = _pending()
-        binding = dict(ledger.get_record("approval_slack_binding", approval_id))
-        binding[field] = value
-        ledger.save_record("approval_slack_binding", approval_id, binding)
-        service = SlackSocketApprovalService(ledger, _config())
-        with pytest.raises(PermissionError, match=error):
-            service.handle_envelope(_envelope(approval_id))
-        assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
 
 
 def test_socket_command_requires_exact_approval_id() -> None:

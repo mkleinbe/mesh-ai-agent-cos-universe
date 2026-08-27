@@ -1,17 +1,13 @@
-name: v4.1.14 QNAP release candidate
+name: v4.1.14 historical QNAP verification
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: v4.1.14-${{ github.ref }}
+  group: v4.1.14-historical-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -57,93 +53,16 @@ jobs:
           ! grep -q 'command -v stty' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           ! grep -q 'read_secret_tty' deployment/qnap/scripts/mesh-cos-mcp-prepare.sh
           ! grep -q 'command -v stty' deployment/qnap/scripts/mesh-cos-mcp-prepare.sh
-          grep -q 'non_interactive=true' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
-          test -f deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
-          test -f deployment/qnap/scripts/mesh-cos-qnap-secret-input.sh
-          test -f deployment/qnap/scripts/mesh-cos-tunnel-key-provision.sh
-      - name: Build exact v4.1.14 QNAP release bundle
+      - name: Rebuild v4.1.14 artifact shape for historical comparison only
         env:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           bash scripts/build-qnap-release-bundle.sh 4.1.14
-          ZIP=dist/mesh-cos-mcp-qnap-v4.1.14.zip
-          SHA="$ZIP.sha256"
-          BUNDLE=dist/qnap-bundle/v4.1.14
-          test -f "$ZIP"
-          test -f "$SHA"
-          grep -q '^version=4.1.14$' "$BUNDLE/cos-mcp/release-metadata.txt"
-          grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
-          test -f "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
-          test -f "$BUNDLE/mesh-cos-slack-hitl-provision.sh"
-          test -f "$BUNDLE/mesh-cos-qnap-secret-input.sh"
-          test -f "$BUNDLE/mesh-cos-tunnel-key-provision.sh"
-          ! grep -q 'read_secret_tty' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
-          ! grep -q 'command -v stty' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
-          ! grep -q 'read_secret_tty' "$BUNDLE/mesh-cos-mcp-prepare.sh"
-          ! grep -q 'command -v stty' "$BUNDLE/mesh-cos-mcp-prepare.sh"
-          grep -q 'DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
-          grep -q 'Slack conversation/DM channel ID is not a user ID' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
-          unzip -Z1 "$ZIP" > /tmp/v4114.entries
-          test -s /tmp/v4114.entries
-          if grep -Ev '^v4\.1\.14/' /tmp/v4114.entries; then
-            echo 'release archive contains entries outside v4.1.14/' >&2
-            exit 1
-          fi
-          grep -qx 'v4.1.14/mesh-cos-mcp-deploy.sh' /tmp/v4114.entries
-          grep -qx 'v4.1.14/mesh-cos-slack-hitl-configure.sh' /tmp/v4114.entries
-          grep -qx 'v4.1.14/mesh-cos-slack-hitl-provision.sh' /tmp/v4114.entries
-          grep -qx 'v4.1.14/mesh-cos-qnap-secret-input.sh' /tmp/v4114.entries
-          grep -qx 'v4.1.14/mesh-cos-tunnel-key-provision.sh' /tmp/v4114.entries
-          grep -qx 'v4.1.14/cos-mcp/release-metadata.txt' /tmp/v4114.entries
+          test -f dist/mesh-cos-mcp-qnap-v4.1.14.zip
+          test -f dist/mesh-cos-mcp-qnap-v4.1.14.zip.sha256
           (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.14.zip.sha256)
-      - name: Build production container from exact release bundle
-        run: |
-          set -euo pipefail
-          docker build \
-            --build-arg VCS_REF="$GITHUB_SHA" \
-            --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            --build-arg IMAGE_VERSION=4.1.14-qnap \
-            -t mesh-cos-mcp:ci-v4.1.14 dist/qnap-bundle/v4.1.14/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.14)" = '4.1.14-qnap'
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.1.14)" = "$GITHUB_SHA"
-      - name: Verify modern MCP discovery and sequential requests
-        env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.14'
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.1.14
-      - uses: actions/upload-artifact@v6
-        with:
-          name: mesh-cos-mcp-qnap-v4.1.14
-          path: |
-            dist/mesh-cos-mcp-qnap-v4.1.14.zip
-            dist/mesh-cos-mcp-qnap-v4.1.14.zip.sha256
-          if-no-files-found: error
-          retention-days: 30
 
-  release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-      - name: Rebuild exact merge-SHA release artifacts
-        env:
-          GITHUB_SHA: ${{ github.sha }}
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.14
-      - name: Publish immutable v4.1.14 release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if gh release view v4.1.14 >/dev/null 2>&1; then
-            echo 'v4.1.14 already exists; leaving the immutable release unchanged'
-            exit 0
-          fi
-          gh release create v4.1.14 \
-            dist/mesh-cos-mcp-qnap-v4.1.14.zip \
-            dist/mesh-cos-mcp-qnap-v4.1.14.zip.sha256 \
-            --target "$GITHUB_SHA" \
-            --title 'v4.1.14 QNAP Slack protected-secret provisioning remediation' \
-            --notes-file docs/release-4.1.14-qnap-slack-secret-provisioning.md
+# v4.1.14 is already an immutable published release. This workflow is intentionally
+# manual-only so newer release branches are not judged against superseded v4.1.14
+# implementation assertions and cannot republish or retag the historical release.

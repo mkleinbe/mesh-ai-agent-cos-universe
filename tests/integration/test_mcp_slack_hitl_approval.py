@@ -10,17 +10,8 @@ from mesh_cos.mcp_runtime import MCPRuntime
 from mesh_cos.models import AuthorityLevel, TaskStatus
 from mesh_cos.orchestration import ChiefOfStaffService
 from mesh_cos.registry import load_registry
-from mesh_cos.slack import SlackWebClient
-from mesh_cos.slack_hitl import (
-    CHATGPT_AGENTS_SLACK_USER_ID,
-    CHATGPT_SLACK_USER_ID,
-    SlackApprovalHITLService,
-    SlackHITLConfig,
-)
 
 CHANNEL_ID = "C0BRL4GCL3A"
-APPROVER_USER_ID = "U0TESTAPPROVER"
-THREAD_TS = "1788000000.000001"
 FINGERPRINT = "c" * 64
 
 
@@ -52,43 +43,7 @@ def _runtime() -> tuple[MCPRuntime, TaskLedger, str]:
         AuthorityLevel.L4,
         f"Send exact Gmail draft with payload_fingerprint={FINGERPRINT}",
     )
-    messages = [
-        {
-            "type": "message",
-            "user": CHATGPT_AGENTS_SLACK_USER_ID,
-            "ts": THREAD_TS,
-            "text": (
-                f"HITL APPROVAL REQUIRED\n<@{APPROVER_USER_ID}>\n"
-                f"Approval ID: {approval.approval_id}\n"
-                f"Payload fingerprint: {FINGERPRINT}\n"
-                "Approval owner: MK / Michael"
-            ),
-        }
-    ]
-
-    def transport(method: str, payload: dict, token: str) -> dict:
-        assert method == "conversations.replies"
-        assert payload == {"channel": CHANNEL_ID, "ts": THREAD_TS}
-        assert token == "xoxb-read-only-verifier"
-        return {"ok": True, "messages": messages}
-
-    service = SlackApprovalHITLService(
-        ledger,
-        SlackWebClient("xoxb-read-only-verifier", transport=transport),
-        SlackHITLConfig(
-            channel_id=CHANNEL_ID,
-            approver_user_id=APPROVER_USER_ID,
-            approver_principal="michael",
-            allowed_notice_author_ids=frozenset(
-                {CHATGPT_SLACK_USER_ID, CHATGPT_AGENTS_SLACK_USER_ID}
-            ),
-        ),
-    )
-    adapters = GovernedAdapterRegistry(
-        load_registry(),
-        GovernanceJournal(ledger),
-        slack_hitl=service,
-    )
+    adapters = GovernedAdapterRegistry(load_registry(), GovernanceJournal(ledger))
     return MCPRuntime(ledger, adapters=adapters), ledger, approval.approval_id
 
 
@@ -100,26 +55,28 @@ def _invoke(runtime: MCPRuntime, payload: dict) -> dict:
     )
 
 
-def test_cos_can_provider_verify_bot_notice_but_cannot_ingest_human_decision() -> None:
+def test_cos_can_request_connected_slack_collaboration_without_creating_approval() -> None:
     runtime, ledger, approval_id = _runtime()
 
-    binding = _invoke(
+    handoff = _invoke(
         runtime,
         {
-            "operation": "bind_notice",
-            "approval_id": approval_id,
-            "thread_ts": THREAD_TS,
-            "payload_fingerprint": FINGERPRINT,
+            "operation": "handoff",
+            "channel_id": CHANNEL_ID,
+            "payload": {
+                "intent": "post approval request",
+                "approval_id": approval_id,
+                "payload_fingerprint": FINGERPRINT,
+            },
         },
     )
-    assert binding["notice_author_user_id"] == CHATGPT_AGENTS_SLACK_USER_ID
-    assert binding["approver_identity_verified"] is True
-    assert "approver_user_id" not in binding
-    assert APPROVER_USER_ID not in str(binding)
+    assert handoff["execution_mode"] == "CHATGPT_CONNECTOR_HANDOFF"
+    assert handoff["connector"] == "Slack"
+    assert handoff["authority"] == "COLLABORATION_ONLY"
     assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
 
-    with pytest.raises(PermissionError, match="cannot record human decisions"):
-        _invoke(runtime, {"operation": "ingest_decision", "approval_id": approval_id})
+    with pytest.raises(PermissionError, match="collaboration-only"):
+        _invoke(runtime, {"operation": "ingest_decision", "channel_id": CHANNEL_ID})
     assert ledger.get_record("approval", approval_id)["status"] == "PENDING"
 
 
@@ -138,15 +95,16 @@ def test_mcp_agent_surface_does_not_expand_human_approval_authority() -> None:
             "skills.invoke_governed",
             {
                 "capability": "slack-adapter",
-                "payload": {"operation": "bind_notice", "approval_id": approval_id},
+                "payload": {"operation": "handoff", "channel_id": CHANNEL_ID, "payload": {}},
             },
         )
-    with pytest.raises(PermissionError, match="cannot record human decisions"):
+    with pytest.raises(PermissionError, match="canonical approval authority"):
         _invoke(
             runtime,
             {
-                "operation": "ingest_decision",
-                "approval_id": approval_id,
+                "operation": "handoff",
+                "channel_id": CHANNEL_ID,
+                "payload": {},
                 "approved": True,
             },
         )

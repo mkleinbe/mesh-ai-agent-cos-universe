@@ -10,7 +10,6 @@ APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
 SECRET_DIR="$APP_ROOT/secrets"
 APPROVER_FILE=${QNAP_SLACK_APPROVER_USER_ID_FILE:-$SECRET_DIR/slack-approver-user-id}
-VERIFIER_FILE=${QNAP_SLACK_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
 SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
 DEFAULT_APPROVER_USER_ID=${MESH_COS_SLACK_APPROVER_USER_ID:-U01KG3CNYHK}
 MESH_UID=${MESH_UID:-65532}
@@ -46,16 +45,6 @@ validate_approver_user_id() {
   esac
   printf '%s' "$APPROVER_VALUE_TO_VALIDATE" | grep -Eq '^[UW][A-Z0-9]+$' || fail "Slack approver user ID format is invalid; expected a Slack user ID beginning with U or W"
   unset APPROVER_VALUE_TO_VALIDATE
-}
-
-validate_verifier_file() {
-  [ -s "$VERIFIER_FILE" ] || fail "Slack verifier token file is missing; provision it with: sudo sh $PROVISION_SCRIPT"
-  VERIFIER_VALUE=$(cat "$VERIFIER_FILE") || fail "unable to read existing Slack verifier token file"
-  case "$VERIFIER_VALUE" in
-    xoxb-*) ;;
-    *) unset VERIFIER_VALUE; fail "Slack verifier token file is invalid; expected a bot token beginning with xoxb-" ;;
-  esac
-  unset VERIFIER_VALUE
 }
 
 validate_socket_file() {
@@ -99,10 +88,6 @@ else
   info "preserving existing Slack approver identity file"
 fi
 
-mesh_set_stage verifier_token
-validate_verifier_file
-info "preserving existing validated Slack verifier token file"
-
 mesh_set_stage socket_app_token
 validate_socket_file
 info "preserving existing validated Slack Socket Mode app token file"
@@ -110,10 +95,9 @@ info "preserving existing validated Slack Socket Mode app token file"
 mesh_set_stage permissions
 mesh_apply_secret_permissions "$MESH_IMAGE" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize Slack HITL secret ownership/modes"
 [ -s "$APPROVER_FILE" ] || fail "Slack approver identity file is missing or empty"
-[ -s "$VERIFIER_FILE" ] || fail "Slack verifier token file is missing or empty"
 [ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing or empty"
-mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false"
+mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false verifier_required=false"
 
 mesh_set_stage complete
 info "Slack HITL protected runtime configuration complete"
-mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true"
+mesh_log INFO slack_hitl_configure_complete "result=PASS values_logged=false non_interactive=true verifier_required=false"

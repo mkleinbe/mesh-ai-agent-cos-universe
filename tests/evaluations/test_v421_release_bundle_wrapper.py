@@ -14,6 +14,7 @@ def test_v421_wrapper_rebuilds_zip_inside_dist_and_contains_current_contract() -
     assert 'zip -rq "../mesh-cos-mcp-qnap-v${VERSION}.zip" "v${VERSION}"' in script
     assert 'zip -rq "../../mesh-cos-mcp-qnap-v${VERSION}.zip"' not in script
     assert 'cd dist\n  sha256sum "mesh-cos-mcp-qnap-v${VERSION}.zip"' in script
+    assert "CHANGELOG-v4.2.1.md" in script
     assert "slack-app-manifest.v4.2.1.json" in script
     assert "native-slack-event-hitl-v4.2.1.feature" in script
     assert "security-review-v4.2.1.md" in script

@@ -24,7 +24,7 @@ def test_v4112_behavior_contract_is_ready_and_complete() -> None:
 
 def test_bundle_keeps_v4112_and_later_releases_versioned() -> None:
     builder = text(BUILDER)
-    assert 'VERSION=${1:-4.1.16}' in builder
+    assert 'VERSION=${1:-4.1.17}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
     assert 'LEGACY_FLAT=0' in builder
@@ -36,16 +36,7 @@ def test_bundle_keeps_v4112_and_later_releases_versioned() -> None:
 
 
 def test_all_operator_scripts_self_resolve_and_never_depend_on_cwd() -> None:
-    operator_scripts = [
-        "mesh-cos-mcp-deploy.sh",
-        "mesh-cos-mcp-prepare.sh",
-        "mesh-cos-mcp-preflight.sh",
-        "mesh-cos-mcp-backup.sh",
-        "mesh-cos-mcp-verify.sh",
-        "mesh-cos-slack-hitl-configure.sh",
-        "mesh-cos-slack-hitl-provision.sh",
-        "mesh-cos-tunnel-key-provision.sh",
-    ]
+    operator_scripts = ["mesh-cos-mcp-deploy.sh", "mesh-cos-mcp-prepare.sh", "mesh-cos-mcp-preflight.sh", "mesh-cos-mcp-backup.sh", "mesh-cos-mcp-verify.sh", "mesh-cos-slack-hitl-configure.sh", "mesh-cos-slack-hitl-provision.sh", "mesh-cos-tunnel-key-provision.sh"]
     for filename in operator_scripts:
         script = text(SCRIPTS / filename)
         assert 'dirname "$0"' in script
@@ -66,13 +57,13 @@ def test_release_layout_helper_validates_version_directory_against_metadata() ->
 def test_current_runbook_retains_canonical_release_root_contract() -> None:
     steps = text(STEPS)
     assert "cd /share/Docker/cos-mcp/releases" in steps
-    assert "cd /share/Docker/cos-mcp/releases/v4.1.16" not in steps
-    assert "mkdir -p /share/Docker/cos-mcp/releases/v4.1.16" not in steps
+    assert "cd /share/Docker/cos-mcp/releases/v4.1.17" not in steps
+    assert "mkdir -p /share/Docker/cos-mcp/releases/v4.1.17" not in steps
     assert "cp /share/Docker/mesh-cos-mcp-qnap" not in steps
     assert "chmod 0755" not in steps
-    assert "sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh" in steps
-    assert "sudo sh ./v4.1.16/mesh-cos-mcp-preflight.sh" in steps
-    assert "sudo sh ./v4.1.16/mesh-cos-mcp-verify.sh" in steps
+    assert "sudo sh ./v4.1.17/mesh-cos-mcp-deploy.sh" in steps
+    assert "sudo sh ./v4.1.17/mesh-cos-mcp-preflight.sh" in steps
+    assert "sudo sh ./v4.1.17/mesh-cos-mcp-verify.sh" in steps
 
 
 def test_v4112_bundle_builder_keeps_runtime_state_and_secrets_outside_release() -> None:
@@ -91,7 +82,4 @@ def test_release_root_contract_does_not_change_phase1_authority() -> None:
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10
     assert len(contract["agent_tool_allowlists"]["cos"]) == 27
-    assert set(contract["human_tool_allowlist"]) == {
-        "approval.record_decision",
-        "reliability.human_override",
-    }
+    assert set(contract["human_tool_allowlist"]) == {"approval.record_decision", "reliability.human_override"}

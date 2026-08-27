@@ -10,11 +10,14 @@ from mesh_cos.preflight import ProductionPreflight
 
 ROOT = Path(__file__).resolve().parents[2]
 APPROVER_USER_ID = "U0TESTAPPROVER"
+APP_ID = "A0B49RNF4K0"
 
 
 def production_env(tmp_path: Path) -> dict[str, str]:
     socket_file = tmp_path / "slack-socket-app-token"
     socket_file.write_text("xapp-test-secret\n", encoding="utf-8")
+    bot_file = tmp_path / "slack-bot-token"
+    bot_file.write_text("xoxb-test-secret\n", encoding="utf-8")
     return {
         "MESH_COS_KILL_SWITCH": "false",
         "MESH_COS_AGENT_ID": "cos",
@@ -23,7 +26,9 @@ def production_env(tmp_path: Path) -> dict[str, str]:
         "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": "C0BRL4GCL3A",
         "MESH_COS_SLACK_APPROVER_USER_ID": APPROVER_USER_ID,
         "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
+        "MESH_COS_SLACK_APP_ID": APP_ID,
         "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE": str(socket_file),
+        "MESH_COS_SLACK_BOT_TOKEN_FILE": str(bot_file),
         "MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID": "CANSWER",
     }
 
@@ -41,6 +46,7 @@ def test_production_preflight_passes_without_exposing_secrets(tmp_path: Path) ->
     assert all(check["status"] == "PASS" for check in result["checks"])
     rendered = str(result)
     assert "xapp-test-secret" not in rendered
+    assert "xoxb-test-secret" not in rendered
     assert APPROVER_USER_ID not in rendered
     assert ".mesh-cos/test-task-ledger.sqlite3" not in rendered
     assert "slack_approval_command" not in rendered
@@ -72,7 +78,9 @@ def test_production_preflight_fails_closed_for_missing_local_runtime_config(tmp_
 def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: Path) -> None:
     env = production_env(tmp_path)
     env.pop("MESH_COS_SLACK_APPROVER_USER_ID")
+    env.pop("MESH_COS_SLACK_APP_ID")
     env.pop("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE")
+    env.pop("MESH_COS_SLACK_BOT_TOKEN_FILE")
     env.pop("MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID")
 
     assert ProductionPreflight(root=ROOT, env=env, require_slack=False).check()["ready"] is True
@@ -81,7 +89,9 @@ def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: P
     assert slack["ready"] is False
     for name in (
         "slack_approver_identity",
+        "slack_app_identity",
         "slack_socket_app_credential",
+        "slack_bot_credential",
     ):
         assert any(
             check["name"] == name and check["status"] == "FAIL"
@@ -101,7 +111,7 @@ def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: P
     )
 
 
-def test_production_preflight_rejects_slack_identity_and_socket_credential_drift(
+def test_production_preflight_rejects_slack_identity_app_and_credential_drift(
     tmp_path: Path,
 ) -> None:
     wrong_channel = production_env(tmp_path)
@@ -120,6 +130,14 @@ def test_production_preflight_rejects_slack_identity_and_socket_credential_drift
         for check in result["checks"]
     )
 
+    wrong_app = production_env(tmp_path)
+    wrong_app["MESH_COS_SLACK_APP_ID"] = "A0OTHERAPP"
+    result = ProductionPreflight(root=ROOT, env=wrong_app, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_app_identity" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
     bad_socket = tmp_path / "bad-socket"
     bad_socket.write_text("not-an-app-token\n", encoding="utf-8")
     bad_socket_env = production_env(tmp_path)
@@ -130,6 +148,16 @@ def test_production_preflight_rejects_slack_identity_and_socket_credential_drift
         for check in result["checks"]
     )
 
+    bad_bot = tmp_path / "bad-bot"
+    bad_bot.write_text("not-a-bot-token\n", encoding="utf-8")
+    bad_bot_env = production_env(tmp_path)
+    bad_bot_env["MESH_COS_SLACK_BOT_TOKEN_FILE"] = str(bad_bot)
+    result = ProductionPreflight(root=ROOT, env=bad_bot_env, require_slack=True).check()
+    assert any(
+        check["name"] == "slack_bot_credential" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+
     legacy_command = production_env(tmp_path)
     legacy_command["MESH_COS_SLACK_APPROVAL_COMMAND"] = "/wrong-and-ignored"
     result = ProductionPreflight(root=ROOT, env=legacy_command, require_slack=True).check()
@@ -137,17 +165,18 @@ def test_production_preflight_rejects_slack_identity_and_socket_credential_drift
     assert all(check["name"] != "slack_approval_command" for check in result["checks"])
 
 
-def test_production_preflight_fails_closed_when_socket_secret_read_raises(
+def test_production_preflight_fails_closed_when_socket_or_bot_secret_read_raises(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     env = production_env(tmp_path)
     socket_file = Path(env["MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE"])
+    bot_file = Path(env["MESH_COS_SLACK_BOT_TOKEN_FILE"])
     original = Path.read_text
 
     def read_text(path: Path, *args: object, **kwargs: object) -> str:
-        if path == socket_file:
-            raise OSError("simulated unreadable Socket Mode credential")
+        if path in {socket_file, bot_file}:
+            raise OSError("simulated unreadable Slack credential")
         return original(path, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", read_text)
@@ -155,6 +184,10 @@ def test_production_preflight_fails_closed_when_socket_secret_read_raises(
     assert result["ready"] is False
     assert any(
         check["name"] == "slack_socket_app_credential" and check["status"] == "FAIL"
+        for check in result["checks"]
+    )
+    assert any(
+        check["name"] == "slack_bot_credential" and check["status"] == "FAIL"
         for check in result["checks"]
     )
 

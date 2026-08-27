@@ -1,4 +1,4 @@
-name: v4.1.17 QNAP release candidate
+name: v4.1.18 QNAP release candidate
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: v4.1.17-${{ github.ref }}
+  group: v4.1.18-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -42,50 +42,49 @@ jobs:
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
-      - name: QNAP shell and architecture gates
+      - name: QNAP shell and secret-permission gates
         run: |
           set -euo pipefail
           for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
           sh deployment/qnap/tests/test-compose-discovery.sh
+          sh deployment/qnap/tests/test-runtime-permissions.sh
           sh deployment/qnap/tests/test-slack-hitl-configure.sh
           sh deployment/qnap/tests/test-transactional-promotion.sh
           sh deployment/qnap/tests/test-restarting-container-backup.sh
+          grep -q 'slack-bot-token' deployment/qnap/scripts/mesh-cos-qnap-permissions.sh
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'MESH_COS_SLACK_BOT_TOKEN_FILE' deployment/qnap/compose.yaml
           grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
-      - name: Build exact v4.1.17 release bundle
+      - name: Build exact v4.1.18 release bundle
         env:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh 4.1.17
-          ZIP=dist/mesh-cos-mcp-qnap-v4.1.17.zip
-          BUNDLE=dist/qnap-bundle/v4.1.17
+          bash scripts/build-qnap-release-bundle.sh 4.1.18
+          ZIP=dist/mesh-cos-mcp-qnap-v4.1.18.zip
+          BUNDLE=dist/qnap-bundle/v4.1.18
           test -f "$ZIP" && test -f "$ZIP.sha256"
-          grep -q '^version=4.1.17$' "$BUNDLE/cos-mcp/release-metadata.txt"
+          grep -q '^version=4.1.18$' "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
-          test -f "$BUNDLE/cos-mcp/security-review-v4.1.17.md"
-          test -f "$BUNDLE/cos-mcp/release-4.1.17-slack-bot-block-kit-hitl.md"
-          test -f "$BUNDLE/cos-mcp/verification-v4.1.17-slack-bot-block-kit-hitl.md"
-          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.17.md"
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.17.zip.sha256)
+          grep -q 'slack-bot-token' "$BUNDLE/mesh-cos-qnap-permissions.sh"
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.18.zip.sha256)
       - name: Build production container from exact release bundle
         run: |
           set -euo pipefail
-          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.17-qnap -t mesh-cos-mcp:ci-v4.1.17 dist/qnap-bundle/v4.1.17/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.17)" = '4.1.17-qnap'
+          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.18-qnap -t mesh-cos-mcp:ci-v4.1.18 dist/qnap-bundle/v4.1.18/cos-mcp/build-context
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.18)" = '4.1.18-qnap'
       - name: Verify modern MCP discovery and sequential requests
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.17'
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.1.17
+          MESH_COS_DEPLOYMENT_RELEASE: '4.1.18'
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.1.18
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.17
+          name: mesh-cos-mcp-qnap-v4.1.18
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.17.zip
-            dist/mesh-cos-mcp-qnap-v4.1.17.zip.sha256
+            dist/mesh-cos-mcp-qnap-v4.1.18.zip
+            dist/mesh-cos-mcp-qnap-v4.1.18.zip.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -100,14 +99,14 @@ jobs:
       - name: Rebuild exact merge-SHA release artifacts
         env:
           GITHUB_SHA: ${{ github.sha }}
-        run: bash scripts/build-qnap-release-bundle.sh 4.1.17
-      - name: Publish immutable v4.1.17 release
+        run: bash scripts/build-qnap-release-bundle.sh 4.1.18
+      - name: Publish immutable v4.1.18 release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view v4.1.17 >/dev/null 2>&1; then
-            echo 'v4.1.17 already exists; leaving immutable release unchanged'
+          if gh release view v4.1.18 >/dev/null 2>&1; then
+            echo 'v4.1.18 already exists; leaving immutable release unchanged'
             exit 0
           fi
-          gh release create v4.1.17 dist/mesh-cos-mcp-qnap-v4.1.17.zip dist/mesh-cos-mcp-qnap-v4.1.17.zip.sha256 --target "$GITHUB_SHA" --title 'v4.1.17 Slack bot + Block Kit HITL' --notes-file docs/release-4.1.17-slack-bot-block-kit-hitl.md
+          gh release create v4.1.18 dist/mesh-cos-mcp-qnap-v4.1.18.zip dist/mesh-cos-mcp-qnap-v4.1.18.zip.sha256 --target "$GITHUB_SHA" --title 'v4.1.18 QNAP Slack bot secret permission hotfix' --notes-file docs/release-4.1.18-qnap-slack-bot-secret-permissions.md

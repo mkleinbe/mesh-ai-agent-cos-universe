@@ -27,6 +27,7 @@ printf 'secret\n' > "$TMP/secrets/openai-tunnel-runtime-key"
 printf 'U0TESTAPPROVER\n' > "$TMP/secrets/slack-approver-user-id"
 printf 'xoxb-test-verifier\n' > "$TMP/secrets/slack-verifier-token"
 printf 'xapp-test-socket\n' > "$TMP/secrets/slack-socket-app-token"
+printf 'xoxb-test-bot\n' > "$TMP/secrets/slack-bot-token"
 mesh_apply_secret_permissions image:test 65532 65532 "$TMP/secrets" || exit 1
 
 [ "$(grep -c -- '--network none' "$CALLS")" -ge 3 ]
@@ -42,6 +43,7 @@ grep -q -- 'openai-tunnel-runtime-key' "$CALLS"
 grep -q -- 'slack-approver-user-id' "$CALLS"
 grep -q -- 'slack-verifier-token' "$CALLS"
 grep -q -- 'slack-socket-app-token' "$CALLS"
+grep -q -- 'slack-bot-token' "$CALLS"
 
 if mesh_validate_runtime_identity root 65532; then
   echo 'FAIL nonnumeric UID accepted' >&2

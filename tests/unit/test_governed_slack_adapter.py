@@ -7,6 +7,7 @@ from mesh_cos.governance import GovernanceJournal
 from mesh_cos.ledger import TaskLedger
 from mesh_cos.registry import load_registry
 from mesh_cos.slack_bot import SlackApprovalNotifier, SlackBotAPI
+from mesh_cos.slack_native_trigger import SlackNativeTriggerApprovalService
 
 CHANNEL_ID = "C0BRL4GCL3A"
 
@@ -27,6 +28,80 @@ def test_slack_adapter_posts_collaboration_through_dedicated_bot() -> None:
     assert result["status"] == "POSTED"; assert result["execution_mode"] == "SLACK_BOT_API"; assert result["authority"] == "COLLABORATION_ONLY"; assert result["channel_id"] == CHANNEL_ID
 
 
+def test_native_trigger_adapter_passes_only_provider_locators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    def reconcile(
+        self: SlackNativeTriggerApprovalService,
+        *,
+        thread_ts: str,
+        message_ts: str,
+    ) -> dict[str, object]:
+        captured.update(thread_ts=thread_ts, message_ts=message_ts)
+        return {
+            "status": "IGNORED",
+            "trigger_is_authority": False,
+            "provider_reconciled": True,
+        }
+
+    monkeypatch.setattr(SlackNativeTriggerApprovalService, "reconcile", reconcile)
+    monkeypatch.setenv("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", CHANNEL_ID)
+    monkeypatch.setenv("MESH_COS_SLACK_APPROVER_USER_ID", "U01KG3CNYHK")
+    monkeypatch.setenv("MESH_COS_SLACK_APPROVER_PRINCIPAL", "michael")
+    monkeypatch.setenv("MESH_COS_SLACK_APP_ID", "A0B49RNF4K0")
+    result = _registry().execute(
+        "cos",
+        "slack-adapter",
+        {
+            "operation": "reconcile_triggered_message",
+            "channel_id": CHANNEL_ID,
+            "payload": {"thread_ts": "123.456", "message_ts": "123.789"},
+        },
+    )
+    assert captured == {"thread_ts": "123.456", "message_ts": "123.789"}
+    assert result["trigger_is_authority"] is False
+
+
+def test_native_trigger_adapter_requires_canonical_governance_and_exact_locator_fields(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID", CHANNEL_ID)
+    notifier = SlackApprovalNotifier(
+        TaskLedger(),
+        SlackBotAPI("xoxb-test", lambda method, payload, token: {"ok": True}),
+        CHANNEL_ID,
+    )
+    registry = GovernedAdapterRegistry(load_registry(), None, slack_notifier=notifier)
+    with pytest.raises(RuntimeError, match="canonical TaskLedger"):
+        registry.execute(
+            "cos",
+            "slack-adapter",
+            {
+                "operation": "reconcile_triggered_message",
+                "channel_id": CHANNEL_ID,
+                "payload": {"thread_ts": "123.456", "message_ts": "123.789"},
+            },
+        )
+
+    governed = _registry()
+    with pytest.raises(ValueError, match="Unexpected Slack collaboration payload fields: text"):
+        governed.execute(
+            "cos",
+            "slack-adapter",
+            {
+                "operation": "reconcile_triggered_message",
+                "channel_id": CHANNEL_ID,
+                "payload": {
+                    "thread_ts": "123.456",
+                    "message_ts": "123.789",
+                    "text": "APPROVE",
+                },
+            },
+        )
+
+
 def test_connector_handoff_is_retired() -> None:
     with pytest.raises(PermissionError, match="connector handoff is retired"): _registry().execute("cos", "slack-adapter", {"operation": "handoff", "channel_id": CHANNEL_ID, "payload": {}})
 
@@ -35,7 +110,7 @@ def test_slack_adapter_cannot_record_or_ingest_human_approval() -> None:
     registry = _registry()
     for operation in ("bind_notice", "ingest_decision", "record_approval"):
         with pytest.raises(PermissionError, match="Unsupported governed Slack bot operation"): registry.execute("cos", "slack-adapter", {"operation": operation, "channel_id": CHANNEL_ID, "payload": {}})
-    for forbidden_field in ("approved", "approval_status", "actor", "principal"):
+    for forbidden_field in ("approved", "approval_status", "actor", "principal", "decision", "text", "user_id"):
         with pytest.raises(PermissionError, match="cannot carry canonical approval authority"): registry.execute("cos", "slack-adapter", {"operation": "post_message", "channel_id": CHANNEL_ID, "payload": {"text": "x"}, forbidden_field: True})
 
 

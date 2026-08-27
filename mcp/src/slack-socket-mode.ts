@@ -5,6 +5,8 @@ import { pythonEnvironment, repositoryRoot } from './python-bridge.js';
 
 const CONNECTIONS_OPEN_URL = 'https://slack.com/api/apps.connections.open';
 const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
+const DEFAULT_RECONNECT_BASE_MS = 1_000;
+const DEFAULT_RECONNECT_MAX_MS = 30_000;
 const DEFAULT_BRIDGE_TIMEOUT_MS = 5_000;
 const MAX_BRIDGE_RESPONSE_BYTES = 1_000_000;
 
@@ -152,6 +154,8 @@ export class SlackSocketModeApprovalListener {
   private socket: SocketLike | null = null;
   private active = false;
   private stopped = false;
+  private reconnectAttempt = 0;
+  private reconnectScheduled = false;
 
   constructor(env: NodeJS.ProcessEnv = process.env, dependencies: ListenerDependencies = {}) {
     this.env = env;
@@ -175,15 +179,36 @@ export class SlackSocketModeApprovalListener {
       this.active = true;
       return;
     }
-    await this.connect(true);
+    // Configuration errors remain fatal. Provider/network failures do not.
+    readSlackSocketAppToken(this.env);
+    this.active = false;
+    void this.connect().catch(() => this.scheduleReconnectAttempt());
   }
 
   async stop(): Promise<void> {
     this.stopped = true;
     this.active = false;
+    this.reconnectScheduled = false;
     const socket = this.socket;
     this.socket = null;
     socket?.close();
+  }
+
+  private reconnectDelayMs(): number {
+    const exponent = Math.min(this.reconnectAttempt, 10);
+    return Math.min(DEFAULT_RECONNECT_BASE_MS * (2 ** exponent), DEFAULT_RECONNECT_MAX_MS);
+  }
+
+  private scheduleReconnectAttempt(): void {
+    if (this.stopped || !this.isRequired() || this.reconnectScheduled) return;
+    const delayMs = this.reconnectDelayMs();
+    this.reconnectAttempt += 1;
+    this.reconnectScheduled = true;
+    this.scheduleReconnect(() => {
+      this.reconnectScheduled = false;
+      if (this.stopped) return;
+      void this.connect().catch(() => this.scheduleReconnectAttempt());
+    }, delayMs);
   }
 
   private async openUrl(): Promise<string> {
@@ -208,50 +233,50 @@ export class SlackSocketModeApprovalListener {
     return url;
   }
 
-  private async connect(waitForOpen: boolean): Promise<void> {
+  private async connect(): Promise<void> {
     if (this.stopped) return;
     const url = await this.openUrl();
+    if (this.stopped) return;
     const socket = this.socketFactory(url);
     this.socket = socket;
     this.active = false;
 
-    let resolveOpen: (() => void) | undefined;
-    let rejectOpen: ((reason?: unknown) => void) | undefined;
-    const opened = new Promise<void>((resolve, reject) => {
-      resolveOpen = resolve;
-      rejectOpen = reject;
-    });
     const connectTimeoutValue = Number(
       this.env.MESH_COS_SLACK_SOCKET_CONNECT_TIMEOUT_MS ?? DEFAULT_CONNECT_TIMEOUT_MS,
     );
     const connectTimeoutMs = Number.isInteger(connectTimeoutValue) && connectTimeoutValue > 0
       ? connectTimeoutValue
       : DEFAULT_CONNECT_TIMEOUT_MS;
-    const timer = setTimeout(() => rejectOpen?.(new Error('Slack Socket Mode connect timeout')), connectTimeoutMs);
+    const timer = setTimeout(() => {
+      if (this.socket !== socket || this.active || this.stopped) return;
+      this.active = false;
+      try { socket.close(); } catch { this.scheduleReconnectAttempt(); }
+    }, connectTimeoutMs);
 
     socket.onopen = () => {
       clearTimeout(timer);
+      if (this.stopped || this.socket !== socket) {
+        socket.close();
+        return;
+      }
       this.active = true;
-      resolveOpen?.();
+      this.reconnectAttempt = 0;
+      this.reconnectScheduled = false;
     };
     socket.onerror = () => {
+      clearTimeout(timer);
       this.active = false;
-      rejectOpen?.(new Error('Slack Socket Mode connection failed'));
+      this.scheduleReconnectAttempt();
     };
     socket.onclose = () => {
       clearTimeout(timer);
+      if (this.socket === socket) this.socket = null;
       this.active = false;
-      if (!this.stopped) {
-        this.scheduleReconnect(() => {
-          void this.connect(false).catch(() => { this.active = false; });
-        }, 1_000);
-      }
+      this.scheduleReconnectAttempt();
     };
     socket.onmessage = event => {
       void this.handleMessage(event.data);
     };
-
-    if (waitForOpen) await opened;
   }
 
   private async handleMessage(data: unknown): Promise<void> {
@@ -268,6 +293,7 @@ export class SlackSocketModeApprovalListener {
     const type = String(envelope.type ?? '');
     if (type === 'hello') {
       this.active = true;
+      this.reconnectAttempt = 0;
       return;
     }
     if (type === 'disconnect') {

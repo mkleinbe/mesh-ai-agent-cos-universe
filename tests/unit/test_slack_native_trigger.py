@@ -120,6 +120,24 @@ def test_native_trigger_replay_is_idempotent() -> None:
     assert first == second
 
 
+def test_native_trigger_falls_back_to_nonfinal_result_if_compat_record_is_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, _, approval_id, service, _ = _service("APPROVE")
+    monkeypatch.setattr(
+        service.compat,
+        "handle_envelope",
+        lambda envelope: {"approval_id": approval_id, "disposition": "APPROVE"},
+    )
+    result = service.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
+    assert result == {
+        "approval_id": approval_id,
+        "disposition": "APPROVE",
+        "trigger_is_authority": False,
+        "provider_reconciled": True,
+    }
+
+
 def test_native_trigger_change_and_change_input_remain_non_authoritative() -> None:
     ledger, task_id, approval_id, service, _ = _service("CHANGE")
     start = service.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
@@ -132,14 +150,16 @@ def test_native_trigger_change_and_change_input_remain_non_authoritative() -> No
         if method in {"chat.postMessage", "chat.update"}
         else {
             "ok": True,
-            "messages": [{
-                "type": "message",
-                "channel": CHANNEL,
-                "thread_ts": ROOT,
-                "ts": "1787843500.000002",
-                "user": USER,
-                "text": "remove the second recipient",
-            }],
+            "messages": [
+                {
+                    "type": "message",
+                    "channel": CHANNEL,
+                    "thread_ts": ROOT,
+                    "ts": "1787843500.000002",
+                    "user": USER,
+                    "text": "remove the second recipient",
+                }
+            ],
         }
     )
     captured = service.reconcile(thread_ts=ROOT, message_ts="1787843500.000002")
@@ -192,13 +212,17 @@ def test_native_trigger_rejects_edited_app_authored_wrong_user_and_wrong_thread(
     with pytest.raises(PermissionError, match="configured approver"):
         wrong_user.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
 
-    _, _, _, wrong_thread, _ = _service(provider_messages=[{
-        "type": "message",
-        "channel": CHANNEL,
-        "thread_ts": "999.000",
-        "ts": MESSAGE,
-        "user": USER,
-        "text": "APPROVE",
-    }])
+    _, _, _, wrong_thread, _ = _service(
+        provider_messages=[
+            {
+                "type": "message",
+                "channel": CHANNEL,
+                "thread_ts": "999.000",
+                "ts": MESSAGE,
+                "user": USER,
+                "text": "APPROVE",
+            }
+        ]
+    )
     with pytest.raises(PermissionError, match="thread does not match"):
         wrong_thread.reconcile(thread_ts=ROOT, message_ts=MESSAGE)

@@ -1,23 +1,8 @@
 name: release-production-readiness
 
+# Historical v4.1.13 release evidence only. Never run automatically on current main.
 on:
-  push:
-    branches: [main]
-    paths:
-      - RELEASE.md
-      - CHANGELOG.md
-      - SECURITY.md
-      - deployment/qnap/**
-      - docs/qnap-**
-      - docs/chatgpt-**
-      - docs/release-**
-      - docs/verification-**
-      - docs/slack-agent-protocol.md
-      - specs/qnap-**
-      - specs/scheduled-automation-slack-hitl-v4.1.10.feature
-      - Dockerfile
-      - scripts/build-qnap-release-bundle.sh
-      - .github/workflows/release-production-readiness.yml
+  workflow_dispatch:
 
 permissions:
   contents: write

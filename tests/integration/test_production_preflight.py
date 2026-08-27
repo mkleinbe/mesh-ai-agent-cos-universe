@@ -24,7 +24,6 @@ def production_env(tmp_path: Path) -> dict[str, str]:
         "MESH_COS_SLACK_APPROVER_USER_ID": APPROVER_USER_ID,
         "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
         "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE": str(socket_file),
-        "MESH_COS_SLACK_APPROVAL_COMMAND": "/mesh-approval",
         "MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID": "CANSWER",
     }
 
@@ -44,6 +43,7 @@ def test_production_preflight_passes_without_exposing_secrets(tmp_path: Path) ->
     assert "xapp-test-secret" not in rendered
     assert APPROVER_USER_ID not in rendered
     assert ".mesh-cos/test-task-ledger.sqlite3" not in rendered
+    assert "slack_approval_command" not in rendered
 
 
 def test_production_preflight_fails_closed_for_missing_local_runtime_config(tmp_path: Path) -> None:
@@ -73,7 +73,6 @@ def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: P
     env = production_env(tmp_path)
     env.pop("MESH_COS_SLACK_APPROVER_USER_ID")
     env.pop("MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE")
-    env.pop("MESH_COS_SLACK_APPROVAL_COMMAND")
     env.pop("MESH_COS_SLACK_ANSWER_DESK_CHANNEL_ID")
 
     assert ProductionPreflight(root=ROOT, env=env, require_slack=False).check()["ready"] is True
@@ -83,12 +82,12 @@ def test_production_preflight_enforces_requested_slack_surfaces_only(tmp_path: P
     for name in (
         "slack_approver_identity",
         "slack_socket_app_credential",
-        "slack_approval_command",
     ):
         assert any(
             check["name"] == name and check["status"] == "FAIL"
             for check in slack["checks"]
         )
+    assert all(check["name"] != "slack_approval_command" for check in slack["checks"])
 
     answer = ProductionPreflight(
         root=ROOT,
@@ -131,13 +130,11 @@ def test_production_preflight_rejects_slack_identity_and_socket_credential_drift
         for check in result["checks"]
     )
 
-    wrong_command = production_env(tmp_path)
-    wrong_command["MESH_COS_SLACK_APPROVAL_COMMAND"] = "/other-command"
-    result = ProductionPreflight(root=ROOT, env=wrong_command, require_slack=True).check()
-    assert any(
-        check["name"] == "slack_approval_command" and check["status"] == "FAIL"
-        for check in result["checks"]
-    )
+    legacy_command = production_env(tmp_path)
+    legacy_command["MESH_COS_SLACK_APPROVAL_COMMAND"] = "/wrong-and-ignored"
+    result = ProductionPreflight(root=ROOT, env=legacy_command, require_slack=True).check()
+    assert result["ready"] is True
+    assert all(check["name"] != "slack_approval_command" for check in result["checks"])
 
 
 def test_production_preflight_fails_closed_when_socket_secret_read_raises(

@@ -43,6 +43,8 @@ def test_all_operator_scripts_self_resolve_and_never_depend_on_cwd() -> None:
         "mesh-cos-mcp-backup.sh",
         "mesh-cos-mcp-verify.sh",
         "mesh-cos-slack-hitl-configure.sh",
+        "mesh-cos-slack-hitl-provision.sh",
+        "mesh-cos-tunnel-key-provision.sh",
     ]
     for filename in operator_scripts:
         script = text(SCRIPTS / filename)
@@ -64,13 +66,13 @@ def test_release_layout_helper_validates_version_directory_against_metadata() ->
 def test_current_runbook_retains_canonical_release_root_contract() -> None:
     steps = text(STEPS)
     assert "cd /share/Docker/cos-mcp/releases" in steps
-    assert "cd /share/Docker/cos-mcp/releases/v4.1.13" not in steps
-    assert "mkdir -p /share/Docker/cos-mcp/releases/v4.1.13" not in steps
+    assert "cd /share/Docker/cos-mcp/releases/v4.1.14" not in steps
+    assert "mkdir -p /share/Docker/cos-mcp/releases/v4.1.14" not in steps
     assert "cp /share/Docker/mesh-cos-mcp-qnap" not in steps
     assert "chmod 0755" not in steps
-    assert "sudo sh ./v4.1.13/mesh-cos-mcp-deploy.sh" in steps
-    assert "sudo sh ./v4.1.13/mesh-cos-mcp-preflight.sh" in steps
-    assert "sudo sh ./v4.1.13/mesh-cos-mcp-verify.sh" in steps
+    assert "sudo sh ./v4.1.14/mesh-cos-mcp-deploy.sh" in steps
+    assert "sudo sh ./v4.1.14/mesh-cos-mcp-preflight.sh" in steps
+    assert "sudo sh ./v4.1.14/mesh-cos-mcp-verify.sh" in steps
 
 
 def test_v4112_bundle_builder_keeps_runtime_state_and_secrets_outside_release() -> None:

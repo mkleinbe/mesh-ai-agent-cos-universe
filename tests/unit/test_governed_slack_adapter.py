@@ -80,7 +80,7 @@ def test_slack_adapter_rejects_wrong_channel_and_non_object_payload() -> None:
             {"operation": "handoff", "channel_id": "C0OTHER", "payload": {}},
         )
 
-    with pytest.raises(ValueError, match="payload must be an object"):
+    with pytest.raises(TypeError, match="payload must be an object"):
         registry.execute(
             "cos",
             "slack-adapter",

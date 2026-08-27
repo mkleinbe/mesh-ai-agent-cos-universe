@@ -62,7 +62,7 @@ docker run -d --name "$NAME" \
   -e MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER \
   -e MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A \
   -e MESH_COS_SLACK_APPROVER_PRINCIPAL=michael \
-  -e MESH_COS_SLACK_APP_ID=A0B49RNF4K0 \
+  -e MESH_COS_SLACK_APP_ID=A0B49RNE4K0 \
   -e MESH_COS_SLACK_APPROVER_USER_ID_FILE=/run/secrets/slack_approver_user_id \
   -e MESH_COS_SLACK_BOT_TOKEN_FILE=/run/secrets/slack_bot_token \
   -v "$STATE:/var/lib/mesh:rw" \
@@ -156,7 +156,7 @@ docker run -d --name "$NAME" \
   -e MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER \
   -e MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID=C0BRL4GCL3A \
   -e MESH_COS_SLACK_APPROVER_PRINCIPAL=michael \
-  -e MESH_COS_SLACK_APP_ID=A0B49RNF4K0 \
+  -e MESH_COS_SLACK_APP_ID=A0B49RNE4K0 \
   -e MESH_COS_SLACK_APPROVER_USER_ID_FILE=/run/secrets/slack_approver_user_id \
   -e MESH_COS_SLACK_BOT_TOKEN_FILE=/run/secrets/slack_bot_token \
   -v "$STATE:/var/lib/mesh:rw" \

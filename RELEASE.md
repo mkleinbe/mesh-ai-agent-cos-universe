@@ -1,90 +1,83 @@
-# v4.1.16 QNAP Restarting-Runtime Backup Hotfix
+# v4.1.18 QNAP Slack Bot Secret Permission Hotfix
 
-`v4.1.16` supersedes v4.1.15 for QNAP deployment.
+`v4.1.18` supersedes v4.1.17 for QNAP deployment after live v4.1.17 acceptance exposed a protected-file ownership defect in the new dedicated Slack bot credential path.
 
-A live v4.1.14 -> v4.1.15 upgrade exposed a QNAP Docker 27 state edge case: Docker reported `.State.Running=true` while `mesh-cos-mcp` was actually in `.State.Status=restarting`. The v4.1.15 pre-deploy backup gate therefore attempted `docker exec` against a restarting container and blocked the deployment before the v4.1.15 network remediation could be installed.
+The v4.1.17 provisioner correctly accepted and stored a valid `xoxb-` Slack bot OAuth token with mode `0400`. However, the shared QNAP secret-permission helper did not include `slack-bot-token` in its ownership normalization loop. Provisioning runs as root while the Mesh runtime runs as UID/GID `65532:65532`, so the candidate container mounted the file but canonical runtime preflight could not read it.
 
-v4.1.16 fixes that failure without weakening the canonical TaskLedger backup gate.
+Transactional promotion behaved correctly and restored the previously active stack after verification failed.
 
-## Core changes
+## v4.1.18 fix
 
-- Stable `status=running` plus `.State.Restarting=false` retains the existing online SQLite backup path.
-- Restarting or otherwise non-running existing runtimes use a quiesced backup path rather than `docker exec`.
-- A restarting runtime is stopped before canonical SQLite state is read.
-- The exact active Mesh image is used as a one-shot backup helper with `--network none`, non-root UID/GID, read-only root filesystem, all capabilities dropped, and `no-new-privileges`.
-- The one-shot helper mounts canonical state only, does not receive Slack/tunnel secrets, uses SQLite backup semantics, and requires `PRAGMA integrity_check` success.
-- Failed helper/export attempts remove temporary and partial backup state and fail closed.
-- If the old runtime had running intent before quiescence, that intent is restored after both successful and failed backup attempts.
-- Deployment now performs pre-deploy backup whenever `mesh-cos-mcp` exists, rather than relying on `.State.Running=true` as the existence/readiness test.
+- Add `slack-bot-token` to the constrained QNAP secret ownership/mode normalization helper.
+- Normalize the protected file to runtime owner `65532:65532` while preserving mode `0400`.
+- Preserve the existing valid `xoxb-` token across deployment. Operators do not need to re-enter it solely to repair v4.1.17 ownership.
+- Preserve fail-closed runtime validation for missing, unreadable, empty, or wrong-type bot credentials.
+- Preserve no-network, read-only, capability-bounded permission-helper execution.
+- Add ready BDD scenarios QNAP-129 and QNAP-130 plus a shell regression proving the bot token is included in the secret permission helper.
+- Add targeted security review `SEC-4.1.18-001` and exact-head v4.1.18 release verification.
 
-## v4.1.15 retained
+No Slack credential value is logged, packaged, or copied into runtime environment variables. No approval, agent, TaskLedger, or MCP authority is widened.
 
-v4.1.16 includes the full v4.1.15 Slack HITL simplification and QNAP network remediation:
+## Inherited controls
 
-- connected Slack remains collaboration-only with `CHATGPT_CONNECTOR_HANDOFF` / `COLLABORATION_ONLY`;
-- provider-authenticated `/mesh-approval` Socket Mode remains the consequential human decision boundary;
-- no active `xoxb-` verifier dependency exists;
-- Slack provider/network failure is non-fatal to the MCP HTTP process while `/readyz` fails closed;
-- the MCP keeps qnet `192.168.7.60` as its only external-capable network;
-- the tunnel uses the internal MCP bridge plus dedicated Docker egress;
-- failed candidate activation restores the previous stack;
-- active configuration promotion remains snapshot-backed and transactional.
+v4.1.18 preserves the complete v4.1.17 Slack Bot + Block Kit HITL behavior contract: dedicated **ChatGPT Enterprise AI Agent** bot authorship, provider-authenticated Socket Mode replies and Block Kit actions, case-insensitive `approve`, `deny`/`reject`, and `change` thread fallbacks, immutable payload fingerprint validation, replay protection, fail-closed provider degradation, and TaskLedger as canonical approval state.
+
+It also preserves the **v4.1.16 QNAP Restarting-Runtime Backup Hotfix**, including quiesced backup handling for restarting containers, transactional recovery, and canonical SQLite integrity checks.
 
 The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents and exactly 27 governed CoS tools. Human-only operations remain human-only. Message Operations remains agent 10; Mesh Devil's Advocate remains a shared Skill rather than agent 11. **COMPLETED != VERIFIED.**
 
-## BDD and TDD evidence
-
-Ready scenarios QNAP-112 through QNAP-115 in `specs/qnap-restarting-backup-v4.1.16.feature` cover stable online backup, restarting-runtime quiesced backup, fail-closed restoration, and deployment backup selection for any existing runtime.
-
-The regression suite includes a Docker mock that deliberately reports `running=true`, `status=restarting`, and `restarting=true`; `docker exec` is configured to fail if the implementation incorrectly chooses it.
-
 ## Security boundary
 
-Security applicability is **FULL_REVIEW**. See `docs/security-review-v4.1.16.md` and `SECURITY.md`.
+Security applicability for v4.1.18 is **TARGETED** because the change touches an OAuth credential file and runtime ownership. See `docs/security-review-v4.1.18.md`.
 
-The fallback backup helper cannot reach the network, does not mount protected credentials, runs non-root from the exact active Mesh image, and uses the existing SQLite backup/integrity helper. The canonical TaskLedger remains the source of truth and is never replaced or raw-copied as a live database workaround.
+The intended least-privilege state is owner `65532:65532`, mode `0400`. The constrained helper receives no network, runs with a read-only root filesystem, and uses only the already-approved CHOWN/FOWNER/DAC_OVERRIDE capabilities required to normalize bind-mounted protected files.
 
 ## Release assets
 
-- `mesh-cos-mcp-qnap-v4.1.16.zip`
-- `mesh-cos-mcp-qnap-v4.1.16.zip.sha256`
+- `mesh-cos-mcp-qnap-v4.1.18.zip`
+- `mesh-cos-mcp-qnap-v4.1.18.zip.sha256`
 
 ## Version identity
 
-- Repository/QNAP deployment release: `4.1.16`
-- Semantic tag: `v4.1.16`
-- Container image label: `4.1.16-qnap`
+- Repository/QNAP deployment release: `4.1.18`
+- Semantic tag: `v4.1.18`
+- Container image label: `4.1.18-qnap`
 - Canonical Phase 1 authority/runtime contract: `4.0.0` unchanged
 - Workforce: exactly 10 agents
+- CoS catalog: exactly 27 governed tools
 - Production transport: OpenAI Secure MCP Tunnel
 
 Successful live readiness after deployment must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.16
+deployment_release: 4.1.18
 agent_id: cos
 slack_hitl_ready: true
 ```
 
 ## QNAP deployment
 
+Place the release ZIP and checksum directly in `/share/Docker/cos-mcp/releases`, then run:
+
 ```sh
 cd /share/Docker/cos-mcp/releases
-sha256sum -c mesh-cos-mcp-qnap-v4.1.16.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.1.16.zip
-sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.1.18.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.1.18.zip
+sudo sh ./v4.1.18/mesh-cos-mcp-deploy.sh
 ```
 
-If the protected `xapp-` Socket Mode credential is missing, provision it explicitly and rerun deployment:
+If a valid bot OAuth token was provisioned during the failed v4.1.17 attempt, do not re-enter it. v4.1.18 is designed to repair its ownership during normal preparation/configuration.
+
+Only if deployment reports a genuinely missing or invalid Slack credential:
 
 ```sh
-sudo sh ./v4.1.16/mesh-cos-slack-hitl-provision.sh
-sudo sh ./v4.1.16/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.1.18/mesh-cos-slack-hitl-provision.sh
+sudo sh ./v4.1.18/mesh-cos-mcp-deploy.sh
 ```
 
 ## Verification and live acceptance
 
-The exact candidate must pass `docs/verification-v4.1.16-qnap-restarting-backup.md` before integration. The merge SHA must pass the v4.1.16 main-branch release workflow before the semantic tag and GitHub release are complete.
+The exact candidate must pass `docs/verification-v4.1.18-qnap-slack-bot-secret-permissions.md` before integration. The merge SHA must pass the v4.1.18 main-branch release workflow before the semantic tag and GitHub release are complete.
 
-After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.16.md`. Repository/release verification does not substitute for live QNAP deployment, Secure MCP Tunnel, hosted MCP, and provider-authenticated Slack acceptance.
+After QNAP deployment, execute `deployment/qnap/CHATGPT-ACCEPTANCE.md` and `docs/chatgpt-published-app-production-acceptance-v4.1.18.md`. Repository/release verification does not substitute for live QNAP deployment, Secure MCP Tunnel, hosted MCP, and provider-authenticated Slack acceptance.

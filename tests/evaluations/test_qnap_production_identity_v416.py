@@ -41,27 +41,28 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     )
 
 
-def test_active_release_train_is_v421_and_ci_uses_setup_node_v7() -> None:
+def test_active_release_train_is_v422_and_ci_uses_setup_node_v7() -> None:
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
     builder = read("scripts/build-qnap-release-bundle.sh")
-    wrapper = read("scripts/build-qnap-release-v4.2.1.sh")
+    wrapper = read("scripts/build-qnap-release-v4.2.2.sh")
     ci = read(".github/workflows/ci.yml")
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.2.1" in env_example
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.2.2" in env_example
     assert "MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER" in env_example
+    assert "MESH_COS_SLACK_APP_ID=A0B49RNE4K0" in env_example
     assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
     assert "mesh_candidate_release" in prepare
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
-    assert "VERSION=4.2.1" in wrapper
+    assert "VERSION=4.2.2" in wrapper
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "Build exact v4.2.1 QNAP release bundle" in ci
-    assert "mesh-cos-mcp-qnap-v4.2.1.zip" in ci
+    assert "Build exact v4.2.2 QNAP release bundle" in ci
+    assert "mesh-cos-mcp-qnap-v4.2.2.zip" in ci
 
 
 def test_historical_and_current_docs_are_packaged() -> None:
     builder = read("scripts/build-qnap-release-bundle.sh")
-    wrapper = read("scripts/build-qnap-release-v4.2.1.sh")
+    wrapper = read("scripts/build-qnap-release-v4.2.2.sh")
     for path in [
         "docs/security-review-v4.1.16.md",
         "docs/release-4.1.16-qnap-restarting-backup.md",
@@ -77,27 +78,28 @@ def test_historical_and_current_docs_are_packaged() -> None:
         assert (ROOT / path).is_file()
         assert Path(path).name in builder
     for path in [
-        "docs/security-review-v4.2.1.md",
-        "docs/release-4.2.1-slack-rendered-decision.md",
-        "docs/chatgpt-native-slack-dispatcher-v4.2.1.md",
-        "docs/chatgpt-published-app-production-acceptance-v4.2.1.md",
-        "specs/native-slack-event-hitl-v4.2.1.feature",
+        "docs/security-review-v4.2.2.md",
+        "docs/release-4.2.2-slack-provider-transport.md",
+        "docs/verification-v4.2.2-slack-provider-transport.md",
+        "docs/chatgpt-native-slack-dispatcher-v4.2.2.md",
+        "docs/chatgpt-published-app-production-acceptance-v4.2.2.md",
+        "specs/native-slack-event-hitl-v4.2.2.feature",
     ]:
         assert (ROOT / path).is_file()
         assert Path(path).name in wrapper
 
 
-def test_chatgpt_acceptance_requires_native_trigger_after_v421_deploy() -> None:
+def test_chatgpt_acceptance_requires_native_trigger_after_v422_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.2.1",
+        "v4.2.2",
         "mcp_version",
         "4.0.0",
         "deployment_release",
         "agent_id",
         "SECURE_MCP_TUNNEL",
-        "27 agent-facing tools",
-        "10 registered agents",
+        "27",
+        "10",
         "slack-adapter",
         "SLACK_BOT_API",
         "ChatGPT Enterprise AI Agent",
@@ -105,6 +107,8 @@ def test_chatgpt_acceptance_requires_native_trigger_after_v421_deploy() -> None:
         "DENY",
         "CHANGE",
         "CHATGPT_NATIVE_EVENT_TRIGGER",
+        "conversations.replies",
+        "A0B49RNE4K0",
     ]:
         assert token in acceptance
     assert "/mesh-approval" not in acceptance

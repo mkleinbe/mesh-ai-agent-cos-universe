@@ -7,7 +7,7 @@ const CONNECTIONS_OPEN_URL = 'https://slack.com/api/apps.connections.open';
 const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
 const DEFAULT_RECONNECT_BASE_MS = 1_000;
 const DEFAULT_RECONNECT_MAX_MS = 30_000;
-const DEFAULT_BRIDGE_TIMEOUT_MS = 5_000;
+const DEFAULT_BRIDGE_TIMEOUT_MS = 2_500;
 const MAX_BRIDGE_RESPONSE_BYTES = 1_000_000;
 
 export type SocketLike = {
@@ -119,7 +119,6 @@ async function invokeTrustedBridge(
   } catch {
     throw new Error('Slack approval bridge returned invalid JSON');
   }
-  if (response.ok !== true) throw new Error('Slack approval bridge rejected the interaction');
   return response;
 }
 
@@ -179,7 +178,6 @@ export class SlackSocketModeApprovalListener {
       this.active = true;
       return;
     }
-    // Configuration errors remain fatal. Provider/network failures do not.
     readSlackSocketAppToken(this.env);
     this.active = false;
     void this.connect().catch(() => this.scheduleReconnectAttempt());
@@ -301,19 +299,17 @@ export class SlackSocketModeApprovalListener {
       this.socket?.close();
       return;
     }
-    if (type !== 'slash_commands') return;
+    if (type !== 'events_api' && type !== 'interactive') return;
     const envelopeId = typeof envelope.envelope_id === 'string' ? envelope.envelope_id : '';
     if (!envelopeId) return;
-    let success = false;
     try {
       await this.bridge(envelope);
-      success = true;
+      // Canonical state is written by the trusted bridge before acknowledgement. Structured
+      // fail-closed rejections are final and are acknowledged; transport/process failures
+      // are not acknowledged so Slack can redeliver them.
+      this.socket?.send(JSON.stringify({ envelope_id: envelopeId }));
     } catch {
-      success = false;
+      // No internal error text is exposed to Slack or the caller.
     }
-    this.socket?.send(JSON.stringify({
-      envelope_id: envelopeId,
-      payload: { text: success ? 'Approval recorded.' : 'Approval not recorded.' },
-    }));
   }
 }

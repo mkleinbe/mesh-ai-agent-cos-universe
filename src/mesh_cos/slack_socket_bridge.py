@@ -10,6 +10,7 @@ from . import __version__
 from .ledger import TaskLedger
 from .mcp_stdio_bridge import MAX_REQUEST_BYTES, _ledger_target
 from .reliability import assert_runtime_enabled
+from .slack_bot import SlackApprovalNotifier
 from .slack_socket_approval import SlackSocketApprovalConfig, SlackSocketApprovalService
 
 
@@ -17,6 +18,7 @@ def execute_socket_envelope(
     payload: Any,
     *,
     env: Mapping[str, str] | None = None,
+    notifier: SlackApprovalNotifier | None = None,
 ) -> dict[str, Any]:
     environment = env if env is not None else os.environ
     assert_runtime_enabled(environment)
@@ -25,7 +27,12 @@ def execute_socket_envelope(
     ledger = TaskLedger(_ledger_target(environment))
     try:
         config = SlackSocketApprovalConfig.from_env(environment)
-        result = SlackSocketApprovalService(ledger, config).handle_envelope(payload)
+        effective_notifier = notifier or SlackApprovalNotifier.from_env(ledger, environment)
+        result = SlackSocketApprovalService(
+            ledger,
+            config,
+            notifier=effective_notifier,
+        ).handle_envelope(payload)
         return {
             "ok": True,
             "runtime_version": __version__,

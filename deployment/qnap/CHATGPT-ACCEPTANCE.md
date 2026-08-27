@@ -1,10 +1,8 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this only after the **v4.1.16** deployment reports successful release-root validation, pre-deploy backup, candidate health, transactional promotion, verification, and post-deploy backup.
+Run this only after the **v4.1.17** QNAP deployment passes local deployment, preflight, verification, and backup. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP runtime remains **4.0.0** and the deployment release is **4.1.17**.
 
-The production ChatGPT surface is the published **Mesh CoS MCP** app connected to the QNAP-hosted runtime through the **OpenAI Secure MCP Tunnel**. The canonical Phase 1 authority/runtime contract remains **4.0.0**. The QNAP deployment release is independently identified as **4.1.16**.
-
-v4.1.16 retains the v4.1.15 connected-Slack collaboration boundary and authenticated `/mesh-approval` Socket Mode human ingress, and adds the restarting-runtime backup remediation.
+v4.1.17 replaces the retired slash-command and connected-ChatGPT Slack posting paths with the dedicated **ChatGPT Enterprise AI Agent** bot, Block Kit buttons, and provider-authenticated Socket Mode thread interactions.
 
 ## 1. Local deployment identity
 
@@ -13,79 +11,51 @@ sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}
 sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{end}}' mesh-cos-tunnel
 grep '^MESH_COS_DEPLOYMENT_RELEASE=' /share/Docker/cos-mcp/.env
 sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
-sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/healthz').then(r=>r.text()).then(console.log)"
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires application image `mesh-cos-mcp:qnap-v4.1.16`, both containers healthy, and:
+PASS requires image `mesh-cos-mcp:qnap-v4.1.17`, healthy application/tunnel containers, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.16
+deployment_release: 4.1.17
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_ready: true
 ```
 
-Do not print protected Slack or tunnel files.
+## 2. Slack protected configuration
 
-## 2. Restarting-runtime backup evidence
+The governed human principal is Michael/MK. The protected Slack bindings are the approver user ID, `xapp-` Socket Mode app token, and `xoxb-` bot OAuth token. The retired verifier token and slash-command path must not be used. The installed app and visible bot identity must be **ChatGPT Enterprise AI Agent**.
 
-If the prior runtime was restarting, the pre-deploy backup receipt must show `state_export_method=quiesced_helper` and source state `restarting`. The backup path must not use `docker exec` against that restarting source. The old runtime must be quiesced before SQLite backup, the one-shot helper must be network-isolated and credential-free, and the resulting TaskLedger backup must pass integrity/SHA-256 checks.
+## 3. Tool catalog and authority
 
-Do not manually copy, replace, truncate, or delete the canonical TaskLedger to make acceptance pass.
+The CoS-bound app exposes exactly **27 agent-facing tools** and 10 registered agents. Human-only `approval.record_decision` and `reliability.human_override` remain excluded. The connected ChatGPT Slack integration is not approval authority.
 
-## 3. Release-root and promotion evidence
+## 4. Governed Slack outbound gate
 
-Confirm operator release root `/share/Docker/cos-mcp/releases`, retained release directory `/share/Docker/cos-mcp/releases/v4.1.16`, staged and active `version=4.1.16`, no state/secrets beneath the release directory, and no unresolved `.release-rollback.*` snapshot after successful deployment.
+Create a synthetic PENDING L4 approval owned by canonical principal `michael` with an immutable 64-hex `payload_fingerprint`. Invoke the CoS `slack-adapter` using `operation: post_approval`. PASS requires `execution_mode: SLACK_BOT_API`, a Slack-returned root thread binding, and unchanged PENDING approval state.
 
-## 4. QNAP network evidence
+## 5. Human interaction gate
 
-PASS requires MCP qnet `192.168.7.60`, tunnel private source `172.30.60.3`, internal-only `mesh-cos-private`, tunnel egress `172.30.61.2`, no second tunnel qnet address, and no direct MCP host port.
+From the bound Slack thread, verify **Approve**, **Deny**, and **Change** buttons. Also verify case-insensitive typed `approve`, `deny`/`reject`, and `change` fallbacks. The human never types an approval ID.
 
-## 5. Slack protected configuration
+PASS requires wrong user, wrong channel, wrong app, app/bot-authored replies, unbound thread, stale button value, malformed interaction, and conflicting second decision to fail closed. Same provider-event replay is idempotent.
 
-The governed user principal is `U01KG3CNYHK`. Only `U...` or `W...` user-principal forms are eligible. The protected Socket Mode app-level token must be `xapp-...`. No `xoxb-` verifier token is required, mounted, validated, prompted for, or used.
+For **Change**, the bot asks `What would you like to change?`; the next authenticated human reply becomes governed change input, supersedes the old approval, returns the task to `IN_PROGRESS`, and requires a new immutable approval before consequential action.
 
-## 6. Tool catalog and authority
+## 6. Provider degradation gate
 
-The CoS-bound published app must expose exactly **27 agent-facing tools** and exactly 10 registered agents. Human-principal-only `approval.record_decision` and `reliability.human_override` must not appear. Mesh Devil's Advocate remains a shared Skill, not an agent principal.
+Slack provider/network outage must not terminate the MCP HTTP process. `/healthz` remains available, `/readyz` fails closed when Slack HITL is required, consequential approval remains blocked, and reconnect remains bounded.
 
-## 7. Request-contract and lifecycle acceptance
+## 7. Audit and lifecycle
 
-Synthetic `task.intake` idempotency must return the same canonical task for the same explicit key. Invalid request fields must return bounded `validation_failed` details. Lifecycle must preserve `COMPLETED != VERIFIED` through separate `task.complete` and authorized `task.verify` operations.
+Verify `governance.verify_audit_chain` before and after synthetic writes. Lifecycle must preserve `COMPLETED != VERIFIED`. Synthetic task idempotency and bounded validation errors must remain intact.
 
-## 8. Governed Skill and connected Slack handoff acceptance
+## 8. Consequential-action exclusion
 
-The CoS `slack-adapter` is the server-owned collaboration-only Slack handoff surface. A CoS Slack handoff using `operation: handoff`, channel `C0BRL4GCL3A`, and synthetic payload must return:
+Do not perform prospect sends, public publishing, client commitments, pricing/discount approvals, final staffing commitments, reliability overrides, or other real-world consequential actions during acceptance.
 
-```text
-execution_mode: CHATGPT_CONNECTOR_HANDOFF
-authority: COLLABORATION_ONLY
-```
+## 9. Pass rule
 
-It must not change canonical approval state. Authority-like fields or decision operations must fail closed. Authorized non-Slack Skills continue to use bounded `CHATGPT_SKILL_HANDOFF` behavior.
-
-## 9. Audit integrity
-
-Call `governance.verify_audit_chain` before and after synthetic acceptance writes. PASS requires `valid: true` both times.
-
-## 10. Slack authenticated human-interaction gate
-
-Create a synthetic PENDING L4 approval owned by canonical principal `michael` with an immutable 64-hex `payload_fingerprint`.
-
-PASS requires ordinary Slack text and connected Slack writes to remain non-authoritative; provider-authenticated `/mesh-approval APPROVE <Approval ID>` from user `U01KG3CNYHK` in the governed channel records the canonical decision; wrong user/channel/command, missing fingerprint, or conflicting second interaction fails closed; same-envelope replay is idempotent; and fresh canonical readback reflects the exact decision.
-
-## 11. Provider-degradation gate
-
-Slack provider/network outage must not terminate the MCP HTTP process. `/healthz` remains available, `/readyz` fails closed for required Slack HITL, consequential approval remains blocked, and reconnect remains bounded.
-
-## 12. Consequential-action exclusion
-
-Do not perform prospect sends, public publishing, client commitments, pricing/discount approvals, final staffing commitments, reliability human overrides, or other consequential real-world actions during acceptance.
-
-## 13. Pass rule
-
-Base v4.1.16 hosted acceptance passes only when the actual Mesh CoS MCP app demonstrates correct release identity, restarting-runtime backup remediation where applicable, release-root provenance, deterministic QNAP network identity, `slack_hitl_ready=true`, schema/validation behavior, canonical TaskLedger lookup, lifecycle separation, governed Skill/Slack handoff enforcement, authorization boundaries, and valid audit chain.
-
-Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.16.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.
+Hosted acceptance passes only when the actual v4.1.17 QNAP serving instance demonstrates release identity, healthy tunnel/runtime, `slack_hitl_ready=true`, dedicated-bot outbound identity, authenticated thread/button decisions, change workflow, authorization boundaries, TaskLedger persistence, and valid audit chain. Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.17.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.

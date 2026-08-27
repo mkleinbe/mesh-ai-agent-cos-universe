@@ -10,6 +10,7 @@ APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 CANDIDATE_ENV_FILE=${QNAP_CANDIDATE_ENV_FILE:-"$BUNDLE_APP_ROOT/.env.runtime"}
 SECRET_DIR="$APP_ROOT/secrets"
 SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
+BOT_TOKEN_FILE=${QNAP_SLACK_BOT_TOKEN_FILE:-$SECRET_DIR/slack-bot-token}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
@@ -55,6 +56,25 @@ provision_socket() {
   mesh_log INFO slack_socket_app_file "status=provisioned value_logged=false"
 }
 
+provision_bot() {
+  if [ -s "$BOT_TOKEN_FILE" ] && [ "${MESH_COS_FORCE_SLACK_HITL_RECONFIGURE:-0}" != "1" ]; then
+    BOT_VALUE=$(cat "$BOT_TOKEN_FILE") || fail "unable to read existing Slack bot OAuth token file"
+    case "$BOT_VALUE" in xoxb-*) ;; *) unset BOT_VALUE; fail "existing Slack bot OAuth token is not an xoxb token" ;; esac
+    unset BOT_VALUE
+    info "preserving existing Slack bot OAuth token file"
+    return 0
+  fi
+  mesh_read_secret_tty "Slack bot OAuth token (input hidden): " "Slack bot OAuth token" || fail "unable to capture Slack bot OAuth token securely"
+  [ -n "$MESH_SECRET_VALUE" ] || fail "Slack bot OAuth token cannot be empty"
+  case "$MESH_SECRET_VALUE" in
+    xoxb-*) ;;
+    *) unset MESH_SECRET_VALUE; fail "Slack bot OAuth token must be an xoxb-* token" ;;
+  esac
+  write_protected_file "$BOT_TOKEN_FILE" "$MESH_SECRET_VALUE"
+  unset MESH_SECRET_VALUE
+  mesh_log INFO slack_bot_token_file "status=provisioned value_logged=false"
+}
+
 mesh_set_stage prepared_release
 [ -r "$CANDIDATE_ENV_FILE" ] || fail "prepared candidate release .env.runtime is required; run the normal deploy command once before provisioning"
 set -a
@@ -71,11 +91,15 @@ chmod 0700 "$SECRET_DIR" 2>/dev/null || fail "unable to set Slack HITL secrets d
 mesh_set_stage socket_app_token
 provision_socket
 
+mesh_set_stage bot_oauth_token
+provision_bot
+
 mesh_set_stage permissions
 mesh_apply_secret_permissions "$MESH_IMAGE" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize Slack HITL secret ownership/modes"
 [ -s "$SOCKET_APP_FILE" ] || fail "Slack Socket Mode app token file is missing or empty after provisioning"
-mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false verifier_required=false"
+[ -s "$BOT_TOKEN_FILE" ] || fail "Slack bot OAuth token file is missing or empty after provisioning"
+mesh_log INFO slack_hitl_permissions "owner=$MESH_UID:$MESH_GID mode=0400 values_logged=false socket_required=true bot_required=true"
 
 mesh_set_stage complete
-info "Slack HITL Socket Mode credential provisioned; rerun the normal deployment command"
-mesh_log INFO slack_hitl_provision_complete "result=PASS values_logged=false verifier_required=false"
+info "Slack HITL Socket Mode and bot OAuth credentials provisioned; rerun the normal deployment command"
+mesh_log INFO slack_hitl_provision_complete "result=PASS values_logged=false socket_required=true bot_required=true"

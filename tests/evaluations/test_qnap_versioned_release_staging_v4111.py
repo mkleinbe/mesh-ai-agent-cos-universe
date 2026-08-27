@@ -12,14 +12,7 @@ def text(path: Path) -> str:
 
 
 def test_operator_scripts_resolve_helpers_from_extracted_bundle_root() -> None:
-    operator_scripts = [
-        "mesh-cos-mcp-deploy.sh",
-        "mesh-cos-mcp-prepare.sh",
-        "mesh-cos-mcp-preflight.sh",
-        "mesh-cos-mcp-backup.sh",
-        "mesh-cos-mcp-verify.sh",
-        "mesh-cos-slack-hitl-configure.sh",
-    ]
+    operator_scripts = ["mesh-cos-mcp-deploy.sh", "mesh-cos-mcp-prepare.sh", "mesh-cos-mcp-preflight.sh", "mesh-cos-mcp-backup.sh", "mesh-cos-mcp-verify.sh", "mesh-cos-slack-hitl-configure.sh"]
     for filename in operator_scripts:
         script = text(SCRIPTS / filename)
         assert "QNAP_SCRIPT_ROOT:-/share/Docker" not in script
@@ -90,4 +83,4 @@ def test_v4111_release_evidence_remains_historical_and_current_default_advances(
     assert "v4.1.11" in historical_release
     assert "QNAP-074" in historical_spec
     assert "QNAP-082" in historical_spec
-    assert 'VERSION=${1:-4.1.16}' in builder
+    assert 'VERSION=${1:-4.1.17}' in builder

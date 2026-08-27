@@ -7,7 +7,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_qnap_compose_mounts_only_slack_human_identity_and_socket_token_read_only() -> None:
+def test_qnap_compose_mounts_slack_human_socket_and_bot_credentials_read_only() -> None:
     compose = yaml.safe_load((ROOT / "deployment/qnap/compose.yaml").read_text(encoding="utf-8"))
     service = compose["services"]["mesh-cos-mcp"]
     env = service["environment"]
@@ -18,12 +18,15 @@ def test_qnap_compose_mounts_only_slack_human_identity_and_socket_token_read_onl
     assert env["MESH_COS_SLACK_APPROVER_USER_ID_FILE"] == "/run/secrets/slack_approver_user_id"
     assert "MESH_COS_SLACK_APPROVER_USER_ID" not in env
     assert env["MESH_COS_SLACK_APPROVER_PRINCIPAL"]
+    assert env["MESH_COS_SLACK_APP_ID"]
     assert env["MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE"] == "/run/secrets/slack_socket_app_token"
-    assert env["MESH_COS_SLACK_APPROVAL_COMMAND"] == "/mesh-approval"
+    assert env["MESH_COS_SLACK_BOT_TOKEN_FILE"] == "/run/secrets/slack_bot_token"
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND" not in env
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS" not in env
     assert "MESH_COS_SLACK_VERIFIER_TOKEN_FILE" not in env
     assert any("/run/secrets/slack_approver_user_id:ro" in volume for volume in volumes)
     assert any("/run/secrets/slack_socket_app_token:ro" in volume for volume in volumes)
+    assert any("/run/secrets/slack_bot_token:ro" in volume for volume in volumes)
     assert not any("slack_verifier" in volume for volume in volumes)
 
 
@@ -53,8 +56,12 @@ def test_qnap_reference_env_uses_only_required_protected_slack_paths() -> None:
     text = (ROOT / "deployment/qnap/.env.example").read_text(encoding="utf-8")
     assert "QNAP_SLACK_APPROVER_USER_ID_FILE=" in text
     assert "QNAP_SLACK_SOCKET_APP_TOKEN_FILE=" in text
+    assert "QNAP_SLACK_BOT_TOKEN_FILE=" in text
+    assert "MESH_COS_SLACK_APP_ID=A0B49RNF4K0" in text
     assert "QNAP_SLACK_VERIFIER_TOKEN_FILE=" not in text
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS=" not in text
     assert "MESH_COS_SLACK_APPROVER_USER_ID=" not in text
     assert "MESH_COS_SLACK_APPROVER_PRINCIPAL=michael" in text
-    assert "MESH_COS_SLACK_APPROVAL_COMMAND=/mesh-approval" in text
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND=" not in text
+    assert "hooks.slack.com/services/" not in text
+    assert "xoxb-" not in text

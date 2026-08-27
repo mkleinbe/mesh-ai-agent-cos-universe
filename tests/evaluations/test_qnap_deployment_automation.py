@@ -11,7 +11,7 @@ def text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_prepare_automates_candidate_without_protected_secret_input_or_verifier_dependency() -> None:
+def test_prepare_automates_candidate_without_protected_secret_input_or_legacy_verifier_dependency() -> None:
     prepare = text(SCRIPTS / "mesh-cos-mcp-prepare.sh")
     tunnel_provision = text(SCRIPTS / "mesh-cos-tunnel-key-provision.sh")
     assert 'BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}' in prepare
@@ -29,9 +29,12 @@ def test_prepare_automates_candidate_without_protected_secret_input_or_verifier_
     assert "command -v stty" not in prepare
     assert "QNAP_SLACK_APPROVER_USER_ID_FILE=" in prepare
     assert "QNAP_SLACK_SOCKET_APP_TOKEN_FILE=" in prepare
+    assert "QNAP_SLACK_BOT_TOKEN_FILE=" in prepare
+    assert "MESH_COS_SLACK_APP_ID=" in prepare
     assert "QNAP_SLACK_VERIFIER_TOKEN_FILE=" not in prepare
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS=" not in prepare
     assert "MESH_COS_SLACK_APPROVER_USER_ID=" not in prepare
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND=" not in prepare
     assert "OpenAI tunnel runtime API key (input hidden)" in tunnel_provision
     assert "mesh_read_secret_tty" in tunnel_provision
     assert "value_logged=false" in tunnel_provision
@@ -88,7 +91,7 @@ def test_operator_scripts_self_resolve_versioned_bundle_root() -> None:
         assert "pwd -P" in script
 
 
-def test_slack_hitl_configuration_is_minimal_candidate_bound_and_secret_safe() -> None:
+def test_slack_hitl_configuration_is_bot_bound_candidate_bound_and_secret_safe() -> None:
     configure = text(SCRIPTS / "mesh-cos-slack-hitl-configure.sh")
     provision = text(SCRIPTS / "mesh-cos-slack-hitl-provision.sh")
     secret_input = text(SCRIPTS / "mesh-cos-qnap-secret-input.sh")
@@ -99,15 +102,17 @@ def test_slack_hitl_configuration_is_minimal_candidate_bound_and_secret_safe() -
     assert "grep -Eq '^[UW][A-Z0-9]+$'" in configure
     assert "Slack Socket Mode app token file is missing" in configure
     assert "slack-socket-app-token" in configure
+    assert "Slack bot OAuth token file is missing" in configure
+    assert "slack-bot-token" in configure
     assert "Slack verifier" not in configure
-    assert "xoxb-" not in configure
+    assert "xoxb-" in configure
     assert "read_secret_tty" not in configure
     assert "command -v stty" not in configure
     assert "value_logged=false" in configure
-    assert "verifier_required=false" in configure
+    assert "bot_required=true" in configure
     assert "Slack Socket Mode app-level token (input hidden)" in provision
-    assert "Slack read-only verifier bot token" not in provision
-    assert "xoxb-" not in provision
+    assert "Slack bot OAuth token (input hidden)" in provision
+    assert "xoxb-*" in provision
     assert "xapp-*" in provision
     assert "mesh_read_secret_tty" in provision
     assert "value_logged=false" in provision
@@ -115,13 +120,16 @@ def test_slack_hitl_configuration_is_minimal_candidate_bound_and_secret_safe() -
     assert "/bin/stty /usr/bin/stty" in secret_input
 
 
-def test_qnap_compose_has_deterministic_egress_and_minimal_slack_mounts() -> None:
+def test_qnap_compose_has_deterministic_egress_and_dedicated_slack_bot_mounts() -> None:
     compose = text(QNAP / "compose.yaml")
     assert compose.count("pull_policy: never") == 2
     assert 'MESH_COS_SLACK_HITL_REQUIRED: "true"' in compose
     assert "MESH_COS_SLACK_APPROVER_USER_ID_FILE: /run/secrets/slack_approver_user_id" in compose
     assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: /run/secrets/slack_socket_app_token" in compose
-    assert "MESH_COS_SLACK_APPROVAL_COMMAND: /mesh-approval" in compose
+    assert "MESH_COS_SLACK_BOT_TOKEN_FILE: /run/secrets/slack_bot_token" in compose
+    assert "MESH_COS_SLACK_APP_ID:" in compose
+    assert "/run/secrets/slack_bot_token:ro" in compose
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND" not in compose
     assert "MESH_COS_SLACK_VERIFIER_TOKEN_FILE" not in compose
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS" not in compose
     assert "/run/secrets/slack_verifier_token" not in compose
@@ -146,10 +154,15 @@ def test_preflight_and_verify_remain_fail_closed_around_runtime_identity() -> No
     assert "active release may differ before candidate promotion" in preflight
     assert "canonical ledger is read/write for candidate runtime UID/GID" in preflight
     assert "MESH_COS_SLACK_VERIFIER_TOKEN_FILE" not in runtime_preflight
-    assert "xoxb-" not in runtime_preflight
     assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE" in runtime_preflight
+    assert "MESH_COS_SLACK_BOT_TOKEN_FILE" in runtime_preflight
+    assert "MESH_COS_SLACK_APP_ID" in runtime_preflight
     assert "xapp-" in runtime_preflight
-    assert "slack_approval_command_invalid" in runtime_preflight
+    assert "xoxb-" in runtime_preflight
+    assert "slack_bot_credential_invalid" in runtime_preflight
+    assert "slack_app_identity_invalid" in runtime_preflight
+    assert "slack_approval_command_invalid" not in runtime_preflight
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND" not in runtime_preflight
     assert "non-tunnel direct MCP request denied" in verify
     assert "--network container:mesh-cos-tunnel" in verify
     assert "registry.get_agent" in verify
@@ -174,16 +187,17 @@ def test_backup_excludes_secrets_and_supports_restarting_runtime() -> None:
     assert "/run/secrets" not in backup
 
 
-def test_v4116_release_builder_packages_current_contract_without_runtime_secrets() -> None:
+def test_v4117_release_builder_packages_current_contract_without_runtime_secrets() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.16}' in builder
+    assert 'VERSION=${1:-4.1.17}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
-    assert "qnap-restarting-backup-v4.1.16.feature" in builder
-    assert "security-review-v4.1.16.md" in builder
-    assert "release-4.1.16-qnap-restarting-backup.md" in builder
-    assert "verification-v4.1.16-qnap-restarting-backup.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.16.md" in builder
+    assert "qnap-slack-thread-hitl-v4.1.17.feature" in builder
+    assert "slack-app-manifest.v4.1.17.json" in builder
+    assert "security-review-v4.1.17.md" in builder
+    assert "release-4.1.17-slack-bot-block-kit-hitl.md" in builder
+    assert "verification-v4.1.17-slack-bot-block-kit-hitl.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.17.md" in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder

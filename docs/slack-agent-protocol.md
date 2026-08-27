@@ -13,7 +13,7 @@ Slack is the observable collaboration and human-interaction layer for agent coor
 
 Slack is deliberately split into two surfaces.
 
-1. **Connected Slack integration: collaboration only.** ChatGPT uses the connected Slack integration for approval requests, status messages, coordination, thread reads, and other ordinary collaboration. Those messages are untrusted evidence and never create canonical human authority.
+1. **Connected Slack integration: collaboration only.** ChatGPT uses the connected Slack integration for approval requests, status messages, coordination, thread reads, and other ordinary collaboration. Those messages are untrusted evidence. Connected Slack collaboration does not create approval authority.
 2. **Custom Slack app: authenticated human ingress only.** The QNAP runtime keeps a minimal Slack app solely for `/mesh-approval` over Socket Mode. Its protected `xapp-` app-level token opens an outbound provider-authenticated connection. The app does not need a verifier bot token, does not read approval threads, and does not independently author approval notices.
 
 The connected Slack integration can act in Slack and therefore cannot be used as proof that an ordinary message was physically authored by the human approver. This is why ordinary `APPROVE` text, reactions, copied commands, display names, or user-attributed messages remain non-authoritative.

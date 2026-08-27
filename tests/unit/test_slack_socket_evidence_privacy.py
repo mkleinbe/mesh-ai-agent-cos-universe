@@ -10,10 +10,11 @@ from mesh_cos.slack_socket_approval import (
 )
 
 
-def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() -> None:
+def test_trusted_thread_decision_does_not_persist_protected_human_provider_id() -> None:
     channel_id = "C0TESTAGENTOPS"
     approver_user_id = "U0PROTECTEDAPPROVER"
     fingerprint = "9" * 64
+    root_ts = "1787843216.789639"
     ledger = TaskLedger()
     cos = ChiefOfStaffService(ledger)
     task = cos.intake(
@@ -48,28 +49,56 @@ def test_trusted_socket_decision_does_not_persist_protected_human_provider_id() 
             approver_user_id=approver_user_id,
         ),
     )
+    binding = service.handle_envelope(
+        {
+            "envelope_id": "env-root-privacy",
+            "type": "events_api",
+            "payload": {
+                "type": "event_callback",
+                "event_id": "Ev-root-privacy",
+                "event": {
+                    "type": "message",
+                    "channel": channel_id,
+                    "user": approver_user_id,
+                    "app_id": "A0CHATGPT",
+                    "text": f"Approval ID: `{approval.approval_id}`",
+                    "ts": root_ts,
+                    "event_ts": root_ts,
+                },
+            },
+        }
+    )
     decision = service.handle_envelope(
         {
-            "envelope_id": "env-privacy",
-            "type": "slash_commands",
+            "envelope_id": "env-reply-privacy",
+            "type": "events_api",
             "payload": {
-                "channel_id": channel_id,
-                "user_id": approver_user_id,
-                "command": "/mesh-approval",
-                "text": f"APPROVE {approval.approval_id}",
-                "trigger_id": "trigger-privacy",
+                "type": "event_callback",
+                "event_id": "Ev-reply-privacy",
+                "event": {
+                    "type": "message",
+                    "channel": channel_id,
+                    "user": approver_user_id,
+                    "text": "APPROVE",
+                    "thread_ts": root_ts,
+                    "ts": "1787843300.046169",
+                    "event_ts": "1787843300.046169",
+                },
             },
         }
     )
 
-    durable = dict(
-        ledger.get_record("approval_slack_socket_decision", approval.approval_id)
-    )
-    assert ledger.get_record("approval_slack_binding", approval.approval_id) is None
+    durable = dict(ledger.get_record("approval_slack_socket_decision", approval.approval_id))
+    durable_binding = dict(ledger.get_record("approval_slack_thread_binding", root_ts))
+    assert binding == durable_binding
     assert decision["provider_identity_verified"] is True
     assert durable["provider_identity_verified"] is True
     assert durable["canonical_principal"] == "michael"
     assert durable["payload_fingerprint"] == fingerprint
+    assert durable_binding["payload_fingerprint"] == fingerprint
     assert "slack_user_id" not in durable
     assert "approver_user_id" not in durable
+    assert "slack_user_id" not in durable_binding
+    assert "approver_user_id" not in durable_binding
     assert approver_user_id not in str(durable)
+    assert approver_user_id not in str(durable_binding)

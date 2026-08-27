@@ -41,6 +41,7 @@ v4.2.1 is a patch to the v4.2.0 ChatGPT-native Slack HITL architecture. It does 
 See:
 
 - `RELEASE.md`
+- `CHANGELOG-v4.2.1.md`
 - `docs/release-4.2.1-slack-rendered-decision.md`
 - `docs/security-review-v4.2.1.md`
 - `docs/chatgpt-native-slack-dispatcher-v4.2.1.md`

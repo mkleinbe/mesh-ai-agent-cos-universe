@@ -51,50 +51,58 @@ jobs:
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           sh deployment/qnap/tests/test-restarting-container-backup.sh
           bash -n scripts/build-qnap-release-bundle.sh
+          bash -n scripts/build-qnap-release-v4.2.0.sh
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          grep -q 'MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER' deployment/qnap/compose.yaml
           grep -q 'MESH_COS_SLACK_BOT_TOKEN_FILE' deployment/qnap/compose.yaml
+          ! grep -q 'MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:' deployment/qnap/compose.yaml
+          ! grep -q 'slack_socket_app_token' deployment/qnap/compose.yaml
+          ! grep -q 'Slack Socket Mode app-level token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          grep -q 'socket_required=false' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'xoxb-' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
           grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-      - name: Build exact v4.1.17 QNAP release bundle
+      - name: Build exact v4.2.0 QNAP release bundle
         env:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh 4.1.17
-          ZIP=dist/mesh-cos-mcp-qnap-v4.1.17.zip
-          BUNDLE=dist/qnap-bundle/v4.1.17
+          bash scripts/build-qnap-release-v4.2.0.sh
+          ZIP=dist/mesh-cos-mcp-qnap-v4.2.0.zip
+          BUNDLE=dist/qnap-bundle/v4.2.0
           test -f "$ZIP" && test -f "$ZIP.sha256"
-          grep -q '^version=4.1.17$' "$BUNDLE/cos-mcp/release-metadata.txt"
+          grep -q '^version=4.2.0$' "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
-          test -f "$BUNDLE/cos-mcp/qnap-slack-thread-hitl-v4.1.17.feature"
-          test -f "$BUNDLE/cos-mcp/security-review-v4.1.17.md"
-          test -f "$BUNDLE/cos-mcp/release-4.1.17-slack-bot-block-kit-hitl.md"
-          test -f "$BUNDLE/cos-mcp/verification-v4.1.17-slack-bot-block-kit-hitl.md"
-          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.1.17.md"
-          unzip -Z1 "$ZIP" > /tmp/v4117.entries
-          if grep -Ev '^v4\.1\.17/' /tmp/v4117.entries; then exit 1; fi
-          grep -qx 'v4.1.17/mesh-cos-mcp-deploy.sh' /tmp/v4117.entries
-          grep -qx 'v4.1.17/cos-mcp/release-metadata.txt' /tmp/v4117.entries
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.17.zip.sha256)
-      - name: Build production container from exact v4.1.17 bundle
+          test -f "$BUNDLE/cos-mcp/native-slack-event-hitl-v4.2.0.feature"
+          test -f "$BUNDLE/cos-mcp/security-review-v4.2.0.md"
+          test -f "$BUNDLE/cos-mcp/release-4.2.0-native-slack-event-hitl.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-native-slack-dispatcher-v4.2.0.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.2.0.md"
+          test -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.0.json"
+          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.1.17.json"
+          unzip -Z1 "$ZIP" > /tmp/v420.entries
+          if grep -Ev '^v4\.2\.0/' /tmp/v420.entries; then exit 1; fi
+          grep -qx 'v4.2.0/mesh-cos-mcp-deploy.sh' /tmp/v420.entries
+          grep -qx 'v4.2.0/cos-mcp/release-metadata.txt' /tmp/v420.entries
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.2.0.zip.sha256)
+      - name: Build production container from exact v4.2.0 bundle
         run: |
           set -euo pipefail
-          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.1.17-qnap -t mesh-cos-mcp:ci-v4.1.17 dist/qnap-bundle/v4.1.17/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.1.17)" = '4.1.17-qnap'
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.1.17)" = "$GITHUB_SHA"
+          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.2.0-qnap -t mesh-cos-mcp:ci-v4.2.0 dist/qnap-bundle/v4.2.0/cos-mcp/build-context
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.2.0)" = '4.2.0-qnap'
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.2.0)" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and sequential requests
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.1.17'
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.1.17
+          MESH_COS_DEPLOYMENT_RELEASE: '4.2.0'
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.2.0
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.1.17-ci
+          name: mesh-cos-mcp-qnap-v4.2.0-ci
           path: |
-            dist/mesh-cos-mcp-qnap-v4.1.17.zip
-            dist/mesh-cos-mcp-qnap-v4.1.17.zip.sha256
+            dist/mesh-cos-mcp-qnap-v4.2.0.zip
+            dist/mesh-cos-mcp-qnap-v4.2.0.zip.sha256
           if-no-files-found: error
           retention-days: 30

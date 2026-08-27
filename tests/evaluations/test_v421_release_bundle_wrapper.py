@@ -18,8 +18,9 @@ def test_v421_wrapper_rebuilds_zip_inside_dist_and_contains_current_contract() -
     assert "slack-app-manifest.v4.2.1.json" in script
     assert "native-slack-event-hitl-v4.2.1.feature" in script
     assert "security-review-v4.2.1.md" in script
+    assert "release-4.2.1-slack-rendered-decision.md" in script
+    assert "verification-v4.2.1-slack-rendered-decision.md" in script
     assert "chatgpt-native-slack-dispatcher-v4.2.1.md" in script
     assert "chatgpt-published-app-production-acceptance-v4.2.1.md" in script
-    assert "release-4.2.1-slack-rendered-decision.md" in script
     assert "/mesh-approval Socket Mode ingress" in script
     assert "! grep -q '/mesh-approval Socket Mode ingress'" in script

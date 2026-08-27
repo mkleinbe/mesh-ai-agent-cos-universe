@@ -13,7 +13,7 @@ from mesh_cos.ledger import TaskLedger
 from mesh_cos.mcp_runtime import MCPRuntime
 from mesh_cos.slack_hitl import SlackHITLConfig
 
-EXPECTED_SLACK_APP_ID = "A0B49RNF4K0"
+EXPECTED_SLACK_APP_ID = "A0B49RNE4K0"
 EXPECTED_SLACK_HITL_MODE = "CHATGPT_NATIVE_EVENT_TRIGGER"
 
 

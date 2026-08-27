@@ -2,7 +2,7 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository/QNAP deployment target: `v4.1.13 Slack Approver Bootstrap`.**
+**Current repository/QNAP deployment target: `v4.1.14 QNAP Protected-Secret Provisioning Remediation`.**
 
 The canonical Phase 1 agent authority/runtime contract remains **`4.0.0`**. The `4.1.x` deployment train packages and hardens the QNAP container, remote MCP transport, OpenAI Secure MCP Tunnel integration, operating controls, scheduled execution, Slack HITL, request contract, and release evidence without widening the Phase 1 agent authority model.
 
@@ -41,11 +41,11 @@ The canonical QNAP application root remains `/share/Docker/cos-mcp` and uses the
 
 ## Dual release identity
 
-Successful governed tool envelopes for v4.1.13 must report:
+Successful governed tool envelopes for v4.1.14 must report:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.13
+deployment_release: 4.1.14
 agent_id: cos
 ```
 
@@ -53,20 +53,24 @@ Production `/healthz` and `/readyz` additionally report `transport: SECURE_MCP_T
 
 `mcp_version` identifies the canonical Phase 1 authority/runtime contract. `deployment_release` identifies the QNAP deployment release serving the request. Remote production startup fails closed if `MESH_COS_DEPLOYMENT_RELEASE` is absent.
 
-## v4.1.13 deployment remediation
+## v4.1.14 deployment remediation
 
-v4.1.13 supersedes v4.1.12 for Slack human-approver bootstrap while retaining the v4.1.12 release-root contract and all prior runtime controls.
+v4.1.14 supersedes v4.1.13 for QNAP protected-secret provisioning while retaining the governed Slack approver bootstrap and all earlier runtime controls.
 
-1. The verified Slack user principal for Michael/MK is `U01KG3CNYHK`.
-2. Deployment ships that non-secret user principal as the governed approver default.
-3. The operator is no longer prompted to enter a Slack approver user ID.
-4. Slack `D...` identifiers are conversation/DM channel IDs and fail closed if supplied as approver principals.
-5. Only Slack user-principal identifiers beginning with `U` or `W` are accepted.
-6. A missing protected approver identity file is created automatically from the governed default.
-7. An existing approver identity file is validated before it is preserved.
-8. Forced Slack HITL reconfiguration restages the governed user ID without prompting for it.
-9. Slack verifier bot and Socket Mode app credentials remain protected runtime secrets and are never embedded in the release artifact or logs.
-10. The canonical operator working directory remains `/share/Docker/cos-mcp/releases`; extraction creates the `v4.1.13/` folder automatically and no manual staging choreography is required.
+1. Normal upgrades validate and preserve existing Slack verifier and Socket Mode credentials without prompting.
+2. The normal Slack configuration path no longer depends on `stty` or any hidden interactive secret-entry routine.
+3. Missing or invalid Slack credentials fail closed and direct the operator to `mesh-cos-slack-hitl-provision.sh`.
+4. First-time or deliberate Slack credential provisioning is isolated in that explicit operator command.
+5. A shared QNAP/BusyBox secret-input helper prefers shell-native silent read, falls back to an explicitly resolved `stty` binary only during provisioning, and refuses to capture a secret when terminal echo cannot be disabled safely.
+6. The same deployment-path pressure test found and removed the equivalent hidden-input dependency for a missing OpenAI tunnel runtime key. Tunnel key provisioning is now isolated in `mesh-cos-tunnel-key-provision.sh`.
+7. Provisioned secrets are never placed on a command line, embedded in release artifacts, or intentionally emitted to deployment logs, and their runtime ownership/mode is normalized to `65532:65532` / `0400`.
+8. The verified Slack human principal remains `U01KG3CNYHK`; `D...` conversation IDs remain invalid human principals.
+9. Canonical TaskLedger, Secure MCP Tunnel ingress, exactly 10 agents, 27 governed CoS tools, human-only operations, and `COMPLETED != VERIFIED` remain unchanged.
+10. Repository or release verification does not constitute production acceptance. QNAP, hosted MCP, published ChatGPT app, and live Slack HITL acceptance remain required after deployment.
+
+## v4.1.13 capability retained
+
+v4.1.13 established the governed Slack human-approver bootstrap: Michael/MK is bound to Slack user principal `U01KG3CNYHK`; the operator is not prompted for that non-secret identity; `D...` conversation IDs fail closed; existing valid identity files are preserved; and Slack verifier and Socket Mode credentials remain protected runtime secrets.
 
 ## v4.1.12 release-root contract retained
 
@@ -90,7 +94,7 @@ The CoS production projection remains exactly **27 governed tools**. L4 requires
 
 Repository, CI, container, and release-package verification do not prove the newly deployed on-premises serving instance, the official OpenAI Workspace Agent Slack delivery configuration, or the live Socket Mode human-interaction path.
 
-After deploying v4.1.13, execute `docs/chatgpt-published-app-production-acceptance-v4.1.13.md`. Production certification requires the actual bot-authored HITL notice, proof ordinary APPROVE text remains non-authoritative, a provider-authenticated `/mesh-approval` interaction from the verified human approver, fresh canonical approval readback, valid audit chain, zero unauthorized external actions, and required TaskLedger operating-mirror reconciliation.
+After deploying v4.1.14, execute `docs/chatgpt-published-app-production-acceptance-v4.1.14.md`. Production certification requires the actual bot-authored HITL notice, proof ordinary APPROVE text remains non-authoritative, a provider-authenticated `/mesh-approval` interaction from the verified human approver, fresh canonical approval readback, valid audit chain, zero unauthorized external actions, and required TaskLedger operating-mirror reconciliation.
 
 Current operator and release references:
 
@@ -98,11 +102,12 @@ Current operator and release references:
 - `RELEASE.md`
 - `docs/production-readiness.md`
 - `docs/slack-agent-protocol.md`
+- `docs/qnap-security-review-v4.1.14.md`
+- `docs/release-4.1.14-qnap-slack-secret-provisioning.md`
+- `docs/verification-v4.1.14-qnap-slack-secret-provisioning.md`
+- `docs/chatgpt-published-app-production-acceptance-v4.1.14.md`
+- `specs/qnap-slack-secret-provisioning-v4.1.14.feature`
 - `docs/qnap-slack-approver-bootstrap-v4.1.13.md`
-- `docs/qnap-security-review-v4.1.13.md`
-- `docs/release-4.1.13-slack-approver-bootstrap.md`
-- `docs/verification-v4.1.13-slack-approver-bootstrap.md`
-- `docs/chatgpt-published-app-production-acceptance-v4.1.13.md`
 - `specs/qnap-slack-approver-bootstrap-v4.1.13.feature`
 - `specs/qnap-release-root-bootstrap-v4.1.12.feature`
 - `specs/scheduled-automation-slack-hitl-v4.1.10.feature`

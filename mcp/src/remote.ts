@@ -21,7 +21,7 @@ export function nativeSlackHitlConfigured(env:NodeJS.ProcessEnv=process.env):boo
   return (env.MESH_COS_SLACK_HITL_MODE??'').trim()===NATIVE_SLACK_MODE
     && (env.MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID??'').trim()==='C0BRL4GCL3A'
     && (env.MESH_COS_SLACK_APPROVER_PRINCIPAL??'').trim()==='michael'
-    && (env.MESH_COS_SLACK_APP_ID??'').trim()==='A0B49RNF4K0'
+    && (env.MESH_COS_SLACK_APP_ID??'').trim()==='A0B49RNE4K0'
     && protectedFilePresent(env.MESH_COS_SLACK_APPROVER_USER_ID_FILE)
     && protectedFilePresent(env.MESH_COS_SLACK_BOT_TOKEN_FILE)
     && !(env.MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE??'').trim();

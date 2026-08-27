@@ -2,7 +2,7 @@
 
 Run this only after the **v4.1.17** QNAP deployment passes local deployment, preflight, verification, and backup. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP runtime remains **4.0.0** and the deployment release is **4.1.17**.
 
-v4.1.17 replaces `/mesh-approval` and the connected-ChatGPT Slack posting path with the dedicated **ChatGPT Enterprise AI Agent** bot, Block Kit buttons, and provider-authenticated Socket Mode thread interactions.
+v4.1.17 replaces the retired slash-command and connected-ChatGPT Slack posting paths with the dedicated **ChatGPT Enterprise AI Agent** bot, Block Kit buttons, and provider-authenticated Socket Mode thread interactions.
 
 ## 1. Local deployment identity
 
@@ -26,7 +26,7 @@ slack_hitl_ready: true
 
 ## 2. Slack protected configuration
 
-The governed human principal is Michael/MK. The protected Slack bindings are the approver user ID, `xapp-` Socket Mode app token, and `xoxb-` bot OAuth token. The retired verifier token and slash command must not be used. The installed app and visible bot identity must be **ChatGPT Enterprise AI Agent**.
+The governed human principal is Michael/MK. The protected Slack bindings are the approver user ID, `xapp-` Socket Mode app token, and `xoxb-` bot OAuth token. The retired verifier token and slash-command path must not be used. The installed app and visible bot identity must be **ChatGPT Enterprise AI Agent**.
 
 ## 3. Tool catalog and authority
 

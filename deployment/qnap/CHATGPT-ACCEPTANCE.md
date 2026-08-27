@@ -57,14 +57,14 @@ Synthetic `task.intake` idempotency must return the same canonical task for the 
 
 ## 8. Governed Skill and connected Slack handoff acceptance
 
-A CoS Slack handoff using `operation: handoff`, channel `C0BRL4GCL3A`, and synthetic payload must return:
+The CoS `slack-adapter` is the server-owned collaboration-only Slack handoff surface. A CoS Slack handoff using `operation: handoff`, channel `C0BRL4GCL3A`, and synthetic payload must return:
 
 ```text
 execution_mode: CHATGPT_CONNECTOR_HANDOFF
 authority: COLLABORATION_ONLY
 ```
 
-It must not change canonical approval state. Authority-like fields or decision operations must fail closed.
+It must not change canonical approval state. Authority-like fields or decision operations must fail closed. Authorized non-Slack Skills continue to use bounded `CHATGPT_SKILL_HANDOFF` behavior.
 
 ## 9. Audit integrity
 

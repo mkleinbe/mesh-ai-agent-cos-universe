@@ -1,8 +1,8 @@
 # ChatGPT Secure MCP Tunnel Connection and Acceptance
 
-Run this only after the **v4.1.17** QNAP deployment passes local deployment, preflight, verification, and backup. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP runtime remains **4.0.0** and the deployment release is **4.1.17**.
+Run this only after the **v4.1.18** QNAP deployment passes local deployment, preflight, verification, and backup. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP runtime remains **4.0.0** and the deployment release is **4.1.18**.
 
-v4.1.17 replaces the retired slash-command and connected-ChatGPT Slack posting paths with the dedicated **ChatGPT Enterprise AI Agent** bot, Block Kit buttons, and provider-authenticated Socket Mode thread interactions.
+v4.1.18 preserves the v4.1.17 dedicated **ChatGPT Enterprise AI Agent** bot, Block Kit buttons, and provider-authenticated Socket Mode thread interactions while repairing QNAP protected-file ownership for the bot OAuth credential.
 
 ## 1. Local deployment identity
 
@@ -14,11 +14,11 @@ sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires image `mesh-cos-mcp:qnap-v4.1.17`, healthy application/tunnel containers, and:
+PASS requires image `mesh-cos-mcp:qnap-v4.1.18`, healthy application/tunnel containers, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.17
+deployment_release: 4.1.18
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_ready: true
@@ -27,6 +27,8 @@ slack_hitl_ready: true
 ## 2. Slack protected configuration
 
 The governed human principal is Michael/MK. The protected Slack bindings are the approver user ID, `xapp-` Socket Mode app token, and `xoxb-` bot OAuth token. The retired verifier token and slash-command path must not be used. The installed app and visible bot identity must be **ChatGPT Enterprise AI Agent**.
+
+The v4.1.18 permission hotfix must leave the bot token readable by runtime UID/GID `65532:65532` with mode `0400`. Do not print or cat the credential file to prove this property.
 
 ## 3. Tool catalog and authority
 
@@ -58,4 +60,4 @@ Do not perform prospect sends, public publishing, client commitments, pricing/di
 
 ## 9. Pass rule
 
-Hosted acceptance passes only when the actual v4.1.17 QNAP serving instance demonstrates release identity, healthy tunnel/runtime, `slack_hitl_ready=true`, dedicated-bot outbound identity, authenticated thread/button decisions, change workflow, authorization boundaries, TaskLedger persistence, and valid audit chain. Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.17.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.
+Hosted acceptance passes only when the actual v4.1.18 QNAP serving instance demonstrates release identity, healthy tunnel/runtime, `slack_hitl_ready=true`, dedicated-bot outbound identity, authenticated thread/button decisions, change workflow, authorization boundaries, TaskLedger persistence, and valid audit chain. Full production certification additionally requires `chatgpt-published-app-production-acceptance-v4.1.18.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.

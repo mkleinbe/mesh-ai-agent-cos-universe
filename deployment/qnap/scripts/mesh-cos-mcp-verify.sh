@@ -6,6 +6,7 @@ if [ -z "$SCRIPT_ROOT" ]; then
   SCRIPT_ROOT=$(CDPATH= cd "$(dirname "$0")" 2>/dev/null && pwd -P) || { echo "ERROR: unable to resolve deployment bundle root" >&2; exit 1; }
 fi
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
+VERIFY_ENV_FILE=${QNAP_VERIFY_ENV_FILE:-$APP_ROOT/.env}
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
 MESH_COS_SCRIPT=mesh-cos-mcp-verify.sh
 export QNAP_SCRIPT_ROOT QNAP_APP_ROOT MESH_COS_SCRIPT
@@ -21,11 +22,12 @@ warn() { echo "WARN $1" >&2; mesh_log WARN verify_warn "check=$1"; }
 
 mesh_set_stage verify_environment
 cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
-[ -f "$APP_ROOT/.env" ] || fail "$APP_ROOT/.env missing"
+[ -f "$VERIFY_ENV_FILE" ] || fail "$VERIFY_ENV_FILE missing"
 set -a
-. "$APP_ROOT/.env"
+. "$VERIFY_ENV_FILE"
 set +a
-[ -n "${MESH_COS_DEPLOYMENT_RELEASE:-}" ] || fail "MESH_COS_DEPLOYMENT_RELEASE missing from .env"
+[ -n "${MESH_COS_DEPLOYMENT_RELEASE:-}" ] || fail "MESH_COS_DEPLOYMENT_RELEASE missing from verification environment"
+mesh_log INFO verify_environment "source=$VERIFY_ENV_FILE deployment_release=$MESH_COS_DEPLOYMENT_RELEASE"
 
 mesh_set_stage container_health
 for name in mesh-cos-mcp mesh-cos-tunnel; do
@@ -93,7 +95,7 @@ fi
 
 mesh_set_stage complete
 pass "local container verification complete"
-mesh_log INFO verify_complete "deployment_release=$MESH_COS_DEPLOYMENT_RELEASE mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID"
+mesh_log INFO verify_complete "deployment_release=$MESH_COS_DEPLOYMENT_RELEASE mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID environment_source=$VERIFY_ENV_FILE"
 echo "Deployment release: $MESH_COS_DEPLOYMENT_RELEASE"
 echo "Canonical MCP contract: 4.0.0"
 echo "Mesh image ID: $RUNNING_MESH_ID"

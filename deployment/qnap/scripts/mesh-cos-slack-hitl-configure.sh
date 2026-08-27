@@ -12,7 +12,6 @@ SECRET_DIR="$APP_ROOT/secrets"
 APPROVER_FILE=${QNAP_SLACK_APPROVER_USER_ID_FILE:-$SECRET_DIR/slack-approver-user-id}
 SOCKET_APP_FILE=${QNAP_SLACK_SOCKET_APP_TOKEN_FILE:-$SECRET_DIR/slack-socket-app-token}
 BOT_TOKEN_FILE=${QNAP_SLACK_BOT_TOKEN_FILE:-$SECRET_DIR/slack-bot-token}
-LEGACY_BOT_FILE=${QNAP_SLACK_LEGACY_VERIFIER_TOKEN_FILE:-$SECRET_DIR/slack-verifier-token}
 DEFAULT_APPROVER_USER_ID=${MESH_COS_SLACK_APPROVER_USER_ID:-U01KG3CNYHK}
 MESH_UID=${MESH_UID:-65532}
 MESH_GID=${MESH_GID:-65532}
@@ -60,18 +59,7 @@ validate_socket_file() {
   unset SOCKET_VALUE
 }
 
-validate_or_migrate_bot_file() {
-  if [ ! -s "$BOT_TOKEN_FILE" ] && [ -s "$LEGACY_BOT_FILE" ]; then
-    BOT_VALUE=$(cat "$LEGACY_BOT_FILE") || fail "unable to read legacy Slack bot token file"
-    case "$BOT_VALUE" in
-      xoxb-*)
-        write_protected_file "$BOT_TOKEN_FILE" "$BOT_VALUE"
-        unset BOT_VALUE
-        mesh_log INFO slack_bot_token_file "status=migrated_from_legacy value_logged=false"
-        ;;
-      *) unset BOT_VALUE ;;
-    esac
-  fi
+validate_bot_file() {
   [ -s "$BOT_TOKEN_FILE" ] || fail "Slack bot OAuth token file is missing; provision it with: sudo sh $PROVISION_SCRIPT"
   BOT_VALUE=$(cat "$BOT_TOKEN_FILE") || fail "unable to read existing Slack bot OAuth token file"
   case "$BOT_VALUE" in
@@ -117,7 +105,7 @@ validate_socket_file
 info "preserving existing validated Slack Socket Mode app token file"
 
 mesh_set_stage bot_oauth_token
-validate_or_migrate_bot_file
+validate_bot_file
 info "preserving existing validated Slack bot OAuth token file"
 
 mesh_set_stage permissions

@@ -1,0 +1,33 @@
+{
+  "display_information": {
+    "name": "ChatGPT Enterprise AI Agent",
+    "description": "Mesh governed Slack approval collaboration and reconciliation bot",
+    "background_color": "#013366"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "ChatGPT Enterprise AI Agent",
+      "always_online": true
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "chat:write",
+        "groups:history"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "bot_events": []
+    },
+    "interactivity": {
+      "is_enabled": false
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false,
+    "is_mcp_enabled": true
+  }
+}

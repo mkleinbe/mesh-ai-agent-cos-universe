@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: v4.1.14-${{ github.ref }}
@@ -55,8 +55,12 @@ jobs:
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           ! grep -q 'read_secret_tty' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           ! grep -q 'command -v stty' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
+          ! grep -q 'read_secret_tty' deployment/qnap/scripts/mesh-cos-mcp-prepare.sh
+          ! grep -q 'command -v stty' deployment/qnap/scripts/mesh-cos-mcp-prepare.sh
           grep -q 'non_interactive=true' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           test -f deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
+          test -f deployment/qnap/scripts/mesh-cos-qnap-secret-input.sh
+          test -f deployment/qnap/scripts/mesh-cos-tunnel-key-provision.sh
       - name: Build exact v4.1.14 QNAP release bundle
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -72,8 +76,12 @@ jobs:
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
           test -f "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
           test -f "$BUNDLE/mesh-cos-slack-hitl-provision.sh"
+          test -f "$BUNDLE/mesh-cos-qnap-secret-input.sh"
+          test -f "$BUNDLE/mesh-cos-tunnel-key-provision.sh"
           ! grep -q 'read_secret_tty' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
           ! grep -q 'command -v stty' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
+          ! grep -q 'read_secret_tty' "$BUNDLE/mesh-cos-mcp-prepare.sh"
+          ! grep -q 'command -v stty' "$BUNDLE/mesh-cos-mcp-prepare.sh"
           grep -q 'DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
           grep -q 'Slack conversation/DM channel ID is not a user ID' "$BUNDLE/mesh-cos-slack-hitl-configure.sh"
           unzip -Z1 "$ZIP" > /tmp/v4114.entries
@@ -85,6 +93,8 @@ jobs:
           grep -qx 'v4.1.14/mesh-cos-mcp-deploy.sh' /tmp/v4114.entries
           grep -qx 'v4.1.14/mesh-cos-slack-hitl-configure.sh' /tmp/v4114.entries
           grep -qx 'v4.1.14/mesh-cos-slack-hitl-provision.sh' /tmp/v4114.entries
+          grep -qx 'v4.1.14/mesh-cos-qnap-secret-input.sh' /tmp/v4114.entries
+          grep -qx 'v4.1.14/mesh-cos-tunnel-key-provision.sh' /tmp/v4114.entries
           grep -qx 'v4.1.14/cos-mcp/release-metadata.txt' /tmp/v4114.entries
           (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.1.14.zip.sha256)
       - name: Build production container from exact release bundle
@@ -114,6 +124,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7
       - name: Rebuild exact merge-SHA release artifacts
@@ -126,8 +138,8 @@ jobs:
         run: |
           set -euo pipefail
           if gh release view v4.1.14 >/dev/null 2>&1; then
-            echo 'v4.1.14 already exists; refusing to mutate immutable release' >&2
-            exit 1
+            echo 'v4.1.14 already exists; leaving the immutable release unchanged'
+            exit 0
           fi
           gh release create v4.1.14 \
             dist/mesh-cos-mcp-qnap-v4.1.14.zip \

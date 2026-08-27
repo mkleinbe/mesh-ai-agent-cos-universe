@@ -121,7 +121,7 @@ def test_qnap_compose_has_deterministic_egress_and_minimal_slack_mounts() -> Non
     assert 'MESH_COS_SLACK_HITL_REQUIRED: "true"' in compose
     assert "MESH_COS_SLACK_APPROVER_USER_ID_FILE: /run/secrets/slack_approver_user_id" in compose
     assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: /run/secrets/slack_socket_app_token" in compose
-    assert "MESH_COS_SLACK_APPROVAL_COMMAND: /mesh-approval" in compose
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND" not in compose
     assert "MESH_COS_SLACK_VERIFIER_TOKEN_FILE" not in compose
     assert "MESH_COS_SLACK_ALLOWED_NOTICE_AUTHOR_IDS" not in compose
     assert "/run/secrets/slack_verifier_token" not in compose
@@ -149,7 +149,8 @@ def test_preflight_and_verify_remain_fail_closed_around_runtime_identity() -> No
     assert "xoxb-" not in runtime_preflight
     assert "MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE" in runtime_preflight
     assert "xapp-" in runtime_preflight
-    assert "slack_approval_command_invalid" in runtime_preflight
+    assert "slack_approval_command_invalid" not in runtime_preflight
+    assert "MESH_COS_SLACK_APPROVAL_COMMAND" not in runtime_preflight
     assert "non-tunnel direct MCP request denied" in verify
     assert "--network container:mesh-cos-tunnel" in verify
     assert "registry.get_agent" in verify
@@ -174,16 +175,16 @@ def test_backup_excludes_secrets_and_supports_restarting_runtime() -> None:
     assert "/run/secrets" not in backup
 
 
-def test_v4116_release_builder_packages_current_contract_without_runtime_secrets() -> None:
+def test_v4117_release_builder_packages_current_contract_without_runtime_secrets() -> None:
     builder = text(ROOT / "scripts" / "build-qnap-release-bundle.sh")
-    assert 'VERSION=${1:-4.1.16}' in builder
+    assert 'VERSION=${1:-4.1.17}' in builder
     assert 'RELEASE_DIR="$BUNDLE/v${VERSION}"' in builder
     assert 'BUILD_CONTEXT="$RELEASE_DIR/cos-mcp/build-context"' in builder
-    assert "qnap-restarting-backup-v4.1.16.feature" in builder
-    assert "security-review-v4.1.16.md" in builder
-    assert "release-4.1.16-qnap-restarting-backup.md" in builder
-    assert "verification-v4.1.16-qnap-restarting-backup.md" in builder
-    assert "chatgpt-published-app-production-acceptance-v4.1.16.md" in builder
+    assert "qnap-slack-thread-hitl-v4.1.17.feature" in builder
+    assert "security-review-v4.1.17.md" in builder
+    assert "release-4.1.17-slack-thread-hitl.md" in builder
+    assert "verification-v4.1.17-slack-thread-hitl.md" in builder
+    assert "chatgpt-published-app-production-acceptance-v4.1.17.md" in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/.env.runtime"' in builder
     assert 'test ! -e "$RELEASE_DIR/cos-mcp/secrets"' in builder

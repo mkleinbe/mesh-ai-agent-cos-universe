@@ -9,6 +9,8 @@ BUNDLE_APP_ROOT=${QNAP_BUNDLE_APP_ROOT:-"$SCRIPT_ROOT/cos-mcp"}
 APP_ROOT=${QNAP_APP_ROOT:-/share/Docker/cos-mcp}
 CANDIDATE_ENV="$BUNDLE_APP_ROOT/.env.runtime"
 CANDIDATE_COMPOSE="$BUNDLE_APP_ROOT/compose.yaml"
+ACTIVE_ENV="$APP_ROOT/.env"
+ACTIVE_COMPOSE="$APP_ROOT/compose.yaml"
 LAYOUT_LIB="$SCRIPT_ROOT/mesh-cos-qnap-layout.sh"
 COMPOSE_LIB="$SCRIPT_ROOT/mesh-cos-qnap-compose.sh"
 OBS_LIB="$SCRIPT_ROOT/mesh-cos-qnap-observability.sh"
@@ -87,6 +89,39 @@ promote_candidate_file() {
   mv "$promote_incoming" "$promote_target" || return 1
 }
 
+ACTIVE_ROLLBACK_AVAILABLE=0
+if [ -r "$ACTIVE_ENV" ] && [ -r "$ACTIVE_COMPOSE" ]; then
+  ACTIVE_ROLLBACK_AVAILABLE=1
+fi
+
+restore_active_stack() {
+  reason=$1
+  [ "$ACTIVE_ROLLBACK_AVAILABLE" -eq 1 ] || return 1
+  mesh_set_stage rollback
+  mesh_log WARN rollback_start "reason=$reason active_env=$ACTIVE_ENV active_compose=$ACTIVE_COMPOSE"
+
+  cd "$BUNDLE_APP_ROOT" || return 1
+  mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" down --remove-orphans >/dev/null 2>&1 || true
+
+  cd "$APP_ROOT" || return 1
+  mesh_run rollback active-compose-up mesh_compose --env-file "$ACTIVE_ENV" -f "$ACTIVE_COMPOSE" up -d --no-build || return 1
+  wait_healthy mesh-cos-mcp || return 1
+  wait_healthy mesh-cos-tunnel || return 1
+  mesh_log INFO rollback_complete "result=PASS active_release_preserved=true"
+  return 0
+}
+
+fail_candidate_before_promotion() {
+  reason=$1
+  if [ "$ACTIVE_ROLLBACK_AVAILABLE" -eq 1 ]; then
+    if restore_active_stack "$reason"; then
+      fail "$reason; previously active stack restored"
+    fi
+    fail "$reason; automatic restoration of the previously active stack also failed"
+  fi
+  fail "$reason; no previously active stack was available for rollback"
+}
+
 mesh_set_stage bootstrap
 cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 [ -d "$BUNDLE_APP_ROOT" ] || fail "candidate application payload missing: $BUNDLE_APP_ROOT"
@@ -95,6 +130,7 @@ cd "$SCRIPT_ROOT" || fail "cannot enter $SCRIPT_ROOT"
 [ -d "$APP_ROOT" ] || fail "$APP_ROOT is missing; canonical runtime root must already exist"
 mesh_validate_release_root "$SCRIPT_ROOT" "$BUNDLE_APP_ROOT/release-metadata.txt" || fail "release-root validation failed before candidate preparation"
 mesh_log INFO deployment_start "bundle_root=$SCRIPT_ROOT candidate_root=$BUNDLE_APP_ROOT app_root=$APP_ROOT releases_root=${QNAP_RELEASES_ROOT:-/share/Docker/cos-mcp/releases} log=$MESH_COS_LOG_FILE"
+mesh_log INFO rollback_preflight "available=$ACTIVE_ROLLBACK_AVAILABLE active_configuration_promoted=false"
 
 mesh_set_stage pre_backup
 if docker inspect mesh-cos-mcp >/dev/null 2>&1 && [ "$(docker inspect -f '{{.State.Running}}' mesh-cos-mcp 2>/dev/null || echo false)" = "true" ]; then
@@ -113,15 +149,17 @@ cd "$BUNDLE_APP_ROOT" || fail "cannot enter candidate application payload $BUNDL
 mesh_run compose_render compose-config mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" config || fail "candidate Compose render failed"
 
 mesh_set_stage compose_up
-mesh_run compose_up compose-up mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" up -d --no-build || fail "candidate Compose deployment failed"
+if ! mesh_run compose_up compose-up mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" up -d --no-build; then
+  fail_candidate_before_promotion "candidate Compose deployment failed"
+fi
 
 mesh_set_stage health_wait
-wait_healthy mesh-cos-mcp || fail "mesh-cos-mcp did not become healthy"
-wait_healthy mesh-cos-tunnel || fail "mesh-cos-tunnel did not become healthy"
+wait_healthy mesh-cos-mcp || fail_candidate_before_promotion "candidate mesh-cos-mcp did not become healthy"
+wait_healthy mesh-cos-tunnel || fail_candidate_before_promotion "candidate mesh-cos-tunnel did not become healthy"
 
 mesh_set_stage candidate_promote
-promote_candidate_file "$CANDIDATE_ENV" "$APP_ROOT/.env" 0640 || fail "unable to promote candidate runtime environment"
-promote_candidate_file "$CANDIDATE_COMPOSE" "$APP_ROOT/compose.yaml" 0644 || fail "unable to promote candidate Compose file"
+promote_candidate_file "$CANDIDATE_ENV" "$ACTIVE_ENV" 0640 || fail "unable to promote candidate runtime environment"
+promote_candidate_file "$CANDIDATE_COMPOSE" "$ACTIVE_COMPOSE" 0644 || fail "unable to promote candidate Compose file"
 promote_candidate_file "$BUNDLE_APP_ROOT/release-metadata.txt" "$APP_ROOT/release-metadata.txt" 0644 || fail "unable to promote candidate release metadata"
 mesh_log INFO candidate_promote "candidate_root=$BUNDLE_APP_ROOT active_root=$APP_ROOT result=PASS"
 
@@ -129,10 +167,10 @@ cd "$SCRIPT_ROOT" || fail "cannot return to $SCRIPT_ROOT"
 run_child verify "$SCRIPT_ROOT/mesh-cos-mcp-verify.sh" || fail "post-deploy verification failed"
 run_child post_backup "$SCRIPT_ROOT/mesh-cos-mcp-backup.sh" post-deploy || fail "post-deploy backup failed"
 
-DEPLOYMENT_RELEASE=$(sed -n 's/^MESH_COS_DEPLOYMENT_RELEASE=//p' "$APP_ROOT/.env" 2>/dev/null | tail -n 1)
+DEPLOYMENT_RELEASE=$(sed -n 's/^MESH_COS_DEPLOYMENT_RELEASE=//p' "$ACTIVE_ENV" 2>/dev/null | tail -n 1)
 [ -n "$DEPLOYMENT_RELEASE" ] || DEPLOYMENT_RELEASE=unknown
 mesh_set_stage complete
 info "deployment, promotion, verification, and post-deploy backup complete"
 mesh_log INFO deployment_complete "release=$DEPLOYMENT_RELEASE bundle_root=$SCRIPT_ROOT log=$MESH_COS_LOG_FILE"
 echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
-echo "NEXT: verify the deployed OpenAI Workspace Agent can author the synthetic Slack HITL notice, then run CHATGPT-ACCEPTANCE.md and the hosted acceptance procedure for deployment release $DEPLOYMENT_RELEASE."
+echo "NEXT: verify connected Slack collaboration and the authenticated /mesh-approval Socket Mode ingress, then run CHATGPT-ACCEPTANCE.md for deployment release $DEPLOYMENT_RELEASE."

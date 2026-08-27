@@ -1,18 +1,21 @@
 # Upgrade Checklist
 
-- [ ] Exact v4.2.2 candidate passes Python, Node, contract/doc drift, security, QNAP shell, bundle, container provenance, and modern MCP gates
+- [ ] Exact v4.2.3 candidate passes Python, Node, contract/doc drift, security, QNAP shell, bundle, container provenance, and modern MCP gates
 - [ ] Slack provider transport regression proves `conversations.replies` uses GET/query parameters
 - [ ] regression proves Slack write methods remain POST/JSON
 - [ ] regression proves OAuth token is Authorization-header only and absent from provider-read URLs
 - [ ] regression proves only sanitized provider error codes are surfaced
+- [ ] regression proves only pre-provider network exceptions retry
+- [ ] network retry is bounded to six total attempts with five-second inter-attempt delay
+- [ ] Slack `ok:false` and malformed provider responses fail immediately without retry
 - [ ] SQLite schema compatibility evaluated; no schema migration required
-- [ ] approved v4.2.2 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] approved v4.2.3 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
 - [ ] ZIP checksum verifies before extraction
-- [ ] extraction creates `v4.2.2/` automatically
+- [ ] extraction creates `v4.2.3/` automatically
 - [ ] human release/deployment authority is valid
-- [ ] operator uses `sudo sh ./v4.2.2/mesh-cos-mcp-deploy.sh`
-- [ ] deployment validates `v4.2.2` beneath the canonical releases root and matches staged metadata
+- [ ] operator uses `sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh`
+- [ ] deployment validates `v4.2.3` beneath the canonical releases root and matches staged metadata
 - [ ] pre-deploy backup gate passes and canonical TaskLedger is preserved
 - [ ] Secure MCP tunnel identity/runtime key are preserved
 - [ ] governed Michael/MK Slack user principal remains protected and valid
@@ -22,7 +25,7 @@
 - [ ] if scopes changed, Slack app reauthorization/reinstall and QNAP bot-token reprovisioning are complete
 - [ ] protected bot credential is `xoxb-`, runtime UID/GID `65532:65532`, mode `0400`, read-only mounted
 - [ ] no `xapp-` Socket Mode credential is configured/mounted
-- [ ] staged `release-metadata.txt` reports `version=4.2.2` and exact release commit
+- [ ] staged `release-metadata.txt` reports `version=4.2.3` and exact release commit
 - [ ] same-tag image reuse requires matching OCI version/revision; mismatch forces rebuild
 - [ ] staged `.env.runtime` contains no tunnel or Slack credential value
 - [ ] staged `.env.runtime` contains `MESH_COS_SLACK_APP_ID=A0B49RNE4K0`
@@ -35,10 +38,12 @@
 - [ ] transactional promotion and rollback controls remain intact
 - [ ] post-deploy verification is the promotion commit point
 - [ ] live Slack provider-read verification runs inside the actual `mesh-cos-mcp` container
-- [ ] live provider-read verification passes `conversations.history` for `C0BRL4GCL3A`
-- [ ] live provider-read verification fails closed for missing scope/auth/channel access/network errors
+- [ ] live provider-read verification passes GET/query `conversations.history` for `C0BRL4GCL3A`
+- [ ] live provider-read retries only pre-provider qnet/network exceptions
+- [ ] live provider-read fails immediately for missing scope/auth/channel access or malformed provider response
+- [ ] exhausted qnet readiness fails deployment and rolls back the prior active release
 - [ ] live provider-read diagnostics never expose token, Authorization header, or full provider response
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.2`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.3`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
 - [ ] exactly 10 agents remain registered and Devil's Advocate remains a shared Skill
 - [ ] human-only `approval.record_decision` and `reliability.human_override` remain unavailable to agents
@@ -60,5 +65,5 @@
 - [ ] direct non-tunnel `/mcp` ingress remains denied
 - [ ] final governance audit chain verifies
 - [ ] run `CHATGPT-ACCEPTANCE.md` through installed **Mesh CoS MCP** app
-- [ ] run `docs/chatgpt-published-app-production-acceptance-v4.2.2.md`
+- [ ] run `docs/chatgpt-published-app-production-acceptance-v4.2.3.md`
 - [ ] production certification occurs only with zero open CRITICAL/HIGH defects and no required live acceptance blocker

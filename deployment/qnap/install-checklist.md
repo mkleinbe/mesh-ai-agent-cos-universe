@@ -21,22 +21,22 @@
 - [ ] If bot scopes changed, Slack app was reinstalled/reauthorized and the resulting `xoxb-` token was reprovisioned to QNAP
 - [ ] Single ChatGPT Work **Mesh Slack HITL Dispatcher** exists and is enabled
 
-No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.2.2 HITL path.
+No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.2.3 HITL path.
 
-## v4.2.2 release-root staging
+## v4.2.3 release-root staging
 
-- [ ] `mesh-cos-mcp-qnap-v4.2.2.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] `mesh-cos-mcp-qnap-v4.2.3.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
-- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.2.2.zip.sha256` passes
-- [ ] extraction creates `v4.2.2/` automatically
+- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.2.3.zip.sha256` passes
+- [ ] extraction creates `v4.2.3/` automatically
 - [ ] no manual release-directory creation, helper copy, payload move, or chmod is required
-- [ ] `v4.2.2/cos-mcp/release-metadata.txt` reports `version=4.2.2` and a valid 40-character commit
+- [ ] `v4.2.3/cos-mcp/release-metadata.txt` reports `version=4.2.3` and a valid 40-character commit
 - [ ] release-directory basename agrees with staged metadata
 
 ## Automated deployment
 
 ```sh
-sudo sh ./v4.2.2/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
 ```
 
 - [ ] canonical `/share/Docker/cos-mcp` state/secrets tree is preserved
@@ -56,19 +56,22 @@ sudo sh ./v4.2.2/mesh-cos-mcp-deploy.sh
 - [ ] post-deploy verification passes before promotion commit
 - [ ] post-deploy backup and SHA-256 verification pass
 
-## Live Slack provider-read gate
+## Live Slack provider-read and qnet egress-readiness gate
 
 - [ ] QNAP verification runs the provider-read probe inside the running `mesh-cos-mcp` container
 - [ ] probe uses the mounted `xoxb-` credential without printing it
-- [ ] probe calls `conversations.history` for `C0BRL4GCL3A` with limit 1
-- [ ] verification reports `Slack bot provider read scope and governed-channel access`
-- [ ] `missing_scope`, invalid auth, missing channel membership/access, or provider/network failure blocks deployment verification
-- [ ] provider diagnostics expose only a sanitized error code, never token/header/full response metadata
+- [ ] probe calls GET/query `conversations.history` for `C0BRL4GCL3A` with limit 1
+- [ ] verification reports `Slack bot provider read scope, governed-channel access, and qnet egress readiness`
+- [ ] only a pre-provider network exception may retry
+- [ ] network retry is bounded to six total attempts with five-second inter-attempt delay
+- [ ] `missing_scope`, invalid auth, missing channel membership/access, malformed provider response, or any Slack `ok:false` response fails immediately
+- [ ] exhausted network readiness blocks deployment verification and triggers transactional rollback
+- [ ] provider diagnostics expose only sanitized error codes and retry attempt metadata, never token/header/full response metadata
 
 ## Runtime and authority acceptance
 
-- [ ] active release/image are `4.2.2` / `mesh-cos-mcp:qnap-v4.2.2`
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.2`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] active release/image are `4.2.3` / `mesh-cos-mcp:qnap-v4.2.3`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.3`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
 - [ ] exactly 10 agents remain registered
 - [ ] human-only tools remain unavailable to agents

@@ -26,7 +26,7 @@ v4.1.15 deliberately separates Slack collaboration from human approval authority
 
 ### Connected Slack integration
 
-The connected Slack integration is the normal collaboration surface for approval requests, status, coordination, and thread reads. The CoS `slack-adapter` can authorize only a `CHATGPT_CONNECTOR_HANDOFF` with authority `COLLABORATION_ONLY`.
+The connected Slack integration is the normal collaboration surface for approval requests, status, coordination, and thread reads. The CoS `slack-adapter` accepts only `operation: handoff` and can authorize only a `CHATGPT_CONNECTOR_HANDOFF` with authority `COLLABORATION_ONLY`.
 
 It cannot carry, infer, or record `approved`, `approval_status`, `actor`, `principal`, `record_decision`, or `ingest_decision`. An ordinary Slack message attributed to the configured human user is still not proof of human presence because connected applications can write into Slack.
 
@@ -74,13 +74,17 @@ QNAP Docker Engine 27 does not receive an architecture that depends on newer Com
 - Protected files are normalized to runtime UID/GID with mode `0400`.
 - Production diagnostics collect bounded metadata only and exclude secret contents, generated environment contents, credential-bearing argv, and tunnel credentials.
 
-## Release staging and rollback boundary
+## Release staging and transactional rollback boundary
 
 - Stable operator release root remains `/share/Docker/cos-mcp/releases` and active application root remains `/share/Docker/cos-mcp`.
 - Release archives contain one top-level `vX.Y.Z/` directory and are bound to exact semantic release metadata and commit provenance.
 - Candidate `.env.runtime`, Compose, metadata, and build context remain in the versioned release directory until activation health succeeds.
-- Active release files are promoted only after both candidate containers are healthy.
 - If candidate Compose activation or pre-promotion health fails and a previous active configuration exists, deployment removes the failed candidate stack, restores the previous active Compose stack, verifies both previous containers healthy, and reports candidate failure without promoting release metadata.
+- Before active-file promotion, deployment snapshots active `.env`, `compose.yaml`, and `release-metadata.txt`, including explicit absence markers for files that did not previously exist.
+- Partial active-file promotion or post-promotion verification failure attempts to restore the exact pre-promotion snapshot before restoring the previous active stack.
+- If rollback is incomplete, the recovery snapshot is retained for operator recovery rather than deleted.
+- Snapshot cleanup rejects unsafe empty, root, dot, and dot-dot paths.
+- Successful post-deploy verification is the promotion transaction commit point. After that point, a snapshot-cleanup failure reports failure but does not replace the verified active candidate with an older snapshot.
 - TaskLedger, qnet identity, tunnel identity/key, protected secrets, logs, and backup evidence remain outside versioned release payloads.
 - Historical published releases remain immutable.
 
@@ -91,16 +95,18 @@ The exact candidate revision must pass:
 - dependency integrity, TypeScript checks/tests, contract/package/document drift checks;
 - Ruff, mypy, 100% `mesh_cos` coverage, Bandit, and compileall;
 - QNAP POSIX shell syntax and regression suite;
-- BDD scenarios QNAP-104 through QNAP-110;
+- BDD scenarios QNAP-104 through QNAP-111;
 - adversarial approval tests for ordinary messages, wrong user/channel/command, missing fingerprint, replay, and conflicting decisions;
 - Slack provider/network degradation and bounded-reconnect tests;
 - verifier-token absence from active runtime/configuration and exact release bundle;
 - deterministic Docker Engine 27-compatible network topology checks;
-- failed-candidate rollback checks;
+- pre-promotion failed-candidate rollback checks;
+- transactional partial-promotion and post-verification-failure recovery checks;
+- constrained rollback-snapshot cleanup and preservation-on-failed-recovery checks;
 - exact v4.1.15 bundle/checksum generation and archive inspection;
 - production container build from the exact bundle with OCI version/revision labels bound to candidate SHA;
 - modern MCP discovery and sequential request regression;
-- independent diff review for authority widening, credential leakage, obsolete verifier dependencies, debug debris, and temporary files.
+- independent diff review for authority widening, credential leakage, obsolete verifier dependencies, debug debris, temporary files, and stale release documentation.
 
 Security applicability for v4.1.15 is **FULL_REVIEW**. The release-specific review is `docs/security-review-v4.1.15.md`.
 

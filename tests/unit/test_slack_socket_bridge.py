@@ -20,6 +20,7 @@ from mesh_cos.slack_socket_bridge import (
 CHANNEL_ID = "C0TESTAGENTOPS"
 APPROVER_USER_ID = "U0TESTAPPROVER"
 FINGERPRINT = "f" * 64
+ROOT_TS = "1787843216.789639"
 
 
 def _seed(path: Path) -> str:
@@ -62,40 +63,74 @@ def _env(path: Path) -> dict[str, str]:
         "MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID": CHANNEL_ID,
         "MESH_COS_SLACK_APPROVER_USER_ID": APPROVER_USER_ID,
         "MESH_COS_SLACK_APPROVER_PRINCIPAL": "michael",
-        "MESH_COS_SLACK_APPROVAL_COMMAND": "/mesh-approval",
     }
 
 
-def _envelope(approval_id: str) -> dict:
+def _root_envelope(approval_id: str) -> dict:
     return {
-        "envelope_id": "env-bridge",
-        "type": "slash_commands",
+        "envelope_id": "env-root-bridge",
+        "type": "events_api",
         "payload": {
-            "channel_id": CHANNEL_ID,
-            "user_id": APPROVER_USER_ID,
-            "command": "/mesh-approval",
-            "text": f"APPROVE {approval_id}",
-            "trigger_id": "trigger-bridge",
+            "type": "event_callback",
+            "event_id": "Ev-root-bridge",
+            "event": {
+                "type": "message",
+                "channel": CHANNEL_ID,
+                "user": APPROVER_USER_ID,
+                "app_id": "A0CHATGPT",
+                "text": f"Approval ID: `{approval_id}`",
+                "ts": ROOT_TS,
+                "event_ts": ROOT_TS,
+            },
         },
     }
 
 
-def test_execute_socket_envelope_round_trips_canonical_state_without_notice_binding(
+def _reply_envelope() -> dict:
+    return {
+        "envelope_id": "env-reply-bridge",
+        "type": "events_api",
+        "payload": {
+            "type": "event_callback",
+            "event_id": "Ev-reply-bridge",
+            "event": {
+                "type": "message",
+                "channel": CHANNEL_ID,
+                "user": APPROVER_USER_ID,
+                "text": "APPROVE",
+                "thread_ts": ROOT_TS,
+                "ts": "1787843300.046169",
+                "event_ts": "1787843300.046169",
+            },
+        },
+    }
+
+
+def test_execute_socket_envelope_round_trips_bound_thread_and_canonical_state(
     tmp_path: Path,
 ) -> None:
     path = tmp_path / "ledger.sqlite3"
     approval_id = _seed(path)
-    response = execute_socket_envelope(_envelope(approval_id), env=_env(path))
+
+    binding_response = execute_socket_envelope(_root_envelope(approval_id), env=_env(path))
+    assert binding_response["ok"] is True
+    assert binding_response["source"] == "SLACK_SOCKET_MODE"
+    binding = binding_response["result"]
+    assert binding["source"] == "SLACK_SOCKET_MODE_THREAD_BINDING"
+    assert binding["payload_fingerprint"] == FINGERPRINT
+
+    response = execute_socket_envelope(_reply_envelope(), env=_env(path))
     assert response["ok"] is True
     assert response["source"] == "SLACK_SOCKET_MODE"
     result = response["result"]
     assert result["disposition"] == "APPROVE"
+    assert result["source"] == "SLACK_SOCKET_MODE_THREAD_REPLY"
     assert result["provider_identity_verified"] is True
     assert result["payload_fingerprint"] == FINGERPRINT
     assert APPROVER_USER_ID not in str(result)
     ledger = TaskLedger(path)
     assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
-    assert ledger.get_record("approval_slack_binding", approval_id) is None
+    assert ledger.get_record("approval_slack_thread_binding", ROOT_TS) is not None
     ledger.conn.close()
 
 
@@ -134,9 +169,9 @@ def test_read_stdin_rejects_empty_oversize_and_parses_json(
 
     monkeypatch.setattr(
         "mesh_cos.slack_socket_bridge.sys.stdin",
-        Stdin(b'{"type":"slash_commands"}'),
+        Stdin(b'{"type":"events_api"}'),
     )
-    assert _read_stdin() == {"type": "slash_commands"}
+    assert _read_stdin() == {"type": "events_api"}
 
     monkeypatch.setattr("mesh_cos.slack_socket_bridge.sys.stdin", Stdin(b""))
     with pytest.raises(ValueError, match="body is required"):

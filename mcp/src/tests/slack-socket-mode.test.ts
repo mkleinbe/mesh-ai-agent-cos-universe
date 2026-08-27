@@ -21,6 +21,7 @@ class FakeSocket implements SocketLike {
   send(data: string): void { this.sent.push(data); }
   close(): void { this.closed = true; this.onclose?.(); }
   open(): void { this.onopen?.(); }
+  fail(): void { this.onerror?.(); }
   message(value: unknown): void { this.onmessage?.({ data: JSON.stringify(value) }); }
 }
 
@@ -36,6 +37,10 @@ function env(tokenFile: string): NodeJS.ProcessEnv {
     MESH_COS_SLACK_HITL_REQUIRED: 'true',
     MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: tokenFile,
   };
+}
+
+async function tick(): Promise<void> {
+  await new Promise(resolve => setImmediate(resolve));
 }
 
 test('Socket Mode app token is protected and must be an app-level xapp token', () => {
@@ -67,16 +72,15 @@ test('listener authenticates to apps.connections.open and dispatches only slash 
     },
   });
 
-  const started = listener.start();
-  await new Promise(resolve => setImmediate(resolve));
+  await listener.start();
+  await tick();
   socket.open();
-  await started;
   assert.equal(authHeader, 'Bearer xapp-test-token');
   assert.equal(listener.isActive(), true);
 
   socket.message({ type: 'hello' });
   socket.message({ envelope_id: 'noise', type: 'events_api', payload: { event: { type: 'message' } } });
-  await new Promise(resolve => setImmediate(resolve));
+  await tick();
   assert.equal(bridged.length, 0);
 
   const envelope = {
@@ -92,7 +96,7 @@ test('listener authenticates to apps.connections.open and dispatches only slash 
     },
   };
   socket.message(envelope);
-  await new Promise(resolve => setImmediate(resolve));
+  await tick();
   assert.deepEqual(bridged, [envelope]);
   assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), {
     envelope_id: 'env-1',
@@ -101,7 +105,7 @@ test('listener authenticates to apps.connections.open and dispatches only slash 
   await listener.stop();
 });
 
-test('listener acknowledges failure without exposing bridge internals and fails readiness on disconnect', async () => {
+test('listener acknowledges bridge failure without exposing internals and degrades on disconnect', async () => {
   const socket = new FakeSocket();
   const tokenFile = tempSecret('xapp-test-token');
   const listener = new SlackSocketModeApprovalListener(env(tokenFile), {
@@ -110,10 +114,9 @@ test('listener acknowledges failure without exposing bridge internals and fails 
     bridge: async () => { throw new Error('sensitive internal failure'); },
     scheduleReconnect: () => undefined,
   });
-  const started = listener.start();
-  await new Promise(resolve => setImmediate(resolve));
+  await listener.start();
+  await tick();
   socket.open();
-  await started;
 
   socket.message({
     envelope_id: 'env-fail',
@@ -121,7 +124,7 @@ test('listener acknowledges failure without exposing bridge internals and fails 
     accepts_response_payload: true,
     payload: {},
   });
-  await new Promise(resolve => setImmediate(resolve));
+  await tick();
   assert.deepEqual(JSON.parse(socket.sent.at(-1) ?? '{}'), {
     envelope_id: 'env-fail',
     payload: { text: 'Approval not recorded.' },
@@ -131,6 +134,54 @@ test('listener acknowledges failure without exposing bridge internals and fails 
   socket.close();
   assert.equal(listener.isActive(), false);
   await listener.stop();
+});
+
+test('provider network failure is non-fatal and reconnect backoff is bounded', async () => {
+  const tokenFile = tempSecret('xapp-test-token');
+  const scheduled: Array<{ callback: () => void; delayMs: number }> = [];
+  let attempts = 0;
+  const listener = new SlackSocketModeApprovalListener(env(tokenFile), {
+    fetchImpl: async () => {
+      attempts += 1;
+      throw new Error('simulated provider network failure');
+    },
+    socketFactory: () => { throw new Error('socket must not be created'); },
+    bridge: async () => { throw new Error('bridge must not be called'); },
+    scheduleReconnect: (callback, delayMs) => {
+      scheduled.push({ callback, delayMs });
+      return scheduled.length;
+    },
+  });
+
+  await listener.start();
+  await tick();
+  assert.equal(listener.isActive(), false);
+  assert.equal(attempts, 1);
+  assert.deepEqual(scheduled.map(item => item.delayMs), [1_000]);
+
+  for (let index = 0; index < 7; index += 1) {
+    const next = scheduled[index];
+    assert.ok(next);
+    next.callback();
+    await tick();
+  }
+  assert.ok(scheduled.length >= 8);
+  assert.deepEqual(scheduled.slice(0, 6).map(item => item.delayMs), [1_000, 2_000, 4_000, 8_000, 16_000, 30_000]);
+  assert.equal(Math.max(...scheduled.map(item => item.delayMs)), 30_000);
+  assert.equal(listener.isActive(), false);
+  await listener.stop();
+});
+
+test('required Socket Mode configuration errors remain fatal before background connection', async () => {
+  const listener = new SlackSocketModeApprovalListener(
+    { MESH_COS_SLACK_HITL_REQUIRED: 'true' },
+    {
+      fetchImpl: async () => { throw new Error('must not connect without a credential'); },
+      socketFactory: () => { throw new Error('must not connect without a credential'); },
+      bridge: async () => { throw new Error('must not bridge'); },
+    },
+  );
+  await assert.rejects(listener.start(), /APP_TOKEN_FILE/);
 });
 
 test('Socket Mode is inert when HITL is not required', async () => {

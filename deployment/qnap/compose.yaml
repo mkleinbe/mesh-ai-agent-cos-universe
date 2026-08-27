@@ -25,7 +25,6 @@ services:
       MESH_COS_SLACK_APPROVER_USER_ID_FILE: /run/secrets/slack_approver_user_id
       MESH_COS_SLACK_APPROVER_PRINCIPAL: ${MESH_COS_SLACK_APPROVER_PRINCIPAL:-michael}
       MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE: /run/secrets/slack_socket_app_token
-      MESH_COS_SLACK_APPROVAL_COMMAND: /mesh-approval
       MCP_BIND_HOST: 0.0.0.0
       MCP_PORT: 8080
       MCP_AUTH_MODE: tunnel

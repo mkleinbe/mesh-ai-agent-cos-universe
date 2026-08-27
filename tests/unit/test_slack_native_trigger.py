@@ -113,6 +113,18 @@ def test_native_trigger_is_locator_only_and_approve_is_provider_reconciled() -> 
     }
 
 
+def test_native_trigger_accepts_provider_rendered_bold_approve_incident_shape() -> None:
+    ledger, task_id, approval_id, service, _ = _service("*APPROVE*")
+    result = service.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
+    assert result["version"] == "mesh.cos.slack-human-decision.v6"
+    assert result["source"] == "CHATGPT_NATIVE_SLACK_EVENT_TRIGGER_RECONCILIATION"
+    assert result["trigger_is_authority"] is False
+    assert result["provider_reconciled"] is True
+    assert result["disposition"] == "APPROVE"
+    assert ledger.get_record("approval", approval_id)["status"] == "APPROVED"
+    assert ledger.get_task(task_id).status == TaskStatus.READY_FOR_ACTION
+
+
 def test_native_trigger_replay_is_idempotent() -> None:
     _, _, _, service, _ = _service("APPROVE")
     first = service.reconcile(thread_ts=ROOT, message_ts=MESSAGE)

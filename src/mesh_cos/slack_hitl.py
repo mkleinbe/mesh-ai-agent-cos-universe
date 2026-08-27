@@ -8,11 +8,17 @@ from pathlib import Path
 
 MICHAEL_PRINCIPAL = "michael"
 
+# Historical exact command parser retained for compatibility with archived evidence and
+# lower-level tests. v4.1.17 production human approval uses _parse_thread_decision.
 _DECISION_RE = re.compile(
     r"^(?P<verb>APPROVE|REJECT)\s+(?P<approval>approval-[A-Za-z0-9]+|APR-[A-Za-z0-9._:-]+)\s*$"
 )
 _CHANGES_RE = re.compile(
     r"^CHANGES\s+(?P<approval>approval-[A-Za-z0-9]+|APR-[A-Za-z0-9._:-]+):\s*(?P<change>\S(?:.*\S)?)\s*$"
+)
+_THREAD_DECISION_RE = re.compile(
+    r"^(?P<verb>APPROVE|DENY|REJECT|CHANGE|CHANGES)(?::\s*(?P<change>\S(?:.*\S)?))?\s*$",
+    re.IGNORECASE,
 )
 _SLACK_USER_ID_RE = re.compile(r"^[UW][A-Z0-9]+$")
 
@@ -40,7 +46,7 @@ class SlackHITLConfig:
     Slack collaboration and approval notices are handled by the connected Slack
     integration. They are informational and never create approval authority. The QNAP
     runtime needs only the governed channel, the human approver identity, and the
-    separately authenticated Socket Mode slash-command boundary.
+    separately authenticated Socket Mode event boundary.
     """
 
     channel_id: str
@@ -68,6 +74,7 @@ class SlackHITLConfig:
 
 
 def _parse_decision(text: str, approval_id: str) -> tuple[str, str | None]:
+    """Parse the historical explicit Approval-ID command grammar."""
     match = _DECISION_RE.fullmatch(text.strip())
     if match:
         if match.group("approval") != approval_id:
@@ -79,3 +86,24 @@ def _parse_decision(text: str, approval_id: str) -> tuple[str, str | None]:
             raise PermissionError("Slack decision Approval ID mismatch")
         return "CHANGES", match.group("change")
     raise PermissionError("Slack decision command is not exact or attributable")
+
+
+def _parse_thread_decision(text: str) -> tuple[str, str | None]:
+    """Parse the v4.1.17 human thread-reply grammar.
+
+    The Approval ID is intentionally absent from the reply. The already-bound Slack
+    thread supplies routing context while provider-authenticated event identity supplies
+    human attribution. Only CHANGE/CHANGES may carry free-text detail.
+    """
+    match = _THREAD_DECISION_RE.fullmatch(text.strip())
+    if match is None:
+        raise PermissionError("Slack approval reply must be APPROVE, DENY, or CHANGE")
+    verb = match.group("verb").upper()
+    change = match.group("change")
+    if verb in {"APPROVE", "DENY", "REJECT"} and change is not None:
+        raise PermissionError("Only CHANGE may include decision detail")
+    if verb == "APPROVE":
+        return "APPROVE", None
+    if verb in {"DENY", "REJECT"}:
+        return "DENY", None
+    return "CHANGE", change

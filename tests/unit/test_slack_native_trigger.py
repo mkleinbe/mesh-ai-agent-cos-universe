@@ -174,7 +174,7 @@ def test_native_trigger_rejects_invalid_locators(thread_ts: str, message_ts: str
 )
 def test_native_trigger_requires_one_exact_provider_message(provider_messages: object, error: str) -> None:
     _, _, _, service, _ = _service(provider_messages=provider_messages)
-    exception = RuntimeError if error == "message collection" else PermissionError
+    exception = TypeError if error == "message collection" else PermissionError
     with pytest.raises(exception, match=error):
         service.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
 

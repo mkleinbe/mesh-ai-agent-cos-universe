@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
-from types import SimpleNamespace
 
 import pytest
 
@@ -52,6 +51,24 @@ def approval_record(
         "decided_by": decided_by,
         "action": action,
     }
+
+
+def delegation_payload(task: TaskRecord, delegation_id: str, **overrides) -> dict:
+    payload = {
+        "delegation_id": delegation_id,
+        "task_id": task.task_id,
+        "parent_task_id": task.parent_task_id,
+        "accountable_agent": task.accountable_agent,
+        "business_objective": task.objective,
+        "expected_outcome": task.expected_outcome,
+        "deliverable": "brief",
+        "success_criteria": ["supported"],
+        "priority": "P1",
+        "authority_level": int(task.authority_level),
+        "acceptance_test": task.acceptance_test,
+    }
+    payload.update(overrides)
+    return payload
 
 
 def test_owner_candidate_can_explicitly_forbid_self_assignment() -> None:
@@ -176,24 +193,32 @@ def test_existing_delegation_id_cannot_rebind_canonical_work() -> None:
         },
     )
     payload = {
-        "delegation": {
-            "delegation_id": "D1",
-            "task_id": "T1",
-            "parent_task_id": "P1",
-            "accountable_agent": "cro",
-            "business_objective": "sell",
-            "expected_outcome": "decision",
-            "deliverable": "brief",
-            "success_criteria": ["supported"],
-            "priority": "P1",
-            "authority_level": 2,
-            "acceptance_test": "supported",
-        },
+        "delegation": delegation_payload(runtime.ledger.get_task("T1"), "D1"),
         "parent_authority": 2,
         "depth": 1,
         "ancestry": ["cos"],
     }
     with pytest.raises(ValueError, match="already bound"):
+        runtime._delegation_create("cos", payload)
+
+
+def test_delegation_rejects_capability_outside_owner_registry() -> None:
+    runtime = MCPRuntime(TaskLedger())
+    parent = make_task("P1", "cos")
+    child = make_task("T1", "cfo", parent_task_id="P1")
+    runtime.ledger.save_task(parent)
+    runtime.ledger.save_task(child)
+    payload = {
+        "delegation": delegation_payload(
+            child,
+            "D-CFO",
+            permitted_capabilities=["mesh-marketing-messaging"],
+        ),
+        "parent_authority": 2,
+        "depth": 1,
+        "ancestry": ["cos"],
+    }
+    with pytest.raises(PermissionError, match="capabilities outside owner authority"):
         runtime._delegation_create("cos", payload)
 
 
@@ -280,6 +305,68 @@ def test_owner_scoped_arguments_reject_cross_boundary_reads_and_nested_routes() 
         )
 
 
+def test_owner_scoped_arguments_accept_valid_nested_and_local_reads() -> None:
+    runtime = MCPRuntime(TaskLedger())
+    task = make_task("T1", "cmo")
+    nested = {
+        "delegation_id": "D-NEST",
+        "delegating_agent": "cmo",
+        "parent_task_id": "T1",
+        "task_id": "C1",
+        "accountable_agent": "vp-content",
+    }
+    runtime.ledger.save_record("delegation", "D-NEST", nested)
+    nested_args = runtime._owner_scoped_arguments(
+        task,
+        "cmo",
+        "delegation.execute_owner",
+        {
+            "delegation_id": "D-NEST",
+            "task_id": "C1",
+            "tool_name": "task.get",
+            "arguments": {"task_id": "C1"},
+            "idempotency_key": "nested-read",
+        },
+    )
+    assert nested_args["protocol_version"] == "mesh.cos.owner-execution.v2"
+
+    same_task = runtime._owner_scoped_arguments(task, "cmo", "task.get", {"task_id": "T1"})
+    assert same_task["task_id"] == "T1"
+
+    runtime.ledger.save_record("approval", "A1", approval_record("A1", task_id="T1"))
+    local_approval = runtime._owner_scoped_arguments(
+        task,
+        "cmo",
+        "approval.get",
+        {"approval_id": "A1"},
+    )
+    assert local_approval["approval_id"] == "A1"
+
+    self_record = runtime._owner_scoped_arguments(
+        task,
+        "cmo",
+        "registry.get_agent",
+        {"agent_id": "cmo"},
+    )
+    assert self_record["agent_id"] == "cmo"
+    child_record = runtime._owner_scoped_arguments(
+        task,
+        "cmo",
+        "registry.get_agent",
+        {"agent_id": "vp-content"},
+    )
+    assert child_record["agent_id"] == "vp-content"
+
+    skill = runtime._owner_scoped_arguments(
+        task,
+        "cmo",
+        "skills.invoke_governed",
+        {"capability": "mesh-marketing-messaging", "payload": {}},
+    )
+    assert skill["payload"]["task_id"] == "T1"
+    assert skill["payload"]["execution_mode"] == "LOGICAL_SKILL_AGENT"
+
+
 def test_owner_execution_requires_nonempty_idempotency_key() -> None:
     runtime = MCPRuntime(TaskLedger())
     runtime.ledger.save_task(make_task("T1", "cro"))
@@ -308,6 +395,40 @@ def test_owner_execution_requires_nonempty_idempotency_key() -> None:
                 "idempotency_key": "",
             },
         )
+
+
+def test_owner_execution_validates_optional_approval_reference() -> None:
+    runtime = MCPRuntime(TaskLedger())
+    task = make_task("T1", "cro")
+    runtime.ledger.save_task(task)
+    runtime.ledger.save_record(
+        "delegation",
+        "D1",
+        {
+            "delegation_id": "D1",
+            "task_id": "T1",
+            "parent_task_id": "P1",
+            "delegating_agent": "cos",
+            "accountable_agent": "cro",
+            "approval_gates": [],
+            "permitted_actions": [],
+            "permitted_capabilities": [],
+        },
+    )
+    runtime.ledger.save_record("approval", "A1", approval_record("A1", task_id="T1"))
+    result = runtime._delegation_execute_owner(
+        "cos",
+        {
+            "delegation_id": "D1",
+            "task_id": "T1",
+            "tool_name": "task.get",
+            "arguments": {"task_id": "T1"},
+            "approval_references": ["A1"],
+            "idempotency_key": "approved-read",
+        },
+    )
+    assert result["approval_reference"] == "A1"
+    assert result["result"]["task_id"] == "T1"
 
 
 def test_approval_request_rejects_agent_owner_and_non_michael_l5() -> None:

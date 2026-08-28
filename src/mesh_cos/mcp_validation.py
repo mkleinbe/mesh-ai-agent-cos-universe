@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,7 @@ DEFAULT_SCHEMA_PATH = ROOT / "chatgpt" / "mcp" / "tool-input-schemas.v1.json"
 DEFAULT_SCHEMA_EXTENSIONS = (
     ROOT / "chatgpt" / "mcp" / "tool-input-schemas.owner-execution.v1.json",
 )
+DEFAULT_SCHEMA_PATCHES = ROOT / "chatgpt" / "mcp" / "tool-input-schema-patches.v1.json"
 FORBIDDEN_EXECUTION_FIELDS = {
     "code",
     "source_code",
@@ -37,10 +39,34 @@ def _schema_map(raw: Any, *, registry_label: str) -> dict[str, dict[str, Any]]:
     schemas: dict[str, dict[str, Any]] = {}
     for name, schema in raw.items():
         if not isinstance(schema, dict):
-            # Preserve the established policy-validation ValueError contract for malformed schemas.
             raise ValueError(f"MCP input schema must be an object: {name}")  # noqa: TRY004
         schemas[str(name)] = dict(schema)
     return schemas
+
+
+def _deep_merge(base: dict[str, Any], patch: dict[str, Any]) -> dict[str, Any]:
+    merged = deepcopy(base)
+    for key, value in patch.items():
+        current = merged.get(key)
+        if isinstance(current, dict) and isinstance(value, dict):
+            merged[key] = _deep_merge(current, value)
+        else:
+            merged[key] = deepcopy(value)
+    return merged
+
+
+def _apply_schema_patches(schemas: dict[str, dict[str, Any]], path: Path) -> None:
+    if not path.exists():
+        return
+    payload = json.loads(path.read_text())
+    if payload.get("schema_version") != "mesh.cos.mcp-tool-input-schema-patches.v1":
+        raise ValueError("Unsupported MCP input-schema patch registry version")
+    patches = _schema_map(payload.get("tools"), registry_label="MCP input-schema patch registry")
+    unknown = set(patches) - set(schemas)
+    if unknown:
+        raise ValueError(f"MCP input-schema patches reference unknown tools: {sorted(unknown)}")
+    for name, patch in patches.items():
+        schemas[name] = _deep_merge(schemas[name], patch)
 
 
 def load_input_schemas(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
@@ -62,6 +88,7 @@ def load_input_schemas(path: str | Path | None = None) -> dict[str, dict[str, An
             if overlap:
                 raise ValueError(f"MCP input-schema extension duplicates tools: {sorted(overlap)}")
             schemas.update(extension_tools)
+        _apply_schema_patches(schemas, DEFAULT_SCHEMA_PATCHES)
     return schemas
 
 

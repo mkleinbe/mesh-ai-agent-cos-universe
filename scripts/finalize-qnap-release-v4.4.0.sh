@@ -35,7 +35,7 @@ fi
 rm -f "$ZIP" "$CHECKSUM"
 (
   cd "$(dirname "$RELEASE_ROOT")"
-  zip -qr "../../$(basename "$ZIP")" "$(basename "$RELEASE_ROOT")"
+  zip -qr "../$(basename "$ZIP")" "$(basename "$RELEASE_ROOT")"
 )
 (
   cd dist

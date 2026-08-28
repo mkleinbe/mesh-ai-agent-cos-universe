@@ -44,6 +44,7 @@ REQUIRED_MCP_TOOLS = {
     "task.remediate_stall",
     "task.verify",
     "delegation.create",
+    "delegation.execute_owner",
     "approval.request",
     "approval.get",
     "approval.record_decision",
@@ -192,7 +193,7 @@ def test_builder_configs_have_least_privilege_tool_allowlists() -> None:
         assert "governance.record_event" in allowlist
         assert HUMAN_ONLY.isdisjoint(allowlist)
         if agent_id == "cos":
-            assert {"task.decompose", "task.reassign", "conflict.decide", "agentops.recommend", "task.complete", "task.verify"} <= set(allowlist)
+            assert {"task.decompose", "task.reassign", "conflict.decide", "agentops.recommend", "task.complete", "task.verify", "delegation.execute_owner"} <= set(allowlist)
         else:
             assert "task.reassign" not in allowlist
             assert "task.verify" not in allowlist

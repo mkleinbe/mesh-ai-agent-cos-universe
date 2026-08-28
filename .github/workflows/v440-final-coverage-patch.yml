@@ -1,0 +1,28 @@
+name: v4.4.0 final evaluation and coverage patch
+on:
+  push:
+    branches: ['fix/v4.4.0-authority-closure']
+    paths: ['.github/workflows/v440-final-coverage-patch.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/v4.4.0-authority-closure
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Apply exact-match test and source patch
+        run: python .github/patches/v440_final_coverage_patch.py
+      - name: Commit and push patched files
+        run: |
+          set -euo pipefail
+          git config user.name 'Mike K.'
+          git config user.email 'mkleinberg@meshdigital.io'
+          git add src tests
+          git diff --cached --check
+          git commit -m 'Close v4.4.0 evaluation and coverage gaps'
+          git push origin HEAD:fix/v4.4.0-authority-closure

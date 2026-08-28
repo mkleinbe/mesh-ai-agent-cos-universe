@@ -735,6 +735,8 @@ class MCPRuntime:
             raise PermissionError("Canonical task owner no longer matches delegation owner")
 
         tool_name = str(args["tool_name"])
+        if tool_name in HUMAN_ONLY_TOOLS or tool_name == "task.verify":
+            raise PermissionError("Owner execution cannot invoke human-only or verifier MCP tools")
         if tool_name not in OWNER_EXECUTABLE_TOOLS:
             raise PermissionError("Tool is not available through delegated owner execution")
         if tool_name in OWNER_NESTED_DELEGATION_TOOLS and not self._delegation_allows_nested_work(delegation):
@@ -761,8 +763,6 @@ class MCPRuntime:
                 self.ledger.save_record("owner_execution_route", delegation_id, route)
             raise
 
-        if tool_name in HUMAN_ONLY_TOOLS or tool_name == "task.verify":
-            raise PermissionError("Owner execution cannot invoke human-only or verifier MCP tools")
         self.policy.authorize(owner_id, tool_name)
 
         raw_arguments = dict(args.get("arguments", {}))
@@ -770,7 +770,9 @@ class MCPRuntime:
             capability = str(raw_arguments.get("capability") or "")
             permitted_capabilities = set(delegation.get("permitted_capabilities", []))
             if capability not in permitted_capabilities:
-                raise PermissionError("Capability is not explicitly permitted by the canonical delegation")
+                raise PermissionError(
+                    "Capability not allowed: capability is not explicitly permitted by the canonical delegation"
+                )
         owner_args = self._owner_scoped_arguments(
             task,
             owner_id,
@@ -828,10 +830,25 @@ class MCPRuntime:
                 separators=(",", ":"),
             ).encode("utf-8")
         ).hexdigest()
+        accepted_request_fingerprints = {request_fingerprint}
+        if not approval_references:
+            legacy_request_fingerprint = hashlib.sha256(
+                json.dumps(
+                    {
+                        "delegation_id": delegation_id,
+                        "task_id": task_id,
+                        "tool_name": tool_name,
+                        "arguments": owner_args,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            accepted_request_fingerprints.add(legacy_request_fingerprint)
         record_id = f"{delegation_id}:{idempotency_key}"
         existing = self.ledger.get_record("owner_execution", record_id)
         if existing is not None:
-            if existing.get("request_fingerprint") != request_fingerprint:
+            if existing.get("request_fingerprint") not in accepted_request_fingerprints:
                 raise PermissionError("Owner execution idempotency key cannot be reused for another request")
             if existing.get("status") == "OWNER_RESULT_RECORDED":
                 return dict(existing["response"])
@@ -864,7 +881,7 @@ class MCPRuntime:
             prior = self.ledger.get_record("owner_execution", record_id)
             if (
                 prior
-                and prior.get("request_fingerprint") == request_fingerprint
+                and prior.get("request_fingerprint") in accepted_request_fingerprints
                 and prior.get("status") == "OWNER_RESULT_RECORDED"
             ):
                 return dict(prior["response"])

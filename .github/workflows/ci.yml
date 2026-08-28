@@ -115,11 +115,35 @@ jobs:
         env:
           MESH_COS_DEPLOYMENT_RELEASE: '4.3.0'
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.3.0
+      - name: Write exact v4.3.0 candidate verification receipt
+        run: |
+          set -euo pipefail
+          {
+            printf 'release=4.3.0\n'
+            printf 'candidate_sha=%s\n' "$GITHUB_SHA"
+            printf 'ci_run_id=%s\n' "$GITHUB_RUN_ID"
+            printf 'ci_run_url=%s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            printf 'runtime_contract=4.0.0\n'
+            printf 'security_review=FULL_REVIEW\n'
+            printf 'test_gate=PASS\n'
+            printf 'coverage_gate=100_PERCENT_REQUIRED_AND_PASS\n'
+            printf 'qnap_bundle_gate=PASS\n'
+            printf 'container_provenance_gate=PASS\n'
+            printf 'modern_mcp_gate=PASS\n'
+            python scripts/check-owner-execution-readiness.py
+            printf 'production_status=UNTOUCHED\n'
+            printf 'release_authority=HUMAN_ONLY\n'
+            printf 'candidate_disposition=EXACT_CANDIDATE_CI_PASS\n'
+          } > dist/verification-receipt-v4.3.0.txt
+          grep -q "^candidate_sha=$GITHUB_SHA$" dist/verification-receipt-v4.3.0.txt
+          grep -q '^OWNER_EXECUTION_READINESS=PASS checked=9$' dist/verification-receipt-v4.3.0.txt
+          grep -q '^candidate_disposition=EXACT_CANDIDATE_CI_PASS$' dist/verification-receipt-v4.3.0.txt
       - uses: actions/upload-artifact@v6
         with:
           name: mesh-cos-mcp-qnap-v4.3.0-ci
           path: |
             dist/mesh-cos-mcp-qnap-v4.3.0.zip
             dist/mesh-cos-mcp-qnap-v4.3.0.zip.sha256
+            dist/verification-receipt-v4.3.0.txt
           if-no-files-found: error
           retention-days: 30

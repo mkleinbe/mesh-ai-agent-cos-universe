@@ -94,13 +94,13 @@ class WorkspaceAgentMCPPolicy:
                 raise
             if registry_ref == DEFAULT_SCHEMA_REGISTRY:
                 input_schemas = load_input_schemas()
-            if set(input_schemas) != set(tools):
-                raise ValueError("MCP input schema registry must exactly match the tool catalog")
             for tool_name, schema in input_schemas.items():
                 if not isinstance(schema, dict) or schema.get("type") != "object":
                     raise ValueError(f"MCP input schema must be an object: {tool_name}")
                 if schema.get("additionalProperties") is not False:
                     raise ValueError(f"MCP input schema must be closed: {tool_name}")
+            if set(input_schemas) != set(tools):
+                raise ValueError("MCP input schema registry must exactly match the tool catalog")
         for name, tool in tools.items():
             if tool.get("authority_enforced") is not True:
                 raise ValueError(f"Authority enforcement missing for {name}")

@@ -14,7 +14,9 @@ PF-057 exposed an authority-transport gap: delegation could establish canonical 
 
 The design does not permit the scheduler, CoS, prompt content, task content, retrieved data, model output, connector data, or caller arguments to select an arbitrary acting principal. Delegation transfers bounded work authority only. Identity remains immutable.
 
-Security disposition is `PASS_CANDIDATE` only when the exact release candidate passes the full repository, security, packaging, container, and modern MCP verification gates. Production deployment and recovery remain human-authorized operations.
+The final authority-diff review also applies least privilege to nested execution. In the current 10-agent registry, only CMO and COO have registered ACTIVE children, so only those functional agents receive `delegation.execute_owner` plus `task.decompose` for nested child execution. CRO retains its pre-existing bounded `delegation.create` surface but receives no child executor/decompose grant; CFO receives no child executor/decompose grant. Future child registration requires a separate governed registry and allowlist change.
+
+Security disposition is `PASS_CANDIDATE` only when the exact release candidate passes the full repository, security, packaging, container, and modern MCP verification gates. The exact revision is bound by the successful CI run's `GITHUB_SHA` and the release bundle's `release-metadata.txt`; this document intentionally does not hard-code a self-referential commit hash. Production deployment and recovery remain human-authorized operations.
 
 ## Security invariants
 
@@ -30,6 +32,7 @@ Security disposition is `PASS_CANDIDATE` only when the exact release candidate p
 10. `COMPLETED != VERIFIED`.
 11. Repeated execution is request-bound and idempotent.
 12. Untrusted model or retrieved content is never authentication or authorization evidence.
+13. Nested child-executor authority is exposed only where the live registry contains an ACTIVE canonical child and the parent is permitted to delegate.
 
 ## Authority derivation
 
@@ -65,7 +68,7 @@ The caller supplies the operation request, task/delegation locators, and an idem
 | Approval bypass | Approval gates are inherited and unioned with target-owner requirements; human-only approval recording is excluded. | Mitigated |
 | Delegation-depth bypass | Parentage and canonical depth are derived from the live registry; client depth/ancestry hints must match canonical state. | Mitigated |
 | Privilege inheritance | Child execution uses only the child's registry and MCP policy, not the parent's tool surface. | Mitigated |
-| Excessive capability exposure | Owner readiness requires only the governed lifecycle surface; tool execution remains per-agent allowlisted. | Mitigated |
+| Excessive capability exposure | Owner lifecycle is available to accountable owners; nested child-executor/decompose authority is restricted to current registered parent-child routes. | Mitigated |
 | Functional source-authority leakage | Role-specific capabilities and source authority remain attached to the derived owner contract. | Mitigated |
 | Disabled/quarantined agent execution | Owner must be ACTIVE and routable before delegation persists and again before execution. | Mitigated |
 | Completion without evidence | Existing lifecycle requires non-empty outcome, acceptance test, and outcome evidence. | Mitigated |
@@ -139,7 +142,8 @@ The release candidate includes explicit negative coverage for:
 - cross-task Skill and decomposition attempts;
 - completion/verification separation;
 - approval inheritance;
-- dependency release ordering.
+- dependency release ordering;
+- registry-driven nested authority requiring an actual registered ACTIVE child.
 
 ## Residual risk
 
@@ -147,6 +151,7 @@ The release candidate includes explicit negative coverage for:
 2. Availability of a functional owner runtime can still block work. The required behavior is explicit fail-closed state and governed recovery, not identity substitution.
 3. Production TaskLedger may contain pre-remediation delegated work without an owner-execution-route record. Recovery must derive and validate a route from canonical existing task/delegation state rather than recreate the task.
 4. Production acceptance must use non-consequential synthetic work before recovering real blocked tasks.
+5. Codex Security scan evidence is not claimed unless separately produced by that environment; repository security evidence consists of the FULL_REVIEW threat analysis, negative tests, Bandit, npm audit/security checks, schema-policy checks, release controls, and independent final diff review.
 
 No residual security finding authorizes widening agent, human, source, approval, commercial, publishing, staffing, pricing, or release authority.
 

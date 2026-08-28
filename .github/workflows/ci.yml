@@ -54,6 +54,8 @@ jobs:
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           sh deployment/qnap/tests/test-restarting-container-backup.sh
           bash -n scripts/build-qnap-release-bundle.sh
+          bash -n scripts/build-chatgpt-skill-bundle-v4.4.0.sh
+          ! grep -q '^  pull_request:' .github/workflows/release-v4.3.0.yml
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
@@ -76,19 +78,27 @@ jobs:
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
           grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-      - name: Build current-source QNAP CI candidate
+      - name: Build current-source v4.4.0 candidate artifacts
         env:
           GITHUB_SHA: ${{ github.sha }}
           CANDIDATE_VERSION: '4.4.0'
         run: |
           set -euo pipefail
           bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"
+          bash scripts/build-chatgpt-skill-bundle-v4.4.0.sh
           ZIP="dist/mesh-cos-mcp-qnap-v${CANDIDATE_VERSION}.zip"
+          SKILL_ZIP="dist/mesh-cos-chatgpt-skills-v${CANDIDATE_VERSION}.zip"
           BUNDLE="dist/qnap-bundle/v${CANDIDATE_VERSION}"
           test -f "$ZIP" && test -f "$ZIP.sha256"
+          test -f "$SKILL_ZIP" && test -f "$SKILL_ZIP.sha256"
           grep -q "^version=${CANDIDATE_VERSION}$" "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
+          grep -q "^source_commit=$GITHUB_SHA$" dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
+          grep -q '^skill_count=8$' dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
+          grep -q '^agent_execution_model=logical_skill_agent$' dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
+          grep -q '^synchronous_workspace_agent_execution=false$' dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
           (cd dist && sha256sum -c "mesh-cos-mcp-qnap-v${CANDIDATE_VERSION}.zip.sha256")
+          (cd dist && sha256sum -c "mesh-cos-chatgpt-skills-v${CANDIDATE_VERSION}.zip.sha256")
       - name: Build production-equivalent container from current candidate
         env:
           CANDIDATE_VERSION: '4.4.0'
@@ -111,12 +121,13 @@ jobs:
             printf 'candidate_sha=%s\n' "$GITHUB_SHA"
             printf 'ci_run_id=%s\n' "$GITHUB_RUN_ID"
             printf 'runtime_contract=4.0.0\n'
-            printf 'security_review=FULL_REVIEW_REQUIRED\n'
+            printf 'security_review=FULL_REVIEW\n'
             python scripts/check-owner-execution-readiness.py
             python scripts/check-capability-closure.py
             python scripts/check-published-action-surface.py
             printf 'workspace_publication_status=BLOCKED_PENDING_ACTUAL_ACTION_SCHEMA_SNAPSHOT\n'
-            printf 'release_authority=HUMAN_ONLY\n'
+            printf 'qnap_production_status=HUMAN_DEPLOYMENT_REQUIRED\n'
+            printf 'release_authority=HUMAN_CONTROLLED_WHEN_MANUAL\n'
           } > dist/verification-receipt-current.txt
           grep -q "^candidate_sha=$GITHUB_SHA$" dist/verification-receipt-current.txt
           grep -q '^OWNER_EXECUTION_READINESS=PASS checked=9$' dist/verification-receipt-current.txt
@@ -124,10 +135,12 @@ jobs:
           grep -q '^PUBLISHED_ACTION_SURFACE=SOURCE_CONTRACT_ONLY' dist/verification-receipt-current.txt
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-current-ci
+          name: mesh-cos-mcp-v4.4.0-candidate
           path: |
             dist/mesh-cos-mcp-qnap-v4.4.0.zip
             dist/mesh-cos-mcp-qnap-v4.4.0.zip.sha256
+            dist/mesh-cos-chatgpt-skills-v4.4.0.zip
+            dist/mesh-cos-chatgpt-skills-v4.4.0.zip.sha256
             dist/verification-receipt-current.txt
           if-no-files-found: error
           retention-days: 30

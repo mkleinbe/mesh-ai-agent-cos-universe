@@ -17,7 +17,7 @@ from .ledger import TaskLedger
 from .mcp_policy import WorkspaceAgentMCPPolicy
 from .mcp_validation import validate_tool_arguments
 from .metrics import MetricsService
-from .models import AuthorityLevel, Delegation, TaskRecord, TaskStatus, utcnow
+from .models import AuthorityLevel, Delegation, TaskRecord, TaskStatus, new_id, utcnow
 from .orchestration import ChiefOfStaffService
 from .registry import load_registry
 from .reliability import ReplayManager
@@ -241,6 +241,60 @@ class MCPRuntime:
                 inherited = list(record.get("approval_gates", []))
         return inherited
 
+    @staticmethod
+    def _routing_failure_classification(exc: Exception) -> str:
+        message = str(exc)
+        for classification in (
+            "OWNER_RUNTIME_UNAVAILABLE",
+            "OWNER_EXECUTION_TRANSPORT_UNAVAILABLE",
+        ):
+            if classification in message:
+                return classification
+        if isinstance(exc, PermissionError) and "not routable" in message:
+            return "OWNER_DISABLED_OR_QUARANTINED"
+        return type(exc).__name__
+
+    def _record_owner_routing_failure(
+        self,
+        *,
+        task: TaskRecord,
+        delegation_id: str,
+        parent_task_id: str | None,
+        orchestrating_agent: str,
+        accountable_owner: str,
+        attempted_operation: str,
+        exc: Exception,
+    ) -> dict[str, Any]:
+        classification = self._routing_failure_classification(exc)
+        retry_eligible = classification in {
+            "OWNER_RUNTIME_UNAVAILABLE",
+            "OWNER_EXECUTION_TRANSPORT_UNAVAILABLE",
+        }
+        record = {
+            "version": "mesh.cos.owner-routing-failure.v1",
+            "record_id": new_id("owner-routing-failure"),
+            "canonical_task": task.task_id,
+            "parent_task": parent_task_id,
+            "delegation": delegation_id,
+            "orchestrator": orchestrating_agent,
+            "accountable_owner": accountable_owner,
+            "executing_principal": None,
+            "expected_execution_principal": accountable_owner,
+            "task_state": task.status.value,
+            "attempted_operation": attempted_operation,
+            "authorization_result": "DENY",
+            "failure_classification": classification,
+            "retry_eligibility": retry_eligible,
+            "remediation_path": (
+                "restore validated owner runtime/transport and resume existing canonical state"
+                if retry_eligible
+                else "apply governed owner remediation or reassignment; do not impersonate another agent"
+            ),
+            "timestamp": utcnow(),
+        }
+        self.ledger.save_record("owner_routing_failure", record["record_id"], record)
+        return record
+
     def _ensure_owner_route(self, delegation: dict[str, Any]) -> dict[str, Any]:
         owner_id = str(delegation["accountable_agent"])
         self._active_owner_record(owner_id)
@@ -387,7 +441,8 @@ class MCPRuntime:
         parent_lineage = self._agent_lineage(agent_id)
         target_lineage = self._agent_lineage(delegation.accountable_agent)
         canonical_depth = len(target_lineage) - 1
-        if canonical_depth > len(parent_lineage) - 1 + int(delegator["max_delegation_depth"]):
+        max_canonical_depth = len(parent_lineage) - 1 + int(delegator["max_delegation_depth"])
+        if canonical_depth > max_canonical_depth:
             raise PermissionError("Canonical delegation depth exceeds delegating agent authority")
         if "depth" in args and int(args["depth"]) != canonical_depth:
             raise PermissionError("Caller-supplied delegation depth does not match canonical registry")
@@ -424,11 +479,25 @@ class MCPRuntime:
             self._ensure_owner_route(existing)
             return existing
 
-        self._active_owner_record(delegation.accountable_agent)
+        try:
+            self._active_owner_record(delegation.accountable_agent)
+        except Exception as exc:
+            self._record_owner_routing_failure(
+                task=child_task,
+                delegation_id=delegation.delegation_id,
+                parent_task_id=parent_task.task_id,
+                orchestrating_agent=agent_id,
+                accountable_owner=delegation.accountable_agent,
+                attempted_operation="delegation.create",
+                exc=exc,
+            )
+            raise
+
         created = self.workforce.delegate(
             delegation,
             parent_authority=int(parent_task.authority_level),
             depth=canonical_depth,
+            max_depth=max_canonical_depth,
             active_owner=delegation.accountable_agent,
             ancestry=parent_lineage,
             parent_approval_gates=inherited_gates,
@@ -439,12 +508,25 @@ class MCPRuntime:
     def _owner_scoped_arguments(
         self,
         task: TaskRecord,
+        owner_id: str,
         tool_name: str,
         arguments: dict[str, Any],
     ) -> dict[str, Any]:
         payload = dict(arguments)
-        if "task_id" in payload and str(payload["task_id"]) != task.task_id:
+        if tool_name == "delegation.execute_owner":
+            nested_id = str(payload.get("delegation_id") or "")
+            nested = self.ledger.get_record("delegation", nested_id)
+            if nested is None:
+                raise KeyError(nested_id)
+            if nested.get("delegating_agent") != owner_id:
+                raise PermissionError("Nested owner execution requires the current owner to be the canonical delegator")
+            if nested.get("parent_task_id") != task.task_id:
+                raise PermissionError("Nested delegation must descend from the current delegated task")
+            if str(payload.get("task_id")) != str(nested.get("task_id")):
+                raise PermissionError("Nested owner execution task must match the canonical child delegation")
+        elif "task_id" in payload and str(payload["task_id"]) != task.task_id:
             raise PermissionError("Owner execution cannot cross canonical task boundaries")
+
         if tool_name == "task.decompose" and str(payload.get("parent_task_id")) != task.task_id:
             raise PermissionError("Owner decomposition must remain within the delegated task")
         if tool_name == "skills.invoke_governed":
@@ -473,14 +555,38 @@ class MCPRuntime:
         owner_id = str(delegation["accountable_agent"])
         if task.accountable_agent != owner_id:
             raise PermissionError("Canonical task owner no longer matches delegation owner")
-        owner_record = self._active_owner_record(owner_id)
-        self._ensure_owner_route(delegation)
 
         tool_name = str(args["tool_name"])
+        try:
+            owner_record = self._active_owner_record(owner_id)
+            self._ensure_owner_route(delegation)
+        except Exception as exc:
+            self._record_owner_routing_failure(
+                task=task,
+                delegation_id=delegation_id,
+                parent_task_id=delegation.get("parent_task_id"),
+                orchestrating_agent=agent_id,
+                accountable_owner=owner_id,
+                attempted_operation=tool_name,
+                exc=exc,
+            )
+            route = self.ledger.get_record("owner_execution_route", delegation_id)
+            if route is not None:
+                route["status"] = "OWNER_ROUTING_FAILED"
+                route["failure_classification"] = self._routing_failure_classification(exc)
+                route["updated_at"] = utcnow()
+                self.ledger.save_record("owner_execution_route", delegation_id, route)
+            raise
+
         if tool_name in HUMAN_ONLY_TOOLS:
             raise PermissionError("Owner execution cannot invoke human-only MCP tools")
         self.policy.authorize(owner_id, tool_name)
-        owner_args = self._owner_scoped_arguments(task, tool_name, dict(args.get("arguments", {})))
+        owner_args = self._owner_scoped_arguments(
+            task,
+            owner_id,
+            tool_name,
+            dict(args.get("arguments", {})),
+        )
 
         idempotency_key = str(args["idempotency_key"]).strip()
         if not idempotency_key:
@@ -529,7 +635,11 @@ class MCPRuntime:
         )
         if not claimed:
             prior = self.ledger.get_record("owner_execution", record_id)
-            if prior and prior.get("request_fingerprint") == request_fingerprint and prior.get("status") == "OWNER_RESULT_RECORDED":
+            if (
+                prior
+                and prior.get("request_fingerprint") == request_fingerprint
+                and prior.get("status") == "OWNER_RESULT_RECORDED"
+            ):
                 return dict(prior["response"])
             raise RuntimeError("OWNER_EXECUTION_ALREADY_CLAIMED")
 
@@ -544,6 +654,7 @@ class MCPRuntime:
             route = self.ledger.get_record("owner_execution_route", delegation_id) or {}
             route["status"] = "OWNER_EXECUTION_FAILED"
             route["failure_classification"] = type(exc).__name__
+            route["updated_at"] = utcnow()
             self.ledger.save_record("owner_execution_route", delegation_id, route)
             raise
 
@@ -572,6 +683,7 @@ class MCPRuntime:
         )
         route["last_tool_name"] = tool_name
         route["last_execution_record_id"] = record_id
+        route["parent_result_available_at"] = utcnow()
         route["updated_at"] = utcnow()
         self.ledger.save_record("owner_execution_route", delegation_id, route)
         self.governance.record_event(

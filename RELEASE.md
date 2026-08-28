@@ -4,19 +4,23 @@
 
 The canonical Phase 1 authority/runtime contract remains **`4.0.0`** with exactly 10 registered agents. TaskLedger remains canonical state. L4/L5 human authority, Message Operations boundaries, and `COMPLETED != VERIFIED` remain unchanged.
 
+## Material-turn record
+
+This is a material application architecture turn. The durable turn record is `docs/material-turn-v4.3.0.md`, governed by `docs/material-turn-documentation-standard.md`. The updated ChatGPT Skill manifest is `docs/skills-v4.3.0.md`.
+
 ## Architecture change
 
 The release adds the governed MCP operation `delegation.execute_owner` and a closed-loop delegated execution protocol:
 
-```text
-scheduler or parent trigger
--> canonical task and delegation
--> server derives accountable owner
--> Agent Registry and owner policy validation
--> owner-scoped operation
--> owner-only task completion
--> canonical result returned to parent
--> separate verification where required
+```mermaid
+flowchart LR
+    A[Scheduler or canonical parent] --> B[Canonical task + delegation]
+    B --> C[Server derives accountable owner]
+    C --> D[Agent Registry + owner policy validation]
+    D --> E[Owner-scoped operation]
+    E --> F[Owner-only task completion]
+    F --> G[Canonical result returned]
+    G --> H[Separate verification]
 ```
 
 The external transport principal remains immutable. Callers cannot supply an owner/principal field, cannot override canonical ancestry/depth/authority, and cannot use parent identity to complete child work. Nested delegation is supported through the canonical CMO -> VP Content and COO -> Consultant Network Steward relationships.
@@ -34,6 +38,21 @@ The external transport principal remains immutable. Callers cannot supply an own
 - v4.2.3 Slack/qnet HITL controls remain unchanged and fail closed.
 
 Security applicability is **FULL_REVIEW** because the change touches MCP delegation, authorization, identity, tool execution, persistence, completion, CI/CD, and production recovery boundaries. See `docs/security-review-v4.3.0-cross-agent-owner-execution.md`.
+
+## Updated ChatGPT Skills
+
+The v4.3.0 turn modifies role contracts for:
+
+- `mesh-chief-of-staff`
+- `mesh-agentops-controller`
+- `mesh-answer-decision-desk`
+- `mesh-cro`
+- `mesh-cfo`
+- `mesh-coo`
+- `mesh-cmo`
+- `mesh-message-operations`
+
+See `docs/skills-v4.3.0.md` for exact scope and the distinction between Skill updates and workspace-agent manifest updates.
 
 ## Release assets
 
@@ -64,7 +83,7 @@ slack_hitl_ready: true
 
 ## QNAP deployment
 
-After human release authorization, place the immutable release ZIP and checksum directly in `/share/Docker/cos-mcp/releases` and deploy the versioned unit:
+After separate production deployment authorization, place the immutable release ZIP and checksum directly in `/share/Docker/cos-mcp/releases` and deploy the versioned unit:
 
 ```sh
 cd /share/Docker/cos-mcp/releases
@@ -94,6 +113,8 @@ existing QA
 -> dependent gate release
 ```
 
-## Human-controlled release boundary
+## Release authority for this turn
 
-The v4.3.0 release workflow verifies pull requests automatically but publishes only from `main` through an explicit `workflow_dispatch` confirmation of `RELEASE_v4.3.0`. No autonomous merge, tag, release, deployment, production acceptance, or recovery is authorized by this candidate.
+On August 28, 2026, the human release authority explicitly authorized repository documentation closeout, commit/push, merge to `main`, PR closeout, semantic tag `v4.3.0`, and GitHub Release publication for this turn. That authorization does not by itself authorize QNAP production deployment, production task recovery, or consequential external business action.
+
+The v4.3.0 release workflow may be used as the preferred publication mechanism. If the GitHub integration cannot directly create the release/tag through a high-level release action, the repository's human-authorized release workflow or equivalent Git reference/release mechanism may be used so long as the tag and release are bound to the verified integrated `main` commit.

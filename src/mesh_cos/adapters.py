@@ -75,6 +75,10 @@ class GovernedAdapterRegistry:
             return {
                 "status": "AUTHORIZED",
                 "execution_mode": "CHATGPT_SKILL_HANDOFF",
+                "reasoning_execution_mode": "LOGICAL_SKILL_AGENT",
+                "execution_claim": "AUTHORIZATION_HANDOFF_ONLY",
+                "synchronous_workspace_agent_execution": False,
+                "result_provenance_required": True,
                 "agent_id": agent_id,
                 "capability": capability,
                 "payload": dict(payload),

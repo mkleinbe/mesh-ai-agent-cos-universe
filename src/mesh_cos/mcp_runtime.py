@@ -5,7 +5,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .adapters import GovernedAdapterRegistry
 from .agentops import AgentOpsEvaluator
@@ -276,8 +276,7 @@ class MCPRuntime:
                     )
                 except PermissionError as exc:
                     last_error = exc
-            if last_error is not None:
-                raise last_error
+            raise cast(PermissionError, last_error)
         for approval in reversed(self._approval_records_for_task(task.task_id)):
             try:
                 return self._validate_approval_reference(

@@ -60,7 +60,7 @@ def test_active_deployment_train_remains_v430_while_ci_is_release_neutral() -> N
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
     assert "Build exact v4.3.0 QNAP release bundle" not in ci
-    assert "Build current-source QNAP CI candidate" in ci
+    assert "Build current-source v4.4.0 candidate artifacts" in ci
     assert 'CANDIDATE_VERSION: \'4.4.0\'' in ci
     assert 'bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"' in ci
     assert "dist/mesh-cos-mcp-qnap-v4.4.0.zip" in ci

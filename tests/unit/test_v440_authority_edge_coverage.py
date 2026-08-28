@@ -367,6 +367,22 @@ def test_owner_scoped_arguments_accept_valid_nested_and_local_reads() -> None:
     assert skill["payload"]["execution_mode"] == "LOGICAL_SKILL_AGENT"
 
 
+def test_owner_execution_rejects_unsupported_protocol_version() -> None:
+    runtime = MCPRuntime(TaskLedger())
+    with pytest.raises(PermissionError, match="Unsupported owner-execution protocol"):
+        runtime._delegation_execute_owner(
+            "cos",
+            {
+                "protocol_version": "mesh.cos.owner-execution.v999",
+                "delegation_id": "D1",
+                "task_id": "T1",
+                "tool_name": "task.get",
+                "arguments": {"task_id": "T1"},
+                "idempotency_key": "wrong-protocol",
+            },
+        )
+
+
 def test_owner_execution_requires_nonempty_idempotency_key() -> None:
     runtime = MCPRuntime(TaskLedger())
     runtime.ledger.save_task(make_task("T1", "cro"))

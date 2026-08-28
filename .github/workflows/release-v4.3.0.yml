@@ -3,6 +3,10 @@ name: v4.3.0 cross-agent owner execution release candidate
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - docs/release-authorization-v4.3.0.md
   workflow_dispatch:
     inputs:
       confirm_release:
@@ -108,7 +112,7 @@ jobs:
           retention-days: 30
 
   release:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_release == 'RELEASE_v4.3.0'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_release == 'RELEASE_v4.3.0')
     needs: verify
     runs-on: ubuntu-latest
     permissions:

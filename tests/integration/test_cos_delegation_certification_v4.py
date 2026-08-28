@@ -298,7 +298,62 @@ def test_completion_and_verification_fail_closed_without_evidence_and_duplicate_
 
 def test_delegation_depth_authority_and_approval_inheritance_fail_closed() -> None:
     runtime = MCPRuntime(TaskLedger())
-    payload = delegation_payload("T-steward", "consultant-network-steward", "readiness")
+    root = runtime.call_agent(
+        "cos",
+        "task.intake",
+        {
+            "objective": "delivery parent",
+            "expected_outcome": "delivery readiness",
+            "requested_by": "michael",
+            "executive_sponsor": "michael",
+            "accountable_agent": "cos",
+            "decision_owner": "michael",
+            "authority_level": 2,
+            "acceptance_test": "delivery evidence exists",
+        },
+    )
+    coo_task = runtime.call_agent(
+        "cos",
+        "task.decompose",
+        {
+            "parent_task_id": root["task_id"],
+            "work_packages": [
+                {
+                    "objective": "delivery readiness",
+                    "expected_outcome": "delivery readiness evidence",
+                    "accountable_agent": "coo",
+                    "authority_level": 2,
+                    "acceptance_test": "delivery readiness evidence is sufficient",
+                }
+            ],
+        },
+    )[0]
+    coo_delegation = delegation_payload(coo_task["task_id"], "coo", "delivery readiness")
+    coo_delegation["approval_gates"] = ["L4 qualified human"]
+    runtime.call_agent(
+        "cos",
+        "delegation.create",
+        {
+            "delegation": coo_delegation,
+            "parent_authority": 2,
+            "depth": 1,
+            "ancestry": ["cos"],
+            "parent_approval_gates": [],
+        },
+    )
+    steward_task = runtime.cos.decompose(
+        coo_task["task_id"],
+        [
+            {
+                "objective": "readiness",
+                "expected_outcome": "evidence-backed readiness",
+                "accountable_agent": "consultant-network-steward",
+                "authority_level": 2,
+                "acceptance_test": "readiness evidence is sufficient",
+            }
+        ],
+    )[0]
+    payload = delegation_payload(steward_task.task_id, "consultant-network-steward", "readiness")
     payload["approval_gates"] = ["L4 qualified human"]
     created = runtime.call_agent(
         "coo",
@@ -313,6 +368,7 @@ def test_delegation_depth_authority_and_approval_inheritance_fail_closed() -> No
     )
     assert created["delegating_agent"] == "coo"
     assert created["accountable_agent"] == "consultant-network-steward"
+    assert "L4 qualified human" in created["approval_gates"]
 
     too_deep = Delegation(
         **{

@@ -1,0 +1,55 @@
+name: v4.3.1 published action-surface release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/release-authorization-v4.3.1.md
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install verification dependencies
+        run: pip install -e '.[dev]'
+      - name: Verify canonical owner and published-surface contracts
+        run: |
+          set -euo pipefail
+          python scripts/validate-contracts.py
+          python scripts/check-owner-execution-readiness.py
+          python scripts/check-published-action-surface.py
+          pytest -q tests/integration/test_published_action_surface.py
+      - name: Verify release documentation
+        run: |
+          set -euo pipefail
+          test -f CHANGELOG-v4.3.1.md
+          test -f docs/material-turn-v4.3.1.md
+          test -f docs/security-review-v4.3.1-published-action-surface.md
+          test -f docs/verification-v4.3.1-published-action-surface.md
+          test -f docs/release-4.3.1-published-action-surface.md
+          test -f docs/release-authorization-v4.3.1.md
+          grep -q 'BLOCKED_EXTERNAL_PUBLISH_SNAPSHOT' docs/verification-v4.3.1-published-action-surface.md
+          grep -q 'delegation.execute_owner' CHANGELOG-v4.3.1.md
+      - name: Publish semantic GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.3.1 >/dev/null 2>&1; then
+            test "$(gh api repos/${GITHUB_REPOSITORY}/git/ref/tags/v4.3.1 --jq .object.sha)" = "$GITHUB_SHA"
+            exit 0
+          fi
+          gh release create v4.3.1 \
+            --target "$GITHUB_SHA" \
+            --title 'Mesh CoS MCP v4.3.1 Published Action-Surface Closure' \
+            --notes-file CHANGELOG-v4.3.1.md

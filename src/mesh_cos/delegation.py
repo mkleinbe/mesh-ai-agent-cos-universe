@@ -19,7 +19,8 @@ def validate_delegation(
         raise ValueError("Exactly one accountable agent is required")
     if delegation.accountable_agent in delegation.contributing_agents:
         raise ValueError("Accountable agent must not be duplicated as a contributor")
-    if max_depth is not None and depth > max_depth:
+    effective_max_depth = 2 if max_depth is None else max_depth
+    if depth > effective_max_depth:
         raise ValueError("Canonical registry delegation depth exceeded")
     if int(delegation.authority_level) > parent_authority:
         raise PermissionError("Delegation cannot widen authority")

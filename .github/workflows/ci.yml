@@ -31,6 +31,7 @@ jobs:
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/check-owner-execution-readiness.py
       - run: ruff check src
       - run: ruff check tests scripts --select E9,F63,F7,F82
       - run: mypy src --check-untyped-defs

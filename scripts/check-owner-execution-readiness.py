@@ -7,6 +7,7 @@ from mesh_cos.registry import load_registry
 OWNER_LIFECYCLE = {"task.get", "task.transition", "task.check_in", "task.complete"}
 PARENT_TRANSPORT = {"delegation.create", "delegation.execute_owner"}
 DELEGATING_OWNER_TOOLS = {"task.decompose", "delegation.create", "delegation.execute_owner"}
+NESTED_EXECUTION_TOOLS = {"task.decompose", "delegation.execute_owner"}
 
 
 def main() -> int:
@@ -24,8 +25,26 @@ def main() -> int:
             active_children_by_parent.setdefault(parent_id, []).append(agent_id)
 
     for agent_id, record in registry.items():
+        if record.get("status") != "ACTIVE":
+            continue
+
+        allowed = set(policy.allowed_tools(agent_id))
+        active_children = active_children_by_parent.get(agent_id, [])
+        if active_children:
+            if not record.get("delegation_permissions") or int(record.get("max_delegation_depth", 0)) <= 0:
+                failures.append(f"{agent_id}: registered active child exists but delegation authority is absent")
+            missing_delegate = DELEGATING_OWNER_TOOLS - allowed
+            if missing_delegate:
+                failures.append(f"{agent_id}: nested-delegation path missing {sorted(missing_delegate)}")
+        elif agent_id != "cos":
+            excess_nested = NESTED_EXECUTION_TOOLS & allowed
+            if excess_nested:
+                failures.append(
+                    f"{agent_id}: nested-execution tools exposed without registered active child {sorted(excess_nested)}"
+                )
+
         parent_id = record.get("parent_agent_id")
-        if not parent_id or record.get("status") != "ACTIVE":
+        if not parent_id:
             continue
 
         checked += 1
@@ -36,7 +55,6 @@ def main() -> int:
         if not parent.get("delegation_permissions") or int(parent.get("max_delegation_depth", 0)) <= 0:
             failures.append(f"{parent_id}->{agent_id}: canonical parent cannot delegate")
 
-        allowed = set(policy.allowed_tools(agent_id))
         missing_owner = OWNER_LIFECYCLE - allowed
         if missing_owner:
             failures.append(f"{agent_id}: owner lifecycle missing {sorted(missing_owner)}")
@@ -45,13 +63,6 @@ def main() -> int:
         missing_parent = PARENT_TRANSPORT - parent_allowed
         if missing_parent:
             failures.append(f"{parent_id}->{agent_id}: parent transport missing {sorted(missing_parent)}")
-
-        if active_children_by_parent.get(agent_id):
-            if not record.get("delegation_permissions") or int(record.get("max_delegation_depth", 0)) <= 0:
-                failures.append(f"{agent_id}: registered active child exists but delegation authority is absent")
-            missing_delegate = DELEGATING_OWNER_TOOLS - allowed
-            if missing_delegate:
-                failures.append(f"{agent_id}: nested-delegation path missing {sorted(missing_delegate)}")
 
     if failures:
         print("OWNER_EXECUTION_READINESS=FAIL")

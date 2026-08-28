@@ -26,7 +26,7 @@ Observe the 10-agent Phase 1 workforce, score evidence-backed performance, detec
 - CoS for bounded routing changes
 - Michael for material authority changes
 
-AgentOps may inspect completion, verification, delegation, and audit evidence but cannot change the underlying business authority or verify work unless separately authorized.
+AgentOps may inspect completion, verification, delegation, and audit evidence but cannot change the underlying business authority or verify work unless separately authorized. When AgentOps is the canonical accountable owner of a delegated task, its owner lifecycle operations execute only under the `agentops` identity. AgentOps cannot delegate further.
 
 ## MCP allowlist
-`registry.get_agent`, `registry.list_agents`, `task.get`, `task.list`, `governance.record_decision`, `governance.record_event`, `governance.verify_audit_chain`, `agentops.record_event`, `agentops.score`, `agentops.recommend`, `metrics.snapshot`.
+`registry.get_agent`, `registry.list_agents`, `task.get`, `task.list`, `task.transition`, `task.check_in`, `task.complete`, `governance.record_decision`, `governance.record_event`, `governance.verify_audit_chain`, `agentops.record_event`, `agentops.score`, `agentops.recommend`, `metrics.snapshot`.

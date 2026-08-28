@@ -48,3 +48,16 @@ def test_policy_rejects_open_schema_before_catalog_completeness(tmp_path: Path) 
 
     with pytest.raises(ValueError, match=f"closed: {name}"):
         WorkspaceAgentMCPPolicy(contract).validate()
+
+
+def test_policy_rejects_closed_schema_registry_with_missing_catalog_entry(tmp_path: Path) -> None:
+    policy = WorkspaceAgentMCPPolicy.from_file()
+    contract = deepcopy(policy.contract)
+    schemas = load_input_schemas()
+    schemas.pop(next(iter(schemas)))
+    registry = tmp_path / "missing-tool.json"
+    _write_registry(registry, schemas)
+    contract["input_schema_registry"] = str(registry)
+
+    with pytest.raises(ValueError, match="exactly match the tool catalog"):
+        WorkspaceAgentMCPPolicy(contract).validate()

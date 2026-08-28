@@ -86,8 +86,10 @@ class WorkspaceAgentMCPPolicy:
                 registry_path = ROOT / registry_path
             try:
                 input_schemas = load_input_schemas(registry_path)
+            except TypeError as exc:
+                raise ValueError("MCP input schema registry must exactly match the tool catalog") from exc
             except ValueError as exc:
-                if "registry version" in str(exc) or "Unsupported MCP input-schema registry version" in str(exc):
+                if "registry version" in str(exc):
                     raise ValueError("Unsupported MCP input schema registry version") from exc
                 raise
             if registry_ref == DEFAULT_SCHEMA_REGISTRY:

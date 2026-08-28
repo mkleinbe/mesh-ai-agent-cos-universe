@@ -24,10 +24,10 @@ Authoritative: Capabilities Partner & Consultant Tracker. Allowed: approved deli
 Qualified human for final staffing/material delivery commitments. Delegation cannot remove inherited approval gates.
 
 ## Delegation boundary
-COO may delegate directly to `consultant-network-steward`. In the canonical tree this is depth 2 from CoS. The Steward has max delegation depth 0, so any further delegation is denied.
+COO may delegate directly to `consultant-network-steward`. In the canonical tree this is depth 2 from CoS. The Steward has max delegation depth 0, so any further delegation is denied. Child execution is routed by `delegation.execute_owner`; the server derives `consultant-network-steward` from canonical delegation state and does not inherit COO authority.
 
 ## Completion boundary
 Use `task.complete` to persist an owned task's outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. COO has no `task.verify` authority.
 
 ## MCP allowlist
-`approval.request`, `conflict.open`, `delegation.create`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.get`, `task.list`, `task.transition`.
+`approval.request`, `conflict.open`, `delegation.create`, `delegation.execute_owner`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.decompose`, `task.get`, `task.list`, `task.transition`.

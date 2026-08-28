@@ -86,4 +86,5 @@ def test_v4113_and_v420_release_evidence_remain_historical_while_current_is_v422
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10
-    assert len(contract["agent_tool_allowlists"]["cos"]) == 27
+    assert len(contract["agent_tool_allowlists"]["cos"]) == 28
+    assert "delegation.execute_owner" in contract["agent_tool_allowlists"]["cos"]

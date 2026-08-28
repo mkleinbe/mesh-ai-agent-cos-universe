@@ -308,6 +308,12 @@ class MCPRuntime:
                 raise PermissionError("L4/L5 decisions require explicit human approval")
             if not approval_reference:
                 raise PermissionError("L4/L5 authority requires a canonical approval reference")
+            if (
+                authority_level == 5
+                and decision
+                and str(payload.get("decision_owner") or "").strip().lower() != "michael"
+            ):
+                raise PermissionError("L5 authority requires Michael as decision owner")
             task_id = str(payload.get("task_id") or "").strip()
             if not task_id:
                 raise PermissionError("L4/L5 authority requires a canonical task")
@@ -321,12 +327,6 @@ class MCPRuntime:
                 required_action=required_action,
                 human_approver=str(payload.get("human_approver") or ""),
             )
-            if (
-                authority_level == 5
-                and decision
-                and str(payload.get("decision_owner") or "").strip().lower() != "michael"
-            ):
-                raise PermissionError("L5 authority requires Michael as decision owner")
             return record, approval
 
         ceiling = int(record["decision_authority"])
@@ -565,7 +565,6 @@ class MCPRuntime:
         target = self.registry.get(delegation.accountable_agent)
         if target is None or target.get("parent_agent_id") != agent_id:
             raise PermissionError("Delegation target must be a registered direct child of the delegating agent")
-        self._active_owner_record(delegation.accountable_agent)
 
         child_task = self.ledger.get_task(delegation.task_id)
         if child_task is None:
@@ -633,6 +632,20 @@ class MCPRuntime:
             self._ensure_owner_route(existing)
             return existing
 
+        try:
+            self._active_owner_record(delegation.accountable_agent)
+        except Exception as exc:
+            self._record_owner_routing_failure(
+                task=child_task,
+                delegation_id=delegation.delegation_id,
+                parent_task_id=parent_task.task_id,
+                orchestrating_agent=agent_id,
+                accountable_owner=delegation.accountable_agent,
+                attempted_operation="delegation.create",
+                exc=exc,
+            )
+            raise
+
         created = self.workforce.delegate(
             delegation,
             parent_authority=int(parent_task.authority_level),
@@ -661,6 +674,7 @@ class MCPRuntime:
     ) -> dict[str, Any]:
         payload = dict(arguments)
         if tool_name == "delegation.execute_owner":
+            payload.setdefault("protocol_version", OWNER_EXECUTION_PROTOCOL)
             nested_id = str(payload.get("delegation_id") or "")
             nested = self.ledger.get_record("delegation", nested_id)
             if nested is None:
@@ -701,7 +715,7 @@ class MCPRuntime:
         return validate_tool_arguments(tool_name, payload)
 
     def _delegation_execute_owner(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
-        protocol_version = str(args.get("protocol_version") or "")
+        protocol_version = str(args.get("protocol_version") or OWNER_EXECUTION_PROTOCOL)
         if protocol_version != OWNER_EXECUTION_PROTOCOL:
             raise PermissionError("Unsupported owner-execution protocol version")
         delegation_id = str(args["delegation_id"])

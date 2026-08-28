@@ -90,7 +90,8 @@ def test_release_root_contract_does_not_change_phase1_authority() -> None:
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10
-    assert len(contract["agent_tool_allowlists"]["cos"]) == 27
+    assert len(contract["agent_tool_allowlists"]["cos"]) == 28
+    assert "delegation.execute_owner" in contract["agent_tool_allowlists"]["cos"]
     assert set(contract["human_tool_allowlist"]) == {
         "approval.record_decision",
         "reliability.human_override",

@@ -14,7 +14,8 @@ def test_v416_preserves_canonical_phase1_contract_and_catalog() -> None:
     contract = json.loads(read("chatgpt/mcp/mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10
-    assert len(contract["agent_tool_allowlists"]["cos"]) == 27
+    assert len(contract["agent_tool_allowlists"]["cos"]) == 28
+    assert "delegation.execute_owner" in contract["agent_tool_allowlists"]["cos"]
     assert "message-ops" in contract["agent_tool_allowlists"]
     assert "devils-advocate" not in contract["agent_tool_allowlists"]
     assert set(contract["human_tool_allowlist"]) == {

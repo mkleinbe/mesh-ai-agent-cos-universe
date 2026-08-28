@@ -46,15 +46,17 @@ class ChiefOfStaffService:
         self.ledger.save_task(task)
         if idempotency_key:
             self.ledger.save_record("intake_idempotency", idempotency_key, {"task_id": task.task_id})
-        self._audit(task, "task_intake", "created")
+        self._audit(task, "task_intake", "created", actor_id="cos")
         return task
 
-    def decompose(self, parent_task_id: str, work_packages: list[dict]) -> list[TaskRecord]:
-        """Validate the complete decomposition before writing any child task.
-
-        A malformed later work package must not leave earlier children persisted. This
-        preserves canonical work-graph atomicity for deterministic validation errors.
-        """
+    def decompose(
+        self,
+        parent_task_id: str,
+        work_packages: list[dict],
+        *,
+        actor_id: str = "cos",
+    ) -> list[TaskRecord]:
+        """Validate the complete decomposition before writing any child task."""
 
         assert_runtime_enabled()
         parent = self._require(parent_task_id)
@@ -64,7 +66,7 @@ class ChiefOfStaffService:
                 task_id=new_id("task"),
                 objective=package["objective"],
                 expected_outcome=package["expected_outcome"],
-                requested_by="cos",
+                requested_by=actor_id,
                 executive_sponsor=parent.executive_sponsor,
                 accountable_agent=package["accountable_agent"],
                 decision_owner=package.get("decision_owner", parent.decision_owner),
@@ -86,7 +88,7 @@ class ChiefOfStaffService:
 
         for child in children:
             self.ledger.save_task(child)
-            self._audit(child, "task_decomposed", f"parent={parent.task_id}")
+            self._audit(child, "task_decomposed", f"parent={parent.task_id}", actor_id=actor_id)
         self.ledger.save_record(
             "work_graph",
             parent.task_id,
@@ -102,7 +104,13 @@ class ChiefOfStaffService:
                 return False
         return True
 
-    def advance(self, task_id: str, target: TaskStatus) -> TaskRecord:
+    def advance(
+        self,
+        task_id: str,
+        target: TaskStatus,
+        *,
+        actor_id: str = "cos",
+    ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         if target == TaskStatus.IN_PROGRESS and not self.dependencies_ready(task_id):
@@ -110,17 +118,24 @@ class ChiefOfStaffService:
         before = task.status.value
         transition(task, target)
         self.ledger.save_task(task)
-        self._audit(task, "task_transition", f"{before}->{target.value}")
+        self._audit(task, "task_transition", f"{before}->{target.value}", actor_id=actor_id)
         return task
 
-    def complete(self, task_id: str, *, outcome: str, evidence: list[str]) -> TaskRecord:
+    def complete(
+        self,
+        task_id: str,
+        *,
+        outcome: str,
+        evidence: list[str],
+        actor_id: str = "cos",
+    ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         task.outcome = outcome
         task.outcome_evidence = list(evidence)
         transition(task, TaskStatus.COMPLETED)
         self.ledger.save_task(task)
-        self._audit(task, "task_complete", "completed")
+        self._audit(task, "task_complete", "completed", actor_id=actor_id)
         return task
 
     def verify(self, task_id: str, acceptance: Callable[[TaskRecord], tuple[bool, str]]) -> TaskRecord:
@@ -145,13 +160,7 @@ class ChiefOfStaffService:
         verifier_id: str,
         evidence_references: list[str],
     ) -> TaskRecord:
-        """Persist a serializable Workspace Agent/MCP verification result.
-
-        This is the remote-safe counterpart to ``verify``. The verifier evaluates the
-        configured acceptance test outside the Python process and must provide an
-        explicit identity plus evidence references. A passing result without evidence
-        fails closed and does not mutate task state.
-        """
+        """Persist a serializable Workspace Agent/MCP verification result."""
 
         assert_runtime_enabled()
         task = self._require(task_id)
@@ -196,18 +205,31 @@ class ChiefOfStaffService:
         self.ledger.save_record("verification", task.task_id, record)
         transition(task, TaskStatus.VERIFIED if passed else TaskStatus.REWORK)
         self.ledger.save_task(task)
-        self._audit(task, "task_verify", "passed" if passed else "failed")
+        self._audit(
+            task,
+            "task_verify",
+            "passed" if passed else "failed",
+            actor_id=verifier_id,
+        )
         return task
 
-    def close(self, task_id: str) -> TaskRecord:
+    def close(self, task_id: str, *, actor_id: str = "cos") -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         transition(task, TaskStatus.CLOSED)
         self.ledger.save_task(task)
-        self._audit(task, "task_close", "closed")
+        self._audit(task, "task_close", "closed", actor_id=actor_id)
         return task
 
-    def reassign(self, task_id: str, expected_owner: str, new_owner: str, *, reason: str) -> TaskRecord:
+    def reassign(
+        self,
+        task_id: str,
+        expected_owner: str,
+        new_owner: str,
+        *,
+        reason: str,
+        actor_id: str = "cos",
+    ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         if task.accountable_agent != expected_owner:
@@ -230,7 +252,7 @@ class ChiefOfStaffService:
                 "timestamp": utcnow(),
             },
         )
-        self._audit(task, "task_reassigned", f"{before}->{new_owner}: {reason}")
+        self._audit(task, "task_reassigned", f"{before}->{new_owner}: {reason}", actor_id=actor_id)
         return task
 
     def record_checkin(
@@ -253,7 +275,7 @@ class ChiefOfStaffService:
             "timestamp": utcnow(),
         }
         self.ledger.save_record("checkin", record_id, record)
-        self._audit(task, "task_checkin", note)
+        self._audit(task, "task_checkin", note, actor_id=agent_id)
         return record
 
     def remediate_stalled(
@@ -262,18 +284,25 @@ class ChiefOfStaffService:
         *,
         new_owner: str | None = None,
         reason: str = "stalled",
+        actor_id: str = "cos",
     ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
         if not stalled(task):
             return task
         if new_owner and new_owner != task.accountable_agent:
-            return self.reassign(task_id, task.accountable_agent, new_owner, reason=reason)
+            return self.reassign(
+                task_id,
+                task.accountable_agent,
+                new_owner,
+                reason=reason,
+                actor_id=actor_id,
+            )
         if task.status == TaskStatus.IN_PROGRESS:
             transition(task, TaskStatus.BLOCKED)
             task.blockers.append(reason)
             self.ledger.save_task(task)
-            self._audit(task, "task_stalled", reason)
+            self._audit(task, "task_stalled", reason, actor_id=actor_id)
         return task
 
     def escalate(
@@ -282,6 +311,7 @@ class ChiefOfStaffService:
         *,
         reason: str,
         approval_owner: str | None = None,
+        actor_id: str = "cos",
     ) -> TaskRecord:
         assert_runtime_enabled()
         task = self._require(task_id)
@@ -303,7 +333,7 @@ class ChiefOfStaffService:
                 "timestamp": utcnow(),
             },
         )
-        self._audit(task, "task_escalated", reason)
+        self._audit(task, "task_escalated", reason, actor_id=actor_id)
         return task
 
     def invoke(
@@ -330,7 +360,7 @@ class ChiefOfStaffService:
                 "timestamp": utcnow(),
             },
         )
-        self._audit(task, "functional_invocation", capability)
+        self._audit(task, "functional_invocation", capability, actor_id=task.accountable_agent)
         return result
 
     def _require(self, task_id: str) -> TaskRecord:
@@ -339,10 +369,17 @@ class ChiefOfStaffService:
             raise KeyError(task_id)
         return task
 
-    def _audit(self, task: TaskRecord, event_type: str, result: str) -> None:
+    def _audit(
+        self,
+        task: TaskRecord,
+        event_type: str,
+        result: str,
+        *,
+        actor_id: str,
+    ) -> None:
         event = AuditEvent(
             event_type,
-            "cos",
+            actor_id,
             task.task_id,
             task.correlation_id,
             int(task.authority_level),

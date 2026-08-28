@@ -37,7 +37,8 @@ def _schema_map(raw: Any, *, registry_label: str) -> dict[str, dict[str, Any]]:
     schemas: dict[str, dict[str, Any]] = {}
     for name, schema in raw.items():
         if not isinstance(schema, dict):
-            raise ValueError(f"MCP input schema must be an object: {name}")
+            # Preserve the established policy-validation ValueError contract for malformed schemas.
+            raise ValueError(f"MCP input schema must be an object: {name}")  # noqa: TRY004
         schemas[str(name)] = dict(schema)
     return schemas
 

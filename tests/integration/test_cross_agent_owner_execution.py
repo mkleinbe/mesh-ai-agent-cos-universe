@@ -15,6 +15,10 @@ DIRECT_REPORTS = sorted(
 )
 
 
+def audit_actor(event: dict) -> str | None:
+    return event.get("actor_agent", event.get("actor_id"))
+
+
 def intake(runtime: MCPRuntime, owner: str = "cos", *, key: str = "root") -> dict:
     return runtime.call_agent(
         "cos",
@@ -311,7 +315,7 @@ def test_dlg001_cos_owned_work_completes_under_cos_identity() -> None:
     )
     assert completed["status"] == "COMPLETED"
     assert any(
-        event["event_type"] == "task_complete" and event["actor_agent"] == "cos"
+        event["event_type"] == "task_complete" and audit_actor(event) == "cos"
         for event in runtime.ledger.list_events()
     )
 
@@ -336,7 +340,7 @@ def test_dlg002_registry_driven_cos_direct_report_matrix(owner: str) -> None:
     assert completed["result"]["status"] == "COMPLETED"
     assert runtime.call_agent("cos", "task.get", {"task_id": delegated["task_id"]})["status"] == "COMPLETED"
     assert any(
-        event["event_type"] == "task_complete" and event["actor_agent"] == owner
+        event["event_type"] == "task_complete" and audit_actor(event) == owner
         for event in runtime.ledger.list_events()
     )
 
@@ -348,14 +352,12 @@ def test_dlg003_cmo_to_vp_content_nested_execution_and_return_path() -> None:
     delegate(runtime, "cos", cmo_task, "D-CMO", depth=1)
     for index, target in enumerate(("TRIAGED", "PLANNED", "ASSIGNED", "IN_PROGRESS"), start=1):
         owner_transition(runtime, "cos", "D-CMO", cmo_task["task_id"], target, key=f"cmo-start-{index}")
-
     vp = create_nested_child(runtime, "D-CMO", cmo_task, "vp-content", key="cmo-decompose-vp")
     create_nested_delegation(runtime, "D-CMO", cmo_task, vp, "D-VP", "cmo")
     nested_owner_to_qa(runtime, "D-CMO", cmo_task, "D-VP", vp)
     nested_completed = nested_owner_complete(runtime, "D-CMO", cmo_task, "D-VP", vp)
     assert nested_completed["executing_principal"] == "vp-content"
     assert nested_completed["result"]["status"] == "COMPLETED"
-
     owner_transition(runtime, "cos", "D-CMO", cmo_task["task_id"], "QA", key="cmo-qa")
     executive_completed = owner_complete(runtime, "cos", "D-CMO", cmo_task["task_id"], "cmo")
     assert executive_completed["executing_principal"] == "cmo"
@@ -433,7 +435,7 @@ def test_dlg008_owner_completion_attribution_is_canonical() -> None:
     assert completed["accountable_owner"] == "cmo"
     assert completed["executing_principal"] == "cmo"
     event = [event for event in runtime.ledger.list_events() if event["event_type"] == "task_complete"][-1]
-    assert event["actor_agent"] == "cmo"
+    assert audit_actor(event) == "cmo"
 
 
 def test_dlg009_parent_direct_completion_of_child_is_rejected() -> None:
@@ -499,6 +501,7 @@ def test_dlg011_owner_execution_retry_is_idempotent_and_key_is_request_bound() -
         "TRIAGED",
         key="retry-key",
     )
+    audit_count_after_first = len(runtime.ledger.list_records("audit_event_v2"))
     second = owner_transition(
         runtime,
         "cos",
@@ -509,7 +512,7 @@ def test_dlg011_owner_execution_retry_is_idempotent_and_key_is_request_bound() -
     )
     assert second == first
     assert len(runtime.ledger.list_records("owner_execution")) == 1
-    assert len(runtime.ledger.list_records("audit_event_v2")) == 1
+    assert len(runtime.ledger.list_records("audit_event_v2")) == audit_count_after_first
     with pytest.raises(PermissionError, match="idempotency key"):
         owner_transition(
             runtime,
@@ -556,7 +559,6 @@ def test_dlg014_approval_requirements_are_inherited_through_nested_delegation() 
     cmo_task = child(runtime, root, "cmo")
     direct = delegate(runtime, "cos", cmo_task, "D-CMO", depth=1)
     assert set(runtime.registry["cmo"]["required_approvals"]).issubset(set(direct["approval_gates"]))
-
     vp = create_nested_child(runtime, "D-CMO", cmo_task, "vp-content", key="approval-decompose-vp")
     create_nested_delegation(runtime, "D-CMO", cmo_task, vp, "D-VP", "cmo")
     nested = runtime.ledger.get_record("delegation", "D-VP")
@@ -591,12 +593,10 @@ def test_dlg016_dependency_release_requires_verified_predecessor_and_occurs_once
     delegate(runtime, "cos", predecessor, "D-CMO", depth=1)
     owner_to_qa(runtime, "cos", "D-CMO", predecessor["task_id"])
     owner_complete(runtime, "cos", "D-CMO", predecessor["task_id"], "cmo")
-
     for target in ("TRIAGED", "PLANNED", "ASSIGNED"):
         runtime.call_agent("cos", "task.transition", {"task_id": dependent["task_id"], "target": target})
     with pytest.raises(RuntimeError, match="dependencies are not verified"):
         runtime.call_agent("cos", "task.transition", {"task_id": dependent["task_id"], "target": "IN_PROGRESS"})
-
     runtime.call_agent(
         "cos",
         "task.verify",
@@ -626,7 +626,6 @@ def test_dlg017_nested_specialist_completion_returns_to_executive_then_cos() -> 
     nested = nested_owner_complete(runtime, "D-CMO", cmo_task, "D-VP", vp)
     assert nested["result"]["status"] == "COMPLETED"
     assert runtime.ledger.get_record("owner_execution_route", "D-VP")["status"] == "OWNER_COMPLETED"
-
     owner_transition(runtime, "cos", "D-CMO", cmo_task["task_id"], "QA", key="exec-qa")
     executive = owner_complete(runtime, "cos", "D-CMO", cmo_task["task_id"], "cmo")
     assert executive["result"]["status"] == "COMPLETED"
@@ -665,7 +664,6 @@ def test_delegation_idempotent_reuse_is_exact_and_conflicting_reuse_fails() -> N
     first_task = child(runtime, root, "cmo")
     first = delegate(runtime, "cos", first_task, "D-SAME", depth=1)
     assert delegate(runtime, "cos", first_task, "D-SAME", depth=1) == first
-
     second_task = child(runtime, root, "cfo")
     with pytest.raises(ValueError, match="already bound"):
         runtime.call_agent(

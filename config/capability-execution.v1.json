@@ -1,0 +1,95 @@
+{
+  "version": "mesh.cos.capability-execution.v1",
+  "modes": [
+    "MCP_CONTROL_PLANE",
+    "SERVER_OWNED_ADAPTER",
+    "MODEL_NATIVE_ROLE_CAPABILITY",
+    "CHATGPT_APP_BOUNDARY",
+    "DECLARED_NON_EXECUTABLE"
+  ],
+  "agents": {
+    "cos": {
+      "tools": {
+        "task-ledger": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["task.get", "task.list"]},
+        "authority-engine": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision"]},
+        "approval-engine": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["approval.request", "approval.get"]},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event", "governance.verify_audit_chain"]},
+        "agentops": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["agentops.score", "agentops.recommend"]},
+        "slack-adapter": {"mode": "SERVER_OWNED_ADAPTER", "capability": "slack-adapter"},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "agentops": {
+      "tools": {
+        "task-ledger": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["task.get", "task.list"]},
+        "performance-engine": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["agentops.score", "agentops.recommend"]},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event", "governance.verify_audit_chain"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "answer-desk": {
+      "tools": {
+        "source-permission-check": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["answer_desk.resolve"]},
+        "answer-routing": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["answer_desk.resolve"]},
+        "slack-adapter": {"mode": "DECLARED_NON_EXECUTABLE", "reason": "Answer Desk Slack channel is disabled in the current Workspace Agent manifest; no server-owned Slack adapter is bound to this principal."},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "cro": {
+      "tools": {
+        "task-ledger": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["task.get", "task.list"]},
+        "delegation": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["delegation.create"]},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "cfo": {
+      "tools": {
+        "task-ledger": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["task.get", "task.list"]},
+        "financial-modeling": {"mode": "MODEL_NATIVE_ROLE_CAPABILITY", "not_mcp_callable": true, "reason": "Financial modeling is performed inside the CFO role/Skill reasoning context using approved evidence; it is not a server adapter."},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "coo": {
+      "tools": {
+        "task-ledger": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["task.get", "task.list"]},
+        "staffing-readiness": {"mode": "MODEL_NATIVE_ROLE_CAPABILITY", "not_mcp_callable": true, "reason": "Staffing-readiness analysis is role-native and evidence-backed; canonical state and delegation remain in MCP."},
+        "delegation": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["delegation.create", "delegation.execute_owner"]},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "consultant-network-steward": {
+      "tools": {
+        "staffing-readiness": {"mode": "MODEL_NATIVE_ROLE_CAPABILITY", "not_mcp_callable": true, "reason": "Readiness matching and freshness judgment run in the specialist role context against approved network evidence."},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "cmo": {
+      "tools": {
+        "task-ledger": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["task.get", "task.list"]},
+        "delegation": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["delegation.create", "delegation.execute_owner"]},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "vp-content": {
+      "tools": {
+        "content-production": {"mode": "MODEL_NATIVE_ROLE_CAPABILITY", "not_mcp_callable": true, "backing_skill": "mesh-marketing-messaging", "reason": "Content production executes in the logical VP Content Skill-agent context; MCP records authority and state."},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    },
+    "message-ops": {
+      "tools": {
+        "approval-check": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["approval.get"]},
+        "external-message-adapter": {"mode": "CHATGPT_APP_BOUNDARY", "backing_skill": "mesh-message-operations", "human_approval_required": true, "reason": "Gmail/Slack execution occurs at the approved ChatGPT app boundary after canonical approval verification; it is not a generic MCP adapter."},
+        "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+      }
+    }
+  }
+}

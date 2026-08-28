@@ -1,3 +1,29 @@
+# v4.3.1 Published MCP Action-Surface Closure
+
+`v4.3.1` is a patch-level release-control hardening turn for PF-058. It closes the verification gap between the canonical/QNAP MCP tool contract and the independently frozen ChatGPT workspace-approved action snapshot.
+
+The active QNAP deployment may remain **4.3.0** because it already implements `delegation.execute_owner`. The canonical Phase 1 authority/runtime contract remains **4.0.0**. No agent authority is widened by this patch.
+
+The production ChatGPT app is not accepted until its published CoS action surface is exactly the canonical CoS machine allowlist minus human-only operations. For the current contract that is exactly **28 machine actions**, including `delegation.execute_owner`, while `approval.record_decision` and `reliability.human_override` remain excluded.
+
+Repository controls added in this turn:
+
+- `scripts/check-published-action-surface.py`
+- `tests/integration/test_published_action_surface.py`
+- `docs/material-turn-v4.3.1.md`
+- `docs/security-review-v4.3.1-published-action-surface.md`
+- `docs/verification-v4.3.1-published-action-surface.md`
+- `docs/release-4.3.1-published-action-surface.md`
+- `CHANGELOG-v4.3.1.md`
+
+TaskLedger now includes `CoS - MCP Capability Matrix`, covering all 10 ACTIVE agents, each direct-report owner lifecycle, both bounded nested routes, specialized scopes, expected tool counts, human-only exclusions, and the exact 28-action published-root invariant.
+
+Production acceptance remains fail-closed until a workspace admin/owner refreshes or recreates and republishes the Mesh CoS MCP app, the live connector is re-read at exact 28/28, direct and nested owner execution are proven, and the blocked Marketing execution keys are resumed in place.
+
+See `docs/release-4.3.1-published-action-surface.md` for the full release and rollback contract.
+
+---
+
 # v4.3.0 Cross-Agent Owner Execution
 
 `v4.3.0` repairs PF-057 systemically so delegated canonical work can execute and complete under the accountable owner's governed identity rather than becoming stranded behind the CoS transport principal.

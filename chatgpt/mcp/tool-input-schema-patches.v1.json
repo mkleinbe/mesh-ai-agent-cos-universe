@@ -1,0 +1,17 @@
+{
+  "schema_version": "mesh.cos.mcp-tool-input-schema-patches.v1",
+  "tools": {
+    "delegation.create": {
+      "properties": {
+        "delegation": {
+          "properties": {
+            "permitted_capabilities": {
+              "type": "array",
+              "items": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

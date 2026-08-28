@@ -5,7 +5,7 @@ import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .adapters import GovernedAdapterRegistry
 from .agentops import AgentOpsEvaluator
@@ -26,6 +26,28 @@ from .workforce import ChiefOfStaffWorkforceManager
 ROOT = Path(__file__).resolve().parents[2]
 HUMAN_ONLY_TOOLS = {"approval.record_decision", "reliability.human_override"}
 OWNER_LIFECYCLE_TOOLS = {"task.get", "task.transition", "task.check_in", "task.complete"}
+OWNER_EXECUTION_PROTOCOL = "mesh.cos.owner-execution.v2"
+OWNER_EXECUTABLE_TOOLS = {
+    "registry.get_agent",
+    "task.get",
+    "task.transition",
+    "task.check_in",
+    "task.complete",
+    "task.decompose",
+    "delegation.create",
+    "delegation.execute_owner",
+    "approval.request",
+    "approval.get",
+    "conflict.open",
+    "governance.record_decision",
+    "governance.record_event",
+    "skills.invoke_governed",
+}
+OWNER_NESTED_DELEGATION_TOOLS = {
+    "task.decompose",
+    "delegation.create",
+    "delegation.execute_owner",
+}
 ReplayExecutor = Callable[[dict[str, Any]], Any]
 ToolHandler = Callable[[str, dict[str, Any]], Any]
 
@@ -177,38 +199,141 @@ class MCPRuntime:
             )
         return record
 
+    def _validate_owner_candidate(
+        self,
+        owner_id: str,
+        *,
+        parent_agent_id: str | None = None,
+        allow_self: bool = True,
+    ) -> dict[str, Any]:
+        record = self._active_owner_record(owner_id)
+        if (
+            parent_agent_id is not None
+            and owner_id != parent_agent_id
+            and record.get("parent_agent_id") != parent_agent_id
+        ):
+            raise PermissionError(
+                "Decomposed work must remain with the current owner or a registered direct child"
+            )
+        if not allow_self and parent_agent_id is not None and owner_id == parent_agent_id:
+            raise PermissionError("Self assignment is not permitted for this ownership mutation")
+        return record
+
+    def _approval_records_for_task(self, task_id: str) -> list[dict[str, Any]]:
+        return [
+            dict(record)
+            for record in self.ledger.list_records("approval")
+            if str(record.get("task_id") or "") == task_id
+        ]
+
+    def _validate_approval_reference(
+        self,
+        approval_reference: str,
+        *,
+        task_id: str,
+        minimum_authority: int,
+        required_action: str | None = None,
+        human_approver: str | None = None,
+    ) -> dict[str, Any]:
+        approval = self.ledger.get_record("approval", approval_reference)
+        if approval is None:
+            raise PermissionError("Canonical approval record was not found")
+        if str(approval.get("task_id") or "") != task_id:
+            raise PermissionError("Approval does not belong to the canonical task")
+        if str(approval.get("status") or "") != "APPROVED":
+            raise PermissionError("Canonical approval is not approved")
+        authority = int(approval.get("authority_level", -1))
+        if authority < minimum_authority:
+            raise PermissionError("Approval authority is below the requested authority")
+        approval_owner = str(approval.get("approval_owner") or "").strip()
+        decided_by = str(approval.get("decided_by") or "").strip()
+        if not approval_owner or not decided_by or decided_by != approval_owner:
+            raise PermissionError("Approval decision actor does not match the canonical approval owner")
+        if required_action is not None and str(approval.get("action") or "") != required_action:
+            raise PermissionError("Approval action does not match the requested action")
+        if human_approver is not None and human_approver.strip() and human_approver.strip() != decided_by:
+            raise PermissionError("Caller-supplied human approver does not match canonical approval evidence")
+        if minimum_authority >= 5 and decided_by.lower() != "michael":
+            raise PermissionError("L5 authority requires Michael as the canonical approval actor")
+        return dict(approval)
+
+    def _find_approved_task_authority(
+        self,
+        task: TaskRecord,
+        *,
+        minimum_authority: int,
+        approval_references: list[str] | None = None,
+    ) -> dict[str, Any]:
+        refs = [str(item).strip() for item in (approval_references or []) if str(item).strip()]
+        if refs:
+            last_error: PermissionError | None = None
+            for approval_reference in refs:
+                try:
+                    return self._validate_approval_reference(
+                        approval_reference,
+                        task_id=task.task_id,
+                        minimum_authority=minimum_authority,
+                    )
+                except PermissionError as exc:
+                    last_error = exc
+            raise cast(PermissionError, last_error)
+        for approval in reversed(self._approval_records_for_task(task.task_id)):
+            try:
+                return self._validate_approval_reference(
+                    str(approval["approval_id"]),
+                    task_id=task.task_id,
+                    minimum_authority=minimum_authority,
+                )
+            except PermissionError:
+                continue
+        raise PermissionError("No canonical approved authority exists for the task")
+
     def _authorize_governance_authority(
         self,
         agent_id: str,
         payload: dict[str, Any],
         *,
         decision: bool,
-    ) -> dict[str, Any]:
+    ) -> tuple[dict[str, Any], dict[str, Any] | None]:
         record = self._agent_record(agent_id)
         authority_level = int(payload.get("authority_level", 0))
         if not 0 <= authority_level <= 5:
             raise ValueError("authority_level must be between L0 and L5")
 
+        approval: dict[str, Any] | None = None
         if authority_level >= 4:
-            approval_reference = payload.get("approval_reference")
-            human_approver = str(payload.get("human_approver") or "").strip()
+            approval_reference = str(payload.get("approval_reference") or "").strip()
             if decision and payload.get("human_approval_required") is not True:
                 raise PermissionError("L4/L5 decisions require explicit human approval")
-            if not approval_reference or not human_approver:
-                raise PermissionError("L4/L5 authority requires explicit human approval evidence")
-            if authority_level == 5:
-                if human_approver.lower() != "michael":
-                    raise PermissionError("L5 authority requires Michael as human approver")
-                if decision and str(payload.get("decision_owner") or "").strip().lower() != "michael":
-                    raise PermissionError("L5 authority requires Michael as decision owner")
-            return record
+            if not approval_reference:
+                raise PermissionError("L4/L5 authority requires a canonical approval reference")
+            if (
+                authority_level == 5
+                and decision
+                and str(payload.get("decision_owner") or "").strip().lower() != "michael"
+            ):
+                raise PermissionError("L5 authority requires Michael as decision owner")
+            task_id = str(payload.get("task_id") or "").strip()
+            if not task_id:
+                raise PermissionError("L4/L5 authority requires a canonical task")
+            required_action = str(
+                payload.get("decision_type") if decision else payload.get("action")
+            ).strip()
+            approval = self._validate_approval_reference(
+                approval_reference,
+                task_id=task_id,
+                minimum_authority=authority_level,
+                required_action=required_action,
+                human_approver=str(payload.get("human_approver") or ""),
+            )
+            return record, approval
 
         ceiling = int(record["decision_authority"])
         if authority_level > ceiling:
             raise PermissionError(
                 f"Requested authority L{authority_level} exceeds agent authority L{ceiling}"
             )
-        return record
+        return record, approval
 
     def _require_task_owner_access(self, agent_id: str, task_id: str) -> TaskRecord:
         task = self.ledger.get_task(task_id)
@@ -305,7 +430,8 @@ class MCPRuntime:
                 raise PermissionError("Owner execution route does not match canonical delegation")
             return existing
         route = {
-            "version": "mesh.cos.owner-execution-route.v1",
+            "version": "mesh.cos.owner-execution-route.v2",
+            "protocol_version": OWNER_EXECUTION_PROTOCOL,
             "delegation_id": route_id,
             "task_id": str(delegation["task_id"]),
             "orchestrating_agent": str(delegation["delegating_agent"]),
@@ -313,6 +439,8 @@ class MCPRuntime:
             "expected_execution_principal": owner_id,
             "status": "OWNER_ROUTABLE",
             "approval_gates": list(delegation.get("approval_gates", [])),
+            "permitted_actions": list(delegation.get("permitted_actions", [])),
+            "permitted_capabilities": list(delegation.get("permitted_capabilities", [])),
             "created_at": utcnow(),
         }
         self.ledger.save_record("owner_execution_route", route_id, route)
@@ -330,6 +458,7 @@ class MCPRuntime:
 
     def _task_intake(self, _: str, args: dict[str, Any]) -> dict[str, Any]:
         args = dict(args)
+        self._validate_owner_candidate(str(args["accountable_agent"]))
         args["authority_level"] = AuthorityLevel(int(args.get("authority_level", 0)))
         return self.cos.intake(**args).to_dict()
 
@@ -343,9 +472,15 @@ class MCPRuntime:
     def _task_decompose(self, agent_id: str, args: dict[str, Any]) -> list[dict[str, Any]]:
         parent_task_id = str(args["parent_task_id"])
         self._require_task_owner_access(agent_id, parent_task_id)
+        work_packages = list(args["work_packages"])
+        for package in work_packages:
+            self._validate_owner_candidate(
+                str(package["accountable_agent"]),
+                parent_agent_id=agent_id,
+            )
         children = self.cos.decompose(
             parent_task_id,
-            list(args["work_packages"]),
+            work_packages,
             actor_id=agent_id,
         )
         return [child.to_dict() for child in children]
@@ -371,7 +506,12 @@ class MCPRuntime:
 
     def _task_complete(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         task_id = str(args["task_id"])
-        self._require_task_owner_access(agent_id, task_id)
+        task = self._require_task_owner_access(agent_id, task_id)
+        if int(task.authority_level) >= 4 or task.approval_status != "NOT_REQUIRED":
+            self._find_approved_task_authority(
+                task,
+                minimum_authority=max(4, int(task.authority_level)),
+            )
         return self.cos.complete(
             task_id,
             outcome=str(args["outcome"]),
@@ -380,18 +520,23 @@ class MCPRuntime:
         ).to_dict()
 
     def _task_reassign(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        new_owner = str(args["new_owner"])
+        self._validate_owner_candidate(new_owner)
         return self.cos.reassign(
             str(args["task_id"]),
             str(args["expected_owner"]),
-            str(args["new_owner"]),
+            new_owner,
             reason=str(args["reason"]),
             actor_id=agent_id,
         ).to_dict()
 
     def _task_remediate_stall(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        new_owner = args.get("new_owner")
+        if new_owner:
+            self._validate_owner_candidate(str(new_owner))
         return self.cos.remediate_stalled(
             str(args["task_id"]),
-            new_owner=args.get("new_owner"),
+            new_owner=new_owner,
             reason=str(args.get("reason", "stalled")),
             actor_id=agent_id,
         ).to_dict()
@@ -458,6 +603,13 @@ class MCPRuntime:
         if requested_permitted and not requested_permitted.issubset(canonical_permitted):
             raise PermissionError("Delegation cannot grant actions outside owner authority")
         delegation.permitted_actions = sorted(requested_permitted or canonical_permitted)
+
+        requested_capabilities = set(delegation.permitted_capabilities)
+        canonical_capabilities = set(target.get("skills", []))
+        if requested_capabilities and not requested_capabilities.issubset(canonical_capabilities):
+            raise PermissionError("Delegation cannot grant capabilities outside owner authority")
+        delegation.permitted_capabilities = sorted(requested_capabilities)
+
         delegation.prohibited_actions = sorted(
             set(delegation.prohibited_actions) | set(target.get("prohibited_actions", []))
         )
@@ -505,6 +657,13 @@ class MCPRuntime:
         self._ensure_owner_route(created)
         return created
 
+    @staticmethod
+    def _delegation_allows_nested_work(delegation: dict[str, Any]) -> bool:
+        return any(
+            str(action).startswith("delegate_")
+            for action in delegation.get("permitted_actions", [])
+        )
+
     def _owner_scoped_arguments(
         self,
         task: TaskRecord,
@@ -514,6 +673,7 @@ class MCPRuntime:
     ) -> dict[str, Any]:
         payload = dict(arguments)
         if tool_name == "delegation.execute_owner":
+            payload.setdefault("protocol_version", OWNER_EXECUTION_PROTOCOL)
             nested_id = str(payload.get("delegation_id") or "")
             nested = self.ledger.get_record("delegation", nested_id)
             if nested is None:
@@ -529,6 +689,19 @@ class MCPRuntime:
 
         if tool_name == "task.decompose" and str(payload.get("parent_task_id")) != task.task_id:
             raise PermissionError("Owner decomposition must remain within the delegated task")
+        if tool_name == "approval.get":
+            approval = self.ledger.get_record("approval", str(payload.get("approval_id") or ""))
+            if approval is None:
+                raise KeyError(str(payload.get("approval_id") or ""))
+            if str(approval.get("task_id") or "") != task.task_id:
+                raise PermissionError("Delegated owner cannot read approval state for another task")
+        if tool_name == "registry.get_agent":
+            target = str(payload.get("agent_id") or "")
+            record = self.registry.get(target)
+            if record is None:
+                raise KeyError(target)
+            if target != owner_id and record.get("parent_agent_id") != owner_id:
+                raise PermissionError("Delegated owner registry reads are limited to self or direct children")
         if tool_name == "skills.invoke_governed":
             skill_payload = dict(payload.get("payload", {}))
             if "task_id" in skill_payload and str(skill_payload["task_id"]) != task.task_id:
@@ -536,10 +709,14 @@ class MCPRuntime:
             skill_payload["task_id"] = task.task_id
             skill_payload["correlation_id"] = task.correlation_id
             skill_payload["authority_level"] = int(task.authority_level)
+            skill_payload["execution_mode"] = "LOGICAL_SKILL_AGENT"
             payload["payload"] = skill_payload
         return validate_tool_arguments(tool_name, payload)
 
     def _delegation_execute_owner(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        protocol_version = str(args.get("protocol_version") or OWNER_EXECUTION_PROTOCOL)
+        if protocol_version != OWNER_EXECUTION_PROTOCOL:
+            raise PermissionError("Unsupported owner-execution protocol version")
         delegation_id = str(args["delegation_id"])
         delegation = self.ledger.get_record("delegation", delegation_id)
         if delegation is None:
@@ -557,6 +734,13 @@ class MCPRuntime:
             raise PermissionError("Canonical task owner no longer matches delegation owner")
 
         tool_name = str(args["tool_name"])
+        if tool_name in HUMAN_ONLY_TOOLS or tool_name == "task.verify":
+            raise PermissionError("Owner execution cannot invoke human-only or verifier MCP tools")
+        if tool_name not in OWNER_EXECUTABLE_TOOLS:
+            raise PermissionError("Tool is not available through delegated owner execution")
+        if tool_name in OWNER_NESTED_DELEGATION_TOOLS and not self._delegation_allows_nested_work(delegation):
+            raise PermissionError("Delegation does not authorize nested delegation work")
+
         try:
             owner_record = self._active_owner_record(owner_id)
             self._ensure_owner_route(delegation)
@@ -578,15 +762,48 @@ class MCPRuntime:
                 self.ledger.save_record("owner_execution_route", delegation_id, route)
             raise
 
-        if tool_name in HUMAN_ONLY_TOOLS:
-            raise PermissionError("Owner execution cannot invoke human-only MCP tools")
         self.policy.authorize(owner_id, tool_name)
+
+        raw_arguments = dict(args.get("arguments", {}))
         owner_args = self._owner_scoped_arguments(
             task,
             owner_id,
             tool_name,
-            dict(args.get("arguments", {})),
+            raw_arguments,
         )
+
+        approval_references = [
+            str(item).strip()
+            for item in args.get("approval_references", [])
+            if str(item).strip()
+        ]
+        approval: dict[str, Any] | None = None
+        if task.approval_status in {"PENDING", "REJECTED"} and tool_name not in {
+            "task.get",
+            "task.check_in",
+            "approval.request",
+            "approval.get",
+            "governance.record_event",
+        }:
+            raise PermissionError("Canonical task approval state blocks delegated execution")
+        approval_required = tool_name == "task.complete" and (
+            int(task.authority_level) >= 4 or task.approval_status != "NOT_REQUIRED"
+        )
+        if tool_name == "skills.invoke_governed":
+            capability = str(owner_args.get("capability") or "")
+            approval_required = approval_required or owner_id == "message-ops" or capability == "mesh-message-operations"
+        if approval_required:
+            approval = self._find_approved_task_authority(
+                task,
+                minimum_authority=max(4, int(task.authority_level)),
+                approval_references=approval_references,
+            )
+        elif approval_references:
+            approval = self._validate_approval_reference(
+                approval_references[0],
+                task_id=task.task_id,
+                minimum_authority=4,
+            )
 
         idempotency_key = str(args["idempotency_key"]).strip()
         if not idempotency_key:
@@ -594,26 +811,44 @@ class MCPRuntime:
         request_fingerprint = hashlib.sha256(
             json.dumps(
                 {
+                    "protocol_version": protocol_version,
                     "delegation_id": delegation_id,
                     "task_id": task_id,
                     "tool_name": tool_name,
                     "arguments": owner_args,
+                    "approval_references": approval_references,
                 },
                 sort_keys=True,
                 separators=(",", ":"),
             ).encode("utf-8")
         ).hexdigest()
+        accepted_request_fingerprints = {request_fingerprint}
+        if not approval_references:
+            legacy_request_fingerprint = hashlib.sha256(
+                json.dumps(
+                    {
+                        "delegation_id": delegation_id,
+                        "task_id": task_id,
+                        "tool_name": tool_name,
+                        "arguments": owner_args,
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            accepted_request_fingerprints.add(legacy_request_fingerprint)
         record_id = f"{delegation_id}:{idempotency_key}"
         existing = self.ledger.get_record("owner_execution", record_id)
         if existing is not None:
-            if existing.get("request_fingerprint") != request_fingerprint:
+            if existing.get("request_fingerprint") not in accepted_request_fingerprints:
                 raise PermissionError("Owner execution idempotency key cannot be reused for another request")
             if existing.get("status") == "OWNER_RESULT_RECORDED":
                 return dict(existing["response"])
             raise RuntimeError(f"OWNER_EXECUTION_NOT_RETRYABLE: {existing.get('status', 'UNKNOWN')}")
 
         execution_record: dict[str, Any] = {
-            "version": "mesh.cos.owner-execution.v1",
+            "version": "mesh.cos.owner-execution.v2",
+            "protocol_version": protocol_version,
             "record_id": record_id,
             "delegation_id": delegation_id,
             "task_id": task_id,
@@ -624,6 +859,7 @@ class MCPRuntime:
             "tool_name": tool_name,
             "authorization_result": "ALLOW",
             "request_fingerprint": request_fingerprint,
+            "approval_reference": approval.get("approval_id") if approval else None,
             "status": "OWNER_EXECUTING",
             "started_at": utcnow(),
         }
@@ -637,13 +873,20 @@ class MCPRuntime:
             prior = self.ledger.get_record("owner_execution", record_id)
             if (
                 prior
-                and prior.get("request_fingerprint") == request_fingerprint
+                and prior.get("request_fingerprint") in accepted_request_fingerprints
                 and prior.get("status") == "OWNER_RESULT_RECORDED"
             ):
                 return dict(prior["response"])
             raise RuntimeError("OWNER_EXECUTION_ALREADY_CLAIMED")
 
         try:
+            if tool_name == "skills.invoke_governed":
+                capability = str(owner_args.get("capability") or "")
+                permitted_capabilities = set(delegation.get("permitted_capabilities", []))
+                if capability not in permitted_capabilities:
+                    raise PermissionError(
+                        "Capability not allowed: capability is not explicitly permitted by the canonical delegation"
+                    )
             result = self.call_agent(owner_id, tool_name, owner_args)
         except Exception as exc:
             execution_record["status"] = "OWNER_EXECUTION_FAILED"
@@ -660,6 +903,7 @@ class MCPRuntime:
 
         response = {
             "status": "OWNER_RESULT_RECORDED",
+            "protocol_version": protocol_version,
             "delegation_id": delegation_id,
             "task_id": task_id,
             "orchestrating_agent": agent_id,
@@ -668,6 +912,7 @@ class MCPRuntime:
             "expected_execution_principal": owner_id,
             "tool_name": tool_name,
             "authorization_result": "ALLOW",
+            "approval_reference": approval.get("approval_id") if approval else None,
             "result": result,
         }
         execution_record["status"] = "OWNER_RESULT_RECORDED"
@@ -683,6 +928,7 @@ class MCPRuntime:
         )
         route["last_tool_name"] = tool_name
         route["last_execution_record_id"] = record_id
+        route["last_approval_reference"] = approval.get("approval_id") if approval else None
         route["parent_result_available_at"] = utcnow()
         route["updated_at"] = utcnow()
         self.ledger.save_record("owner_execution_route", delegation_id, route)
@@ -697,16 +943,21 @@ class MCPRuntime:
             task_id=task_id,
             correlation_id=task.correlation_id,
             authority_level=int(task.authority_level),
-            policy_rule_ids=["canonical-owner-derived-server-side", "delegation-bound-execution"],
+            policy_rule_ids=[
+                "canonical-owner-derived-server-side",
+                "delegation-bound-execution",
+                "delegation-capability-scope",
+                "canonical-approval-when-required",
+            ],
             capability_tool="delegation.execute_owner",
             target_resource=task_id,
             source_system="Mesh server-owned owner executor",
-            input_summary=f"Owner execution orchestrated by {agent_id}; principal derived from canonical delegation.",
+            input_summary=f"Owner execution orchestrated by {agent_id}; principal and authority derived from canonical state.",
             result_status="SUCCESS",
-            output_summary=f"{owner_id} executed {tool_name} under owner authority.",
+            output_summary=f"{owner_id} executed {tool_name} under bounded delegated authority.",
             evidence_references=list(task.outcome_evidence),
-            approval_reference=None,
-            human_approver=None,
+            approval_reference=approval.get("approval_id") if approval else None,
+            human_approver=str(approval.get("decided_by") or "") if approval else None,
             risk_severity="MEDIUM",
             data_classification="INTERNAL",
             error_code=None,
@@ -720,11 +971,19 @@ class MCPRuntime:
         return response
 
     def _approval_request(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        task_id = str(args["task_id"])
+        self._require_task_write_access(agent_id, task_id)
+        authority = AuthorityLevel(int(args["authority_level"]))
+        approval_owner = str(args["approval_owner"]).strip()
+        if approval_owner in self.registry:
+            raise PermissionError("Approval owner must be a qualified human principal, not an agent")
+        if authority == AuthorityLevel.L5 and approval_owner.lower() != "michael":
+            raise PermissionError("L5 approval requests must be owned by Michael")
         return self.approvals.request(
-            str(args["task_id"]),
+            task_id,
             agent_id,
-            str(args["approval_owner"]),
-            AuthorityLevel(int(args["authority_level"])),
+            approval_owner,
+            authority,
             str(args["action"]),
         ).to_dict()
 
@@ -745,23 +1004,40 @@ class MCPRuntime:
         payload = dict(args)
         conflict_id = str(payload.pop("conflict_id"))
         payload.pop("owner", None)
+        authority_level = int(payload.get("authority_level", 3))
+        if authority_level >= 4:
+            conflict = self.ledger.get_record("conflict", conflict_id)
+            if conflict is None:
+                raise KeyError(conflict_id)
+            approval = self._validate_approval_reference(
+                str(payload.get("approval_reference") or ""),
+                task_id=str(conflict["task_id"]),
+                minimum_authority=authority_level,
+                required_action="CONFLICT_RESOLUTION",
+                human_approver=str(payload.get("human_approver") or ""),
+            )
+            payload["human_approver"] = str(approval["decided_by"])
         return self.conflicts.decide(conflict_id, owner=agent_id, **payload)
 
     def _governance_record_decision(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         payload = dict(args)
-        record = self._authorize_governance_authority(agent_id, payload, decision=True)
+        record, approval = self._authorize_governance_authority(agent_id, payload, decision=True)
         payload["agent_id"] = agent_id
         payload["agent_role"] = record["display_name"]
         payload["skill_agent_version"] = str(record["version"])
+        if approval is not None:
+            payload["human_approver"] = str(approval["decided_by"])
         return self.governance.record_decision(**payload)
 
     def _governance_record_event(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         payload = dict(args)
-        record = self._authorize_governance_authority(agent_id, payload, decision=False)
+        record, approval = self._authorize_governance_authority(agent_id, payload, decision=False)
         payload["actor_type"] = "AGENT"
         payload["actor_id"] = agent_id
         payload["actor_role"] = record["display_name"]
         payload["skill_agent_version"] = str(record["version"])
+        if approval is not None:
+            payload["human_approver"] = str(approval["decided_by"])
         return self.governance.record_event(**payload)
 
     def _governance_verify_audit_chain(self, _: str, __: dict[str, Any]) -> dict[str, Any]:

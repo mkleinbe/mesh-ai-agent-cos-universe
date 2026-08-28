@@ -22,11 +22,12 @@
     "unresolved_evidence": {"type": "array", "items": {"type": "string"}},
     "constraints": {"type": "array", "items": {"type": "string"}},
     "permitted_actions": {"type": "array", "items": {"type": "string"}},
+    "permitted_capabilities": {"type": "array", "items": {"type": "string"}},
     "prohibited_actions": {"type": "array", "items": {"type": "string"}},
     "approval_gates": {"type": "array", "items": {"type": "string"}},
     "dependencies": {"type": "array", "items": {"type": "string"}},
     "next_check_at": {"type": ["string", "null"]},
     "escalation_condition": {"type": "string"}
   },
-  "required": ["version","delegation_id","task_id","delegating_agent","accountable_agent","business_objective","expected_outcome","deliverable","success_criteria","priority","authority_level","acceptance_test","parent_task_id","contributing_agents","deadline","evidence_supplied","unresolved_evidence","constraints","permitted_actions","prohibited_actions","approval_gates","dependencies","next_check_at","escalation_condition"]
+  "required": ["version","delegation_id","task_id","delegating_agent","accountable_agent","business_objective","expected_outcome","deliverable","success_criteria","priority","authority_level","acceptance_test","parent_task_id","contributing_agents","deadline","evidence_supplied","unresolved_evidence","constraints","permitted_actions","permitted_capabilities","prohibited_actions","approval_gates","dependencies","next_check_at","escalation_condition"]
 }

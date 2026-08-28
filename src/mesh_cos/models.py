@@ -126,6 +126,7 @@ class Delegation:
     unresolved_evidence: list[str] = field(default_factory=list)
     constraints: list[str] = field(default_factory=list)
     permitted_actions: list[str] = field(default_factory=list)
+    permitted_capabilities: list[str] = field(default_factory=list)
     prohibited_actions: list[str] = field(default_factory=list)
     approval_gates: list[str] = field(default_factory=list)
     dependencies: list[str] = field(default_factory=list)

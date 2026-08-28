@@ -2,7 +2,8 @@
 Feature: Identity-aware delegated owner execution
   The Chief of Staff may orchestrate delegated work without becoming the delegated owner's identity.
   Canonical task ownership, execution authority, approvals, audit attribution, completion, verification,
-  retries, dependencies, and nested delegation remain bounded by the Agent Registry and TaskLedger.
+  retries, dependencies, nested delegation, capability scope, and child-skill provenance remain bounded
+  by the Agent Registry and TaskLedger.
 
   Background:
     Given the canonical Agent Registry is loaded
@@ -144,3 +145,69 @@ Feature: Identity-aware delegated owner execution
     And the functional executive can complete its accountable outcome under its own identity
     And cos can observe the executive result
     And no parent or child identity is substituted at any level
+
+  @DLG-018 @approval @negative @P0
+  Scenario: Delegated L4 or L5 work cannot execute on fabricated approval evidence
+    Given delegated work requires L4 or L5 human approval
+    When owner execution references a missing, pending, rejected, wrong-task, wrong-authority, wrong-approver, or otherwise mismatched approval
+    Then execution is denied before the owner operation runs
+    And no task completion, consequential capability invocation, or decision record is created
+    And the canonical approval record remains the only authority evidence
+
+  @DLG-019 @approval @P0
+  Scenario: Canonical approved authority permits only the approved task and authority level
+    Given an approval record exists for the delegated task
+    And the approval status is APPROVED
+    And the recorded decision actor matches the canonical approval owner
+    When the delegated owner executes work within that approval's task and authority boundary
+    Then the approval is accepted as authority evidence
+    And the execution audit references the canonical approval record
+    And reuse for a different task or higher authority is denied
+
+  @DLG-020 @scope @negative @P0
+  Scenario: Delegated capability scope cannot widen to the owner's complete role surface
+    Given owner X has multiple role capabilities
+    And a delegation permits only capability A
+    When the delegated owner route attempts capability B
+    Then capability B is denied even when X normally possesses capability B
+    And lifecycle and control-plane operations needed to manage the delegated task remain available
+
+  @DLG-021 @nested @scope @negative
+  Scenario: Nested delegation requires explicit delegated delegation authority
+    Given a functional executive owns delegated work
+    And the parent delegation does not include a permitted delegate action
+    When the executive attempts decomposition, delegation creation, or nested owner execution
+    Then the nested operation is denied
+    And no descendant task or delegation is created
+
+  @DLG-022 @ownership @negative @P0
+  Scenario: Canonical ownership cannot be assigned to an invalid runtime principal
+    Given a task is being created, decomposed, reassigned, or stall-remediated
+    When the proposed accountable owner is unknown, retired, quarantined, non-routable, or an invalid child for decomposition
+    Then the ownership mutation is denied before canonical state changes
+    And no unroutable owner is persisted into TaskLedger
+
+  @DLG-023 @protocol @schema
+  Scenario: Owner execution uses a versioned bounded operation contract
+    Given delegation.execute_owner is exposed to ChatGPT
+    When its public input schema is inspected
+    Then the owner-execution protocol version is explicit
+    And the nested tool name is restricted to the server-supported owner-operation set
+    And nested arguments are revalidated against the canonical downstream tool schema before execution
+
+  @DLG-024 @skill @ai-native
+  Scenario: Delegated business reasoning is a governed logical Skill-agent handoff
+    Given delegated work requires a declared Mesh Skill capability
+    When the owner requests the capability through skills.invoke_governed
+    Then the server authorizes only a capability explicitly permitted by the delegation and owner registry
+    And the returned handoff identifies the logical owner agent and Skill capability
+    And the handoff does not claim that a separate Workspace Agent process executed synchronously
+    And production acceptance requires observable Skill-result provenance before claiming sub-agent execution
+
+  @DLG-025 @verification @independence
+  Scenario: Verification requires an expressly authorized verifier distinct from the accountable owner
+    Given delegated owner X completes a task
+    When verification is attempted
+    Then X cannot verify its own completed task
+    And the verifier must be expressly allowlisted and distinct from X
+    And passing verification requires evidence references

@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Server } from '@modelcontextprotocol/server';
 import { callPythonBridge, PythonBridgeError, repositoryRoot } from './python-bridge.js';
 
@@ -46,6 +46,35 @@ function schemaTools(payload: Record<string, unknown>, expectedVersion: string):
   return payload.tools as Record<string, unknown>;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function deepMergeSchema(base: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...base };
+  for (const [key, value] of Object.entries(patch)) {
+    const current = merged[key];
+    merged[key] = isRecord(current) && isRecord(value)
+      ? deepMergeSchema(current, value)
+      : value;
+  }
+  return merged;
+}
+
+function applySchemaPatches(raw: Record<string, unknown>): void {
+  const patchPath = path.resolve(repositoryRoot(), 'chatgpt/mcp/tool-input-schema-patches.v1.json');
+  if (!fs.existsSync(patchPath)) return;
+  const payload = JSON.parse(fs.readFileSync(patchPath, 'utf8')) as Record<string, unknown>;
+  const patches = schemaTools(payload, 'mesh.cos.mcp-tool-input-schema-patches.v1');
+  for (const [name, patchValue] of Object.entries(patches)) {
+    if (!(name in raw)) throw new Error(`MCP input-schema patch references unknown tool: ${name}`);
+    if (!isRecord(raw[name]) || !isRecord(patchValue)) {
+      throw new Error(`Invalid MCP input-schema patch for ${name}`);
+    }
+    raw[name] = deepMergeSchema(raw[name] as Record<string, unknown>, patchValue);
+  }
+}
+
 export function loadInputSchemas(contract: MCPContract = loadContract()): InputSchemaRegistry {
   const target = path.resolve(repositoryRoot(), contract.input_schema_registry ?? 'chatgpt/mcp/tool-input-schemas.v1.json');
   const payload = JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, unknown>;
@@ -61,6 +90,7 @@ export function loadInputSchemas(contract: MCPContract = loadContract()): InputS
       raw[name] = schema;
     }
   }
+  applySchemaPatches(raw);
   const expected = new Set(contract.tools.map(tool => tool.name));
   if (Object.keys(raw).length !== expected.size || Object.keys(raw).some(name => !expected.has(name))) {
     throw new Error('MCP input-schema registry must exactly match the tool catalog');
@@ -99,6 +129,11 @@ export function deploymentRelease(env: NodeJS.ProcessEnv = process.env): string 
   return value || null;
 }
 
+export function sourceCommit(env: NodeJS.ProcessEnv = process.env): string | null {
+  const value = env.MESH_COS_SOURCE_COMMIT?.trim();
+  return value || null;
+}
+
 export function requireDeploymentRelease(env: NodeJS.ProcessEnv = process.env): string {
   const value = deploymentRelease(env);
   if (!value) throw new Error('MESH_COS_DEPLOYMENT_RELEASE is required for remote production runtime');
@@ -116,6 +151,34 @@ export function toolsForAgent(contract: MCPContract, agentId: string): ToolContr
     .filter(name => !human.has(name))
     .map(name => byName.get(name))
     .filter((tool): tool is ToolContract => tool !== undefined);
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map(key => [key, canonicalize(value[key])]),
+    );
+  }
+  return value;
+}
+
+export function actionSchemaDigest(
+  contract: MCPContract,
+  schemas: InputSchemaRegistry,
+  agentId: string,
+): string {
+  const projection = Object.fromEntries(
+    toolsForAgent(contract, agentId)
+      .map(tool => tool.name)
+      .sort()
+      .map(name => [name, toolInputSchema(schemas, name)]),
+  );
+  return createHash('sha256')
+    .update(JSON.stringify(canonicalize(projection)))
+    .digest('hex');
 }
 
 export function validateArgumentsSize(value: unknown): Record<string, unknown> {
@@ -157,9 +220,11 @@ export function createServer(
 ): Server {
   const agentId = requireAgentId(contract, env);
   const deploymentReleaseId = deploymentRelease(env);
+  const sourceCommitId = sourceCommit(env);
   const tools = toolsForAgent(contract, agentId);
   const names = new Set(tools.map(tool => tool.name));
   const inputSchemas = loadInputSchemas(contract);
+  const publicationSchemaDigest = actionSchemaDigest(contract, inputSchemas, agentId);
   const server = new Server(
     { name: contract.name, version: contract.runtime_release },
     { capabilities: { tools: {} } },
@@ -191,6 +256,8 @@ export function createServer(
             request_id: requestId,
             mcp_version: contract.runtime_release,
             deployment_release: deploymentReleaseId,
+            source_commit: sourceCommitId,
+            publication_schema_digest: publicationSchemaDigest,
             agent_id: agentId,
             result: response.result,
           }),
@@ -210,6 +277,8 @@ export function createServer(
             ...safe,
             mcp_version: contract.runtime_release,
             deployment_release: deploymentReleaseId,
+            source_commit: sourceCommitId,
+            publication_schema_digest: publicationSchemaDigest,
             agent_id: agentId,
           }),
         }],

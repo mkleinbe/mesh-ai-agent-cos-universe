@@ -1,8 +1,6 @@
 name: v4.3.0 cross-agent owner execution release candidate
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
     paths:

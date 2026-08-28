@@ -185,6 +185,7 @@ def test_delegation_handler_derives_canonical_parent_child_authority(monkeypatch
 
 def test_service_adapter_handlers_return_serialized_results(monkeypatch: pytest.MonkeyPatch) -> None:
     runtime = MCPRuntime(TaskLedger())
+    runtime.ledger.save_task(make_task())
 
     monkeypatch.setattr(runtime.approvals, "request", lambda *args, **kwargs: SimpleNamespace(to_dict=lambda: {"approval_id": "A1"}))
     assert runtime._approval_request("cro", {"task_id": "T1", "approval_owner": "michael", "authority_level": 4, "action": "pricing"}) == {"approval_id": "A1"}

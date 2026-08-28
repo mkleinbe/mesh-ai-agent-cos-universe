@@ -2,12 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   MAX_ARGUMENT_BYTES,
+  actionSchemaDigest,
   createServer,
   loadContract,
+  loadInputSchemas,
   requireAgentId,
   requireDeploymentRelease,
   requireLocalStdioContract,
   safeErrorPayload,
+  sourceCommit,
   toolsForAgent,
   validateArgumentsSize,
 } from '../server.js';
@@ -31,10 +34,22 @@ test('agent identity is required and must be registered', () => {
   assert.equal(requireAgentId(contract, { MESH_COS_AGENT_ID: 'cro' }), 'cro');
 });
 
-test('production deployment release identity is required and normalized', () => {
+test('production deployment and source provenance are normalized', () => {
   assert.throws(() => requireDeploymentRelease({}), /MESH_COS_DEPLOYMENT_RELEASE/);
   assert.throws(() => requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: '   ' }), /MESH_COS_DEPLOYMENT_RELEASE/);
-  assert.equal(requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: ' 4.1.7 ' }), '4.1.7');
+  assert.equal(requireDeploymentRelease({ MESH_COS_DEPLOYMENT_RELEASE: ' 4.4.0 ' }), '4.4.0');
+  assert.equal(sourceCommit({}), null);
+  assert.equal(sourceCommit({ MESH_COS_SOURCE_COMMIT: ' abc123 ' }), 'abc123');
+});
+
+test('agent action schema digest is deterministic and principal-specific', () => {
+  const schemas = loadInputSchemas(contract);
+  const cosDigest = actionSchemaDigest(contract, schemas, 'cos');
+  const messageOpsDigest = actionSchemaDigest(contract, schemas, 'message-ops');
+  assert.match(cosDigest, /^[a-f0-9]{64}$/);
+  assert.match(messageOpsDigest, /^[a-f0-9]{64}$/);
+  assert.equal(actionSchemaDigest(contract, schemas, 'cos'), cosDigest);
+  assert.notEqual(cosDigest, messageOpsDigest);
 });
 
 test('tool projection is exact and excludes human-only tools', () => {

@@ -58,6 +58,10 @@ See `docs/skills-v4.3.0.md` for exact scope and the distinction between Skill up
 
 - `mesh-cos-mcp-qnap-v4.3.0.zip`
 - `mesh-cos-mcp-qnap-v4.3.0.zip.sha256`
+- `mesh-cos-chatgpt-skills-v4.3.0.zip`
+- `mesh-cos-chatgpt-skills-v4.3.0.zip.sha256`
+
+The Skill ZIP contains exactly the eight updated ChatGPT Skill directories plus a release/source manifest. Workspace-agent manifests are intentionally not included because they are application package artifacts, not user-installable ChatGPT Skill directories.
 
 ## Version identity
 
@@ -117,4 +121,4 @@ existing QA
 
 On August 28, 2026, the human release authority explicitly authorized repository documentation closeout, commit/push, merge to `main`, PR closeout, semantic tag `v4.3.0`, and GitHub Release publication for this turn. That authorization does not by itself authorize QNAP production deployment, production task recovery, or consequential external business action.
 
-The v4.3.0 release workflow may be used as the preferred publication mechanism. If the GitHub integration cannot directly create the release/tag through a high-level release action, the repository's human-authorized release workflow or equivalent Git reference/release mechanism may be used so long as the tag and release are bound to the verified integrated `main` commit.
+The version-specific authorization receipt is `docs/release-authorization-v4.3.0.md`. It is also the one-time `main` push path trigger for `.github/workflows/release-v4.3.0.yml`, allowing the repository to create the semantic tag and GitHub Release from the verified integrated `main` SHA even when the GitHub connector does not expose a direct release-create or workflow-dispatch mutation.

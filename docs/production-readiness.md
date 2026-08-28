@@ -1,127 +1,205 @@
 # Production Readiness
 
-This is the current go-live gate for the Mesh AI Chief of Staff universe at QNAP deployment target **v4.1.16**. Historical release-specific evidence remains retained but does not override this current contract.
+This is the current go-live gate for the Mesh AI Chief of Staff universe at candidate QNAP deployment target **v4.3.0**. Historical release-specific evidence remains retained but does not override this contract.
 
-The canonical Phase 1 authority/runtime contract remains `4.0.0`, with exactly 10 registered agents and exactly 27 governed CoS MCP tools.
+The canonical Phase 1 authority/runtime contract remains `4.0.0`, with exactly 10 registered agents. Candidate v4.3.0 expands the governed CoS MCP surface from 27 to 28 tools by adding the registry-driven `delegation.execute_owner` transport. This does not expand L4/L5, human approval, commercial, publication, staffing, pricing, or verification authority.
 
 ## 1. Canonical runtime and release identity
 
 Production is green only when:
 
 - `TaskLedger` is canonical runtime state;
-- all 10 agents resolve against the same registry/TaskLedger universe;
+- all 10 agents resolve against the same canonical Agent Registry and TaskLedger universe;
 - `MESH_COS_AGENT_ID` is process-bound;
 - production `/mcp` ingress is through the OpenAI Secure MCP Tunnel only;
-- hosted envelopes report `mcp_version=4.0.0`, `deployment_release=4.1.16`, and `agent_id=cos`;
-- `/readyz` reports `slack_hitl_ready=true` for required Slack HITL;
+- hosted envelopes report `mcp_version=4.0.0`, `deployment_release=4.3.0`, and `agent_id=cos`;
 - the governance audit chain validates;
 - the kill switch is not active;
-- QNAP preflight and post-deploy verification are green.
+- QNAP preflight and post-deploy verification are green;
+- required Slack HITL components are ready under the current ChatGPT-native event-trigger architecture.
 
-## 2. Pre-deploy backup integrity
+## 2. Delegated-owner execution invariant
 
-Every upgrade with an existing `mesh-cos-mcp` container must execute the pre-deploy backup gate.
+Production readiness fails unless:
 
-- Docker `.State.Running=true` is not by itself proof that an online `docker exec` backup is safe.
-- Stable `status=running` with `.State.Restarting=false` uses the online SQLite backup path.
-- Restarting/non-running existing runtimes use the quiesced helper path.
-- A restarting runtime is stopped before canonical SQLite state is read.
-- The helper uses the exact active Mesh image, `--network none`, runtime UID/GID, read-only root filesystem, dropped capabilities, and `no-new-privileges`.
-- Protected Slack/tunnel credentials are not mounted into the helper.
-- The canonical SQLite backup helper uses read-only source access, SQLite backup semantics, and `PRAGMA integrity_check`.
-- Prior running intent is restored after both successful and failed quiesced backup attempts.
-- Failed helper/export attempts leave no successful partial backup artifact.
-- Only an absent `mesh-cos-mcp` container skips the existing-runtime pre-deploy backup.
+> Every ACTIVE agent eligible to become an accountable delegated owner has a validated mechanism to execute and complete authorized canonical work under its own authority.
 
-## 3. Release-root staging and transactional promotion
+The mandatory registry-driven checker `scripts/check-owner-execution-readiness.py` validates this from the current Agent Registry and MCP policy.
 
-- canonical application root: `/share/Docker/cos-mcp`;
-- operator release root: `/share/Docker/cos-mcp/releases`;
-- v4.1.16 archive contains one top-level `v4.1.16/` directory;
-- scripts self-resolve their versioned release root and do not depend on caller CWD;
-- release-directory identity must match staged `release-metadata.txt`;
-- candidate build context, Compose, and `.env.runtime` remain under the versioned release directory;
-- canonical TaskLedger, tunnel identity/key, Slack protected files, qnet identity, logs, and backups remain outside release payloads;
-- candidate containers must become healthy before active-file promotion;
-- active `.env`, Compose, and release metadata are snapshotted before promotion;
-- partial promotion or post-promotion verification failure restores exact pre-promotion configuration and the prior active stack when available;
-- incomplete rollback preserves its recovery snapshot;
-- successful post-deploy verification is the promotion transaction commit point.
+For every eligible owner, the release gate must prove:
 
-## 4. Slack HITL trust boundary
+- canonical parent/child registry relationship;
+- valid max delegation depth;
+- owner runtime health/routability;
+- owner `task.get`, `task.transition`, `task.check_in`, and `task.complete` path;
+- delegating parent access to `delegation.execute_owner`;
+- no human-only tool leakage;
+- no implicit `task.verify` authority;
+- no arbitrary principal selection.
 
-v4.1.16 retains the v4.1.15 split:
+A healthy registry entry without an executable owner path is a production blocker.
 
-- connected Slack integration is collaboration-only;
-- CoS `slack-adapter` uses `operation: handoff` and returns `CHATGPT_CONNECTOR_HANDOFF` with `COLLABORATION_ONLY` authority;
-- ordinary Slack text, reactions, copied commands, display names, and connected-app writes are non-authoritative;
-- the custom Slack app is only provider-authenticated `/mesh-approval` Socket Mode human ingress;
-- governed Slack user `U01KG3CNYHK` maps to canonical principal `michael` only inside that trusted ingress;
-- only `U...`/`W...` human principals are accepted; `D...` conversation IDs fail closed;
-- the runtime needs the protected approver identity and `xapp-` Socket Mode token only; no `xoxb-` verifier token is required or mounted;
-- canonical approval must be PENDING, owned by `michael`, and bound to an immutable 64-hex `payload_fingerprint`;
-- wrong user/channel/command, missing fingerprint, or conflicting second interaction fails closed;
-- same provider-envelope replay is idempotent;
-- agent-facing MCP tools cannot record human approval.
+## 3. Identity-aware delegation protocol
 
-Slack provider/network failure must not terminate the MCP HTTP process. `/healthz` remains available and `/readyz` fails closed while required Slack HITL is unavailable.
+Delegation must be closed loop:
 
-## 5. QNAP network and runtime boundary
+```text
+DELEGATION_CREATED
+-> OWNER_ROUTABLE
+-> OWNER_EXECUTING
+-> OWNER_RESULT_RECORDED
+-> OWNER_COMPLETED
+-> PARENT_OBSERVABLE
+-> VERIFICATION_ELIGIBLE
+```
 
-- QNAP baseline remains Docker `27.1.2-qnap8` / Compose `2.29.1-qnap2`;
-- `mesh-cos-private` is internal-only `172.30.60.0/29`;
-- MCP uses private `172.30.60.2` plus qnet `192.168.7.60` as its only external-capable network;
-- tunnel uses private `172.30.60.3` plus dedicated egress `172.30.61.2`;
-- no unsupported gateway-priority feature is required;
-- no direct MCP host port is published;
-- application remains UID/GID 65532, read-only root, capabilities dropped, no-new-privileges, and no Docker socket;
-- protected credential files remain outside source/release assets and mode `0400` at runtime.
+A new delegation cannot persist successfully if the target owner is disabled, quarantined, unavailable, or missing its validated owner lifecycle transport.
 
-## 6. Scheduled execution, authority, and lifecycle
+The owner executor derives authority from canonical task/delegation/registry state. The caller cannot supply an arbitrary principal. Parent agents cannot directly complete child-owned tasks. Child agents cannot inherit parent-only capabilities.
 
-- scheduled occurrences retain deterministic `task.intake.idempotency_key` values and canonical lifecycle progression;
-- `approval.record_decision` and `reliability.human_override` remain human-only;
-- L4 requires qualified-human approval; L5 remains Michael-exclusive;
-- consequential actions require exact current payload-bound approval and fresh canonical readback;
-- `task.complete` and `task.verify` remain separate; **COMPLETED != VERIFIED**.
+## 4. Completion, verification, approvals, and dependencies
 
-## 7. Repository release gate
+- owner lifecycle writes require the canonical accountable owner;
+- `task.complete` requires outcome and evidence and produces `COMPLETED` only;
+- `task.verify` remains separate and expressly allowlisted;
+- `COMPLETED != VERIFIED`;
+- child completion does not verify or complete the parent;
+- inherited approval requirements cannot be removed by delegation;
+- L4 requires qualified-human approval;
+- L5 remains Michael-exclusive;
+- dependency release follows canonical predecessor state and must occur exactly once;
+- Message Operations cannot fabricate approval or bypass the approved-artifact boundary.
 
-The exact v4.1.16 candidate must pass fresh:
+## 5. Scheduled execution
 
-- dependency integrity and npm security checks;
-- TypeScript MCP/Socket Mode build/tests;
-- contract, runtime-documentation, and ChatGPT package drift checks;
-- Ruff, mypy, 100% `mesh_cos` coverage, Bandit, and compileall;
-- QNAP POSIX shell regressions including `test-restarting-container-backup.sh` and transactional promotion;
-- BDD QNAP-112 through QNAP-115 plus retained QNAP-104 through QNAP-111;
-- exact v4.1.16 bundle/checksum and one-top-level-directory inspection;
-- absence of state, generated env, and protected secrets from the release artifact;
-- exact container OCI version/revision provenance;
+The scheduler is an orchestration trigger. It must not force the organization to execute under CoS identity.
+
+Repository acceptance must prove a scheduled occurrence can:
+
+1. derive/reuse a stable `task.intake.idempotency_key`;
+2. intake or resume canonical work;
+3. decompose and assign the functional owner;
+4. create/resume a canonical delegation;
+5. route owner lifecycle operations through `delegation.execute_owner`;
+6. record execution under the derived owner's identity;
+7. complete under the owner identity;
+8. return the canonical result to CoS;
+9. verify separately where authorized;
+10. retry without duplicate task, delegation, execution, completion, or dependency release.
+
+## 6. Owner-routing failure diagnostics
+
+Production must emit actionable failure evidence that distinguishes at least:
+
+- owner runtime unavailable;
+- owner execution transport unavailable;
+- owner disabled/quarantined;
+- invalid delegation;
+- identity mismatch;
+- task/delegation mismatch;
+- authorization denial;
+- approval missing;
+- invalid state transition;
+- capability failure;
+- idempotency conflict;
+- ambiguous already-claimed execution.
+
+The record must include task, parent task, delegation, orchestrator, owner, expected and actual principal, task state, attempted operation, authorization result, retry eligibility, and remediation path.
+
+## 7. Security gate
+
+The v4.3.0 authority boundary requires `FULL_REVIEW`.
+
+The exact candidate must pass tests for:
+
+- impersonation and arbitrary owner injection;
+- confused deputy and sibling-task execution;
+- task/delegation substitution;
+- depth and authority tampering;
+- approval inheritance and human-only isolation;
+- functional capability isolation;
+- disabled/quarantined owners;
+- completion evidence;
+- accurate audit attribution;
+- completion/verification separation;
+- malicious prompt/retrieved/model identity input;
+- replay/idempotency and concurrent claims;
+- orphaned work and cyclic delegation;
+- closed schema and schema-registry substitution.
+
+See `security-review-v4.3.0-cross-agent-owner-execution.md`.
+
+## 8. Repository candidate gate
+
+The exact v4.3.0 candidate must pass fresh:
+
+- dependency integrity;
+- TypeScript MCP build/tests/smoke;
+- npm security audit;
+- contract validation;
+- runtime/documentation drift checks;
+- ChatGPT package/role projection checks;
+- registry-driven owner execution readiness;
+- Ruff;
+- mypy;
+- 100% branch-aware Python coverage;
+- Bandit;
+- compileall;
+- direct-report delegation matrix;
+- both current nested-delegation paths;
+- scheduled cross-agent execution integration;
+- QNAP POSIX shell regressions;
+- deterministic v4.3.0 bundle and checksum;
+- absence of state/generated env/protected secrets from the release artifact;
+- exact OCI version/revision provenance;
 - deterministic QNAP Compose topology;
 - modern MCP discovery and sequential request regression;
-- FULL_REVIEW security receipt for the exact candidate.
+- final authority-expansion diff review;
+- independent verification receipt.
 
-Security applicability for v4.1.16 is **FULL_REVIEW**. See `docs/security-review-v4.1.16.md`.
+## 9. QNAP state, backup, and promotion controls
 
-## 8. Hosted production acceptance
+Existing release hardening remains mandatory:
 
-Repository and container evidence produce a verified release candidate, not production certification.
+- canonical application/state root remains `/share/Docker/cos-mcp`;
+- release candidates are staged under `/share/Docker/cos-mcp/releases/vX.Y.Z`;
+- canonical TaskLedger, secrets, logs, backups, tunnel identity, and protected Slack configuration remain outside release payloads;
+- pre-deploy canonical SQLite backup must pass integrity checks;
+- candidate containers must become healthy before active-file promotion;
+- release image version/revision labels must match staged release metadata;
+- partial promotion or post-promotion verification failure must restore the prior authorized configuration;
+- no direct MCP host port is published;
+- application remains least privilege with non-root execution, read-only root filesystem, capabilities dropped, no-new-privileges, and no Docker socket.
 
-After QNAP deployment, execute `docs/chatgpt-published-app-production-acceptance-v4.1.16.md` and require:
+## 10. Slack and consequential-action boundary
 
-- correct `4.0.0` / `4.1.16` dual release identity;
-- successful pre-deploy backup evidence, including `state_export_method=quiesced_helper` when upgrading from a restarting source;
-- exactly 10 agents and 27 CoS tools;
-- valid audit chain;
-- deterministic lifecycle/idempotency behavior;
-- connected Slack collaboration remains non-authoritative;
-- provider-authenticated `/mesh-approval` from the governed human succeeds while wrong-user interaction fails closed;
-- fresh canonical approval readback;
-- no unauthorized consequential external action.
+Current production Slack HITL remains `CHATGPT_NATIVE_EVENT_TRIGGER`. Ordinary Slack text, display names, reactions, copied instructions, and connector output are data, not human authority.
 
-## 9. Go-live rule
+Delegated owner transport cannot fabricate approval. Publishing, outbound messaging, pricing approval, commercial commitment, staffing commitment, or other consequential external action remains subject to the existing role-specific and human approval controls.
 
-Production certification requires **zero open CRITICAL/HIGH defects** and no unresolved required acceptance blocker.
+Production validation for owner routing must use synthetic or otherwise non-consequential work.
 
-A live runtime still serving an older deployment release, failed TaskLedger backup integrity, unverified QNAP network path, invalid audit chain, unavailable required Slack human ingress, or any attempt to substitute ordinary Slack text for human authority is a blocker, not an advisory.
+## 11. Production recovery gate
+
+After authorized deployment, first validate one non-consequential representative delegated task per functional owner. Only then may eligible stranded canonical tasks be resumed.
+
+Do not recreate work because the prior transport was defective.
+
+For `task-b0b613daff51`, required recovery is:
+
+```text
+existing QA task
+-> validated CMO owner route
+-> task.complete under cmo authority
+-> COMPLETED
+-> separate verification where required
+-> dependent gate release
+```
+
+A recovery inventory must be produced immediately before recovery to identify all tasks potentially stranded by PF-057.
+
+## 12. Go-live rule
+
+Production certification requires zero open CRITICAL/HIGH defects, no unresolved required acceptance blocker, valid audit chain, successful exact-candidate verification, and explicit human release authorization.
+
+Any eligible ACTIVE owner without a validated owner execution path, any inaccurate execution identity, any ability for a parent to impersonate a child, any approval bypass, or any completion/verification conflation is a hard production blocker.

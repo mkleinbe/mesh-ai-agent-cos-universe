@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from .mcp_validation import load_input_schemas
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_SCHEMA_REGISTRY = "chatgpt/mcp/tool-input-schemas.v1.json"
+
 
 @dataclass(frozen=True, slots=True)
 class WorkspaceAgentMCPPolicy:
@@ -18,7 +23,7 @@ class WorkspaceAgentMCPPolicy:
         contract_path = (
             Path(path)
             if path is not None
-            else Path(__file__).resolve().parents[2] / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
+            else ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"
         )
         contract = json.loads(contract_path.read_text(encoding="utf-8"))
         policy = cls(contract)
@@ -73,21 +78,29 @@ class WorkspaceAgentMCPPolicy:
         if not tools:
             raise ValueError("MCP contract requires tools")
         if strict_contract:
-            registry_ref = self.contract.get("input_schema_registry", "chatgpt/mcp/tool-input-schemas.v1.json")
+            registry_ref = self.contract.get("input_schema_registry", DEFAULT_SCHEMA_REGISTRY)
             if not isinstance(registry_ref, str) or not registry_ref.strip():
                 raise ValueError("MCP input schema registry reference must be non-empty")
-            schema_path = Path(__file__).resolve().parents[2] / registry_ref
-            schema_payload = json.loads(schema_path.read_text(encoding="utf-8"))
-            if schema_payload.get("schema_version") != "mesh.cos.mcp-tool-input-schemas.v1":
-                raise ValueError("Unexpected MCP input schema registry version")
-            input_schemas = schema_payload.get("tools")
-            if not isinstance(input_schemas, dict) or set(input_schemas) != set(tools):
-                raise ValueError("MCP input schema registry must exactly match the tool catalog")
+            registry_path = Path(registry_ref)
+            if not registry_path.is_absolute():
+                registry_path = ROOT / registry_path
+            try:
+                input_schemas = load_input_schemas(registry_path)
+            except TypeError as exc:
+                raise ValueError("MCP input schema registry must exactly match the tool catalog") from exc
+            except ValueError as exc:
+                if "registry version" in str(exc):
+                    raise ValueError("Unsupported MCP input schema registry version") from exc
+                raise
+            if registry_ref == DEFAULT_SCHEMA_REGISTRY:
+                input_schemas = load_input_schemas()
             for tool_name, schema in input_schemas.items():
                 if not isinstance(schema, dict) or schema.get("type") != "object":
                     raise ValueError(f"MCP input schema must be an object: {tool_name}")
                 if schema.get("additionalProperties") is not False:
                     raise ValueError(f"MCP input schema must be closed: {tool_name}")
+            if set(input_schemas) != set(tools):
+                raise ValueError("MCP input schema registry must exactly match the tool catalog")
         for name, tool in tools.items():
             if tool.get("authority_enforced") is not True:
                 raise ValueError(f"Authority enforcement missing for {name}")
@@ -126,7 +139,6 @@ class WorkspaceAgentMCPPolicy:
 
     def authorize(self, agent_id: str, tool_name: str) -> dict[str, Any]:
         """Return the tool contract only when the agent is explicitly allowlisted."""
-
         tools = self._tools()
         allowlists = self.contract.get("agent_tool_allowlists", {})
         if agent_id not in allowlists:
@@ -153,7 +165,6 @@ class WorkspaceAgentMCPPolicy:
 
     def validate_runtime_bindings(self) -> list[str]:
         """Return unresolved runtime bindings without executing business logic."""
-
         errors: list[str] = []
         for name, tool in self._tools().items():
             binding = str(tool["runtime_binding"])

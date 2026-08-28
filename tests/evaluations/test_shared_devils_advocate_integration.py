@@ -66,9 +66,12 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     legacy = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
     assert "TAG: v4.1.13" in legacy
     assert '--title "v4.1.13 Slack Approver Bootstrap"' in legacy
-    current = (ROOT / ".github" / "workflows" / "release-v4.2.3.yml").read_text()
-    assert "v4.2.3 QNAP qnet egress readiness release candidate" in current
-    assert "gh release create v4.2.3" in current
+    historical_v423 = (ROOT / ".github" / "workflows" / "release-v4.2.3.yml").read_text()
+    assert "v4.2.3 QNAP qnet egress readiness release candidate" in historical_v423
+    assert "gh release create v4.2.3" in historical_v423
+    current = (ROOT / ".github" / "workflows" / "release-v4.3.0.yml").read_text()
+    assert "v4.3.0 cross-agent owner execution release candidate" in current
+    assert "gh release create v4.3.0" in current
     historical_v422 = (ROOT / ".github" / "workflows" / "release-v4.2.2.yml").read_text()
     assert "historical v4.2.2 release record" in historical_v422
     historical_v421 = (ROOT / ".github" / "workflows" / "release-v4.2.1.yml").read_text()
@@ -78,7 +81,7 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     historical_v414 = (ROOT / ".github" / "workflows" / "release-v4.1.14.yml").read_text()
     assert "v4.1.14 historical QNAP verification" in historical_v414
     release_notes = (ROOT / "RELEASE.md").read_text()
-    assert "v4.2.3 QNAP qnet Egress Readiness" in release_notes
+    assert "# v4.3.0 Cross-Agent Owner Execution" in release_notes
     assert "canonical Phase 1 authority/runtime contract remains **`4.0.0`**" in release_notes
     assert "Mesh Devil's Advocate" in (ROOT / "README.md").read_text()
     assert "Message Operations" in (ROOT / "README.md").read_text()

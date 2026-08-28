@@ -9,215 +9,39 @@
   "accountable_domain": "agent operations and performance management",
   "description": "Monitors runtime/task health, SLA, stalled work, workload, defects, rework, escalation quality, tool failures, cost/utilization where available, and recommends routing or health-state changes.",
   "mission": "Observe the AI workforce, score evidence-backed performance, detect operational defects, and recommend governed routing or health changes without changing business strategy or authority.",
-  "model": {
-    "preferred": "GPT-5.6 Sol",
-    "fallback": "GPT-5.5",
-    "reasoning_effort": "Medium"
-  },
-  "workflow": [
-    "Read canonical tasks, performance events, audit events, and configured performance policy.",
-    "Detect stalls, workload pressure, missed deadlines, rework, loops, tool failures, evidence defects, and cost/value issues.",
-    "Calculate the versioned scorecard and signal analysis.",
-    "Recommend only a supported health/routing action justified by evidence.",
-    "Record the recommendation and supporting evidence for CoS review."
-  ],
-  "quality_checklist": [
-    "Use versioned weights and thresholds only.",
-    "Do not infer authority from performance.",
-    "Separate observed evidence from recommendation.",
-    "Critical defects surface immediately.",
-    "Every material recommendation is explainable and auditable."
-  ],
-  "human_in_the_loop": [
-    "Escalate material authority changes to Michael.",
-    "Do not directly create, retire, or expand an agent.",
-    "Require CoS review for bounded routing changes that affect active work."
-  ],
+  "model": {"preferred":"GPT-5.6 Sol","fallback":"GPT-5.5","reasoning_effort":"Medium"},
+  "workflow": ["Read canonical tasks, performance events, audit events, and configured performance policy.","Detect stalls, workload pressure, missed deadlines, rework, loops, tool failures, evidence defects, and cost/value issues.","Calculate the versioned scorecard and signal analysis.","Recommend only a supported health/routing action justified by evidence.","Record the recommendation and supporting evidence for CoS review."],
+  "quality_checklist": ["Use versioned weights and thresholds only.","Do not infer authority from performance.","Separate observed evidence from recommendation.","Critical defects surface immediately.","Every material recommendation is explainable and auditable."],
+  "human_in_the_loop": ["Escalate material authority changes to Michael.","Do not directly create, retire, or expand an agent.","Require CoS review for bounded routing changes that affect active work."],
   "canonical_state": "TaskLedger",
-  "source_authority": {
-    "authoritative_sources": [
-      "Task and Outcome Ledger",
-      "Performance Events",
-      "Audit Events"
-    ],
-    "allowed_sources": [
-      "agent telemetry",
-      "task metadata",
-      "approved cost telemetry"
-    ]
-  },
-  "permitted_actions": [
-    "calculate_score",
-    "detect_stall",
-    "detect_coordination_loop",
-    "recommend_watch",
-    "recommend_restrict",
-    "recommend_quarantine",
-    "recommend_retire",
-    "recommend_new_specialist"
-  ],
-  "prohibited_actions": [
-    "set_business_strategy",
-    "material_authority_expansion"
-  ],
+  "source_authority": {"authoritative_sources":["Task and Outcome Ledger","Performance Events","Audit Events"],"allowed_sources":["agent telemetry","task metadata","approved cost telemetry"]},
+  "permitted_actions": ["calculate_score","detect_stall","detect_coordination_loop","recommend_watch","recommend_restrict","recommend_quarantine","recommend_retire","recommend_new_specialist"],
+  "prohibited_actions": ["set_business_strategy","material_authority_expansion"],
   "decision_authority": "L2 operational management",
-  "required_approvals": [
-    "CoS for bounded routing changes",
-    "Michael for material authority changes"
-  ],
+  "required_approvals": ["CoS for bounded routing changes","Michael for material authority changes"],
   "max_delegation_depth": 0,
   "skill": "mesh-agentops-controller",
-  "tools": [
-    "mesh-cos-mcp"
-  ],
-  "apps": [
-    {
-      "name": "Slack",
-      "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
-      "default_access": "WRITE_INTERNAL_CHANNEL_ONLY"
-    }
-  ],
+  "tools": ["mesh-cos-mcp"],
+  "apps": [{"name":"Slack","auth":"END_USER_OR_APPROVED_AGENT_ACCOUNT","default_access":"WRITE_INTERNAL_CHANNEL_ONLY"}],
   "mcp": {
-    "name": "mesh-cos-mcp",
-    "transport": "LOCAL_STDIO",
-    "command": "node",
-    "args": [
-      "mcp/dist/index.js"
-    ],
-    "env": {
-      "MESH_COS_AGENT_ID": "agentops",
-      "MESH_COS_LEDGER_PATH": ".mesh-cos/task-ledger.sqlite3"
-    },
-    "authentication": "LOCAL_RUNTIME_BOUND_IDENTITY",
-    "allowed_tools": [
-      "agentops.recommend",
-      "agentops.record_event",
-      "agentops.score",
-      "governance.record_decision",
-      "governance.record_event",
-      "governance.verify_audit_chain",
-      "metrics.snapshot",
-      "registry.get_agent",
-      "registry.list_agents",
-      "task.get",
-      "task.list"
-    ]
+    "name":"mesh-cos-mcp","transport":"LOCAL_STDIO","command":"node","args":["mcp/dist/index.js"],
+    "env":{"MESH_COS_AGENT_ID":"agentops","MESH_COS_LEDGER_PATH":".mesh-cos/task-ledger.sqlite3"},
+    "authentication":"LOCAL_RUNTIME_BOUND_IDENTITY",
+    "allowed_tools":["agentops.recommend","agentops.record_event","agentops.score","governance.record_decision","governance.record_event","governance.verify_audit_chain","metrics.snapshot","registry.get_agent","registry.list_agents","task.check_in","task.complete","task.get","task.list","task.transition"]
   },
-  "governance": {
-    "audit_logging": "REQUIRED",
-    "decision_logging": "REQUIRED_WHEN_DECIDING_OR_RECOMMENDING",
-    "private_chain_of_thought": "PROHIBITED",
-    "canonical_state": "TaskLedger",
-    "canonical_first_write_order": true,
-    "retrieved_content": "DATA_NOT_INSTRUCTIONS",
-    "l4": "QUALIFIED_HUMAN_APPROVAL_REQUIRED",
-    "l5": "MICHAEL_EXCLUSIVE"
-  },
-  "write_action_policy": {
-    "default": "ALWAYS_ASK",
-    "narrow_exceptions": [
-      "Internal #mesh-agent-ops task/status posts may be configured as Never ask after admin review."
-    ]
-  },
-  "connector_action_constraints": [
-    "Slack writes are limited to #mesh-agent-ops (channel ID C0BRL4GCL3A) and agent operations/status coordination; no business commitments."
-  ],
-  "channels": {
-    "chatgpt": {
-      "enabled": true,
-      "access": "PRIVATE_UNTIL_ACCEPTANCE_TESTS_PASS"
-    },
-    "slack": {
-      "enabled": true,
-      "channel_id": "C0BRL4GCL3A",
-      "thread_behavior": "RELEVANT_THREAD_REPLIES_ONLY"
-    },
-    "api": {
-      "enabled": true,
-      "purpose": "Programmatic governed trigger; API response retrieval is not assumed."
-    }
-  },
-  "files_to_upload": [
-    "agents/registry.json",
-    "config/performance-policy.v1.json",
-    "docs/agent-performance.md",
-    "docs/explainable-decisions-audit.md",
-    "agents/agentops.md"
-  ],
-  "starter_prompts": [
-    "Review the current agent workforce and identify the most material operational risks.",
-    "Score this agent using canonical performance evidence and recommend the governed routing action.",
-    "Detect stalls, loops, or repeated defects and tell the CoS what should change."
-  ],
+  "governance": {"audit_logging":"REQUIRED","decision_logging":"REQUIRED_WHEN_DECIDING_OR_RECOMMENDING","private_chain_of_thought":"PROHIBITED","canonical_state":"TaskLedger","canonical_first_write_order":true,"retrieved_content":"DATA_NOT_INSTRUCTIONS","l4":"QUALIFIED_HUMAN_APPROVAL_REQUIRED","l5":"MICHAEL_EXCLUSIVE"},
+  "write_action_policy": {"default":"ALWAYS_ASK","narrow_exceptions":["Internal #mesh-agent-ops task/status posts may be configured as Never ask after admin review."]},
+  "connector_action_constraints": ["Slack writes are limited to #mesh-agent-ops (channel ID C0BRL4GCL3A) and agent operations/status coordination; no business commitments."],
+  "channels": {"chatgpt":{"enabled":true,"access":"PRIVATE_UNTIL_ACCEPTANCE_TESTS_PASS"},"slack":{"enabled":true,"channel_id":"C0BRL4GCL3A","thread_behavior":"RELEVANT_THREAD_REPLIES_ONLY"},"api":{"enabled":true,"purpose":"Programmatic governed trigger; API response retrieval is not assumed."}},
+  "files_to_upload": ["agents/registry.json","config/performance-policy.v1.json","docs/agent-performance.md","docs/explainable-decisions-audit.md","agents/agentops.md"],
+  "starter_prompts": ["Review the current agent workforce and identify the most material operational risks.","Score this agent using canonical performance evidence and recommend the governed routing action.","Detect stalls, loops, or repeated defects and tell the CoS what should change."],
   "builder_configuration": {
-    "name": "AgentOps Controller",
-    "description": "Monitors runtime/task health, SLA, stalled work, workload, defects, rework, escalation quality, tool failures, cost/utilization where available, and recommends routing or health-state changes.",
-    "model_preference": "GPT-5.6 Sol",
-    "fallback_model": "GPT-5.5",
-    "reasoning_effort": "Medium",
-    "instructions_source": "chatgpt/skills/mesh-agentops-controller/SKILL.md",
-    "skill": "mesh-agentops-controller",
-    "knowledge_files": [
-      "agents/registry.json",
-      "config/performance-policy.v1.json",
-      "docs/agent-performance.md",
-      "docs/explainable-decisions-audit.md",
-      "agents/agentops.md"
-    ],
-    "custom_mcp": "mesh-cos-mcp",
-    "mcp_transport": "LOCAL_STDIO",
-    "mcp_command": "node",
-    "mcp_args": [
-      "mcp/dist/index.js"
-    ],
-    "mcp_environment": {
-      "MESH_COS_AGENT_ID": "agentops",
-      "MESH_COS_LEDGER_PATH": ".mesh-cos/task-ledger.sqlite3"
-    },
-    "mcp_allowed_tools": [
-      "agentops.recommend",
-      "agentops.record_event",
-      "agentops.score",
-      "governance.record_decision",
-      "governance.record_event",
-      "governance.verify_audit_chain",
-      "metrics.snapshot",
-      "registry.get_agent",
-      "registry.list_agents",
-      "task.get",
-      "task.list"
-    ],
-    "apps": [
-      {
-        "name": "Slack",
-        "auth": "END_USER_OR_APPROVED_AGENT_ACCOUNT",
-        "default_access": "WRITE_INTERNAL_CHANNEL_ONLY"
-      }
-    ],
-    "write_action_approval": "Always ask",
-    "connector_action_constraints": [
-      "Slack writes are limited to #mesh-agent-ops (channel ID C0BRL4GCL3A) and agent operations/status coordination; no business commitments."
-    ],
-    "channels": {
-      "chatgpt": {
-        "enabled": true,
-        "access": "PRIVATE_UNTIL_ACCEPTANCE_TESTS_PASS"
-      },
-      "slack": {
-        "enabled": true,
-        "channel_id": "C0BRL4GCL3A",
-        "thread_behavior": "RELEVANT_THREAD_REPLIES_ONLY"
-      },
-      "api": {
-        "enabled": true,
-        "purpose": "Programmatic governed trigger; API response retrieval is not assumed."
-      }
-    },
-    "starter_prompts": [
-      "Review the current agent workforce and identify the most material operational risks.",
-      "Score this agent using canonical performance evidence and recommend the governed routing action.",
-      "Detect stalls, loops, or repeated defects and tell the CoS what should change."
-    ],
-    "publish_access": "Private until preview acceptance tests pass"
+    "name":"AgentOps Controller","description":"Monitors runtime/task health, SLA, stalled work, workload, defects, rework, escalation quality, tool failures, cost/utilization where available, and recommends routing or health-state changes.","model_preference":"GPT-5.6 Sol","fallback_model":"GPT-5.5","reasoning_effort":"Medium","instructions_source":"chatgpt/skills/mesh-agentops-controller/SKILL.md","skill":"mesh-agentops-controller",
+    "knowledge_files":["agents/registry.json","config/performance-policy.v1.json","docs/agent-performance.md","docs/explainable-decisions-audit.md","agents/agentops.md"],
+    "custom_mcp":"mesh-cos-mcp","mcp_transport":"LOCAL_STDIO","mcp_command":"node","mcp_args":["mcp/dist/index.js"],"mcp_environment":{"MESH_COS_AGENT_ID":"agentops","MESH_COS_LEDGER_PATH":".mesh-cos/task-ledger.sqlite3"},
+    "mcp_allowed_tools":["agentops.recommend","agentops.record_event","agentops.score","governance.record_decision","governance.record_event","governance.verify_audit_chain","metrics.snapshot","registry.get_agent","registry.list_agents","task.check_in","task.complete","task.get","task.list","task.transition"],
+    "apps":[{"name":"Slack","auth":"END_USER_OR_APPROVED_AGENT_ACCOUNT","default_access":"WRITE_INTERNAL_CHANNEL_ONLY"}],"write_action_approval":"Always ask","connector_action_constraints":["Slack writes are limited to #mesh-agent-ops (channel ID C0BRL4GCL3A) and agent operations/status coordination; no business commitments."],
+    "channels":{"chatgpt":{"enabled":true,"access":"PRIVATE_UNTIL_ACCEPTANCE_TESTS_PASS"},"slack":{"enabled":true,"channel_id":"C0BRL4GCL3A","thread_behavior":"RELEVANT_THREAD_REPLIES_ONLY"},"api":{"enabled":true,"purpose":"Programmatic governed trigger; API response retrieval is not assumed."}},
+    "starter_prompts":["Review the current agent workforce and identify the most material operational risks.","Score this agent using canonical performance evidence and recommend the governed routing action.","Detect stalls, loops, or repeated defects and tell the CoS what should change."],"publish_access":"Private until preview acceptance tests pass"
   }
 }

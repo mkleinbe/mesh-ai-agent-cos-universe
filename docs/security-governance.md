@@ -1,110 +1,130 @@
 # Security and Governance
 
-The canonical Phase 1 authority/runtime contract remains `4.0.0`. Repository/QNAP deployment release `v4.1.7` applies that unchanged authority model to the published **Mesh CoS MCP** ChatGPT app and OpenAI Secure MCP Tunnel production path while adding serving-release observability, release-image provenance, and governed response-envelope verification.
+The canonical Phase 1 authority/runtime contract remains `4.0.0`. Candidate repository/QNAP deployment release `v4.3.0` adds identity-aware cross-agent owner execution while preserving the 10-agent registry, TaskLedger canonicality, L4/L5 human authority, approval inheritance, deny-by-default MCP policy, and `COMPLETED != VERIFIED`.
 
 ## Trust architecture
 
 ```mermaid
 flowchart TB
-    IN[Prompt / Retrieved / App / Task Content] --> APP[Mesh CoS MCP ChatGPT app]
-    APP --> TUN[OpenAI Secure MCP Tunnel]
-    TUN --> HTTP[mesh-cos-mcp production adapter]
-    HTTP --> ID[MESH_COS_AGENT_ID=cos]
-    ID --> AL[CoS deny-by-default allowlist]
+    U[Prompt / Retrieved / Connector / Task / Model Content] --> APP[Mesh CoS MCP]
+    APP --> ID[Immutable Runtime Principal]
+    ID --> AL[Deny-by-Default Caller Allowlist]
     AL --> RT[MCPRuntime]
-    HUMAN[Authenticated human principal] --> HL[Human-only allowlist]
+    RT --> TL[(TaskLedger)]
+    RT --> DX[Server-Owned Delegated Owner Executor]
+    DX --> CR[Canonical Task + Delegation]
+    CR --> AR[Agent Registry]
+    AR --> OA[Derived Accountable Owner]
+    OA --> OAL[Owner Allowlist]
+    OAL --> OP[Owner-Scoped Operation]
+    OP --> TL
+    HUMAN[Authenticated Human Principal] --> HL[Human-Only Allowlist]
     HL --> RT
-    RT --> L[(TaskLedger)]
-    COS[Chief of Staff] -. governed challenge .-> DA[[Mesh Devil's Advocate\nShared Skill]]
-    CRO[CRO] -. governed challenge .-> DA
 ```
 
-Local engineering/certification retains the bundled `LOCAL_STDIO` path to the same canonical runtime. Untrusted content is data, not operating policy. It cannot alter identity, tool exposure, approval requirements, source authority, delegation ceilings, or canonical state.
+Untrusted content is data, never authority-bearing identity input. It cannot alter runtime identity, Agent Registry state, tool exposure, source authority, approval requirements, delegation ceilings, or canonical task ownership.
 
-## Secure MCP Tunnel ingress
+## Immutable external identity and derived delegated identity
 
-Production requires `MCP_AUTH_MODE=tunnel` and a configured `MCP_TRUSTED_CLIENT_IP`. `/mcp` dispatch occurs only after the request source address matches the private tunnel-sidecar identity. The production Compose model publishes no host MCP port, and the remote adapter does not introduce an independent OAuth flow.
+`MESH_COS_AGENT_ID` remains process-bound for the external runtime. User prompts, task payloads, headers, retrieved documents, Slack text, shared-Skill output, connector output, and model responses cannot rewrite it.
 
-`/healthz` and `/readyz` intentionally expose only non-secret runtime identity metadata. They do not confer MCP authority.
+Cross-agent execution does not mutate that external identity. Instead, the internal server-owned executor derives the accountable owner from canonical delegation/task state and dispatches only after re-authorizing the requested operation under that owner's policy.
 
-## Dual release identity
+The caller cannot submit an arbitrary principal and receive that principal's authority.
 
-Production tool envelopes and status endpoints distinguish the immutable authority/runtime contract from the deployment release:
+## Delegated owner execution boundary
+
+`delegation.execute_owner` is a high-value internal authority boundary. It resolves:
 
 ```text
-mcp_version: 4.0.0
-deployment_release: 4.1.7
-agent_id: cos
-transport: SECURE_MCP_TUNNEL
+authenticated delegator
+-> canonical delegation
+-> canonical task
+-> accountable owner
+-> canonical registry record
+-> owner MCP allowlist
+-> task-scoped operation
 ```
 
-`MESH_COS_DEPLOYMENT_RELEASE` is non-secret release metadata. The remote runtime requires it before listening, but it is never used to select agent identity, tools, approval rights, delegation rights, or canonical state.
+Controls include:
 
-## Release-image provenance boundary
+- canonical delegator binding;
+- task/delegation ID binding;
+- owner/task consistency;
+- ACTIVE/routable owner check;
+- owner lifecycle transport readiness;
+- owner-specific MCP authorization;
+- human-only tool exclusion;
+- task/nested-descendant scoping;
+- request-bound idempotency fingerprint;
+- explicit expected and executing principal audit fields.
 
-The mutable local Docker tag is not trusted as release authority. QNAP preparation reads the extracted bundle `version=` and `commit=` values as data and compares them with the local image OCI `org.opencontainers.image.version` and `org.opencontainers.image.revision` labels.
-
-An existing image is reusable only when both labels match the extracted release identity. A mismatch forces a rebuild from the extracted build context. After build or reuse, the same labels are revalidated before the image ID is recorded and Compose replacement can proceed.
-
-Release metadata is never sourced or evaluated as shell code and cannot expand Docker, MCP, human, or agent authority.
-
-## Governed response-envelope verification boundary
-
-v4.1.7 post-deploy verification executes one hardcoded read-only `registry.get_agent` MCP `tools/call` against the running application from a short-lived verifier that shares the tunnel client's network namespace.
-
-The verifier is deliberately constrained:
-
-- non-root UID/GID 65532;
-- read-only root filesystem;
-- all capabilities dropped;
-- no Docker socket;
-- no TaskLedger/state mount;
-- no tunnel secret mount or secret environment value;
-- no persistent service lifetime;
-- only the expected deployment release is passed as non-secret verification data.
-
-The verifier does not change `MCP_TRUSTED_CLIENT_IP` or create a new long-running trusted client. It uses authority the QNAP Docker administrator already holds solely to verify the actual governed response boundary and exits immediately.
-
-## Human-only isolation
-
-`approval.record_decision` and `reliability.human_override` are runtime capabilities but not agent capabilities. They are absent from every agent allowlist, excluded from agent tool catalogs, and rejected by `call_agent`. A non-empty authenticated human principal is required for `call_human`.
-
-Regression tests prove denial for CoS and every other agent and positive execution through the human path.
-
-## Immutable agent identity
-
-`MESH_COS_AGENT_ID` is process-bound. User prompts, retrieved documents, task payloads, HTTP headers, delegated instructions, shared-Skill output, and connector data cannot impersonate a human principal or another agent. Runtime governance records derive actor identity, role, version, and authority from the canonical registry rather than client-supplied identity fields.
+Direct parent completion of child-owned work is denied. The parent uses the executor only as governed orchestration transport.
 
 ## Delegation security
 
-Delegation requires a registered direct child, valid depth, one accountable owner, measurable acceptance conditions, authority no greater than the parent, and all inherited approval gates. Circularity, authority widening, approval weakening, and excessive depth are denied before persistence.
+Delegation requires a registered direct child, canonical parent/child task relationship, one accountable owner, measurable acceptance conditions, authority no greater than the parent, all inherited approval gates, target-owner required approvals, permitted actions within target authority, prohibited-action inheritance, and registry-derived depth.
+
+The target owner must also be ACTIVE, routable, and capable of the required owner lifecycle before a new delegation is persisted.
+
+Client-supplied `depth`, `ancestry`, `parent_authority`, and `active_owner` values cannot create authority. If supplied, they must equal canonical state.
+
+Circularity, authority widening, approval weakening, excessive depth, owner substitution, cross-task execution, and cross-sibling execution are denied.
+
+## Idempotency and concurrency
+
+Owner execution uses a canonical idempotent claim before the owner operation runs. The idempotency key is bound to a SHA-256 fingerprint of delegation ID, task ID, operation, and validated arguments.
+
+- exact successful retry returns the canonical prior response;
+- changed request under the same key is rejected;
+- duplicate completion is not re-executed;
+- concurrent claims fail closed unless a completed identical canonical response already exists;
+- ambiguous failed execution is not blindly replayed.
+
+## Human-only isolation
+
+`approval.record_decision` and `reliability.human_override` remain runtime capabilities but not agent capabilities. They are absent from every agent allowlist, excluded from delegated owner execution, and require the separately authenticated human-principal path.
+
+No model-generated content constitutes approval, authentication, authorization, or identity evidence.
+
+## Approval inheritance
+
+Delegated approval gates are the union of inherited parent requirements, retained child requirements, and target-owner registry requirements. A child cannot drop a parent L4/L5 or other governed approval obligation.
+
+Message Operations remains a separate execution role. Delegated transport cannot fabricate approval, modify an approved message materially without reapproval, or convert drafting authority into send authority.
 
 ## Completion and verification security
 
-`task.complete` requires owner-or-CoS write access plus a valid lifecycle state, non-empty outcome, and supporting evidence. It cannot result in `VERIFIED`.
+`task.complete` requires the canonical owner, a valid lifecycle state, an acceptance test, a non-empty outcome, and supporting evidence. It produces `COMPLETED` only.
 
-`task.verify` is separately allowlisted. Phase 1 exposes it only to CoS. Passing verification requires acceptance evidence and a completed task. Other owners cannot self-verify.
+`task.verify` remains separately allowlisted. Phase 1 exposes it only to CoS among agents. Completion never implies verification and child completion never verifies a parent.
 
-## Shared Devil's Advocate boundary
+## Owner availability and failure diagnostics
 
-Mesh Devil's Advocate is `ADVISORY_ONLY`. It cannot modify canonical facts, execute external actions, own tasks, record approvals, become an MCP principal, or widen caller authority. Its output may be retained as evidence or provenance only.
+An unavailable, disabled, restricted, or quarantined owner is not silently activated or replaced. Delegation/execution fails closed and records actionable owner-routing evidence including task, parent, delegation, orchestrator, owner, expected/actual principal, state, attempted operation, authorization result, failure classification, retry eligibility, and remediation path.
 
-## Message Operations boundary
+The production-readiness gate fails if any ACTIVE downstream owner lacks a validated execution/completion path.
 
-Message Operations is the tenth registered agent. It can inspect approval state and invoke its governed execution capability within its role boundary, but cannot record its own approval or materially modify approved content without reapproval. Consequential outbound execution remains human-gated.
+## Schema and request boundary
 
-## QNAP container boundary
+Every MCP request uses a closed schema. The policy validates the declared schema registry rather than silently substituting another registry. Schema safety is checked before catalog completeness so malformed schema definitions cannot hide behind a tool-set mismatch.
 
-The production application runtime remains UID/GID 65532 with read-only root filesystem, all Linux capabilities dropped, no-new-privileges, no Docker socket, explicit CPU/memory controls, and the canonical TaskLedger bind-mounted as the single writable state boundary. The tunnel runtime secret remains file-only and is excluded from `.env`, release assets, backups, diagnostics, tool responses, and the ephemeral verifier.
+Client-supplied executable fields, arbitrary code/import paths, shell commands, callables, plugin executables, and Skill implementations remain prohibited.
+
+## Secure MCP Tunnel and QNAP boundary
+
+Production continues to require the OpenAI Secure MCP Tunnel path, no published host MCP port, least-privilege container execution, canonical TaskLedger persistence, protected secrets, release-image provenance checks, deterministic release packaging, and governed post-deploy verification.
+
+These infrastructure controls narrow access but never replace Mesh decision rights.
 
 ## Reliability and audit
 
-Replay is restricted to server-registered executors referenced by canonical failure state. Client-supplied callables, import paths, source code, or shell commands are never executed as replay logic.
+Material decisions use the existing governance record model. Consequential actions remain auditable and hash-chain verifiable. Lifecycle events identify the actual authenticated/derived owner. Delegated owner execution additionally records orchestration identity separately from owner/execution identity.
 
-Material decisions use `decision.v2`; consequential actions use `agent-event.v2`. Governance audit events are tamper-evident and hash-chain verification is a release certification requirement. Secrets, credentials, tokens, private chain-of-thought, and unnecessary sensitive prompts are prohibited from governance records.
+Secrets, tokens, credentials, private chain-of-thought, and unnecessary sensitive prompts remain prohibited from governance records.
 
-## Defense in depth
+## Full security review
 
-Workspace `Always ask`, connector restrictions, source permissions, Secure MCP Tunnel private ingress, release-image provenance, governed response-envelope verification, least-privilege QNAP runtime controls, and target-environment RBAC narrow behavior but never replace Mesh L4/L5 authority controls.
+The cross-agent change is classified `FULL_REVIEW` because it crosses authentication, authorization, MCP identity, persistence, model-driven execution, delegation, and consequential tooling boundaries.
 
-The v4.1.7 targeted security receipt is `qnap-security-review-v4.1.7.md`.
+The authoritative threat model and disposition are documented in `security-review-v4.3.0-cross-agent-owner-execution.md`. Production release remains blocked until the exact v4.3.0 candidate passes the repository's full security, test, QNAP, provenance, and modern MCP verification gates and receives human release authorization.

@@ -1,0 +1,17 @@
+{
+  "schema_version": "mesh.cos.mcp-tool-input-schema-extension.v1",
+  "tools": {
+    "delegation.execute_owner": {
+      "type": "object",
+      "properties": {
+        "delegation_id": {"type": "string", "minLength": 1},
+        "task_id": {"type": "string", "minLength": 1},
+        "tool_name": {"type": "string", "minLength": 1},
+        "arguments": {"type": "object", "properties": {}, "required": [], "additionalProperties": true},
+        "idempotency_key": {"type": "string", "minLength": 1}
+      },
+      "required": ["delegation_id", "task_id", "tool_name", "arguments", "idempotency_key"],
+      "additionalProperties": false
+    }
+  }
+}

@@ -23,6 +23,9 @@ Authoritative: Mesh Proposals - Engagement P&L Tracker. Allowed: approved engage
 ## Required approvals
 Qualified human for final pricing, discount, or material commercial action. Delegation cannot remove inherited approval gates.
 
+## Delegated owner execution
+When CFO owns delegated work, it executes under the `cfo` identity and CFO source/tool policy and may complete only its own canonical tasks. The current Phase 1 Agent Registry has no registered child beneath CFO, so CFO is not granted `delegation.execute_owner` or `task.decompose`. A future CFO child requires a separate governed Agent Registry and allowlist change before child execution is exposed.
+
 ## Completion boundary
 Use `task.complete` to persist an owned task's outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. CFO has no `task.verify` authority.
 

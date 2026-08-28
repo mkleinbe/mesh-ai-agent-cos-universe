@@ -4,13 +4,51 @@
     "delegation.execute_owner": {
       "type": "object",
       "properties": {
+        "protocol_version": {
+          "type": "string",
+          "enum": ["mesh.cos.owner-execution.v2"]
+        },
         "delegation_id": {"type": "string", "minLength": 1},
         "task_id": {"type": "string", "minLength": 1},
-        "tool_name": {"type": "string", "minLength": 1},
-        "arguments": {"type": "object", "properties": {}, "required": [], "additionalProperties": true},
+        "tool_name": {
+          "type": "string",
+          "enum": [
+            "approval.get",
+            "approval.request",
+            "conflict.open",
+            "delegation.create",
+            "delegation.execute_owner",
+            "governance.record_decision",
+            "governance.record_event",
+            "registry.get_agent",
+            "skills.invoke_governed",
+            "task.check_in",
+            "task.complete",
+            "task.decompose",
+            "task.get",
+            "task.transition"
+          ]
+        },
+        "arguments": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": true
+        },
+        "approval_references": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1}
+        },
         "idempotency_key": {"type": "string", "minLength": 1}
       },
-      "required": ["delegation_id", "task_id", "tool_name", "arguments", "idempotency_key"],
+      "required": [
+        "protocol_version",
+        "delegation_id",
+        "task_id",
+        "tool_name",
+        "arguments",
+        "idempotency_key"
+      ],
       "additionalProperties": false
     }
   }

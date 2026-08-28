@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Server } from '@modelcontextprotocol/server';
 import { callPythonBridge, PythonBridgeError, repositoryRoot } from './python-bridge.js';
 
@@ -129,6 +129,11 @@ export function deploymentRelease(env: NodeJS.ProcessEnv = process.env): string 
   return value || null;
 }
 
+export function sourceCommit(env: NodeJS.ProcessEnv = process.env): string | null {
+  const value = env.MESH_COS_SOURCE_COMMIT?.trim();
+  return value || null;
+}
+
 export function requireDeploymentRelease(env: NodeJS.ProcessEnv = process.env): string {
   const value = deploymentRelease(env);
   if (!value) throw new Error('MESH_COS_DEPLOYMENT_RELEASE is required for remote production runtime');
@@ -146,6 +151,34 @@ export function toolsForAgent(contract: MCPContract, agentId: string): ToolContr
     .filter(name => !human.has(name))
     .map(name => byName.get(name))
     .filter((tool): tool is ToolContract => tool !== undefined);
+}
+
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (isRecord(value)) {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map(key => [key, canonicalize(value[key])]),
+    );
+  }
+  return value;
+}
+
+export function actionSchemaDigest(
+  contract: MCPContract,
+  schemas: InputSchemaRegistry,
+  agentId: string,
+): string {
+  const projection = Object.fromEntries(
+    toolsForAgent(contract, agentId)
+      .map(tool => tool.name)
+      .sort()
+      .map(name => [name, toolInputSchema(schemas, name)]),
+  );
+  return createHash('sha256')
+    .update(JSON.stringify(canonicalize(projection)))
+    .digest('hex');
 }
 
 export function validateArgumentsSize(value: unknown): Record<string, unknown> {
@@ -187,9 +220,11 @@ export function createServer(
 ): Server {
   const agentId = requireAgentId(contract, env);
   const deploymentReleaseId = deploymentRelease(env);
+  const sourceCommitId = sourceCommit(env);
   const tools = toolsForAgent(contract, agentId);
   const names = new Set(tools.map(tool => tool.name));
   const inputSchemas = loadInputSchemas(contract);
+  const publicationSchemaDigest = actionSchemaDigest(contract, inputSchemas, agentId);
   const server = new Server(
     { name: contract.name, version: contract.runtime_release },
     { capabilities: { tools: {} } },
@@ -221,6 +256,8 @@ export function createServer(
             request_id: requestId,
             mcp_version: contract.runtime_release,
             deployment_release: deploymentReleaseId,
+            source_commit: sourceCommitId,
+            publication_schema_digest: publicationSchemaDigest,
             agent_id: agentId,
             result: response.result,
           }),
@@ -240,6 +277,8 @@ export function createServer(
             ...safe,
             mcp_version: contract.runtime_release,
             deployment_release: deploymentReleaseId,
+            source_commit: sourceCommitId,
+            publication_schema_digest: publicationSchemaDigest,
             agent_id: agentId,
           }),
         }],

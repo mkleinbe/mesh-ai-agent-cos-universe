@@ -74,14 +74,18 @@ def test_current_release_requires_native_trigger_and_dedicated_bot_protected_cre
     assert "U01KG3CNYHK" not in compose
 
 
-def test_v4113_and_v420_release_evidence_remain_historical_while_current_is_v422() -> None:
+def test_v4113_and_v420_release_evidence_remain_historical_while_current_is_v430() -> None:
     wrapper = text(ROOT / "scripts" / "build-qnap-release-v4.2.0.sh")
     legacy_workflow = text(ROOT / ".github" / "workflows" / "release-production-readiness.yml")
+    historical_v423 = text(ROOT / ".github" / "workflows" / "release-v4.2.3.yml")
+    current_v430 = text(ROOT / ".github" / "workflows" / "release-v4.3.0.yml")
     assert "VERSION=4.2.0" in wrapper
     assert "TAG: v4.1.13" in legacy_workflow
     assert "v4.1.13 Slack Approver Bootstrap" in legacy_workflow
+    assert "v4.2.3 QNAP qnet egress readiness release candidate" in historical_v423
+    assert "v4.3.0 cross-agent owner execution release candidate" in current_v430
     readme = text(ROOT / "README.md")
-    assert "v4.2.2" in readme
+    assert "v4.3.0 Cross-Agent Owner Execution" in readme
     assert "Historical versioned documents remain retained as release-train evidence" in readme
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"

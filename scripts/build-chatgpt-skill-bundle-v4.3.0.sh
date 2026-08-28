@@ -45,7 +45,7 @@ EOF
 
 (
   cd "$(dirname "$ROOT")"
-  zip -qr "../../$(basename "$ZIP")" "$(basename "$ROOT")"
+  zip -qr "../$(basename "$ZIP")" "$(basename "$ROOT")"
 )
 
 (

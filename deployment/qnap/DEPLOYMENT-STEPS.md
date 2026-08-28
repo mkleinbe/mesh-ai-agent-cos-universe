@@ -1,11 +1,11 @@
 # Short QNAP Deployment and Upgrade Steps
 
-v4.2.3 preserves the v4.2.2 Slack GET/query provider transport repair and adds bounded QNAP/qnet external-egress readiness handling to the live Slack provider-read deployment gate. The canonical Phase 1 MCP runtime contract remains **4.0.0**.
+v4.3.0 adds governed cross-agent owner execution for PF-057 while preserving the v4.2.3 Slack/qnet provider-read and transactional deployment controls. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**.
 
 ## Canonical paths
 
 - operator release root: `/share/Docker/cos-mcp/releases`
-- extracted release: `/share/Docker/cos-mcp/releases/v4.2.3`
+- extracted release: `/share/Docker/cos-mcp/releases/v4.3.0`
 - active application root: `/share/Docker/cos-mcp`
 - canonical state: `/share/Docker/cos-mcp/state`
 - canonical ledger: `/share/Docker/cos-mcp/state/ledger/taskledger.sqlite3`
@@ -13,48 +13,49 @@ v4.2.3 preserves the v4.2.2 Slack GET/query provider transport repair and adds b
 - deployment logs: `/share/Docker/cos-mcp/logs/deployment`
 - backups: `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`
 
-Stay in `/share/Docker/cos-mcp/releases`. The ZIP creates `v4.2.3/` during extraction.
+Stay in `/share/Docker/cos-mcp/releases`. The ZIP creates `v4.3.0/` during extraction.
 
-## Slack prerequisites
+## Pre-deploy requirements
 
-The dedicated Slack bot must be installed in `#mesh-agent-ops` with Bot Token Scopes `chat:write` and `groups:history`. The provider-verified Slack App ID is `A0B49RNE4K0`. Socket Mode, Slack interactivity, and QNAP message-event subscriptions remain disabled.
+- exact v4.3.0 candidate CI is green, including 100% Python coverage, owner execution readiness, QNAP bundle/container provenance, modern MCP transport, and security gates;
+- human merge/release/deployment authority is valid;
+- protected Slack/tunnel credentials and canonical TaskLedger are preserved;
+- the existing ChatGPT Work **Mesh Slack HITL Dispatcher** remains one event-triggered locator-only bridge labeled `Mesh CoS MCP v4.x`;
+- the dedicated Slack bot remains installed in `#mesh-agent-ops` with `chat:write` and `groups:history`, App ID `A0B49RNE4K0`;
+- no `xapp-` Socket Mode credential is configured.
 
-If `groups:history` was newly added, reinstall/reauthorize the Slack app and reprovision the resulting `xoxb-` Bot User OAuth Token before deployment. The protected approver identity remains unchanged. An `xapp-` Slack Socket Mode token is not used and must not be configured.
+## Safe v4.3.0 deployment
 
-v4.2.3 deployment verification actively tests the mounted bot token and freshly recreated qnet namespace against the governed private channel. Only pre-provider network exceptions are retried, up to six total attempts with five-second inter-attempt delay. A Slack `ok:false` response, malformed provider response, invalid bot token, missing scope, or missing channel access fails immediately.
-
-## Safe v4.2.3 deployment
-
-Place `mesh-cos-mcp-qnap-v4.2.3.zip` and `mesh-cos-mcp-qnap-v4.2.3.zip.sha256` directly in `/share/Docker/cos-mcp/releases`, then run:
+Place `mesh-cos-mcp-qnap-v4.3.0.zip` and `mesh-cos-mcp-qnap-v4.3.0.zip.sha256` directly in `/share/Docker/cos-mcp/releases`, then run:
 
 ```sh
 cd /share/Docker/cos-mcp/releases
-sha256sum -c mesh-cos-mcp-qnap-v4.2.3.zip.sha256
-unzip -oq mesh-cos-mcp-qnap-v4.2.3.zip
-sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
+sha256sum -c mesh-cos-mcp-qnap-v4.3.0.zip.sha256
+unzip -oq mesh-cos-mcp-qnap-v4.3.0.zip
+sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
 ```
 
 If deployment reports a genuinely missing or invalid Slack bot credential, or an authorized bot-token rotation is required:
 
 ```sh
-sudo env MESH_COS_FORCE_SLACK_HITL_RECONFIGURE=1 sh ./v4.2.3/mesh-cos-slack-hitl-provision.sh
-sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
+sudo env MESH_COS_FORCE_SLACK_HITL_RECONFIGURE=1 sh ./v4.3.0/mesh-cos-slack-hitl-provision.sh
+sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
 ```
 
 Only if preparation reports a missing OpenAI tunnel key:
 
 ```sh
-sudo sh ./v4.2.3/mesh-cos-tunnel-key-provision.sh
-sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.3.0/mesh-cos-tunnel-key-provision.sh
+sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
 ```
 
 ## Optional explicit checks
 
 ```sh
 cd /share/Docker/cos-mcp/releases
-sudo sh ./v4.2.3/mesh-cos-mcp-backup.sh manual
-sudo sh ./v4.2.3/mesh-cos-mcp-preflight.sh
-sudo sh ./v4.2.3/mesh-cos-mcp-verify.sh
+sudo sh ./v4.3.0/mesh-cos-mcp-backup.sh manual
+sudo sh ./v4.3.0/mesh-cos-mcp-preflight.sh
+sudo sh ./v4.3.0/mesh-cos-mcp-verify.sh
 ```
 
 PASS includes `Slack bot provider read scope, governed-channel access, and qnet egress readiness`.
@@ -69,11 +70,11 @@ sudo docker inspect -f '{{.Config.Image}} {{.State.Status}} {{if .State.Health}}
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires active release `4.2.3`, application image `mesh-cos-mcp:qnap-v4.2.3`, healthy application/tunnel containers, successful live Slack provider-read/qnet readiness verification, `slack_hitl_ready=true`, and:
+PASS requires active release `4.3.0`, application image `mesh-cos-mcp:qnap-v4.3.0`, healthy application/tunnel containers, successful live Slack provider-read/qnet readiness verification, `slack_hitl_ready=true`, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.2.3
+deployment_release: 4.3.0
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
@@ -81,13 +82,22 @@ slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
 
 Do not print protected Slack or tunnel files.
 
-## ChatGPT Work dispatcher
+## Delegated owner acceptance
 
-Do not create a new dispatcher and do not pin it to this patch release. Keep the existing **Mesh Slack HITL Dispatcher** trigger and condition unchanged and retain the prompt label:
+After local runtime readiness passes, use only synthetic, non-consequential tasks to prove:
 
-`Act as the production Mesh Slack HITL Dispatcher for Mesh CoS MCP v4.x.`
+1. the CoS can execute its own governed work normally;
+2. each ACTIVE direct-report owner eligible for delegated work has a valid `delegation.execute_owner` route;
+3. CMO -> VP Content works through canonical nested delegation;
+4. COO -> Consultant Network Steward works through canonical nested delegation;
+5. CoS direct `task.complete` against a child-owned task is denied;
+6. the child owner can complete its own task exactly once;
+7. replay with the same idempotency key returns the canonical result without a second execution/audit write;
+8. disabled/quarantined/unroutable owners fail closed;
+9. approvals and Message Operations boundaries remain inherited and enforced;
+10. `COMPLETED != VERIFIED` remains enforced.
 
-The dispatcher must continue to pass only `thread_ts` and `message_ts` and must never interpret or forward Slack approval text or asserted authority.
+Then execute `docs/chatgpt-published-app-production-acceptance-v4.3.0.md`.
 
 ## Failure diagnostics
 
@@ -99,14 +109,14 @@ printf 'LOG=%s\n' "$LOG"
 cat "$LOG"
 ```
 
-A network-readiness retry may log only attempt metadata. Slack provider failures expose only a sanitized code, not the bot token, Authorization header, provider response body, or response metadata.
+Network-readiness retries may log only attempt metadata. Slack provider failures expose only a sanitized code, not the bot token, Authorization header, provider response body, or response metadata. Delegated-owner failures must preserve the canonical task/delegation and emit bounded routing/audit evidence without changing owner identity.
 
 ## Rollback
 
 Use the most recent successful `pre-deploy` backup under `/share/QNAP NAS/Mike Home/MCP/CoS/Backups`. Follow `rollback-checklist.md` and `backup-restore.md`.
 
-Rollback must use a complete prior immutable release unit. v4.2.1 contains a confirmed Slack provider transport defect. v4.2.2 contains the transport repair but was blocked on this QNAP by the fresh qnet egress-readiness race. Do not combine release units and do not re-enable Socket Mode.
+Rollback uses a complete prior immutable release unit. Do not combine release units. Software rollback must not delete or rewrite canonical PF-057 tasks. If v4.3.0 is rolled back before recovery, leave stranded tasks in their existing state until a corrected transport is authorized.
 
-## Post-upgrade acceptance
+## PF-057 recovery
 
-After local deployment and live provider-read/qnet readiness verification pass, keep the dispatcher version-family prompt unchanged and execute `docs/chatgpt-published-app-production-acceptance-v4.2.3.md`. Start with a fresh synthetic provider text `*APPROVE*` case, verify replay idempotency, then complete the DENY, CHANGE, and negative security matrix with final audit-chain verification.
+Only after production acceptance passes, re-run the read-only stranded-task inventory and resume eligible tasks in place. Do not recreate `task-b0b613daff51`; validate its canonical CMO ownership and use the governed CMO completion route, followed by separate verification where required.

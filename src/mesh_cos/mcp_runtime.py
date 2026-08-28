@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,8 +15,9 @@ from .conflict import ConflictService
 from .governance import GovernanceJournal, verify_audit_chain
 from .ledger import TaskLedger
 from .mcp_policy import WorkspaceAgentMCPPolicy
+from .mcp_validation import validate_tool_arguments
 from .metrics import MetricsService
-from .models import AuthorityLevel, Delegation, TaskRecord, TaskStatus
+from .models import AuthorityLevel, Delegation, TaskRecord, TaskStatus, utcnow
 from .orchestration import ChiefOfStaffService
 from .registry import load_registry
 from .reliability import ReplayManager
@@ -22,6 +25,7 @@ from .workforce import ChiefOfStaffWorkforceManager
 
 ROOT = Path(__file__).resolve().parents[2]
 HUMAN_ONLY_TOOLS = {"approval.record_decision", "reliability.human_override"}
+OWNER_LIFECYCLE_TOOLS = {"task.get", "task.transition", "task.check_in", "task.complete"}
 ReplayExecutor = Callable[[dict[str, Any]], Any]
 ToolHandler = Callable[[str, dict[str, Any]], Any]
 
@@ -47,10 +51,10 @@ class ReplayExecutorRegistry:
 class MCPRuntime:
     """Serialized execution boundary behind the remote Mesh CoS MCP transport.
 
-    The transport authenticates the caller and passes only a trusted principal ID,
-    tool name, and JSON arguments. This facade performs server-side allowlist checks,
-    derives agent identity/provenance from the canonical registry, and dispatches to
-    fixed handlers. It never imports or executes a client-supplied callable/path.
+    The external transport is immutably bound to one authenticated principal. Cross-agent
+    execution is permitted only through the server-owned delegation executor, which derives
+    the acting owner from canonical TaskLedger and Agent Registry state. Caller payloads can
+    select an operation, but can never select or spoof the execution principal.
     """
 
     def __init__(
@@ -95,6 +99,7 @@ class MCPRuntime:
             "task.remediate_stall": self._task_remediate_stall,
             "task.verify": self._task_verify,
             "delegation.create": self._delegation_create,
+            "delegation.execute_owner": self._delegation_execute_owner,
             "approval.request": self._approval_request,
             "approval.get": self._approval_get,
             "approval.record_decision": self._human_only,
@@ -160,6 +165,18 @@ class MCPRuntime:
             raise PermissionError(f"Agent is not routable: {agent_id}")
         return record
 
+    def _active_owner_record(self, agent_id: str) -> dict[str, Any]:
+        record = self._agent_record(agent_id)
+        if record.get("status") != "ACTIVE" or record.get("runtime_health") != "ACTIVE":
+            raise RuntimeError(f"OWNER_RUNTIME_UNAVAILABLE: {agent_id}")
+        allowed = set(self.policy.allowed_tools(agent_id))
+        missing = sorted(OWNER_LIFECYCLE_TOOLS - allowed)
+        if missing:
+            raise RuntimeError(
+                f"OWNER_EXECUTION_TRANSPORT_UNAVAILABLE: {agent_id}: missing={','.join(missing)}"
+            )
+        return record
+
     def _authorize_governance_authority(
         self,
         agent_id: str,
@@ -193,6 +210,14 @@ class MCPRuntime:
             )
         return record
 
+    def _require_task_owner_access(self, agent_id: str, task_id: str) -> TaskRecord:
+        task = self.ledger.get_task(task_id)
+        if task is None:
+            raise KeyError(task_id)
+        if task.accountable_agent != agent_id:
+            raise PermissionError("Task write requires the canonical accountable owner")
+        return task
+
     def _require_task_write_access(self, agent_id: str, task_id: str) -> TaskRecord:
         task = self.ledger.get_task(task_id)
         if task is None:
@@ -200,6 +225,44 @@ class MCPRuntime:
         if agent_id != "cos" and task.accountable_agent != agent_id:
             raise PermissionError("Task write requires the accountable owner or Chief of Staff")
         return task
+
+    def _agent_lineage(self, agent_id: str) -> list[str]:
+        lineage: list[str] = []
+        current: str | None = agent_id
+        while current is not None:
+            lineage.append(current)
+            current = self.registry[current].get("parent_agent_id")
+        return list(reversed(lineage))
+
+    def _parent_approval_gates(self, parent_task_id: str) -> list[str]:
+        inherited: list[str] = []
+        for record in self.ledger.list_records("delegation"):
+            if record.get("task_id") == parent_task_id:
+                inherited = list(record.get("approval_gates", []))
+        return inherited
+
+    def _ensure_owner_route(self, delegation: dict[str, Any]) -> dict[str, Any]:
+        owner_id = str(delegation["accountable_agent"])
+        self._active_owner_record(owner_id)
+        route_id = str(delegation["delegation_id"])
+        existing = self.ledger.get_record("owner_execution_route", route_id)
+        if existing is not None:
+            if existing.get("task_id") != delegation.get("task_id") or existing.get("accountable_owner") != owner_id:
+                raise PermissionError("Owner execution route does not match canonical delegation")
+            return existing
+        route = {
+            "version": "mesh.cos.owner-execution-route.v1",
+            "delegation_id": route_id,
+            "task_id": str(delegation["task_id"]),
+            "orchestrating_agent": str(delegation["delegating_agent"]),
+            "accountable_owner": owner_id,
+            "expected_execution_principal": owner_id,
+            "status": "OWNER_ROUTABLE",
+            "approval_gates": list(delegation.get("approval_gates", [])),
+            "created_at": utcnow(),
+        }
+        self.ledger.save_record("owner_execution_route", route_id, route)
+        return route
 
     def _registry_get_agent(self, _: str, args: dict[str, Any]) -> dict[str, Any]:
         target = str(args["agent_id"])
@@ -223,18 +286,28 @@ class MCPRuntime:
     def _task_list(self, _: str, __: dict[str, Any]) -> list[dict[str, Any]]:
         return [task.to_dict() for task in self.ledger.list_tasks()]
 
-    def _task_decompose(self, _: str, args: dict[str, Any]) -> list[dict[str, Any]]:
-        children = self.cos.decompose(str(args["parent_task_id"]), list(args["work_packages"]))
+    def _task_decompose(self, agent_id: str, args: dict[str, Any]) -> list[dict[str, Any]]:
+        parent_task_id = str(args["parent_task_id"])
+        self._require_task_owner_access(agent_id, parent_task_id)
+        children = self.cos.decompose(
+            parent_task_id,
+            list(args["work_packages"]),
+            actor_id=agent_id,
+        )
         return [child.to_dict() for child in children]
 
     def _task_transition(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         task_id = str(args["task_id"])
-        self._require_task_write_access(agent_id, task_id)
-        return self.cos.advance(task_id, TaskStatus(str(args["target"]))).to_dict()
+        self._require_task_owner_access(agent_id, task_id)
+        return self.cos.advance(
+            task_id,
+            TaskStatus(str(args["target"])),
+            actor_id=agent_id,
+        ).to_dict()
 
     def _task_check_in(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         task_id = str(args["task_id"])
-        self._require_task_write_access(agent_id, task_id)
+        self._require_task_owner_access(agent_id, task_id)
         return self.cos.record_checkin(
             task_id,
             agent_id=agent_id,
@@ -244,26 +317,29 @@ class MCPRuntime:
 
     def _task_complete(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         task_id = str(args["task_id"])
-        self._require_task_write_access(agent_id, task_id)
+        self._require_task_owner_access(agent_id, task_id)
         return self.cos.complete(
             task_id,
             outcome=str(args["outcome"]),
             evidence=list(args.get("evidence", [])),
+            actor_id=agent_id,
         ).to_dict()
 
-    def _task_reassign(self, _: str, args: dict[str, Any]) -> dict[str, Any]:
+    def _task_reassign(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         return self.cos.reassign(
             str(args["task_id"]),
             str(args["expected_owner"]),
             str(args["new_owner"]),
             reason=str(args["reason"]),
+            actor_id=agent_id,
         ).to_dict()
 
-    def _task_remediate_stall(self, _: str, args: dict[str, Any]) -> dict[str, Any]:
+    def _task_remediate_stall(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         return self.cos.remediate_stalled(
             str(args["task_id"]),
             new_owner=args.get("new_owner"),
             reason=str(args.get("reason", "stalled")),
+            actor_id=agent_id,
         ).to_dict()
 
     def _task_verify(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
@@ -278,6 +354,10 @@ class MCPRuntime:
         ).to_dict()
 
     def _delegation_create(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        delegator = self._agent_record(agent_id)
+        if int(delegator.get("max_delegation_depth", 0)) <= 0:
+            raise PermissionError(f"Delegation is not permitted for {agent_id}")
+
         delegation_payload = dict(args["delegation"])
         delegation_payload["delegating_agent"] = agent_id
         delegation_payload["authority_level"] = AuthorityLevel(int(delegation_payload["authority_level"]))
@@ -285,14 +365,247 @@ class MCPRuntime:
         target = self.registry.get(delegation.accountable_agent)
         if target is None or target.get("parent_agent_id") != agent_id:
             raise PermissionError("Delegation target must be a registered direct child of the delegating agent")
-        return self.workforce.delegate(
-            delegation,
-            parent_authority=int(args["parent_authority"]),
-            depth=int(args["depth"]),
-            active_owner=args.get("active_owner"),
-            ancestry=list(args.get("ancestry", [])),
-            parent_approval_gates=list(args.get("parent_approval_gates", [])),
+
+        child_task = self.ledger.get_task(delegation.task_id)
+        if child_task is None:
+            raise KeyError(delegation.task_id)
+        if child_task.accountable_agent != delegation.accountable_agent:
+            raise PermissionError("Delegation owner must match the canonical child task owner")
+        if child_task.parent_task_id is None:
+            raise ValueError("Delegated child task requires a canonical parent task")
+        parent_task = self.ledger.get_task(child_task.parent_task_id)
+        if parent_task is None:
+            raise KeyError(child_task.parent_task_id)
+        if parent_task.accountable_agent != agent_id:
+            raise PermissionError("Delegating agent must own the canonical parent task")
+        if delegation.parent_task_id not in {None, child_task.parent_task_id}:
+            raise PermissionError("Delegation parent task does not match canonical work graph")
+        delegation.parent_task_id = child_task.parent_task_id
+        if int(delegation.authority_level) != int(child_task.authority_level):
+            raise PermissionError("Delegation authority must match canonical child task authority")
+
+        parent_lineage = self._agent_lineage(agent_id)
+        target_lineage = self._agent_lineage(delegation.accountable_agent)
+        canonical_depth = len(target_lineage) - 1
+        if canonical_depth > len(parent_lineage) - 1 + int(delegator["max_delegation_depth"]):
+            raise PermissionError("Canonical delegation depth exceeds delegating agent authority")
+        if "depth" in args and int(args["depth"]) != canonical_depth:
+            raise PermissionError("Caller-supplied delegation depth does not match canonical registry")
+        if "parent_authority" in args and int(args["parent_authority"]) != int(parent_task.authority_level):
+            raise PermissionError("Caller-supplied parent authority does not match canonical parent task")
+        if args.get("ancestry") and list(args["ancestry"]) != parent_lineage:
+            raise PermissionError("Caller-supplied ancestry does not match canonical registry")
+        if args.get("active_owner") not in {None, delegation.accountable_agent}:
+            raise PermissionError("Caller-supplied active owner does not match canonical owner")
+
+        requested_permitted = set(delegation.permitted_actions)
+        canonical_permitted = set(target.get("permitted_actions", []))
+        if requested_permitted and not requested_permitted.issubset(canonical_permitted):
+            raise PermissionError("Delegation cannot grant actions outside owner authority")
+        delegation.permitted_actions = sorted(requested_permitted or canonical_permitted)
+        delegation.prohibited_actions = sorted(
+            set(delegation.prohibited_actions) | set(target.get("prohibited_actions", []))
         )
+        inherited_gates = self._parent_approval_gates(parent_task.task_id)
+        delegation.approval_gates = sorted(
+            set(delegation.approval_gates)
+            | set(inherited_gates)
+            | set(target.get("required_approvals", []))
+        )
+
+        existing = self.ledger.get_record("delegation", delegation.delegation_id)
+        if existing is not None:
+            if (
+                existing.get("task_id") != delegation.task_id
+                or existing.get("delegating_agent") != agent_id
+                or existing.get("accountable_agent") != delegation.accountable_agent
+            ):
+                raise ValueError("Delegation ID is already bound to different canonical work")
+            self._ensure_owner_route(existing)
+            return existing
+
+        self._active_owner_record(delegation.accountable_agent)
+        created = self.workforce.delegate(
+            delegation,
+            parent_authority=int(parent_task.authority_level),
+            depth=canonical_depth,
+            active_owner=delegation.accountable_agent,
+            ancestry=parent_lineage,
+            parent_approval_gates=inherited_gates,
+        )
+        self._ensure_owner_route(created)
+        return created
+
+    def _owner_scoped_arguments(
+        self,
+        task: TaskRecord,
+        tool_name: str,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        payload = dict(arguments)
+        if "task_id" in payload and str(payload["task_id"]) != task.task_id:
+            raise PermissionError("Owner execution cannot cross canonical task boundaries")
+        if tool_name == "task.decompose" and str(payload.get("parent_task_id")) != task.task_id:
+            raise PermissionError("Owner decomposition must remain within the delegated task")
+        if tool_name == "skills.invoke_governed":
+            skill_payload = dict(payload.get("payload", {}))
+            if "task_id" in skill_payload and str(skill_payload["task_id"]) != task.task_id:
+                raise PermissionError("Governed Skill invocation cannot cross canonical task boundaries")
+            skill_payload["task_id"] = task.task_id
+            skill_payload["correlation_id"] = task.correlation_id
+            skill_payload["authority_level"] = int(task.authority_level)
+            payload["payload"] = skill_payload
+        return validate_tool_arguments(tool_name, payload)
+
+    def _delegation_execute_owner(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
+        delegation_id = str(args["delegation_id"])
+        delegation = self.ledger.get_record("delegation", delegation_id)
+        if delegation is None:
+            raise KeyError(delegation_id)
+        if delegation.get("delegating_agent") != agent_id:
+            raise PermissionError("Only the canonical delegating agent may invoke the owner execution route")
+        task_id = str(args["task_id"])
+        if task_id != str(delegation.get("task_id")):
+            raise PermissionError("Owner execution task does not match canonical delegation")
+        task = self.ledger.get_task(task_id)
+        if task is None:
+            raise KeyError(task_id)
+        owner_id = str(delegation["accountable_agent"])
+        if task.accountable_agent != owner_id:
+            raise PermissionError("Canonical task owner no longer matches delegation owner")
+        owner_record = self._active_owner_record(owner_id)
+        self._ensure_owner_route(delegation)
+
+        tool_name = str(args["tool_name"])
+        if tool_name in HUMAN_ONLY_TOOLS:
+            raise PermissionError("Owner execution cannot invoke human-only MCP tools")
+        self.policy.authorize(owner_id, tool_name)
+        owner_args = self._owner_scoped_arguments(task, tool_name, dict(args.get("arguments", {})))
+
+        idempotency_key = str(args["idempotency_key"]).strip()
+        if not idempotency_key:
+            raise ValueError("Owner execution idempotency_key is required")
+        request_fingerprint = hashlib.sha256(
+            json.dumps(
+                {
+                    "delegation_id": delegation_id,
+                    "task_id": task_id,
+                    "tool_name": tool_name,
+                    "arguments": owner_args,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        record_id = f"{delegation_id}:{idempotency_key}"
+        existing = self.ledger.get_record("owner_execution", record_id)
+        if existing is not None:
+            if existing.get("request_fingerprint") != request_fingerprint:
+                raise PermissionError("Owner execution idempotency key cannot be reused for another request")
+            if existing.get("status") == "OWNER_RESULT_RECORDED":
+                return dict(existing["response"])
+            raise RuntimeError(f"OWNER_EXECUTION_NOT_RETRYABLE: {existing.get('status', 'UNKNOWN')}")
+
+        execution_record = {
+            "version": "mesh.cos.owner-execution.v1",
+            "record_id": record_id,
+            "delegation_id": delegation_id,
+            "task_id": task_id,
+            "orchestrating_agent": agent_id,
+            "accountable_owner": owner_id,
+            "expected_execution_principal": owner_id,
+            "executing_principal": owner_id,
+            "tool_name": tool_name,
+            "authorization_result": "ALLOW",
+            "request_fingerprint": request_fingerprint,
+            "status": "OWNER_EXECUTING",
+            "started_at": utcnow(),
+        }
+        claimed = self.ledger.save_idempotent_record(
+            f"owner-execution:{record_id}",
+            "owner_execution",
+            record_id,
+            execution_record,
+        )
+        if not claimed:
+            prior = self.ledger.get_record("owner_execution", record_id)
+            if prior and prior.get("request_fingerprint") == request_fingerprint and prior.get("status") == "OWNER_RESULT_RECORDED":
+                return dict(prior["response"])
+            raise RuntimeError("OWNER_EXECUTION_ALREADY_CLAIMED")
+
+        try:
+            result = self.call_agent(owner_id, tool_name, owner_args)
+        except Exception as exc:
+            execution_record["status"] = "OWNER_EXECUTION_FAILED"
+            execution_record["failure_classification"] = type(exc).__name__
+            execution_record["retry_eligible"] = False
+            execution_record["completed_at"] = utcnow()
+            self.ledger.save_record("owner_execution", record_id, execution_record)
+            route = self.ledger.get_record("owner_execution_route", delegation_id) or {}
+            route["status"] = "OWNER_EXECUTION_FAILED"
+            route["failure_classification"] = type(exc).__name__
+            self.ledger.save_record("owner_execution_route", delegation_id, route)
+            raise
+
+        response = {
+            "status": "OWNER_RESULT_RECORDED",
+            "delegation_id": delegation_id,
+            "task_id": task_id,
+            "orchestrating_agent": agent_id,
+            "accountable_owner": owner_id,
+            "executing_principal": owner_id,
+            "expected_execution_principal": owner_id,
+            "tool_name": tool_name,
+            "authorization_result": "ALLOW",
+            "result": result,
+        }
+        execution_record["status"] = "OWNER_RESULT_RECORDED"
+        execution_record["response"] = response
+        execution_record["completed_at"] = utcnow()
+        execution_record["retry_eligible"] = True
+        self.ledger.save_record("owner_execution", record_id, execution_record)
+        route = self.ledger.get_record("owner_execution_route", delegation_id) or {}
+        route["status"] = (
+            "OWNER_COMPLETED"
+            if tool_name == "task.complete" and isinstance(result, dict) and result.get("status") == "COMPLETED"
+            else "OWNER_RESULT_RECORDED"
+        )
+        route["last_tool_name"] = tool_name
+        route["last_execution_record_id"] = record_id
+        route["updated_at"] = utcnow()
+        self.ledger.save_record("owner_execution_route", delegation_id, route)
+        self.governance.record_event(
+            event_type="delegation.owner_execution",
+            event_category="EXECUTION",
+            action=tool_name,
+            actor_type="AGENT",
+            actor_id=owner_id,
+            actor_role=str(owner_record["display_name"]),
+            skill_agent_version=str(owner_record["version"]),
+            task_id=task_id,
+            correlation_id=task.correlation_id,
+            authority_level=int(task.authority_level),
+            policy_rule_ids=["canonical-owner-derived-server-side", "delegation-bound-execution"],
+            capability_tool="delegation.execute_owner",
+            target_resource=task_id,
+            source_system="Mesh server-owned owner executor",
+            input_summary=f"Owner execution orchestrated by {agent_id}; principal derived from canonical delegation.",
+            result_status="SUCCESS",
+            output_summary=f"{owner_id} executed {tool_name} under owner authority.",
+            evidence_references=list(task.outcome_evidence),
+            approval_reference=None,
+            human_approver=None,
+            risk_severity="MEDIUM",
+            data_classification="INTERNAL",
+            error_code=None,
+            error_summary=None,
+            model_provider=None,
+            model_id_version=None,
+            environment="RUNTIME",
+            retention_class="GOVERNANCE_LONG_TERM",
+            idempotency_key=f"owner-execution-audit:{record_id}",
+        )
+        return response
 
     def _approval_request(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
         return self.approvals.request(

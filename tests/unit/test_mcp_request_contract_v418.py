@@ -32,7 +32,7 @@ def test_input_schema_registry_is_exactly_the_public_tool_catalog() -> None:
     schemas = load_input_schemas()
     contract_tools = {tool["name"] for tool in policy.contract["tools"]}
     assert set(schemas) == contract_tools
-    assert len(schemas) == 29  # includes two human-principal-only operations
+    assert len(schemas) == 30  # includes delegated-owner execution plus two human-principal-only operations
     for name, schema in schemas.items():
         assert schema["type"] == "object", name
         assert schema["additionalProperties"] is False, name

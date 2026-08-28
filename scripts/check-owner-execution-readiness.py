@@ -15,14 +15,27 @@ def main() -> int:
     failures: list[str] = []
     checked = 0
 
+    active_children_by_parent: dict[str, list[str]] = {}
+    for agent_id, record in registry.items():
+        if record.get("status") != "ACTIVE":
+            continue
+        parent_id = record.get("parent_agent_id")
+        if parent_id:
+            active_children_by_parent.setdefault(parent_id, []).append(agent_id)
+
     for agent_id, record in registry.items():
         parent_id = record.get("parent_agent_id")
         if not parent_id or record.get("status") != "ACTIVE":
             continue
-        parent = registry[parent_id]
-        if not parent.get("delegation_permissions") or int(parent.get("max_delegation_depth", 0)) <= 0:
-            continue
+
         checked += 1
+        parent = registry.get(parent_id)
+        if parent is None or parent.get("status") != "ACTIVE":
+            failures.append(f"{parent_id}->{agent_id}: active parent missing")
+            continue
+        if not parent.get("delegation_permissions") or int(parent.get("max_delegation_depth", 0)) <= 0:
+            failures.append(f"{parent_id}->{agent_id}: canonical parent cannot delegate")
+
         allowed = set(policy.allowed_tools(agent_id))
         missing_owner = OWNER_LIFECYCLE - allowed
         if missing_owner:
@@ -33,7 +46,9 @@ def main() -> int:
         if missing_parent:
             failures.append(f"{parent_id}->{agent_id}: parent transport missing {sorted(missing_parent)}")
 
-        if int(record.get("max_delegation_depth", 0)) > 0 and record.get("delegation_permissions"):
+        if active_children_by_parent.get(agent_id):
+            if not record.get("delegation_permissions") or int(record.get("max_delegation_depth", 0)) <= 0:
+                failures.append(f"{agent_id}: registered active child exists but delegation authority is absent")
             missing_delegate = DELEGATING_OWNER_TOOLS - allowed
             if missing_delegate:
                 failures.append(f"{agent_id}: nested-delegation path missing {sorted(missing_delegate)}")

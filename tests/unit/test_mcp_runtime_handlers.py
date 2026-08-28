@@ -12,7 +12,12 @@ from mesh_cos.mcp_runtime import MCPRuntime, ReplayExecutorRegistry
 from mesh_cos.models import AuthorityLevel, TaskRecord, TaskStatus
 
 
-def make_task(task_id: str = "T1", owner: str = "cro") -> TaskRecord:
+def make_task(
+    task_id: str = "T1",
+    owner: str = "cro",
+    *,
+    parent_task_id: str | None = None,
+) -> TaskRecord:
     return TaskRecord(
         task_id=task_id,
         objective="objective",
@@ -23,6 +28,7 @@ def make_task(task_id: str = "T1", owner: str = "cro") -> TaskRecord:
         decision_owner="michael",
         authority_level=AuthorityLevel.L2,
         acceptance_test="accepted",
+        parent_task_id=parent_task_id,
     )
 
 
@@ -78,6 +84,12 @@ def test_agent_record_and_task_write_guards_fail_closed() -> None:
     runtime.registry["cro"]["runtime_health"] = "ACTIVE"
     with pytest.raises(KeyError):
         runtime._require_task_write_access("cro", "missing")
+    with pytest.raises(KeyError):
+        runtime._require_task_owner_access("cro", "missing")
+    runtime.ledger.save_task(make_task())
+    with pytest.raises(PermissionError, match="canonical accountable owner"):
+        runtime._require_task_owner_access("cos", "T1")
+    assert runtime._require_task_owner_access("cro", "T1").task_id == "T1"
 
 
 def test_registry_and_task_read_handlers_cover_present_and_missing_records() -> None:
@@ -119,16 +131,24 @@ def test_task_handler_serialization_and_owner_scoping(monkeypatch: pytest.Monkey
     assert runtime._task_verify("cro", {"task_id": "T1", "passed": False, "reason": "no", "evidence_references": []})["task_id"] == "T1"
 
     monkeypatch.setattr(runtime.cos, "decompose", lambda *args, **kwargs: [make_task("C1")])
-    assert runtime._task_decompose("cos", {"parent_task_id": "T1", "work_packages": []})[0]["task_id"] == "C1"
+    assert runtime._task_decompose("cro", {"parent_task_id": "T1", "work_packages": []})[0]["task_id"] == "C1"
+    with pytest.raises(PermissionError, match="canonical accountable owner"):
+        runtime._task_decompose("cos", {"parent_task_id": "T1", "work_packages": []})
 
 
-def test_delegation_handler_enforces_direct_child_and_serializes_authority(monkeypatch: pytest.MonkeyPatch) -> None:
-    runtime = MCPRuntime(TaskLedger())
+def test_delegation_handler_derives_canonical_parent_child_authority(monkeypatch: pytest.MonkeyPatch) -> None:
+    ledger = TaskLedger()
+    runtime = MCPRuntime(ledger)
+    parent = make_task("P1", "cos")
+    child = make_task("T1", "cro", parent_task_id="P1")
+    ledger.save_task(parent)
+    ledger.save_task(child)
     captured = {}
 
     def delegate(value, **kwargs):
         captured["delegation"] = value
         captured.update(kwargs)
+        ledger.save_record("delegation", value.delegation_id, value.to_dict())
         return value.to_dict()
 
     monkeypatch.setattr(runtime.workforce, "delegate", delegate)
@@ -136,6 +156,7 @@ def test_delegation_handler_enforces_direct_child_and_serializes_authority(monke
         "delegation": {
             "delegation_id": "D1",
             "task_id": "T1",
+            "parent_task_id": "P1",
             "delegating_agent": "spoof",
             "accountable_agent": "cro",
             "business_objective": "sell",
@@ -148,12 +169,16 @@ def test_delegation_handler_enforces_direct_child_and_serializes_authority(monke
         },
         "parent_authority": 2,
         "depth": 1,
+        "ancestry": ["cos"],
     }
     result = runtime._delegation_create("cos", payload)
     assert result["delegating_agent"] == "cos"
     assert result["authority_level"] == 2
+    assert captured["parent_authority"] == 2
+    assert captured["depth"] == 1
+    assert captured["ancestry"] == ["cos"]
+    assert runtime.ledger.get_record("owner_execution_route", "D1")["accountable_owner"] == "cro"
 
-    payload["delegation"]["accountable_agent"] = "cfo"
     with pytest.raises(PermissionError, match="direct child"):
         runtime._delegation_create("cro", payload)
 

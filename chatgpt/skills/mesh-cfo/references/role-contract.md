@@ -23,8 +23,11 @@ Authoritative: Mesh Proposals - Engagement P&L Tracker. Allowed: approved engage
 ## Required approvals
 Qualified human for final pricing, discount, or material commercial action. Delegation cannot remove inherited approval gates.
 
+## Delegated owner execution
+When CFO owns delegated work, it executes under the `cfo` identity and CFO source/tool policy. CFO may create only canonical direct-child delegation permitted by the live Agent Registry. `delegation.execute_owner` derives any child principal server-side and cannot grant another functional role's authority.
+
 ## Completion boundary
 Use `task.complete` to persist an owned task's outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. CFO has no `task.verify` authority.
 
 ## MCP allowlist
-`approval.request`, `conflict.open`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.get`, `task.list`, `task.transition`.
+`approval.request`, `conflict.open`, `delegation.create`, `delegation.execute_owner`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.decompose`, `task.get`, `task.list`, `task.transition`.

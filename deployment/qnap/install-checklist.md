@@ -18,25 +18,25 @@
 - [x] Provider-verified Slack App ID is `A0B49RNE4K0`
 - [ ] Dedicated Slack bot is a member of `#mesh-agent-ops`
 - [ ] Bot Token Scopes include `chat:write` and `groups:history`
-- [ ] If bot scopes changed, Slack app was reinstalled/reauthorized and the resulting `xoxb-` token was reprovisioned to QNAP
 - [ ] Single ChatGPT Work **Mesh Slack HITL Dispatcher** exists and is enabled
 
-No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.2.3 HITL path.
+No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.3.0 HITL path.
 
-## v4.2.3 release-root staging
+## v4.3.0 release-root staging
 
-- [ ] `mesh-cos-mcp-qnap-v4.2.3.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] `mesh-cos-mcp-qnap-v4.3.0.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
-- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.2.3.zip.sha256` passes
-- [ ] extraction creates `v4.2.3/` automatically
+- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.3.0.zip.sha256` passes
+- [ ] extraction creates `v4.3.0/` automatically
 - [ ] no manual release-directory creation, helper copy, payload move, or chmod is required
-- [ ] `v4.2.3/cos-mcp/release-metadata.txt` reports `version=4.2.3` and a valid 40-character commit
+- [ ] `v4.3.0/cos-mcp/release-metadata.txt` reports `version=4.3.0` and the exact authorized commit
 - [ ] release-directory basename agrees with staged metadata
+- [ ] build context contains the v4.3.0 MCP contract with `delegation.execute_owner`
 
 ## Automated deployment
 
 ```sh
-sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
 ```
 
 - [ ] canonical `/share/Docker/cos-mcp` state/secrets tree is preserved
@@ -56,37 +56,46 @@ sudo sh ./v4.2.3/mesh-cos-mcp-deploy.sh
 - [ ] post-deploy verification passes before promotion commit
 - [ ] post-deploy backup and SHA-256 verification pass
 
-## Live Slack provider-read and qnet egress-readiness gate
+## Runtime and delegated-owner acceptance
 
-- [ ] QNAP verification runs the provider-read probe inside the running `mesh-cos-mcp` container
-- [ ] probe uses the mounted `xoxb-` credential without printing it
-- [ ] probe calls GET/query `conversations.history` for `C0BRL4GCL3A` with limit 1
-- [ ] verification reports `Slack bot provider read scope, governed-channel access, and qnet egress readiness`
-- [ ] only a pre-provider network exception may retry
-- [ ] network retry is bounded to six total attempts with five-second inter-attempt delay
-- [ ] `missing_scope`, invalid auth, missing channel membership/access, malformed provider response, or any Slack `ok:false` response fails immediately
-- [ ] exhausted network readiness blocks deployment verification and triggers transactional rollback
-- [ ] provider diagnostics expose only sanitized error codes and retry attempt metadata, never token/header/full response metadata
-
-## Runtime and authority acceptance
-
-- [ ] active release/image are `4.2.3` / `mesh-cos-mcp:qnap-v4.2.3`
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.2.3`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] active release/image are `4.3.0` / `mesh-cos-mcp:qnap-v4.3.0`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.3.0`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
 - [ ] exactly 10 agents remain registered
+- [ ] CoS governed agent tool count is 28
+- [ ] `delegation.execute_owner` is discoverable through the published MCP app
 - [ ] human-only tools remain unavailable to agents
+- [ ] synthetic direct-report owner execution passes for every eligible ACTIVE owner class
+- [ ] synthetic CMO -> VP Content nested delegation passes
+- [ ] synthetic COO -> Consultant Network Steward nested delegation passes
+- [ ] CoS direct completion of a child-owned task is denied
+- [ ] child owner completion succeeds exactly once under canonical owner identity
+- [ ] replay is idempotent
+- [ ] disabled/quarantined/unroutable owner cases fail closed
+- [ ] approval inheritance and Message Operations boundaries remain enforced
+- [ ] `COMPLETED != VERIFIED` remains enforced
+- [ ] final governance audit chain verifies
+
+## Slack HITL acceptance
+
+- [ ] QNAP provider-read probe runs inside the actual `mesh-cos-mcp` container
+- [ ] provider reads use authenticated GET/query transport
+- [ ] only pre-provider qnet/network exceptions may retry
+- [ ] Slack `ok:false`, malformed provider response, invalid auth, missing scope, or missing channel access fail immediately
 - [ ] ChatGPT Work dispatcher remains one event-triggered task, not a schedule/polling loop
 - [ ] dispatcher prompt remains `Mesh CoS MCP v4.x`
 - [ ] dispatcher passes only `thread_ts` and `message_ts`
 - [ ] governed Slack approval notice is posted by the dedicated bot and bound to canonical approval state
-- [ ] QNAP provider reread uses GET/query `conversations.replies`
 - [ ] provider-retrieved `*APPROVE*` creates exactly one canonical APPROVED decision for a fresh synthetic approval
 - [ ] same locator replay is idempotent
 - [ ] DENY and CHANGE synthetic cases behave as documented
 - [ ] wrong user, bot/app author, root/unbound thread, edited/unavailable message, malformed formatting, fingerprint drift, and provider failure all fail closed
-- [ ] `COMPLETED != VERIFIED` remains enforced
-- [ ] application remains UID/GID 65532, read-only, no-new-privileges, no Docker socket
-- [ ] direct non-tunnel MCP request is denied
-- [ ] final governance audit chain verifies
-- [ ] no consequential external action occurs during acceptance
+
+## Production recovery boundary
+
+- [ ] `docs/chatgpt-published-app-production-acceptance-v4.3.0.md` passes before recovery
+- [ ] read-only stranded-task inventory is refreshed after deployment acceptance
+- [ ] `task-b0b613daff51` is re-read and preserved as the same canonical task
+- [ ] stranded work is resumed in place, not recreated by default
+- [ ] no consequential external action occurs merely to validate transport
 - [ ] production certification closes only with zero open CRITICAL/HIGH defects and no required live acceptance blocker

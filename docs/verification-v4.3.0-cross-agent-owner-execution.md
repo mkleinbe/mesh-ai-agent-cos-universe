@@ -2,15 +2,18 @@
 
 ## Independence boundary
 
-Verification is evaluated against the accepted BDD scenarios, canonical Agent Registry, MCP policy, TaskLedger behavior, repository tests, release artifact, and final diff. Implementation convenience is not an acceptance criterion.
+Verification is evaluated against the accepted BDD scenarios, canonical Agent Registry, MCP policy, TaskLedger behavior, repository tests, release artifact, security review, and final authority diff. Implementation convenience is not an acceptance criterion.
+
+The exact candidate revision is bound by the successful final CI run's `GITHUB_SHA`, the QNAP release bundle's `release-metadata.txt`, and OCI revision label. This document intentionally does not hard-code a commit hash that would become stale when the receipt itself is committed.
 
 ## Required acceptance evidence
 
 | Verification area | Required evidence |
 | --- | --- |
 | PF-057 causal resolution | CoS-bound orchestration can route owner completion without impersonation |
-| Direct reports | Registry-driven matrix for every current eligible CoS direct report |
+| Direct reports | Registry-driven matrix for every ACTIVE downstream owner |
 | Nested delegation | `cmo -> vp-content` and `coo -> consultant-network-steward` |
+| Nested least privilege | Child executor/decompose exposed only to parents with registered ACTIVE children |
 | Zero-depth agents | Further delegation denied |
 | Functional isolation | Owner receives only owner-authorized capability surface |
 | Parent impersonation | Direct parent child-completion attempt denied |
@@ -22,7 +25,7 @@ Verification is evaluated against the accepted BDD scenarios, canonical Agent Re
 | Approval inheritance | Nested work retains inherited and target-owner gates |
 | Runtime unavailability | Fail-closed routing diagnosis with recoverable canonical state |
 | Scheduled execution | Scheduled CoS trigger traverses owner boundary and resumes idempotently |
-| Registry future safety | ACTIVE owner-eligible agent without execution path fails readiness |
+| Registry future safety | ACTIVE downstream owner without execution path fails readiness |
 | TaskLedger | Canonical state remains authoritative |
 | Nondelegated regression | Existing CoS-owned workflows continue to pass |
 | Security | FULL_REVIEW has no unresolved blocking finding |
@@ -48,9 +51,24 @@ Verification is evaluated against the accepted BDD scenarios, canonical Agent Re
 - DLG-016: dependency release
 - DLG-017: nested return path
 
+## Final authority-diff rule
+
+The release may expand authority only where PF-057 requires transport or owner-lifecycle capability:
+
+- CoS: one new server-owned `delegation.execute_owner` transport operation;
+- every downstream accountable owner: only the lifecycle tools needed to operate and complete its own canonical work;
+- CMO and COO: nested child execution/decomposition because the current registry contains VP Content and Consultant Network Steward beneath them;
+- CRO and CFO: no new child executor/decompose authority because the current registry contains no child beneath them;
+- all agents: no human-only approval or reliability override authority;
+- non-verifier agents: no `task.verify` authority.
+
+Any broader change is a verification defect even if tests pass.
+
 ## Verification verdict rule
 
 `PASS` requires all exact-candidate CI and release gates green, zero unresolved CRITICAL/HIGH security finding, no unintended authority expansion in the final diff, and no accepted behavior weakened to obtain test success.
+
+A successful CI run is necessary but not sufficient. The independent verifier must also confirm requirement/spec/code/security drift is absent on the same candidate revision. The final conversation/report records the exact candidate SHA and successful run ID after those checks complete.
 
 `PASS` does not authorize production deployment. Deployment and stranded-task recovery remain human-authorized operations.
 
@@ -66,3 +84,7 @@ Verification is evaluated against the accepted BDD scenarios, canonical Agent Re
 8. build the final stranded-task recovery inventory;
 9. re-read `task-b0b613daff51` before recovery;
 10. recover only tasks whose current canonical state still matches the governed recovery criteria.
+
+## Candidate disposition
+
+Until the exact final CI run and final diff are both green, disposition remains `PENDING_EXACT_CANDIDATE_EVIDENCE`. Once both pass, the verifier may record `PASS / VERIFIED_CANDIDATE` without implying production acceptance.

@@ -36,16 +36,31 @@ export function loadContract(): MCPContract {
   ) as MCPContract;
 }
 
-export function loadInputSchemas(contract: MCPContract = loadContract()): InputSchemaRegistry {
-  const target = path.resolve(repositoryRoot(), contract.input_schema_registry ?? 'chatgpt/mcp/tool-input-schemas.v1.json');
-  const payload = JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, unknown>;
-  if (payload.schema_version !== 'mesh.cos.mcp-tool-input-schemas.v1') {
-    throw new Error('Unsupported MCP input-schema registry version');
+function schemaTools(payload: Record<string, unknown>, expectedVersion: string): Record<string, unknown> {
+  if (payload.schema_version !== expectedVersion) {
+    throw new Error(`Unsupported MCP input-schema registry version: ${String(payload.schema_version)}`);
   }
   if (typeof payload.tools !== 'object' || payload.tools === null || Array.isArray(payload.tools)) {
     throw new Error('MCP input-schema registry must contain tools');
   }
-  const raw = payload.tools as Record<string, unknown>;
+  return payload.tools as Record<string, unknown>;
+}
+
+export function loadInputSchemas(contract: MCPContract = loadContract()): InputSchemaRegistry {
+  const target = path.resolve(repositoryRoot(), contract.input_schema_registry ?? 'chatgpt/mcp/tool-input-schemas.v1.json');
+  const payload = JSON.parse(fs.readFileSync(target, 'utf8')) as Record<string, unknown>;
+  const raw: Record<string, unknown> = {
+    ...schemaTools(payload, 'mesh.cos.mcp-tool-input-schemas.v1'),
+  };
+  const extensionPath = path.resolve(repositoryRoot(), 'chatgpt/mcp/tool-input-schemas.owner-execution.v1.json');
+  if (fs.existsSync(extensionPath)) {
+    const extension = JSON.parse(fs.readFileSync(extensionPath, 'utf8')) as Record<string, unknown>;
+    const extensionTools = schemaTools(extension, 'mesh.cos.mcp-tool-input-schema-extension.v1');
+    for (const [name, schema] of Object.entries(extensionTools)) {
+      if (name in raw) throw new Error(`MCP input-schema extension duplicates tool: ${name}`);
+      raw[name] = schema;
+    }
+  }
   const expected = new Set(contract.tools.map(tool => tool.name));
   if (Object.keys(raw).length !== expected.size || Object.keys(raw).some(name => !expected.has(name))) {
     throw new Error('MCP input-schema registry must exactly match the tool catalog');

@@ -207,11 +207,14 @@ class MCPRuntime:
         allow_self: bool = True,
     ) -> dict[str, Any]:
         record = self._active_owner_record(owner_id)
-        if parent_agent_id is not None and owner_id != parent_agent_id:
-            if record.get("parent_agent_id") != parent_agent_id:
-                raise PermissionError(
-                    "Decomposed work must remain with the current owner or a registered direct child"
-                )
+        if (
+            parent_agent_id is not None
+            and owner_id != parent_agent_id
+            and record.get("parent_agent_id") != parent_agent_id
+        ):
+            raise PermissionError(
+                "Decomposed work must remain with the current owner or a registered direct child"
+            )
         if not allow_self and parent_agent_id is not None and owner_id == parent_agent_id:
             raise PermissionError("Self assignment is not permitted for this ownership mutation")
         return record
@@ -318,9 +321,12 @@ class MCPRuntime:
                 required_action=required_action,
                 human_approver=str(payload.get("human_approver") or ""),
             )
-            if authority_level == 5:
-                if decision and str(payload.get("decision_owner") or "").strip().lower() != "michael":
-                    raise PermissionError("L5 authority requires Michael as decision owner")
+            if (
+                authority_level == 5
+                and decision
+                and str(payload.get("decision_owner") or "").strip().lower() != "michael"
+            ):
+                raise PermissionError("L5 authority requires Michael as decision owner")
             return record, approval
 
         ceiling = int(record["decision_authority"])

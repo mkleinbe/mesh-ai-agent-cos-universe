@@ -766,13 +766,6 @@ class MCPRuntime:
         self.policy.authorize(owner_id, tool_name)
 
         raw_arguments = dict(args.get("arguments", {}))
-        if tool_name == "skills.invoke_governed":
-            capability = str(raw_arguments.get("capability") or "")
-            permitted_capabilities = set(delegation.get("permitted_capabilities", []))
-            if capability not in permitted_capabilities:
-                raise PermissionError(
-                    "Capability not allowed: capability is not explicitly permitted by the canonical delegation"
-                )
         owner_args = self._owner_scoped_arguments(
             task,
             owner_id,
@@ -888,6 +881,13 @@ class MCPRuntime:
             raise RuntimeError("OWNER_EXECUTION_ALREADY_CLAIMED")
 
         try:
+            if tool_name == "skills.invoke_governed":
+                capability = str(owner_args.get("capability") or "")
+                permitted_capabilities = set(delegation.get("permitted_capabilities", []))
+                if capability not in permitted_capabilities:
+                    raise PermissionError(
+                        "Capability not allowed: capability is not explicitly permitted by the canonical delegation"
+                    )
             result = self.call_agent(owner_id, tool_name, owner_args)
         except Exception as exc:
             execution_record["status"] = "OWNER_EXECUTION_FAILED"

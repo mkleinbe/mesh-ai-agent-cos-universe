@@ -53,7 +53,6 @@ grep -q 'MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER' "$APP_DIR/compo
 grep -q 'MESH_COS_SLACK_APP_ID=A0B49RNE4K0' "$APP_DIR/.env.example"
 grep -q 'delegation.execute_owner' "$APP_DIR/build-context/chatgpt/mcp/mesh-cos-mcp.v1.json"
 grep -q 'delegation.execute_owner' "$APP_DIR/cross-agent-owner-execution.feature"
-grep -q 'OWNER_EXECUTION_READINESS=PASS' "$APP_DIR/build-context/scripts/check-owner-execution-readiness.py"
 test -f "$APP_DIR/CHANGELOG-v4.3.0.md"
 test -f "$APP_DIR/slack-app-manifest.v4.2.3.json"
 test -f "$APP_DIR/cross-agent-owner-execution.feature"

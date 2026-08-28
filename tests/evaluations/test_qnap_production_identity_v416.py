@@ -33,6 +33,8 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     compose = read("deployment/qnap/compose.yaml")
     assert "requireDeploymentRelease" in server
     assert "deployment_release" in server
+    assert "source_commit" in server
+    assert "publication_schema_digest" in server
     assert "requireDeploymentRelease(env)" in remote
     assert "SECURE_MCP_TUNNEL" in remote
     assert "version:deploymentRelease" in remote
@@ -42,7 +44,7 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     )
 
 
-def test_active_release_train_is_v430_and_ci_uses_setup_node_v7() -> None:
+def test_active_deployment_train_remains_v430_while_ci_is_release_neutral() -> None:
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
     builder = read("scripts/build-qnap-release-bundle.sh")
@@ -57,8 +59,12 @@ def test_active_release_train_is_v430_and_ci_uses_setup_node_v7() -> None:
     assert "VERSION=4.3.0" in wrapper
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
-    assert "Build exact v4.3.0 QNAP release bundle" in ci
-    assert "mesh-cos-mcp-qnap-v4.3.0.zip" in ci
+    assert "Build exact v4.3.0 QNAP release bundle" not in ci
+    assert "Build current-source QNAP CI candidate" in ci
+    assert 'CANDIDATE_VERSION: \'4.4.0\'' in ci
+    assert 'bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"' in ci
+    assert "dist/mesh-cos-mcp-qnap-v4.4.0.zip" in ci
+    assert "workspace_publication_status=BLOCKED_PENDING_ACTUAL_ACTION_SCHEMA_SNAPSHOT" in ci
 
 
 def test_historical_and_current_docs_are_packaged() -> None:

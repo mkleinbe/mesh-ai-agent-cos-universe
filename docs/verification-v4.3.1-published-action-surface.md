@@ -14,9 +14,9 @@ The repository candidate adds no new MCP runtime authority. It adds an external-
 | CoS source allowlist includes owner executor | canonical CoS allowlist includes `delegation.execute_owner` | PASS |
 | Human-only actions remain excluded from CoS machine surface | `approval.record_decision`, `reliability.human_override` are human-only | PASS |
 | Expected CoS published surface is exact and derivable | `scripts/check-published-action-surface.py` derives 28 actions from canonical contract | PASS |
-| Missing owner executor is detectable | integration regression supplies 27-action snapshot and expects failure | PASS when CI green |
-| Exact expected snapshot succeeds | integration regression supplies exact 28-action snapshot and expects pass | PASS when CI green |
-| All active owners retain lifecycle paths | existing `check-owner-execution-readiness.py` | PASS when CI green |
+| Missing owner executor is detectable | integration regression supplies 27-action snapshot and expects failure | PASS when exact-head CI is green |
+| Exact expected snapshot succeeds | integration regression supplies exact 28-action snapshot and expects pass | PASS when exact-head CI is green |
+| All active owners retain lifecycle paths | existing `check-owner-execution-readiness.py` | PASS when exact-head CI is green |
 | Nested routes remain bounded | CMO -> VP Content; COO -> Consultant Network Steward only | PASS |
 | Live workspace connector exposes exact 28 | current connector exposes 27 | BLOCKED |
 | Blocked logical occurrences resume without replacement | exact keys preserved in TaskLedger | READY AFTER LIVE ACCEPTANCE |
@@ -37,8 +37,8 @@ After workspace admin publication refresh/recreation:
 10. Prove owner completion succeeds and verification remains separate.
 11. Resume the two outstanding Marketing execution keys in place.
 
-## Current disposition
+## Release disposition rule
 
-**REPOSITORY CANDIDATE: VERIFYING**
+The repository hardening portion is **VERIFIED_CANDIDATE** only when standard CI and the dedicated owner-execution release-candidate verifier both pass against the exact candidate head. Those run identities belong in the PR/release receipt rather than being hard-coded into this source document.
 
-**PRODUCTION: BLOCKED_EXTERNAL_PUBLISH_SNAPSHOT**
+Production remains **BLOCKED_EXTERNAL_PUBLISH_SNAPSHOT** until the workspace-approved ChatGPT app is refreshed/recreated and republished and the live connector passes the independent production-acceptance sequence above.

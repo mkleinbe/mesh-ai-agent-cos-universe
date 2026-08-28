@@ -54,6 +54,7 @@ jobs:
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           sh deployment/qnap/tests/test-restarting-container-backup.sh
           bash -n scripts/build-qnap-release-bundle.sh
+          bash -n scripts/finalize-qnap-release-v4.4.0.sh
           bash -n scripts/build-chatgpt-skill-bundle-v4.4.0.sh
           ! grep -q '^  pull_request:' .github/workflows/release-v4.3.0.yml
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
@@ -85,6 +86,7 @@ jobs:
         run: |
           set -euo pipefail
           bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"
+          bash scripts/finalize-qnap-release-v4.4.0.sh
           bash scripts/build-chatgpt-skill-bundle-v4.4.0.sh
           ZIP="dist/mesh-cos-mcp-qnap-v${CANDIDATE_VERSION}.zip"
           SKILL_ZIP="dist/mesh-cos-chatgpt-skills-v${CANDIDATE_VERSION}.zip"
@@ -93,6 +95,11 @@ jobs:
           test -f "$SKILL_ZIP" && test -f "$SKILL_ZIP.sha256"
           grep -q "^version=${CANDIDATE_VERSION}$" "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
+          test -f "$BUNDLE/cos-mcp/CHANGELOG-v4.4.0.md"
+          test -f "$BUNDLE/cos-mcp/architecture-v4.4.0-authority-execution.md"
+          test -f "$BUNDLE/cos-mcp/security-review-v4.4.0-authority-closure.md"
+          test -f "$BUNDLE/cos-mcp/runbook-v4.4.0-authority-execution.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.4.0.md"
           grep -q "^source_commit=$GITHUB_SHA$" dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
           grep -q '^skill_count=8$' dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
           grep -q '^agent_execution_model=logical_skill_agent$' dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt

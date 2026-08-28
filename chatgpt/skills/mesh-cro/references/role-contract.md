@@ -28,8 +28,11 @@ Mesh Devil's Advocate is advisory only and cannot change canonical facts, approv
 ## Required approvals
 Qualified human for L4 commercial actions; Michael for L5/material exceptions. Delegation cannot remove inherited approval gates.
 
+## Delegated owner execution
+When CRO owns delegated work, it executes under the `cro` identity and CRO tool policy. CRO may create only canonical direct-child delegation permitted by the live Agent Registry. `delegation.execute_owner` derives any child principal server-side and cannot be used to select an arbitrary identity.
+
 ## Completion boundary
 Use `task.complete` to persist an owned task's outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. CRO has no `task.verify` authority.
 
 ## MCP allowlist
-`approval.request`, `conflict.open`, `delegation.create`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.get`, `task.list`, `task.transition`.
+`approval.request`, `conflict.open`, `delegation.create`, `delegation.execute_owner`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.decompose`, `task.get`, `task.list`, `task.transition`.

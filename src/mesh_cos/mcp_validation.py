@@ -31,27 +31,36 @@ class RequestValidationError(ValueError):
         self.details = list(details[:32])
 
 
+def _schema_map(raw: Any, *, registry_label: str) -> dict[str, dict[str, Any]]:
+    if not isinstance(raw, dict):
+        raise TypeError(f"{registry_label} must contain tools")
+    schemas: dict[str, dict[str, Any]] = {}
+    for name, schema in raw.items():
+        if not isinstance(schema, dict):
+            raise ValueError(f"MCP input schema must be an object: {name}")
+        schemas[str(name)] = dict(schema)
+    return schemas
+
+
 def load_input_schemas(path: str | Path | None = None) -> dict[str, dict[str, Any]]:
     target = Path(path) if path is not None else DEFAULT_SCHEMA_PATH
     payload = json.loads(target.read_text())
     if payload.get("schema_version") != "mesh.cos.mcp-tool-input-schemas.v1":
         raise ValueError("Unsupported MCP input-schema registry version")
-    tools = payload.get("tools")
-    if not isinstance(tools, dict):
-        raise TypeError("MCP input-schema registry must contain tools")
-    schemas = {str(name): dict(schema) for name, schema in tools.items()}
+    schemas = _schema_map(payload.get("tools"), registry_label="MCP input-schema registry")
     if path is None:
         for extension_path in DEFAULT_SCHEMA_EXTENSIONS:
             extension = json.loads(extension_path.read_text())
             if extension.get("schema_version") != "mesh.cos.mcp-tool-input-schema-extension.v1":
                 raise ValueError("Unsupported MCP input-schema extension version")
-            extension_tools = extension.get("tools")
-            if not isinstance(extension_tools, dict):
-                raise TypeError("MCP input-schema extension must contain tools")
+            extension_tools = _schema_map(
+                extension.get("tools"),
+                registry_label="MCP input-schema extension",
+            )
             overlap = set(schemas).intersection(extension_tools)
             if overlap:
                 raise ValueError(f"MCP input-schema extension duplicates tools: {sorted(overlap)}")
-            schemas.update({str(name): dict(schema) for name, schema in extension_tools.items()})
+            schemas.update(extension_tools)
     return schemas
 
 

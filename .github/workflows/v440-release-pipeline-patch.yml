@@ -1,0 +1,35 @@
+name: v4.4.0 release pipeline hardening
+on:
+  push:
+    branches: ['fix/v4.4.0-authority-closure']
+    paths: ['.github/workflows/v440-release-pipeline-patch.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/v4.4.0-authority-closure
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Apply exact-match pipeline patch
+        run: python .github/patches/v440_release_pipeline_patch.py
+      - name: Validate modified shell and workflows
+        run: |
+          bash -n scripts/build-qnap-release-bundle.sh
+          bash -n scripts/build-chatgpt-skill-bundle-v4.4.0.sh
+          ! grep -q '^  pull_request:' .github/workflows/release-v4.3.0.yml
+      - name: Remove temporary patch assets
+        run: rm .github/patches/v440_release_pipeline_patch.py .github/workflows/v440-release-pipeline-patch.yml
+      - name: Commit and push hardened release pipeline
+        run: |
+          set -euo pipefail
+          git config user.name 'Mike K.'
+          git config user.email 'mkleinberg@meshdigital.io'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Harden v4.4.0 release candidate pipeline'
+          git push origin HEAD:fix/v4.4.0-authority-closure

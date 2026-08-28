@@ -71,7 +71,7 @@ Feature: Identity-aware delegated owner execution
   Scenario: Delegated owner completes eligible work
     Given delegated owner X has completed execution
     And completion criteria and evidence are satisfied
-    When canonical completion is requested through the owner execution path
+    When delegation.execute_owner requests task.complete for the canonical delegated task
     Then task.complete executes under X authority
     And audit attribution identifies X
 
@@ -81,7 +81,7 @@ Feature: Identity-aware delegated owner execution
     When cos calls task.complete directly for X task
     Then the direct operation is rejected
     And cos is never recorded as X
-    And a server-owned owner execution mechanism may complete only by deriving X from canonical delegation state
+    And delegation.execute_owner may complete only by deriving X from canonical delegation state
 
   @DLG-010 @verification
   Scenario: Completion remains distinct from verification

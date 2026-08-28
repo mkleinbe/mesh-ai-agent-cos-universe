@@ -36,7 +36,13 @@ QNAP does not own Slack event ingress, does not start a Slack Socket Mode listen
 - `chatgpt/`: published ChatGPT app contracts and package evidence.
 - `specs/`: ready BDD behavior specifications.
 - `tests/`: unit, integration, evaluation, security, scheduled-workflow, and production-readiness tests.
-- `docs/`: architecture, release, verification, security, dispatcher, and acceptance evidence, including Mermaid architecture/sequence diagrams.
+- `docs/`: architecture, material-turn, release, verification, security, dispatcher, Skill-package, and acceptance evidence, including Mermaid architecture/sequence diagrams.
+
+## Material-turn documentation
+
+Material changes must follow `docs/material-turn-documentation-standard.md`. Each material turn must leave enough repository evidence to reconstruct the business/technical trigger, architecture and trust-boundary change, executable behavior, security applicability, verification, updated Skills or agent packages, semantic version, release artifacts, deployment/recovery, rollback, and exact commit/tag/release identity.
+
+The complete v4.3.0 turn record is `docs/material-turn-v4.3.0.md`; its updated ChatGPT Skill manifest is `docs/skills-v4.3.0.md`.
 
 ## Current release
 
@@ -48,6 +54,9 @@ See:
 
 - `RELEASE.md`
 - `CHANGELOG-v4.3.0.md`
+- `docs/material-turn-documentation-standard.md`
+- `docs/material-turn-v4.3.0.md`
+- `docs/skills-v4.3.0.md`
 - `docs/pf-057-cross-agent-owner-execution.md`
 - `docs/release-4.3.0-cross-agent-owner-execution.md`
 - `docs/security-review-v4.3.0-cross-agent-owner-execution.md`

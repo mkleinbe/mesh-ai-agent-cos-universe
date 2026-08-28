@@ -47,6 +47,45 @@ Prior delegation persisted accountable ownership without establishing an executa
 - Added scheduled CoS cross-agent execution and idempotent-resume test.
 - `COMPLETED != VERIFIED` remains unchanged.
 
+### Least privilege
+
+- CMO retains nested executor/decompose capability only for registered child VP Content.
+- COO retains nested executor/decompose capability only for registered child Consultant Network Steward.
+- CRO and CFO do not receive nested executor/decompose capability because the current registry has no ACTIVE child under those owners.
+- CI now fails if nested execution authority is exposed to an agent without a registered ACTIVE child.
+
+### Updated ChatGPT Skills
+
+Role contracts changed for:
+
+- `mesh-chief-of-staff`
+- `mesh-agentops-controller`
+- `mesh-answer-decision-desk`
+- `mesh-cro`
+- `mesh-cfo`
+- `mesh-coo`
+- `mesh-cmo`
+- `mesh-message-operations`
+
+Workspace-agent manifests changed for `cos`, `agentops`, `answer-desk`, `cro`, `cfo`, `coo`, `cmo`, and `message-ops`.
+
+VP Content and Consultant Network Steward participate in the nested runtime path but their Skill role-contract files were not modified in this release.
+
+### Material-turn documentation
+
+- Added `docs/material-turn-documentation-standard.md` to codify durable documentation requirements for future material application turns.
+- Added `docs/material-turn-v4.3.0.md` as the complete v4.3.0 architecture, security, migration, recovery, verification, and release record.
+- Added `docs/skills-v4.3.0.md` as the v4.3.0 Skill update manifest.
+- Added validated Mermaid architecture and delegated-execution sequence diagrams to the durable material-turn/release records.
+- Updated `README.md` and `RELEASE.md` to point to the material-turn record and Skill manifest.
+
+### Release governance
+
+- v4.3.0 release publication is bound to the verified integrated `main` commit.
+- Historical v4.2.3 release workflow is retained as manual-only release history and no longer runs on current PRs or `main` pushes.
+- Repository merge/tag/release authorization for this turn was explicitly granted by the human release authority on August 28, 2026.
+- Production QNAP deployment, canonical task recovery, and consequential external business actions remain separate authorization boundaries.
+
 ### Production recovery
 
 Blocked canonical tasks must be resumed, not recreated by default. `task-b0b613daff51` remains an existing CMO-owned QA task and is recovered only after authorized deployment through canonical CMO completion followed by separate verification and dependency release.

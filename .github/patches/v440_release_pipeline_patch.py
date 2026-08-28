@@ -30,8 +30,8 @@ replace_once(
 
 replace_once(
     ".github/workflows/ci.yml",
-    "          bash -n scripts/build-qnap-release-v4.3.0.sh\n",
-    "          bash -n scripts/build-qnap-release-v4.3.0.sh\n          bash -n scripts/build-chatgpt-skill-bundle-v4.4.0.sh\n          ! grep -q '^  pull_request:' .github/workflows/release-v4.3.0.yml\n",
+    "          bash -n scripts/build-qnap-release-bundle.sh\n",
+    "          bash -n scripts/build-qnap-release-bundle.sh\n          bash -n scripts/build-chatgpt-skill-bundle-v4.4.0.sh\n          ! grep -q '^  pull_request:' .github/workflows/release-v4.3.0.yml\n",
 )
 
 replace_once(

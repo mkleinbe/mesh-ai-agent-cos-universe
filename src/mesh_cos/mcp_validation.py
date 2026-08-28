@@ -6,6 +6,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SCHEMA_PATH = ROOT / "chatgpt" / "mcp" / "tool-input-schemas.v1.json"
+DEFAULT_SCHEMA_EXTENSIONS = (
+    ROOT / "chatgpt" / "mcp" / "tool-input-schemas.owner-execution.v1.json",
+)
 FORBIDDEN_EXECUTION_FIELDS = {
     "code",
     "source_code",
@@ -36,7 +39,20 @@ def load_input_schemas(path: str | Path | None = None) -> dict[str, dict[str, An
     tools = payload.get("tools")
     if not isinstance(tools, dict):
         raise TypeError("MCP input-schema registry must contain tools")
-    return {str(name): dict(schema) for name, schema in tools.items()}
+    schemas = {str(name): dict(schema) for name, schema in tools.items()}
+    if path is None:
+        for extension_path in DEFAULT_SCHEMA_EXTENSIONS:
+            extension = json.loads(extension_path.read_text())
+            if extension.get("schema_version") != "mesh.cos.mcp-tool-input-schema-extension.v1":
+                raise ValueError("Unsupported MCP input-schema extension version")
+            extension_tools = extension.get("tools")
+            if not isinstance(extension_tools, dict):
+                raise TypeError("MCP input-schema extension must contain tools")
+            overlap = set(schemas).intersection(extension_tools)
+            if overlap:
+                raise ValueError(f"MCP input-schema extension duplicates tools: {sorted(overlap)}")
+            schemas.update({str(name): dict(schema) for name, schema in extension_tools.items()})
+    return schemas
 
 
 def _path(parent: str, field: str) -> str:

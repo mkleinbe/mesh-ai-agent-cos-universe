@@ -10,6 +10,7 @@ def validate_delegation(
     *,
     parent_authority: int,
     depth: int,
+    max_depth: int | None = None,
     active_owner: str | None = None,
     ancestry: list[str] | None = None,
     parent_approval_gates: list[str] | None = None,
@@ -18,8 +19,8 @@ def validate_delegation(
         raise ValueError("Exactly one accountable agent is required")
     if delegation.accountable_agent in delegation.contributing_agents:
         raise ValueError("Accountable agent must not be duplicated as a contributor")
-    if depth > 2:
-        raise ValueError("Phase 1 delegation depth exceeded")
+    if max_depth is not None and depth > max_depth:
+        raise ValueError("Canonical registry delegation depth exceeded")
     if int(delegation.authority_level) > parent_authority:
         raise PermissionError("Delegation cannot widen authority")
     if active_owner and active_owner != delegation.accountable_agent:
@@ -45,6 +46,7 @@ class DelegationService:
         *,
         parent_authority: int,
         depth: int,
+        max_depth: int | None = None,
         active_owner: str | None = None,
         ancestry: list[str] | None = None,
         parent_approval_gates: list[str] | None = None,
@@ -53,6 +55,7 @@ class DelegationService:
             delegation,
             parent_authority=parent_authority,
             depth=depth,
+            max_depth=max_depth,
             active_owner=active_owner,
             ancestry=ancestry,
             parent_approval_gates=parent_approval_gates,

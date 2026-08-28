@@ -85,16 +85,17 @@ def test_agent_calls_cannot_spoof_human_approval_or_override() -> None:
     assert decided["decided_by"] == "michael"
 
 
-def test_task_writes_are_scoped_to_accountable_owner_or_cos() -> None:
+def test_task_writes_are_scoped_to_canonical_accountable_owner() -> None:
     ledger = TaskLedger()
     runtime = MCPRuntime(ledger)
     task = make_task("T-cfo", owner="cfo")
     ledger.save_task(task)
 
-    with pytest.raises(PermissionError, match="accountable owner"):
-        runtime.call_agent("cro", "task.transition", {"task_id": "T-cfo", "target": "TRIAGED"})
+    for unauthorized in ("cro", "cos"):
+        with pytest.raises(PermissionError, match="accountable owner"):
+            runtime.call_agent(unauthorized, "task.transition", {"task_id": "T-cfo", "target": "TRIAGED"})
 
-    transitioned = runtime.call_agent("cos", "task.transition", {"task_id": "T-cfo", "target": "TRIAGED"})
+    transitioned = runtime.call_agent("cfo", "task.transition", {"task_id": "T-cfo", "target": "TRIAGED"})
     assert transitioned["status"] == "TRIAGED"
 
 

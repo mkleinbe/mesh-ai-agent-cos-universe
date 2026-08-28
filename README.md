@@ -22,6 +22,14 @@ v4.3.0 repairs PF-057 systemically. Delegated canonical work is executed through
 
 The CoS governed agent catalog contains **28 tools**, including `delegation.execute_owner`. Human-only `approval.record_decision` and `reliability.human_override` remain excluded from agent execution.
 
+### Published action-snapshot gate
+
+Source/runtime readiness and ChatGPT workspace publication readiness are separate production gates. The workspace-approved custom MCP app must expose an action snapshot that is **exactly equal** to the canonical CoS machine allowlist after removing the two human-only operations. For the current contract that means exactly **28 CoS machine actions**, including `delegation.execute_owner`.
+
+PF-058 demonstrated why this distinction is required: the v4.3.0 QNAP runtime and source contract contained `delegation.execute_owner`, while the already-approved ChatGPT app continued exposing a frozen 27-action snapshot. `scripts/check-owner-execution-readiness.py` proves registry/allowlist/parentage readiness; `scripts/check-published-action-surface.py` separately proves the captured workspace action snapshot. Both gates must pass before child-owned production work is considered executable.
+
+The v4.3.1 repository hardening turn adds that external-publication verification control. It does not widen agent authority or require a QNAP runtime code change. Production acceptance remains fail-closed until the workspace app is refreshed/recreated, republished, and re-read at exact 28/28.
+
 Governed Slack HITL continues to use the dedicated **ChatGPT Enterprise AI Agent** Slack bot for outbound approval notices and server-side provider reconciliation. New MK thread replies wake a single ChatGPT-native Slack event-triggered Work task. The trigger is not approval authority. Mesh CoS MCP rereads the exact Slack provider message and canonical TaskLedger state before a human decision can be recorded.
 
 The provider-verified Slack App ID remains `A0B49RNE4K0`. The v4.2.3 Slack/qnet controls remain part of v4.3.0 unchanged: authenticated GET/query provider reads, bounded retry only for pre-provider qnet/network exceptions, and fail-closed provider authorization or response errors.
@@ -42,25 +50,32 @@ QNAP does not own Slack event ingress, does not start a Slack Socket Mode listen
 
 Material changes must follow `docs/material-turn-documentation-standard.md`. Each material turn must leave enough repository evidence to reconstruct the business/technical trigger, architecture and trust-boundary change, executable behavior, security applicability, verification, updated Skills or agent packages, semantic version, release artifacts, deployment/recovery, rollback, and exact commit/tag/release identity.
 
-The complete v4.3.0 turn record is `docs/material-turn-v4.3.0.md`; its updated ChatGPT Skill manifest is `docs/skills-v4.3.0.md`.
+The complete v4.3.0 turn record is `docs/material-turn-v4.3.0.md`; its updated ChatGPT Skill manifest is `docs/skills-v4.3.0.md`. The PF-058 publication-surface hardening record is `docs/material-turn-v4.3.1.md`.
 
 ## Current release
 
 v4.3.0 is a feature-level deployment release because it adds a governed MCP operation and closed-loop delegation/execution protocol. It does not change the 10-agent roster, L4/L5 human authority, canonical TaskLedger model, or functional decision-rights boundaries.
 
-The existing **Mesh Slack HITL Dispatcher** remains one locator-only event bridge and stays version-family labeled `Mesh CoS MCP v4.x`. The Slack app manifest remains v4.2.3 because v4.3.0 does not require a Slack app scope or event-subscription change.
+v4.3.1 is a patch-level repository/release-control hardening turn for PF-058. It adds exact verification of the independently frozen ChatGPT workspace action snapshot. The active QNAP runtime may remain 4.3.0 because the owner-execution implementation already exists there; the workspace publication gate is the remaining production acceptance step.
+
+The existing **Mesh Slack HITL Dispatcher** remains one locator-only event bridge and stays version-family labeled `Mesh CoS MCP v4.x`. The Slack app manifest remains v4.2.3 because v4.3.0/v4.3.1 do not require a Slack app scope or event-subscription change.
 
 See:
 
 - `RELEASE.md`
 - `CHANGELOG-v4.3.0.md`
+- `CHANGELOG-v4.3.1.md`
 - `docs/material-turn-documentation-standard.md`
 - `docs/material-turn-v4.3.0.md`
+- `docs/material-turn-v4.3.1.md`
 - `docs/skills-v4.3.0.md`
 - `docs/pf-057-cross-agent-owner-execution.md`
 - `docs/release-4.3.0-cross-agent-owner-execution.md`
+- `docs/release-4.3.1-published-action-surface.md`
 - `docs/security-review-v4.3.0-cross-agent-owner-execution.md`
+- `docs/security-review-v4.3.1-published-action-surface.md`
 - `docs/verification-v4.3.0-cross-agent-owner-execution.md`
+- `docs/verification-v4.3.1-published-action-surface.md`
 - `docs/chatgpt-published-app-production-acceptance-v4.3.0.md`
 - `specs/cross-agent-owner-execution.feature`
 - `docs/chatgpt-native-slack-dispatcher-v4.2.3.md`

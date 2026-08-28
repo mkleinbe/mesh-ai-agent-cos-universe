@@ -270,7 +270,7 @@ class MCPRuntime:
             "OWNER_RUNTIME_UNAVAILABLE",
             "OWNER_EXECUTION_TRANSPORT_UNAVAILABLE",
         }
-        record = {
+        record: dict[str, Any] = {
             "version": "mesh.cos.owner-routing-failure.v1",
             "record_id": new_id("owner-routing-failure"),
             "canonical_task": task.task_id,
@@ -612,7 +612,7 @@ class MCPRuntime:
                 return dict(existing["response"])
             raise RuntimeError(f"OWNER_EXECUTION_NOT_RETRYABLE: {existing.get('status', 'UNKNOWN')}")
 
-        execution_record = {
+        execution_record: dict[str, Any] = {
             "version": "mesh.cos.owner-execution.v1",
             "record_id": record_id,
             "delegation_id": delegation_id,

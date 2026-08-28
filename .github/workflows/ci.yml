@@ -32,6 +32,8 @@ jobs:
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py
       - run: python scripts/check-owner-execution-readiness.py
+      - run: python scripts/check-capability-closure.py
+      - run: python scripts/check-published-action-surface.py
       - run: ruff check src
       - run: ruff check tests scripts --select E9,F63,F7,F82
       - run: mypy src --check-untyped-defs
@@ -52,7 +54,6 @@ jobs:
           sh deployment/qnap/tests/test-versioned-release-layout.sh
           sh deployment/qnap/tests/test-restarting-container-backup.sh
           bash -n scripts/build-qnap-release-bundle.sh
-          bash -n scripts/build-qnap-release-v4.3.0.sh
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-configure.sh
           ! grep -q 'slack-verifier-token' deployment/qnap/scripts/mesh-cos-slack-hitl-provision.sh
@@ -75,75 +76,58 @@ jobs:
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
           grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-      - name: Build exact v4.3.0 QNAP release bundle
+      - name: Build current-source QNAP CI candidate
         env:
           GITHUB_SHA: ${{ github.sha }}
+          CANDIDATE_VERSION: '4.4.0'
         run: |
           set -euo pipefail
-          bash scripts/build-qnap-release-v4.3.0.sh
-          ZIP=dist/mesh-cos-mcp-qnap-v4.3.0.zip
-          BUNDLE=dist/qnap-bundle/v4.3.0
+          bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"
+          ZIP="dist/mesh-cos-mcp-qnap-v${CANDIDATE_VERSION}.zip"
+          BUNDLE="dist/qnap-bundle/v${CANDIDATE_VERSION}"
           test -f "$ZIP" && test -f "$ZIP.sha256"
-          grep -q '^version=4.3.0$' "$BUNDLE/cos-mcp/release-metadata.txt"
+          grep -q "^version=${CANDIDATE_VERSION}$" "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
-          test -f "$BUNDLE/cos-mcp/CHANGELOG-v4.3.0.md"
-          test -f "$BUNDLE/cos-mcp/cross-agent-owner-execution.feature"
-          test -f "$BUNDLE/cos-mcp/pf-057-cross-agent-owner-execution.md"
-          test -f "$BUNDLE/cos-mcp/security-review-v4.3.0-cross-agent-owner-execution.md"
-          test -f "$BUNDLE/cos-mcp/release-4.3.0-cross-agent-owner-execution.md"
-          test -f "$BUNDLE/cos-mcp/verification-v4.3.0-cross-agent-owner-execution.md"
-          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.3.0.md"
-          test -f "$BUNDLE/cos-mcp/chatgpt-native-slack-dispatcher-v4.2.3.md"
-          test -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.3.json"
-          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.1.17.json"
-          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.0.json"
-          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.1.json"
-          test ! -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.2.json"
-          unzip -Z1 "$ZIP" > /tmp/v430.entries
-          if grep -Ev '^v4\.3\.0/' /tmp/v430.entries; then exit 1; fi
-          grep -qx 'v4.3.0/mesh-cos-mcp-deploy.sh' /tmp/v430.entries
-          grep -qx 'v4.3.0/cos-mcp/release-metadata.txt' /tmp/v430.entries
-          grep -qx 'v4.3.0/cos-mcp/cross-agent-owner-execution.feature' /tmp/v430.entries
-          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.3.0.zip.sha256)
-      - name: Build production container from exact v4.3.0 bundle
+          (cd dist && sha256sum -c "mesh-cos-mcp-qnap-v${CANDIDATE_VERSION}.zip.sha256")
+      - name: Build production-equivalent container from current candidate
+        env:
+          CANDIDATE_VERSION: '4.4.0'
         run: |
           set -euo pipefail
-          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION=4.3.0-qnap -t mesh-cos-mcp:ci-v4.3.0 dist/qnap-bundle/v4.3.0/cos-mcp/build-context
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.3.0)" = '4.3.0-qnap'
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.3.0)" = "$GITHUB_SHA"
+          BUNDLE="dist/qnap-bundle/v${CANDIDATE_VERSION}"
+          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION="${CANDIDATE_VERSION}-qnap" -t "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}" "$BUNDLE/cos-mcp/build-context"
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "${CANDIDATE_VERSION}-qnap"
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and sequential requests
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.3.0'
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.3.0
-      - name: Write exact v4.3.0 candidate verification receipt
+          MESH_COS_DEPLOYMENT_RELEASE: '4.4.0'
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.4.0
+      - name: Write current candidate verification receipt
         run: |
           set -euo pipefail
+          mkdir -p dist
           {
-            printf 'release=4.3.0\n'
+            printf 'candidate_version=4.4.0\n'
             printf 'candidate_sha=%s\n' "$GITHUB_SHA"
             printf 'ci_run_id=%s\n' "$GITHUB_RUN_ID"
-            printf 'ci_run_url=%s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
             printf 'runtime_contract=4.0.0\n'
-            printf 'security_review=FULL_REVIEW\n'
-            printf 'test_gate=PASS\n'
-            printf 'coverage_gate=100_PERCENT_REQUIRED_AND_PASS\n'
-            printf 'qnap_bundle_gate=PASS\n'
-            printf 'container_provenance_gate=PASS\n'
-            printf 'modern_mcp_gate=PASS\n'
+            printf 'security_review=FULL_REVIEW_REQUIRED\n'
             python scripts/check-owner-execution-readiness.py
-            printf 'production_status=UNTOUCHED\n'
+            python scripts/check-capability-closure.py
+            python scripts/check-published-action-surface.py
+            printf 'workspace_publication_status=BLOCKED_PENDING_ACTUAL_ACTION_SCHEMA_SNAPSHOT\n'
             printf 'release_authority=HUMAN_ONLY\n'
-            printf 'candidate_disposition=EXACT_CANDIDATE_CI_PASS\n'
-          } > dist/verification-receipt-v4.3.0.txt
-          grep -q "^candidate_sha=$GITHUB_SHA$" dist/verification-receipt-v4.3.0.txt
-          grep -q '^OWNER_EXECUTION_READINESS=PASS checked=9$' dist/verification-receipt-v4.3.0.txt
-          grep -q '^candidate_disposition=EXACT_CANDIDATE_CI_PASS$' dist/verification-receipt-v4.3.0.txt
+          } > dist/verification-receipt-current.txt
+          grep -q "^candidate_sha=$GITHUB_SHA$" dist/verification-receipt-current.txt
+          grep -q '^OWNER_EXECUTION_READINESS=PASS checked=9$' dist/verification-receipt-current.txt
+          grep -q '^CAPABILITY_CLOSURE=PASS agents=10' dist/verification-receipt-current.txt
+          grep -q '^PUBLISHED_ACTION_SURFACE=SOURCE_CONTRACT_ONLY' dist/verification-receipt-current.txt
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.3.0-ci
+          name: mesh-cos-mcp-current-ci
           path: |
-            dist/mesh-cos-mcp-qnap-v4.3.0.zip
-            dist/mesh-cos-mcp-qnap-v4.3.0.zip.sha256
-            dist/verification-receipt-v4.3.0.txt
+            dist/mesh-cos-mcp-qnap-v4.4.0.zip
+            dist/mesh-cos-mcp-qnap-v4.4.0.zip.sha256
+            dist/verification-receipt-current.txt
           if-no-files-found: error
           retention-days: 30

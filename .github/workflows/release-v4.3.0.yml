@@ -65,6 +65,7 @@ jobs:
           sh deployment/qnap/tests/test-restarting-container-backup.sh
           bash -n scripts/build-qnap-release-bundle.sh
           bash -n scripts/build-qnap-release-v4.3.0.sh
+          bash -n scripts/build-chatgpt-skill-bundle-v4.3.0.sh
           grep -q 'MESH_COS_SLACK_HITL_MODE: CHATGPT_NATIVE_EVENT_TRIGGER' deployment/qnap/compose.yaml
           grep -q 'MESH_COS_SLACK_BOT_TOKEN_FILE' deployment/qnap/compose.yaml
           ! grep -q 'MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE:' deployment/qnap/compose.yaml
@@ -73,17 +74,22 @@ jobs:
           grep -q 'MESH_COS_SLACK_APP_ID=A0B49RNE4K0' deployment/qnap/.env.example
           grep -q 'EXPECTED_SLACK_APP_ID = "A0B49RNE4K0"' deployment/qnap/runtime_preflight.py
           grep -q 'delegation.execute_owner' chatgpt/mcp/mesh-cos-mcp.v1.json
-      - name: Build exact v4.3.0 release bundle
+      - name: Build exact v4.3.0 release bundles
         env:
           GITHUB_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           bash scripts/build-qnap-release-v4.3.0.sh
+          bash scripts/build-chatgpt-skill-bundle-v4.3.0.sh
           ZIP=dist/mesh-cos-mcp-qnap-v4.3.0.zip
           BUNDLE=dist/qnap-bundle/v4.3.0
+          SKILL_ZIP=dist/mesh-cos-chatgpt-skills-v4.3.0.zip
           test -f "$ZIP" && test -f "$ZIP.sha256"
+          test -f "$SKILL_ZIP" && test -f "$SKILL_ZIP.sha256"
           grep -q '^version=4.3.0$' "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
+          grep -q "^source_commit=$GITHUB_SHA$" dist/chatgpt-skill-bundle/v4.3.0/MANIFEST.txt
+          grep -q '^skill_count=8$' dist/chatgpt-skill-bundle/v4.3.0/MANIFEST.txt
           test -f "$BUNDLE/cos-mcp/CHANGELOG-v4.3.0.md"
           test -f "$BUNDLE/cos-mcp/cross-agent-owner-execution.feature"
           test -f "$BUNDLE/cos-mcp/security-review-v4.3.0-cross-agent-owner-execution.md"
@@ -91,7 +97,16 @@ jobs:
           test -f "$BUNDLE/cos-mcp/verification-v4.3.0-cross-agent-owner-execution.md"
           test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-v4.3.0.md"
           test -f "$BUNDLE/cos-mcp/slack-app-manifest.v4.2.3.json"
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-chief-of-staff/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-agentops-controller/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-answer-decision-desk/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-cro/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-cfo/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-coo/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-cmo/'
+          unzip -Z1 "$SKILL_ZIP" | grep -q '^v4.3.0/skills/mesh-message-operations/'
           (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.3.0.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-chatgpt-skills-v4.3.0.zip.sha256)
       - name: Build production container from exact release bundle
         run: |
           set -euo pipefail
@@ -104,10 +119,12 @@ jobs:
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.3.0
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-qnap-v4.3.0
+          name: mesh-cos-mcp-v4.3.0-release-candidate
           path: |
             dist/mesh-cos-mcp-qnap-v4.3.0.zip
             dist/mesh-cos-mcp-qnap-v4.3.0.zip.sha256
+            dist/mesh-cos-chatgpt-skills-v4.3.0.zip
+            dist/mesh-cos-chatgpt-skills-v4.3.0.zip.sha256
           if-no-files-found: error
           retention-days: 30
 
@@ -122,7 +139,9 @@ jobs:
       - name: Rebuild exact approved main-SHA release artifacts
         env:
           GITHUB_SHA: ${{ github.sha }}
-        run: bash scripts/build-qnap-release-v4.3.0.sh
+        run: |
+          bash scripts/build-qnap-release-v4.3.0.sh
+          bash scripts/build-chatgpt-skill-bundle-v4.3.0.sh
       - name: Publish immutable v4.3.0 release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -132,4 +151,11 @@ jobs:
             echo 'v4.3.0 already exists; leaving immutable release unchanged'
             exit 0
           fi
-          gh release create v4.3.0 dist/mesh-cos-mcp-qnap-v4.3.0.zip dist/mesh-cos-mcp-qnap-v4.3.0.zip.sha256 --target "$GITHUB_SHA" --title 'Mesh CoS MCP v4.3.0 Cross-Agent Owner Execution' --notes-file docs/release-4.3.0-cross-agent-owner-execution.md
+          gh release create v4.3.0 \
+            dist/mesh-cos-mcp-qnap-v4.3.0.zip \
+            dist/mesh-cos-mcp-qnap-v4.3.0.zip.sha256 \
+            dist/mesh-cos-chatgpt-skills-v4.3.0.zip \
+            dist/mesh-cos-chatgpt-skills-v4.3.0.zip.sha256 \
+            --target "$GITHUB_SHA" \
+            --title 'Mesh CoS MCP v4.3.0 Cross-Agent Owner Execution' \
+            --notes-file docs/release-4.3.0-cross-agent-owner-execution.md

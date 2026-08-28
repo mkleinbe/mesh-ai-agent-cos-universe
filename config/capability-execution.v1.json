@@ -88,7 +88,7 @@
         "approval-check": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["approval.get"]},
         "external-message-adapter": {"mode": "CHATGPT_APP_BOUNDARY", "backing_skill": "mesh-message-operations", "human_approval_required": true, "reason": "Gmail/Slack execution occurs at the approved ChatGPT app boundary after canonical approval verification; it is not a generic MCP adapter."},
         "audit": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]},
-        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_decision", "governance.record_event"]}
+        "governance-journal": {"mode": "MCP_CONTROL_PLANE", "backing_mcp_tools": ["governance.record_event"]}
       }
     }
   }

@@ -23,6 +23,14 @@ FORBIDDEN_EXECUTION_FIELDS = {
     "skill_implementation",
     "executable",
 }
+OWNER_IDENTITY_FIELDS = {
+    "owner",
+    "principal",
+    "agent_id",
+    "acting_owner",
+    "executing_principal",
+    "accountable_owner",
+}
 
 
 class RequestValidationError(ValueError):
@@ -197,6 +205,12 @@ def validate_tool_arguments(
     schema = active.get(tool_name)
     if schema is None:
         raise KeyError(tool_name)
+    if tool_name == "delegation.execute_owner":
+        spoofed = sorted(OWNER_IDENTITY_FIELDS.intersection(arguments))
+        if spoofed:
+            raise RequestValidationError(
+                [{"field": field, "reason": "unknown_field"} for field in spoofed]
+            )
     details: list[dict[str, str]] = []
     _validate_value(schema, arguments, "", details)
     if tool_name == "skills.invoke_governed" and isinstance(arguments.get("payload"), dict):

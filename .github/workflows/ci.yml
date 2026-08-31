@@ -140,7 +140,7 @@ jobs:
           grep -q '^OWNER_EXECUTION_READINESS=PASS checked=9$' dist/verification-receipt-current.txt
           grep -q '^CAPABILITY_CLOSURE=PASS agents=10' dist/verification-receipt-current.txt
           grep -q '^PUBLISHED_ACTION_SURFACE=SOURCE_CONTRACT_ONLY' dist/verification-receipt-current.txt
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: mesh-cos-mcp-v4.4.0-candidate
           path: |

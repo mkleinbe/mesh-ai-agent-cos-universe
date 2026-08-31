@@ -115,7 +115,7 @@ jobs:
         env:
           MESH_COS_DEPLOYMENT_RELEASE: '4.3.0'
         run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.3.0
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: mesh-cos-mcp-v4.3.0-release-candidate
           path: |

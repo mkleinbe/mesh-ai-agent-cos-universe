@@ -2,7 +2,7 @@
 
 `v4.4.1` is the current repository release candidate. It corrects Commercial Operations caller/work-package construction, central scheduler drift, bounded recovery, CMO/VP Content composition, and business-first executive reporting without changing the Mesh CoS MCP runtime binary.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**.
+The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. This release preserves exactly 10 registered agents and does not change the Phase 1 roster.
 
 ## Root cause and correction
 

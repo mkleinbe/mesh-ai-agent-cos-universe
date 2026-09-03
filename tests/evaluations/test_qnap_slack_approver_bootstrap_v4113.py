@@ -78,16 +78,16 @@ def test_historical_release_evidence_remains_while_v440_is_candidate_and_v430_is
     wrapper = text(ROOT / "scripts" / "build-qnap-release-v4.2.0.sh")
     legacy_workflow = text(ROOT / ".github" / "workflows" / "release-production-readiness.yml")
     historical_v423 = text(ROOT / ".github" / "workflows" / "release-v4.2.3.yml")
-    historical_v430 = text(ROOT / ".github" / "workflows" / "release-v4.3.0.yml")
+    current_v430 = text(ROOT / ".github" / "workflows" / "release-v4.3.0.yml")
     assert "VERSION=4.2.0" in wrapper
     assert "TAG: v4.1.13" in legacy_workflow
     assert "v4.1.13 Slack Approver Bootstrap" in legacy_workflow
     assert "v4.2.3 QNAP qnet egress readiness release candidate" in historical_v423
-    assert "v4.3.0 cross-agent owner execution release candidate" in historical_v430
+    assert "v4.3.0 cross-agent owner execution release candidate" in current_v430
     readme = text(ROOT / "README.md")
     assert "v4.4.0 Authority Closure" in readme
     assert "Current deployed QNAP release remains `v4.3.0`" in readme
-    assert "Historical v4.3.x documents remain retained as release-train evidence." in readme
+    assert "Historical v4.3.x documents remain retained as release-train evidence" in readme
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10

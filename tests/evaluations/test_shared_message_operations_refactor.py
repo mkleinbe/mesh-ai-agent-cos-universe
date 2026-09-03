@@ -100,7 +100,7 @@ def test_mcp_has_message_ops_principal_and_human_only_tools_remain_excluded() ->
     assert "reliability.human_override" not in message_allowlist
 
 
-def test_qnap_release_candidate_is_v440_and_message_ops_is_real_agent() -> None:
+def test_qnap_release_identity_preserves_v4_runtime() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     assert '"version": "4.0.0"' in (ROOT / "mcp" / "package.json").read_text()

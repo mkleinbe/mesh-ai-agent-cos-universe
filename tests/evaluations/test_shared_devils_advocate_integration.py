@@ -60,7 +60,7 @@ def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() ->
         )
 
 
-def test_qnap_release_candidate_is_v440_while_canonical_runtime_is_v4() -> None:
+def test_qnap_release_preserves_v4_authority_contract() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     legacy = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
@@ -69,9 +69,9 @@ def test_qnap_release_candidate_is_v440_while_canonical_runtime_is_v4() -> None:
     historical_v423 = (ROOT / ".github" / "workflows" / "release-v4.2.3.yml").read_text()
     assert "v4.2.3 QNAP qnet egress readiness release candidate" in historical_v423
     assert "gh release create v4.2.3" in historical_v423
-    historical_v430 = (ROOT / ".github" / "workflows" / "release-v4.3.0.yml").read_text()
-    assert "v4.3.0 cross-agent owner execution release candidate" in historical_v430
-    assert "gh release create v4.3.0" in historical_v430
+    current = (ROOT / ".github" / "workflows" / "release-v4.3.0.yml").read_text()
+    assert "v4.3.0 cross-agent owner execution release candidate" in current
+    assert "gh release create v4.3.0" in current
     historical_v422 = (ROOT / ".github" / "workflows" / "release-v4.2.2.yml").read_text()
     assert "historical v4.2.2 release record" in historical_v422
     historical_v421 = (ROOT / ".github" / "workflows" / "release-v4.2.1.yml").read_text()

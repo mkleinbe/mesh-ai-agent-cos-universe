@@ -107,6 +107,6 @@ def test_qnap_release_identity_preserves_v4_runtime() -> None:
     release = (ROOT / "RELEASE.md").read_text()
     assert "# v4.4.0 Authority Closure" in release
     assert "canonical Phase 1 authority/runtime contract remains **4.0.0**" in release
-    assert "v4.3.0" in release
+    assert "Production QNAP deployment: `4.4.0`" in release
     assert "exactly 10 agents" in release or "exactly 10 registered agents" in release
     assert "Message Operations" in (ROOT / "README.md").read_text() or "message-ops" in release

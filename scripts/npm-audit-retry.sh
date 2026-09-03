@@ -19,7 +19,7 @@ attempt=1
 while [ "$attempt" -le "$max_attempts" ]; do
   output_file="$(mktemp)"
   set +e
-  npm run security >"$output_file" 2>&1
+  npm audit --audit-level=high >"$output_file" 2>&1
   rc=$?
   set -e
   cat "$output_file"

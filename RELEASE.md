@@ -1,105 +1,77 @@
-# v4.4.0 Authority Closure
+# v4.4.1 Commercial Operations Orchestration
 
-`v4.4.0` is the current repository release candidate. It closes material approval, delegated-authority, nested-delegation, logical Skill-agent provenance, action/schema publication-attestation, runtime-provenance, and release-pipeline defects discovered during v4.3.x production acceptance.
+`v4.4.1` is the current repository release candidate. It corrects Commercial Operations caller/work-package construction, central scheduler drift, bounded recovery, CMO/VP Content composition, and business-first executive reporting without changing the Mesh CoS MCP runtime binary.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The currently deployed QNAP release remains **4.3.0** until a human performs the v4.4.0 deployment.
+The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. This release preserves exactly 10 registered agents and does not change the Phase 1 roster.
 
-## Material architecture changes
+## Root cause and correction
 
-- L4/L5 authority resolves canonical `APPROVED` TaskLedger approvals for the exact task/action rather than trusting request strings.
-- L5 requires Michael as the canonical approval actor.
-- `delegation.execute_owner` uses `mesh.cos.owner-execution.v2` and derives the child principal from canonical state.
-- Delegated Skill capability authority is restricted to the intersection of owner registry capability and delegation `permitted_capabilities`.
-- Nested execution remains task-local and follows registered parent-child routes.
-- Human-only and verifier operations remain unreachable through owner execution.
-- Denied delegated capabilities produce durable owner-execution failure receipts.
-- Skill handoffs explicitly identify the `LOGICAL_SKILL_AGENT` authorization boundary and do not claim synchronous separate Workspace Agent execution.
-- All declared agent tools/capabilities are closed through `config/capability-execution.v1.json`.
-- ChatGPT production publication attestation requires exact action-name **and input-schema** equality.
-- MCP response provenance separately exposes runtime contract, deployment release, immutable source commit, and publication-schema digest.
+The blocked commercial occurrences contained descriptive prerequisite text in canonical dependency arrays. Mesh CoS MCP 4.4.0 correctly treated those values as canonical predecessor task IDs and correctly blocked `IN_PROGRESS` when they could not be resolved.
 
-See `docs/architecture-v4.4.0-authority-execution.md` and `docs/security-review-v4.4.0-authority-closure.md`.
+v4.4.1 keeps the fail-closed runtime gate and corrects the orchestration boundary:
 
-## Release-candidate verification
+- dependency arrays contain only real canonical predecessor task IDs;
+- narrative prerequisites move to job contracts, acceptance tests, constraints, trigger conditions, evidence, or operating mirrors;
+- legacy malformed tasks remain preserved as audit history;
+- one deterministic dependency-clean successor may be used when provider state proves recovery is safe;
+- no provider side effect is replayed;
+- direct and nested owner execution continue through registry-valid delegation;
+- business disposition and technical health are reported separately.
 
-The exact branch/main revision is acceptable for integration only when GitHub CI proves:
+## Operating changes
 
-- TypeScript build/tests/MCP smoke and npm security audit;
-- Python contract/package/drift, owner-readiness, capability-closure, and source publication checks;
-- Ruff, mypy, Bandit, compileall, and **100% branch-aware `mesh_cos` test coverage**;
-- QNAP POSIX regression/security checks;
-- v4.4.0 QNAP and ChatGPT Skill bundle generation with checksums bound to the exact SHA;
-- production-equivalent container version/revision labels;
-- modern MCP discovery and sequential calls;
-- independent verification recorded in `docs/verification-v4.4.0-authority-closure.md`.
+- Restored the Commercial Operations Scheduled Task to active weekday wakes at 08:00, 10:00, 12:00, and 16:00 America/New_York.
+- Preserved TaskLedger logical due times as the actual execution identity and eligibility basis.
+- Kept `COM-EMAIL-SEND-DLY-001` event-driven under `LOOP-COM-HITL-001`.
+- Formalized CMO and VP Content participation for authority/content context without transferring Revenue Intelligence commercial-truth authority.
+- Added bounded self-healing and executive run-brief controls to the durable TaskLedger Operating Guide.
 
-Normal CI is release-neutral and builds the current v4.4.0 candidate. Historical v4.3.0 release workflow execution is no longer triggered by arbitrary future pull requests.
+## Compatibility and production disposition
 
-## Candidate assets
+- Canonical runtime contract: `4.0.0`
+- Production QNAP deployment: `4.4.0`
+- Repository release: `v4.4.1`
+- Registered agents: exactly 10
+- MCP machine action surface: unchanged
+- Database/schema migration: none
+- QNAP image/container change: none
+- QNAP operator action: none
+- Provider credentials/Slack trust boundary: unchanged
+- External-action authority: unchanged
 
-CI prepares:
+No QNAP deployment is part of this release. The live Mesh CoS MCP 4.4.0 runtime remains production.
 
-- `mesh-cos-mcp-qnap-v4.4.0.zip`
-- `mesh-cos-mcp-qnap-v4.4.0.zip.sha256`
-- `mesh-cos-chatgpt-skills-v4.4.0.zip`
-- `mesh-cos-chatgpt-skills-v4.4.0.zip.sha256`
-- `verification-receipt-current.txt`
+## Verification gates
 
-The QNAP ZIP contains the v4.4.0 material-turn, architecture, security review, runbook, release notes, Skill notes, and ChatGPT publication-acceptance contract. The Skill ZIP contains the eight governed top-level Skill packages and exact source manifest.
+The candidate is releasable only when:
 
-## Version identity
+1. Existing full repository CI passes.
+2. The v4.4.1 Commercial Operations regression suite passes.
+3. Live Mesh CoS MCP identity, exact 10-agent registry, delegated owner execution, separate verification, and audit-chain validation pass.
+4. Recovered banking and Gmail-response occurrences are canonical and VERIFIED without provider replay.
+5. CMO and nested VP Content Commercial Operations tasks are VERIFIED.
+6. TaskLedger Operating Guide, Preflight, Tests, Operating Loops, and Run History are reconciled.
+7. The Commercial Operations Scheduled Task is enabled with the declared schedule and current prompt contract.
+8. No unauthorized external action occurred.
+9. Independent verification is recorded against the final pull-request/main SHA.
 
-- Repository candidate: `4.4.0`
-- Intended semantic tag when manually released: `v4.4.0`
-- Candidate container image label: `4.4.0-qnap`
-- Canonical authority/runtime contract: `4.0.0`
-- Workforce: exactly 10 registered agents
-- CoS machine action surface: exactly 28 actions
-- Full tool catalog: 30 operations including two human-only operations
-- Production remote ingress: OpenAI Secure MCP Tunnel
+## Release lifecycle
 
-## Human-controlled release and production gates
+After all pull-request checks are green:
 
-The user/operator may handle semantic tag/GitHub Release creation manually. Repository integration does not treat a missing manual release as a source verification failure.
-
-The following remain human-controlled and must not be inferred from CI success:
-
-1. semantic tag / GitHub Release when manually cut;
-2. QNAP v4.4.0 production deployment;
-3. ChatGPT Workspace custom-app refresh/recreation and publication;
-4. capture of the actual ChatGPT action+input-schema snapshot;
-5. post-deployment/post-publication live acceptance.
-
-### QNAP production acceptance after human deployment
-
-Require a safe live MCP response to report:
-
-```text
-mcp_version: 4.0.0
-deployment_release: 4.4.0
-source_commit: <merged/released main SHA>
-publication_schema_digest: <accepted principal surface digest>
-agent_id: cos
-```
-
-Then verify the 10-agent registry, valid audit chain, direct delegated-owner execution, both bounded nested routes, owner-only completion, verifier separation, and fail-closed Message Operations approval behavior.
-
-### ChatGPT Workspace acceptance after human publication
-
-Capture the actual action snapshot including exact `inputSchema` for every action and run:
-
-```bash
-python scripts/check-published-action-surface.py --actual-file <snapshot.json>
-```
-
-Require exact 28/28 CoS machine actions, no unexpected actions, exact schema equality, `delegation.execute_owner` present, and both human-only operations absent. Until then the required status remains:
-
-`BLOCKED_PENDING_ACTUAL_ACTION_SCHEMA_SNAPSHOT`
+1. Merge the verified branch to `main`.
+2. The v4.4.1 release workflow re-runs the release verification job on the merged main SHA.
+3. Only after that verification succeeds, the workflow creates semantic tag `v4.4.1` and the immutable GitHub Release from that exact main SHA.
+4. Confirm `main`, the tag, GitHub Release, release notes, and canonical TaskLedger evidence identify the same intended repository release.
 
 ## Rollback
 
-If a human-deployed v4.4.0 candidate fails live provenance or acceptance, preserve TaskLedger/audit/approval state, stop consequential routing, use the existing versioned QNAP rollback/backup procedures to restore the last verified production release, and keep the last accepted ChatGPT app snapshot active. Do not delete failure receipts or rewrite canonical history.
+If the orchestration configuration produces incorrect routing, disable the Commercial Operations Scheduled Task, preserve canonical MCP and provider evidence, restore the prior prompt from the TaskLedger Prompt Archive, and investigate the caller/control-plane contract.
 
-## Historical releases
+Do not roll back or restart the healthy QNAP runtime for an orchestration-only defect.
 
-v4.3.1 added the independent frozen Workspace action-snapshot gate after PF-058. v4.3.0 introduced cross-agent owner execution for PF-057. Their detailed release, security, verification, and material-turn records remain retained under `docs/` and `CHANGELOG-v4.3.*.md` as immutable release-train evidence.
+---
+
+# v4.4.0 Authority Closure
+
+Historical release identity is preserved for regression and audit continuity. For that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. The historical v4.4.0 release documents, workflows, security evidence, and v4.3.x release-train artifacts remain retained. This historical section does not override the current v4.4.1 repository release candidate or the current QNAP 4.4.0 production deployment.

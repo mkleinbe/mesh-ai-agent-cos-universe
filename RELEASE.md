@@ -69,3 +69,9 @@ After all pull-request checks are green:
 If the orchestration configuration produces incorrect routing, disable the Commercial Operations Scheduled Task, preserve canonical MCP and provider evidence, restore the prior prompt from the TaskLedger Prompt Archive, and investigate the caller/control-plane contract.
 
 Do not roll back or restart the healthy QNAP runtime for an orchestration-only defect.
+
+---
+
+# v4.4.0 Authority Closure
+
+Historical release identity is preserved for regression and audit continuity. For that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. The historical v4.4.0 release documents, workflows, security evidence, and v4.3.x release-train artifacts remain retained. This historical section does not override the current v4.4.1 repository release candidate or the current QNAP 4.4.0 production deployment.

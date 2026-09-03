@@ -18,13 +18,16 @@ fi
 attempt=1
 while [ "$attempt" -le "$max_attempts" ]; do
   output_file="$(mktemp)"
-  if npm run security >"$output_file" 2>&1; then
-    cat "$output_file"
+  set +e
+  npm run security >"$output_file" 2>&1
+  rc=$?
+  set -e
+  cat "$output_file"
+
+  if [ "$rc" -eq 0 ]; then
     rm -f "$output_file"
     exit 0
   fi
-  rc=$?
-  cat "$output_file"
 
   if grep -Eq 'audit endpoint returned an error|503 Service Unavailable|502 Bad Gateway|504 Gateway Timeout|500 Internal Server Error' "$output_file"; then
     rm -f "$output_file"

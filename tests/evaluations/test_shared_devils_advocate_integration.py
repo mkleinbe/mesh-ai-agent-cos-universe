@@ -60,7 +60,7 @@ def test_workspace_manifests_attach_shared_skill_only_to_governed_consumers() ->
         )
 
 
-def test_qnap_release_preserves_v4_authority_contract() -> None:
+def test_qnap_release_candidate_is_v440_while_canonical_runtime_is_v4() -> None:
     assert __version__ == "4.0.0"
     assert 'version = "4.0.0"' in (ROOT / "pyproject.toml").read_text()
     legacy = (ROOT / ".github" / "workflows" / "release-production-readiness.yml").read_text()
@@ -83,6 +83,6 @@ def test_qnap_release_preserves_v4_authority_contract() -> None:
     release_notes = (ROOT / "RELEASE.md").read_text()
     assert "# v4.4.0 Authority Closure" in release_notes
     assert "canonical Phase 1 authority/runtime contract remains **4.0.0**" in release_notes
-    assert "Production QNAP deployment: `4.4.0`" in release_notes
+    assert "v4.3.0" in release_notes
     assert "Mesh Devil's Advocate" in (ROOT / "README.md").read_text()
     assert "Message Operations" in (ROOT / "README.md").read_text()

@@ -99,3 +99,7 @@ GitHub CI also retains the existing TypeScript/MCP, QNAP shell/security, contain
 `v4.4.1` is a PATCH release because it corrects orchestration/control-plane behavior without changing the public MCP runtime contract or QNAP production binary. After the verified pull request is merged to `main`, the v4.4.1 release workflow creates the immutable semantic tag and GitHub Release from the merged main SHA.
 
 No QNAP deployment is part of v4.4.1. If a future defect is proven to originate in runtime code rather than caller work-package construction, QNAP work requires a separately justified release and user-proxied operator steps.
+
+## Historical release-train evidence
+
+The `v4.4.0 Authority Closure` baseline and earlier v4.3.x evidence remain intentionally preserved. At the time of the v4.4.0 candidate, the historical statement was: **Current deployed QNAP release remains `v4.3.0`**. Historical v4.3.x documents remain retained as release-train evidence. These statements are preserved as historical evidence only; the current production QNAP deployment is 4.4.0.

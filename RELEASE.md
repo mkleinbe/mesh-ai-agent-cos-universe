@@ -2,7 +2,7 @@
 
 `v4.5.1` is the current repository release candidate. It is a documentation and release-control PATCH that closes the already published v4.5.0 CFO Financial Analysis capability release.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**.
+The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**. The roster remains exactly 10 registered agents.
 
 ## Patch scope
 

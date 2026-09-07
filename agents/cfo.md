@@ -49,6 +49,6 @@ The repository-local `mesh-cfo` Skill provides governed reference modules plus d
 
 ## Identity and versioning
 
-`CFO` is the stable organizational role name. Implementation version is `1.2.0`; repository capability release is `v4.6.0`; canonical Phase 1 runtime contract remains `4.0.0`; production QNAP deployment remains `4.4.0`. The legacy Workspace `repository_release` field carries the canonical runtime-contract identity until a future manifest schema migration.
+`CFO` is the stable organizational role name. Implementation version is `1.2.0`; repository capability release is `v4.7.0`; canonical Phase 1 runtime contract remains `4.0.0`; production QNAP deployment remains `4.4.0`. The legacy Workspace `repository_release` field carries the canonical runtime-contract identity until a future manifest schema migration.
 
 Exact sources, tools, actions, authority, approvals, and prohibited behavior are defined in `agents/registry.json`.

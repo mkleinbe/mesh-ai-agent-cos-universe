@@ -26,18 +26,41 @@ def _cash_flows(values: Any) -> list[float]:
     return [_number(value, f"cash_flows[{index}]") for index, value in enumerate(values)]
 
 
+def _sign_changes(values: Sequence[float]) -> int:
+    nonzero = [value for value in values if value != 0]
+    return sum((left < 0) != (right < 0) for left, right in zip(nonzero, nonzero[1:], strict=False))
+
+
+def roi(net_benefit: float, investment_cost: float) -> float:
+    benefit = _number(net_benefit, "net_benefit")
+    cost = _number(investment_cost, "investment_cost")
+    if cost <= 0:
+        raise FinanceInputError("investment_cost must be greater than zero")
+    return benefit / cost
+
+
 def npv(rate: float, cash_flows: Sequence[float]) -> float:
     rate = _number(rate, "rate")
     if rate <= -1:
         raise FinanceInputError("rate must be greater than -1")
     flows = _cash_flows(cash_flows)
-    return sum(value / ((1 + rate) ** period) for period, value in enumerate(flows))
+    try:
+        result = sum(value / ((1 + rate) ** period) for period, value in enumerate(flows))
+    except (OverflowError, ZeroDivisionError) as exc:
+        raise FinanceInputError("rate and cash-flow horizon produce an unstable NPV calculation") from exc
+    if not math.isfinite(result):
+        raise FinanceInputError("NPV result is not finite")
+    return result
 
 
 def irr(cash_flows: Sequence[float], *, tolerance: float = 1e-10, max_iterations: int = 256) -> float:
     flows = _cash_flows(cash_flows)
     if not any(value < 0 for value in flows) or not any(value > 0 for value in flows):
         raise FinanceInputError("IRR requires at least one negative and one positive cash flow")
+    if _sign_changes(flows) != 1:
+        raise FinanceInputError(
+            "IRR is ambiguous for non-conventional cash flows with multiple sign changes; use an NPV profile or scenario analysis"
+        )
 
     low = -0.999999999
     high = 1.0
@@ -97,6 +120,16 @@ def break_even_units(fixed_costs: float, price_per_unit: float, variable_cost_pe
     return fixed / contribution
 
 
+def break_even_revenue(fixed_costs: float, contribution_margin_ratio: float) -> float:
+    fixed = _number(fixed_costs, "fixed_costs")
+    ratio = _number(contribution_margin_ratio, "contribution_margin_ratio")
+    if fixed < 0:
+        raise FinanceInputError("fixed_costs cannot be negative")
+    if ratio <= 0 or ratio > 1:
+        raise FinanceInputError("contribution_margin_ratio must be greater than zero and no greater than one")
+    return fixed / ratio
+
+
 def runway(available_cash: float, net_burn_per_period: float) -> dict[str, float | bool | None]:
     cash = _number(available_cash, "available_cash")
     burn = _number(net_burn_per_period, "net_burn_per_period")
@@ -123,6 +156,10 @@ def ltv_cac(ltv: float, cac: float) -> float:
     return ltv_value / cac_value
 
 
+def cash_conversion_cycle(dio: float, dso: float, dpo: float) -> float:
+    return _number(dio, "dio") + _number(dso, "dso") - _number(dpo, "dpo")
+
+
 def execute(request: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise FinanceInputError("request must be an object")
@@ -136,8 +173,10 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(inputs, dict):
         raise FinanceInputError("inputs must be an object")
 
-    if operation == "npv":
-        result: Any = {"npv": npv(inputs.get("rate"), inputs.get("cash_flows"))}
+    if operation == "roi":
+        result: Any = {"roi": roi(inputs.get("net_benefit"), inputs.get("investment_cost"))}
+    elif operation == "npv":
+        result = {"npv": npv(inputs.get("rate"), inputs.get("cash_flows"))}
     elif operation == "irr":
         result = {"irr": irr(inputs.get("cash_flows"))}
     elif operation == "payback":
@@ -156,12 +195,24 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                 inputs.get("variable_cost_per_unit"),
             )
         }
+    elif operation == "break_even_revenue":
+        result = {
+            "break_even_revenue": break_even_revenue(
+                inputs.get("fixed_costs"), inputs.get("contribution_margin_ratio")
+            )
+        }
     elif operation == "runway":
         result = runway(inputs.get("available_cash"), inputs.get("net_burn_per_period"))
     elif operation == "contribution_margin":
         result = contribution_margin(inputs.get("revenue"), inputs.get("variable_costs"))
     elif operation == "ltv_cac":
         result = {"ltv_cac": ltv_cac(inputs.get("ltv"), inputs.get("cac"))}
+    elif operation == "cash_conversion_cycle":
+        result = {
+            "cash_conversion_cycle": cash_conversion_cycle(
+                inputs.get("dio"), inputs.get("dso"), inputs.get("dpo")
+            )
+        }
     else:
         raise FinanceInputError(f"unsupported operation: {operation}")
     return {"ok": True, "operation": operation, "result": result}
@@ -171,7 +222,7 @@ def main() -> int:
     try:
         request = json.load(sys.stdin)
         response = execute(request)
-    except (FinanceInputError, json.JSONDecodeError, TypeError) as exc:
+    except (FinanceInputError, json.JSONDecodeError, TypeError, OverflowError, ZeroDivisionError) as exc:
         response = {"ok": False, "error": "invalid_input", "message": str(exc)}
         sys.stdout.write(json.dumps(response, separators=(",", ":"), sort_keys=True) + "\n")
         return 2

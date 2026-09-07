@@ -1,31 +1,19 @@
-# v4.5.1 CFO Financial Analysis Release Closeout
+# v4.5.2 CFO Financial Analysis Release State Finalization
 
-`v4.5.1` is the current repository release candidate. It is a documentation and release-control PATCH that closes the already published v4.5.0 CFO Financial Analysis capability release.
+`v4.5.2 CFO Financial Analysis Release State Finalization` is the current repository release. It is a documentation and release-control PATCH that finalizes durable post-publication release wording for the CFO Financial Analysis release train.
 
 The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**. The roster remains exactly 10 registered agents.
 
 ## Patch scope
 
-v4.5.1:
+v4.5.2:
 
-- finalizes the v4.5.0 verification receipt with actual main/tag/release evidence;
-- synchronizes README, RELEASE, and SECURITY current-release pointers;
-- adds release-closeout regression coverage;
-- adds a verified v4.5.1 semantic release workflow.
+- replaces current-release `release candidate` wording with durable `current repository release` wording;
+- preserves the completed v4.5.0 feature and v4.5.1 closeout evidence;
+- adds regression coverage preventing current-release wording from becoming stale after publication;
+- adds a verified v4.5.2 semantic release workflow.
 
 It does **not** change CFO behavior, authority, source scope, Skill methods, MCP tools, connector permissions, credentials, dependencies, database schemas, QNAP runtime, or external-action rights.
-
-## v4.5.0 release evidence
-
-The v4.5.0 feature release completed successfully:
-
-- final main/tag/release SHA: `075eb8de04d6035a16ff2b6a24d2106ef8783b95`;
-- ordinary main CI `34148492601`: SUCCESS;
-- dedicated release run `34148492715`: SUCCESS;
-- semantic tag `v4.5.0`: published to the same SHA;
-- GitHub Release `Mesh CoS v4.5.0 CFO Financial Analysis Capability`: published to the same SHA.
-
-The final receipt is `docs/verification-v4.5.0-cfo-financial-analysis.md`.
 
 ## Authority preserved
 
@@ -45,7 +33,7 @@ The final receipt is `docs/verification-v4.5.0-cfo-financial-analysis.md`.
 
 - Canonical runtime contract: `4.0.0`
 - Production QNAP deployment: `4.4.0`
-- Repository closeout release: `v4.5.1`
+- Repository release: `v4.5.2`
 - CFO feature release: `v4.5.0`
 - CFO implementation version: `1.1.0`
 - Registered agents: exactly 10
@@ -57,32 +45,23 @@ The final receipt is `docs/verification-v4.5.0-cfo-financial-analysis.md`.
 - External-action authority: unchanged
 - New dependency or connector: none
 
-No QNAP deployment is part of v4.5.1. The live Mesh CoS MCP 4.4.0 runtime remains production.
+No QNAP deployment is part of v4.5.2. The live Mesh CoS MCP 4.4.0 runtime remains production.
 
 ## Verification gates
 
-The v4.5.1 candidate is releasable only when:
-
-1. Existing full repository CI passes.
-2. `tests/evaluations/test_cfo_financial_analysis_v450.py` passes.
-3. `tests/evaluations/test_cfo_release_closeout_v451.py` passes.
-4. The v4.5.0 receipt records `RELEASED` and final SHA evidence.
-5. README, RELEASE, and SECURITY identify v4.5.1 as current repository release candidate.
-6. CFO implementation remains `1.1.0`, canonical runtime remains `4.0.0`, and QNAP production remains `4.4.0`.
-7. No CFO authority, MCP, connector, source, runtime, or QNAP change is introduced.
-
-## Release lifecycle
-
-After all pull-request checks are green:
-
-1. Merge the verified v4.5.1 closeout branch to `main`.
-2. The v4.5.1 release workflow re-runs full release verification on the merged main SHA.
-3. Only after verification succeeds, create semantic tag `v4.5.1` and the GitHub Release from that exact main SHA.
-4. Confirm `main`, tag, release, README, RELEASE, SECURITY, verification receipt, CFO `1.1.0`, runtime `4.0.0`, and QNAP `4.4.0` identify the same final state.
+The v4.5.2 release must pass the existing full repository CI plus the CFO feature, closeout, and durable-release-state regressions. The tagged source itself identifies v4.5.2 as the current repository release, so no post-release wording patch is required.
 
 ## Rollback
 
-If the closeout patch creates documentation drift, revert the v4.5.1 documentation/release-control change and issue a corrective patch release. Do not restart or roll back the healthy QNAP runtime for a documentation-only defect.
+If this documentation patch creates drift, revert it and issue a corrective patch release. Do not restart or roll back the healthy QNAP runtime for a documentation-only defect.
+
+---
+
+# v4.5.1 CFO Financial Analysis Release Closeout
+
+`v4.5.1` is the prior documentation and release-control patch that finalized the v4.5.0 verification receipt with actual main, tag, CI, and GitHub Release evidence. It did not change CFO behavior or runtime authority.
+
+The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**.
 
 ---
 
@@ -134,4 +113,4 @@ Commercial Operations continues to preserve Revenue Intelligence commercial trut
 
 # v4.4.0 Authority Closure
 
-Historical release identity is preserved for regression and audit continuity. At that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. Historical v4.3.x and v4.4.x release documents and verification artifacts remain retained and do not override the current v4.5.1 repository release candidate or the current QNAP 4.4.0 production deployment.
+Historical release identity is preserved for regression and audit continuity. At that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. Historical v4.3.x and v4.4.x release documents and verification artifacts remain retained and do not override the current v4.5.2 repository release or the current QNAP 4.4.0 production deployment.

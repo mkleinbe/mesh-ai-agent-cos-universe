@@ -1,4 +1,4 @@
-name: v4.5.1 CFO Financial Analysis Release Closeout
+name: v4.5.2 CFO Financial Analysis Release State Finalization
 
 on:
   push:
@@ -7,20 +7,19 @@ on:
       - 'README.md'
       - 'RELEASE.md'
       - 'SECURITY.md'
-      - 'CHANGELOG-v4.5.1.md'
-      - 'docs/verification-v4.5.0-cfo-financial-analysis.md'
-      - 'docs/material-turn-v4.5.1.md'
-      - 'docs/release-authorization-v4.5.1.md'
-      - 'docs/release-v4.5.1-release-closeout.md'
-      - 'tests/evaluations/test_cfo_release_closeout_v451.py'
-      - '.github/workflows/release-v4.5.1.yml'
+      - 'CHANGELOG-v4.5.2.md'
+      - 'docs/material-turn-v4.5.2.md'
+      - 'docs/release-authorization-v4.5.2.md'
+      - 'docs/release-v4.5.2-release-state-finalization.md'
+      - 'tests/evaluations/test_cfo_release_state_v452.py'
+      - '.github/workflows/release-v4.5.2.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: v4.5.1-${{ github.ref }}
+  group: v4.5.2-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -56,16 +55,22 @@ jobs:
       - run: python -m compileall -q src
       - run: pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
       - run: pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
-      - name: Confirm preserved v4.5.1 history and runtime boundaries
+      - run: pytest -q tests/evaluations/test_cfo_release_state_v452.py
+      - name: Confirm durable current release and preserved runtime boundaries
         run: |
           set -euo pipefail
-          grep -q '## v4.5.1 CFO Financial Analysis Release Closeout' README.md
-          grep -q '^# v4.5.1 CFO Financial Analysis Release Closeout' docs/release-v4.5.1-release-closeout.md
-          grep -q '^# Changelog v4.5.1' CHANGELOG-v4.5.1.md
-          grep -q '\*\*RELEASED\*\*' docs/verification-v4.5.0-cfo-financial-analysis.md
-          grep -q 'CFO implementation version: `1.1.0`' docs/verification-v4.5.0-cfo-financial-analysis.md
-          grep -q 'Canonical Phase 1 runtime contract: `4.0.0`' docs/verification-v4.5.0-cfo-financial-analysis.md
-          grep -q 'Production QNAP runtime: `4.4.0`, unchanged' docs/verification-v4.5.0-cfo-financial-analysis.md
+          grep -q 'Current repository release: `v4.5.2 CFO Financial Analysis Release State Finalization`' README.md
+          grep -q '^# v4.5.2 CFO Financial Analysis Release State Finalization' RELEASE.md
+          grep -q 'Current repository release: \*\*v4.5.2 CFO Financial Analysis Release State Finalization\*\*' SECURITY.md
+          README_CURRENT="$(grep -im1 'current repository release' README.md)"
+          RELEASE_CURRENT="$(grep -im1 'current repository release' RELEASE.md)"
+          SECURITY_CURRENT="$(grep -im1 'current repository release' SECURITY.md)"
+          ! printf '%s\n' "$README_CURRENT" | grep -qi 'release candidate'
+          ! printf '%s\n' "$RELEASE_CURRENT" | grep -qi 'release candidate'
+          ! printf '%s\n' "$SECURITY_CURRENT" | grep -qi 'release candidate'
+          grep -q 'CFO implementation remains \*\*1.1.0\*\*' RELEASE.md
+          grep -q '4.0.0' RELEASE.md
+          grep -q '4.4.0' RELEASE.md
 
   release:
     if: github.ref == 'refs/heads/main'
@@ -75,16 +80,16 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - name: Preserve immutable v4.5.1 release
+      - name: Publish v4.5.2 release state finalization
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view v4.5.1 >/dev/null 2>&1; then
-            echo 'v4.5.1 already exists; leaving release unchanged'
+          if gh release view v4.5.2 >/dev/null 2>&1; then
+            echo 'v4.5.2 already exists; leaving release unchanged'
             exit 0
           fi
-          gh release create v4.5.1 \
+          gh release create v4.5.2 \
             --target "$GITHUB_SHA" \
-            --title 'Mesh CoS v4.5.1 CFO Financial Analysis Release Closeout' \
-            --notes-file docs/release-v4.5.1-release-closeout.md
+            --title 'Mesh CoS v4.5.2 CFO Financial Analysis Release State Finalization' \
+            --notes-file docs/release-v4.5.2-release-state-finalization.md

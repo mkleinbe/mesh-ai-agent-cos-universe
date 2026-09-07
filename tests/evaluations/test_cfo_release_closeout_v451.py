@@ -5,14 +5,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_current_repository_release_pointers_are_v451() -> None:
+def test_v451_release_identity_remains_preserved_as_history() -> None:
     readme = (ROOT / "README.md").read_text()
     release = (ROOT / "RELEASE.md").read_text()
-    security = (ROOT / "SECURITY.md").read_text()
+    changelog = (ROOT / "CHANGELOG-v4.5.1.md").read_text()
 
-    assert "v4.5.1 CFO Financial Analysis Release Closeout" in readme
+    assert "## v4.5.1 CFO Financial Analysis Release Closeout" in readme
     assert "# v4.5.1 CFO Financial Analysis Release Closeout" in release
-    assert "v4.5.1 CFO Financial Analysis Release Closeout" in security
+    assert "# Changelog v4.5.1" in changelog
 
 
 def test_v450_verification_receipt_records_completed_release() -> None:

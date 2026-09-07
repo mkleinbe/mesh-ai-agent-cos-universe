@@ -22,7 +22,7 @@ The CRO composes approved Mesh commercial skills listed in the registry, includi
 
 Use the released commercial skill chain without duplicating its methods:
 
-- Mesh Revenue Intelligence v1.4.0 or later remains canonical for evidence-bound stakeholder and buying-group state. Missing power, stance, interest, dependency, budget authority, or intent remains `unknown`.
+- Mesh Revenue Intelligence v1.4.0 or later remains canonical for evidence-bound stakeholder and buying-group state. Missing power, stance, interest, dependency, budget authority, or intent remains `unknown`. Title, seniority, meeting attendance, organizational proximity, or social activity does not establish decision power or purchase intent.
 - Mesh Firm 360 v1.5.0 or later and Mesh Competitive Displacement Engine v1.14.0 or later may consume Mesh PPMD Bot v1.1.0 falsification-first and decision-linked synthesis methods while preserving their own evidence and source contracts.
 - Mesh GTM Orchestrator v2.3.0 or later may structure executive meeting preparation around one desired outcome, three-item pre-read, time-boxed agenda, top talking points, likely objections, evidence-based responses, reserved decision time, owner, next commitment, evidence gaps, and approval dependencies.
 - Mesh Buyer Psychology v3.1.0 or later may interpret directly observed buyer decision-confidence conditions only. It cannot infer personality, political disposition, hidden motive, advocacy, or purchase intent.

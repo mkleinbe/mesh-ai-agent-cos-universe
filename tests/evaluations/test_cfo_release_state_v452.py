@@ -11,7 +11,7 @@ def test_v452_release_identity_remains_preserved_as_history() -> None:
     release_doc = (ROOT / "docs" / "release-v4.5.2-release-state-finalization.md").read_text()
     assert "## v4.5.2 CFO Financial Analysis Release State Finalization" in readme
     assert "# Changelog v4.5.2" in changelog
-    assert "# v4.5.2 CFO Financial Analysis Release State Finalization" in release_doc
+    assert "# Release v4.5.2: CFO Financial Analysis Release State Finalization" in release_doc
 
 
 def test_v452_release_contract_is_documentation_only() -> None:

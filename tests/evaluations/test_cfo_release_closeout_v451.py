@@ -11,7 +11,7 @@ def test_v451_release_identity_remains_preserved_as_history() -> None:
     release_doc = (ROOT / "docs" / "release-v4.5.1-release-closeout.md").read_text()
     assert "## v4.5.1 CFO Financial Analysis Release Closeout" in readme
     assert "# Changelog v4.5.1" in changelog
-    assert "# v4.5.1 CFO Financial Analysis Release Closeout" in release_doc
+    assert "# Release v4.5.1: CFO Financial Analysis Release Closeout" in release_doc
 
 
 def test_v450_verification_receipt_records_completed_release() -> None:

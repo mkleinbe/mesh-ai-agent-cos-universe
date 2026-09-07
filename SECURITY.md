@@ -1,8 +1,8 @@
 # Security Policy
 
-Current repository release candidate: **v4.5.0 CFO Financial Analysis Capability**. Current production QNAP deployment remains **4.4.0**. The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**.
+Current repository release candidate: **v4.5.1 CFO Financial Analysis Release Closeout**. Current production QNAP deployment remains **4.4.0**. The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**.
 
-v4.5.0 is a targeted agent-Skill and Workspace Agent capability change. It does not change the executable MCP runtime, QNAP container, network boundary, persistence model, credentials, authentication, connector write surface, or human approval boundary.
+v4.5.1 is a documentation and release-control PATCH. It does not change the CFO implementation, executable MCP runtime, QNAP container, network boundary, persistence model, credentials, authentication, connector write surface, or human approval boundary. CFO implementation remains `1.1.0`.
 
 ## Security invariants
 
@@ -20,9 +20,21 @@ v4.5.0 is a targeted agent-Skill and Workspace Agent capability change. It does 
 - OpenAI Secure MCP Tunnel remains the only remote MCP ingress.
 - QNAP production changes are operator-proxied through Michael and require separate release evidence.
 
+## v4.5.1 closeout boundary
+
+The patch changes release documentation and release automation only. It introduces no new trust boundary, secret, dependency, connector, schema, network egress, runtime behavior, financial authority, or external action.
+
+Release-closeout verification must prove:
+- v4.5.0 final release evidence is recorded accurately;
+- CFO remains implementation `1.1.0`;
+- canonical runtime remains `4.0.0`;
+- QNAP production remains `4.4.0`;
+- CFO MCP allowlist and Google Drive read-only scope remain unchanged;
+- no agent-registry or CFO Skill behavior change is introduced by v4.5.1.
+
 ## v4.5.0 CFO financial-analysis boundary
 
-The CFO remains the Engagement Finance / FP&A executive with L3 recommendation authority within supported source scope. The release adds analytical methods, not new financial control.
+The CFO remains the Engagement Finance / FP&A executive with L3 recommendation authority within supported source scope. The feature release added analytical methods, not new financial control.
 
 Explicitly preserved:
 
@@ -60,21 +72,19 @@ The targeted v4.4.1 review remains preserved at `docs/security-review-v4.4.1-com
 
 ## QNAP boundary
 
-The production Mesh CoS MCP 4.4.0 runtime remains unchanged for v4.5.0. No QNAP deployment is part of this release because no runtime or deployment component changes.
+The production Mesh CoS MCP 4.4.0 runtime remains unchanged by v4.5.0 and v4.5.1. No QNAP deployment is part of either release because no runtime or deployment component changes.
 
 ## Release verification
 
-The exact v4.5.0 candidate must pass:
+The exact v4.5.1 candidate must pass:
 
 - the repository's existing full Python, TypeScript/MCP, contract, security, package, QNAP shell, container, and transport regression suite;
 - 100% branch-aware `mesh_cos` coverage required by the repository baseline;
 - the v4.5.0 CFO BDD/regression tests;
-- registry/Workspace Agent version and action parity;
-- proof that the CFO MCP allowlist and Google Drive read-only scope are unchanged;
-- proof that donor material remains reference evidence and private reasoning persistence remains prohibited;
-- exact candidate SHA independent verification.
+- the v4.5.1 release-closeout regression tests;
+- proof that CFO implementation, runtime, QNAP, MCP, connector, source, and approval boundaries are unchanged.
 
-The targeted review is `docs/security-review-v4.5.0-cfo-financial-analysis.md`.
+The v4.5.0 targeted review remains `docs/security-review-v4.5.0-cfo-financial-analysis.md`. v4.5.1 introduces no additional security surface beyond release documentation and workflow controls.
 
 ## Reporting
 

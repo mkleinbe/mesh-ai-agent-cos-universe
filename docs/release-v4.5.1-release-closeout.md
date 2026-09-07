@@ -4,7 +4,7 @@
 
 `v4.5.1` is a PATCH repository release that closes the documentation and release-control state after successful publication of `v4.5.0 CFO Financial Analysis Capability`.
 
-No CFO behavior, authority, source, Skill method, MCP operation, connector, dependency, credential, schema, runtime, QNAP deployment, or external-action permission changes in v4.5.1.
+No CFO behavior, authority, source, Skill method, MCP operation, connector, dependency, credential, schema, runtime, QNAP deployment, or external-action permission changes in v4.5.1. No QNAP deployment is required or authorized by this patch.
 
 ## Verified release lineage
 

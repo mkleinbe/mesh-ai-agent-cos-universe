@@ -81,6 +81,6 @@ Keep all agents Private until the target Workspace passes at least:
 
 Do not publish or activate an agent when any test or required dependency fails. Record the failure and remediate before retrying.
 
-## CFO v1.2.0 analytical execution projection
+## CFO analytical execution projection, implementation 1.2.0
 
 Attach external shared Skill `mesh-data-analytics` only to the CFO Workspace Agent. Keep it outside the 10-agent roster. Preserve the CFO MCP allowlist exactly; route quantitative/spreadsheet/model/research/artifact work through `skills.invoke_governed`, require result provenance and analytical validation, and never treat the shared Skill as approval authority or canonical financial truth.

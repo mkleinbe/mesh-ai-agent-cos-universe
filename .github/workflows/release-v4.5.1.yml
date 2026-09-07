@@ -19,5 +19,5 @@ jobs:
       - name: Verify immutable v4.5.1 release record
         run: |
           set -euo pipefail
-          grep -q '^# v4.5.1 CFO Financial Analysis Release Closeout' docs/release-v4.5.1-release-closeout.md
+          grep -q '^# Release v4.5.1: CFO Financial Analysis Release Closeout' docs/release-v4.5.1-release-closeout.md
           grep -q '^# Changelog v4.5.1' CHANGELOG-v4.5.1.md

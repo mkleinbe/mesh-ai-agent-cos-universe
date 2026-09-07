@@ -25,15 +25,15 @@ These are analytical methods inside Engagement Finance / FP&A. They do not creat
 
 All donor material is treated as reference material and not copied as authority. Mesh governance, registry policy, source permissions, tool allowlists, approvals, and repository-local role contracts remain controlling.
 
-| Donor | License | Mesh use | Explicit exclusions |
+| Donor | License evidence | Mesh use | Explicit exclusions |
 |---|---|---|---|
-| `EveryInc/charlie-cfo-skill` | MIT | Driver-based planning, runway/burn, unit economics, working-capital and capital-allocation patterns | Donor numeric thresholds are not Mesh policy; no autonomous finance operations |
-| `yoichiojima-2/consultant` | MIT | ROI, NPV, IRR, payback, break-even, sensitivity, scenario, and business-case structure | No generic consulting default becomes a Mesh approval rule |
-| `virattt/dexter` | MIT | Financial-research decomposition, tool/source selection, iterative validation, freshness awareness, bounded execution concepts | No donor API dependency, autonomous trading, or persistence of private reasoning/thinking scratchpads |
-| `anthropics/financial-services` | Apache-2.0 | Formula integrity, model QA, three-statement tie-outs, DCF/comps modeling discipline, sensitivity controls | No donor runtime, Office/Excel dependency, financial-services plugin authority, or audit claim |
-| `himself65/finance-skills` | MIT | Valuation triangulation, DCF/comparable/SOTP method selection, sensitivity and scenario discipline | No trading strategies, market-action capability, auto-installed dependencies, or personal investment advice |
+| `EveryInc/charlie-cfo-skill` | MIT license file verified | Driver-based planning, runway/burn, unit economics, working-capital and capital-allocation patterns | Donor numeric thresholds are not Mesh policy; no autonomous finance operations |
+| `yoichiojima-2/consultant` | MIT license file verified | ROI, NPV, IRR, payback, break-even, sensitivity, scenario, and business-case structure | No generic consulting default becomes a Mesh approval rule |
+| `virattt/dexter` | README states MIT; no root `LICENSE` file was observed during this review | Financial-research decomposition, tool/source selection, iterative validation, freshness awareness, bounded execution concepts | No donor code is copied; no donor API dependency, autonomous trading, or persistence of private reasoning/thinking scratchpads |
+| `anthropics/financial-services` | Apache-2.0 license file verified | Formula integrity, model QA, three-statement tie-outs, DCF/comps modeling discipline, sensitivity controls | No donor runtime, Office/Excel dependency, financial-services plugin authority, or audit claim |
+| `himself65/finance-skills` | MIT license file verified | Valuation triangulation, DCF/comparable/SOTP method selection, sensitivity and scenario discipline | No trading strategies, market-action capability, auto-installed dependencies, or personal investment advice |
 
-No donor code is vendored. The repository-local reference modules synthesize general financial-analysis methods in Mesh terminology and under Mesh governance.
+No donor code is vendored. The repository-local reference modules synthesize general financial-analysis methods in Mesh terminology and under Mesh governance. The Dexter concepts are used only as conceptual reference because its repository-level license file was not independently observed.
 
 ## Skill structure
 

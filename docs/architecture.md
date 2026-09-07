@@ -224,3 +224,7 @@ The full PF-057 architecture, failure model, and recovery contract are documente
 ## Historical architecture
 
 Historical release documents remain release-train evidence. They do not override this current architecture. In particular, documents describing delegation as functional while only ownership metadata was persisted are superseded by the closed-loop delegated-owner execution protocol above.
+
+## CFO governed analytics extension
+
+The 10-agent topology is unchanged. CFO additionally composes with the external `mesh-data-analytics` shared Skill through `skills.invoke_governed`. The capability returns validated analytical evidence and provenance to CFO; it never becomes an MCP principal, task owner, decision owner, or approval authority. See `docs/architecture-v4.6.0-cfo-execution.md`.

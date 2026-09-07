@@ -2,15 +2,41 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.5.2 CFO Financial Analysis Release State Finalization`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.6.0 CFO Zero-Defect Execution Remediation`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.5.2 is a documentation and release-control PATCH that finalizes durable release-state wording after the v4.5.0 CFO Financial Analysis feature release and v4.5.1 release-evidence closeout. CFO implementation remains `1.1.0`; no runtime, QNAP, authority, connector, credential, dependency, or external-action surface changes.
+v4.6.0 upgrades the CFO to implementation `1.2.0` with deterministic financial calculations, governed Mesh Data Analytics execution, management-FP&A source scope, research execution, operating cadence, executive artifacts, behavior-level acceptance tests, and historical release-workflow isolation. The canonical runtime contract remains `4.0.0` and production QNAP remains `4.4.0`; no new MCP tool, credential, autonomous external action, or consequential approval authority is introduced.
 
 ## Canonical architecture
 
 Phase 1 contains exactly 10 registered agents: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations. Mesh Devil's Advocate remains a governed shared Skill, not an eleventh agent.
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Google TaskLedger, Prospect Universe, Slack, Gmail, connectors, Workspace state, and conversation history are scheduling, interaction, evidence, or mirror surfaces. `COMPLETED` remains distinct from `VERIFIED`.
+
+## v4.6.0 CFO Zero-Defect Execution Remediation
+
+v4.6.0 closes the CFO execution and verification gaps identified after v4.5.x. CFO implementation is `1.2.0`; it retains L3 recommendation authority while gaining a deterministic core calculator and a CFO-only `mesh-data-analytics` shared Skill handoff for approved spreadsheet/model analysis, research, validation, visualization, and finance artifacts.
+
+Key controls:
+
+- exactly 10 registered agents remain canonical;
+- `mesh-data-analytics` is an external shared Skill, not an agent principal;
+- CFO MCP allowlist is unchanged and no human-only tool is added;
+- management FP&A expands approved analytical source scope without creating GL, treasury, bank-balance, tax, or audit authority;
+- core NPV, IRR, payback, discounted payback, break-even, runway, contribution-margin, and LTV:CAC calculations are reproducible through `chatgpt/skills/mesh-cfo/scripts/financial_math.py`;
+- material spreadsheet, model, research, visualization, and durable-artifact work routes through governed Mesh Data Analytics with provenance and validation;
+- historical v4.5.x release workflows are manual-only and cannot fail a later `main`;
+- repository release, agent implementation, canonical runtime contract, and QNAP deployment identities are explicit and separate.
+
+Current v4.6.0 material:
+
+- `specs/cfo-execution-remediation-v4.6.0.feature`
+- `tests/evaluations/test_cfo_execution_v460.py`
+- `docs/cfo-execution-remediation-v4.6.0.md`
+- `docs/architecture-v4.6.0-cfo-execution.md`
+- `docs/security-review-v4.6.0-cfo-execution.md`
+- `docs/runbook-v4.6.0-cfo-execution.md`
+- `docs/release-v4.6.0-cfo-execution.md`
+- `docs/verification-v4.6.0-cfo-execution.md`
 
 ## v4.5.2 CFO Financial Analysis Release State Finalization
 

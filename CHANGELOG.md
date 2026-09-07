@@ -1,5 +1,15 @@
 # Changelog
 
+## 4.6.0 - 2026-09-07 - CFO Zero-Defect Execution Remediation
+
+- Upgraded CFO implementation to 1.2.0 with deterministic financial calculation execution and behavior-level acceptance tests.
+- Added CFO-only external `mesh-data-analytics` composition for approved quantitative, spreadsheet, model, research, validation, visualization, and finance-artifact execution.
+- Expanded analytical scope to approved management FP&A artifacts while preserving L3 recommendation authority and prohibitions on enterprise GL, treasury, tax, audit, trading, bank-balance claims, and consequential self-approval.
+- Added weekly/monthly/quarterly CFO operating cadence and executive artifact contracts.
+- Isolated v4.5.0-v4.5.2 release workflows from later `main` pushes so immutable historical gates cannot fail current releases.
+- Added explicit repository-release, CFO implementation, canonical-runtime, and QNAP deployment identity separation.
+
+
 All notable changes to the Mesh AI Chief of Staff Agent Universe are documented here.
 
 ## 4.1.12 - 2026-08-26 - QNAP Release-Root Bootstrap

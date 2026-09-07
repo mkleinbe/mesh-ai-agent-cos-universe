@@ -28,6 +28,7 @@ EXPECTED = {
     "message-ops": ("Message Operations", "cos", "mesh-message-operations"),
 }
 DA_CONSUMERS = {"cos", "cro"}
+ANALYTICS_CONSUMERS = {"cfo"}
 CURRENT_DOCS = [
     ROOT / "README.md",
     ROOT / "AGENTS.md",
@@ -80,13 +81,19 @@ require(__version__ == RELEASE, f"Workspace Agent release must be {RELEASE}")
 require(f'version = "{RELEASE}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
 
 shared = {item["capability"]: item for item in registry_source.get("shared_capabilities", [])}
-require(set(shared) == {"mesh-devils-advocate"}, "Only Mesh Devil's Advocate is a Phase 1 external shared Skill")
+require(set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}, "External Phase 1 shared Skill set drifted")
 challenge = shared["mesh-devils-advocate"]
 require(challenge["deployment"] == "EXTERNAL_SHARED_SKILL", "Shared challenge deployment drifted")
 require(set(challenge["consumers"]) == DA_CONSUMERS, "Shared challenge consumers drifted")
 require(challenge["authority"] == "ADVISORY_ONLY", "Shared challenge authority drifted")
 require(challenge["canonical_facts_modified"] is False, "Shared challenge cannot modify canonical facts")
 require(challenge["external_action_included"] is False, "Shared challenge cannot execute external actions")
+analytics = shared["mesh-data-analytics"]
+require(analytics["deployment"] == "EXTERNAL_SHARED_SKILL", "Shared analytics deployment drifted")
+require(set(analytics["consumers"]) == ANALYTICS_CONSUMERS, "Shared analytics consumers drifted")
+require(analytics["authority"] == "ANALYTICAL_EXECUTION_ONLY", "Shared analytics authority drifted")
+require(analytics["canonical_facts_modified"] is False, "Shared analytics cannot modify canonical facts")
+require(analytics["external_action_included"] is False, "Shared analytics cannot execute external actions")
 require(not (ROOT / "agents" / "devils-advocate.md").exists(), "Duplicate Devil's Advocate role card remains")
 require(not (AGENTS / "devils-advocate.json").exists(), "Duplicate Devil's Advocate Workspace Agent remains")
 require(not (SKILLS / "mesh-devils-advocate").exists(), "Duplicate local Devil's Advocate Skill remains")
@@ -141,10 +148,15 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(manifest["mcp"]["allowed_tools"] == allowlists[agent_id], f"{agent_id}: manifest MCP allowlist drifted")
     require(manifest["builder_configuration"]["mcp_allowed_tools"] == allowlists[agent_id], f"{agent_id}: builder MCP allowlist drifted")
     require(manifest["write_action_policy"]["default"] == "ALWAYS_ASK", f"{agent_id}: write approval weakened")
-    expected_shared = ["mesh-devils-advocate"] if agent_id in DA_CONSUMERS else []
+    expected_shared = []
+    if agent_id in DA_CONSUMERS:
+        expected_shared.append("mesh-devils-advocate")
+    if agent_id in ANALYTICS_CONSUMERS:
+        expected_shared.append("mesh-data-analytics")
     require(manifest.get("shared_skills", []) == expected_shared, f"{agent_id}: shared Skill projection drifted")
     require(manifest["builder_configuration"].get("shared_skills", []) == expected_shared, f"{agent_id}: builder shared Skill projection drifted")
     require(("mesh-devils-advocate" in record.get("skills", [])) is (agent_id in DA_CONSUMERS), f"{agent_id}: Devil's Advocate entitlement drifted")
+    require(("mesh-data-analytics" in record.get("skills", [])) is (agent_id in ANALYTICS_CONSUMERS), f"{agent_id}: Mesh Data Analytics entitlement drifted")
 
 package = json.loads((ROOT / "mcp" / "package.json").read_text())
 package_lock = json.loads((ROOT / "mcp" / "package-lock.json").read_text())

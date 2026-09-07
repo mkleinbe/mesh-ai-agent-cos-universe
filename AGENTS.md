@@ -83,3 +83,7 @@ python -m compileall -q src
 ```
 
 Current release guidance belongs in `docs/release-4.0.0-cos-delegation-remediation.md`, `docs/production-readiness.md`, and `RELEASE.md`. Historical release documents remain historical snapshots.
+
+## CFO analytical execution boundary
+
+CFO may use the external `mesh-data-analytics` shared Skill for analytical execution only. It is not an agent principal and cannot change the 10-agent topology, canonical financial facts, TaskLedger ownership, approval state, or consequential financial authority.

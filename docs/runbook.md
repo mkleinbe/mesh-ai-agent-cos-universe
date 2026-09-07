@@ -8,7 +8,7 @@ This runbook distinguishes repository readiness, QNAP deployment readiness, publ
 ## Repository certification path
 
 1. Confirm the Python package and canonical MCP authority/runtime contract remain `4.0.0`.
-2. Confirm `agents/registry.json` contains exactly 10 registered agents and Mesh Devil's Advocate remains the only external shared Skill.
+2. Confirm `agents/registry.json` contains exactly 10 registered agents and exactly two external shared Skills: Mesh Devil's Advocate for CoS/CRO and Mesh Data Analytics for CFO analytical execution.
 3. Confirm the candidate deployment train is `4.3.0` across current release assets.
 4. Confirm CoS has 28 governed agent tools, including `delegation.execute_owner`, and no agent catalog contains human-only operations.
 5. Run the full release suite.

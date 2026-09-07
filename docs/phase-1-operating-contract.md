@@ -127,3 +127,7 @@ Before any source, MCP tool, app, shared Skill, or consequential action is invok
 All 10 Workspace Agents use the same approved `MESH_COS_LEDGER_PATH` and are privately tested before activation. Any change to roster, authority, delegation, allowlists, completion/verification semantics, source permissions, or shared-Skill entitlement must update tests, manifests, contracts, documentation, diagrams, and release metadata together.
 
 Historical release documents remain immutable historical snapshots. The v3.0.0 9-agent topology is superseded and is not current architecture.
+
+## 10. CFO analytical execution capability
+
+The CFO may invoke `mesh-data-analytics` through `skills.invoke_governed` for approved quantitative, spreadsheet, model, research, validation, visualization, and durable finance-artifact work. The shared Skill is analytical execution only. CFO remains the recommendation owner, TaskLedger remains canonical, and L4/L5 approvals remain human authority.

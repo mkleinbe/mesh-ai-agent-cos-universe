@@ -1,27 +1,35 @@
+# v4.7.0 Enterprise Consulting Skill Consumption
+
+`v4.7.0 Enterprise Consulting Skill Consumption` is the current repository capability release. It integrates the released Mesh consulting-method enhancements into Chief of Staff, CRO, CFO, COO, CMO, and Answer & Decision Desk role guidance while leaving the machine-readable registry, canonical Phase 1 authority/runtime contract **4.0.0**, production QNAP **4.4.0**, and exactly **10 registered agents** unchanged.
+
+The release consumes Mesh PPMD Bot v1.1+, Revenue Intelligence v1.4+, Firm 360 v1.5+, Competitive Displacement v1.14+, GTM Orchestrator v2.3+, Buyer Psychology v3.1+, Devil's Advocate v1.4+, Mesh Messaging v1.2+, and Mesh Design System / Artifact Designer v0.4+ through existing bindings and governed delegation. It adds no new MCP tool, connector, credential, database schema, direct Skill array, autonomous communication, or consequential approval authority.
+
+See `docs/release-v4.7.0-enterprise-consulting.md`, `docs/enterprise-consulting-skill-consumption-v4.7.0.md`, and `docs/verification-v4.7.0-enterprise-consulting.md`.
+
 # v4.6.0 CFO Zero-Defect Execution Remediation
 
-`v4.6.0 CFO Zero-Defect Execution Remediation` is the current repository release. It advances CFO implementation to **1.2.0** while the canonical Phase 1 authority/runtime contract remains **4.0.0**, production QNAP remains **4.4.0**, and the roster remains exactly **10 registered agents**.
+`v4.6.0 CFO Zero-Defect Execution Remediation` is the prior CFO execution release. It advanced CFO implementation to **1.2.0** while the canonical Phase 1 authority/runtime contract remained **4.0.0**, production QNAP remained **4.4.0**, and the roster remained exactly **10 registered agents**.
 
-The release adds deterministic finance math, a CFO-only governed `mesh-data-analytics` execution handoff, approved management-FP&A source scope, financial research execution, executive finance artifacts and operating cadence, behavior-level regression evidence, durable version identity, and historical release-workflow isolation. The CFO retains L3 recommendation authority. Google Drive remains read-only. No new MCP tool, credential, GL/treasury/tax/audit authority, autonomous trading, external send, or self-approved consequential action is introduced.
+The release added deterministic finance math, a CFO-only governed `mesh-data-analytics` execution handoff, approved management-FP&A source scope, financial research execution, executive finance artifacts and operating cadence, behavior-level regression evidence, durable version identity, and historical release-workflow isolation. The CFO retains L3 recommendation authority. Google Drive remains read-only. No new MCP tool, credential, GL/treasury/tax/audit authority, autonomous trading, external send, or self-approved consequential action was introduced.
 
 See `docs/release-v4.6.0-cfo-execution.md` and `docs/verification-v4.6.0-cfo-execution.md`.
 
 # v4.5.2 CFO Financial Analysis Release State Finalization
 
-`v4.5.2 CFO Financial Analysis Release State Finalization` is the current repository release. It is a documentation and release-control PATCH that finalizes durable post-publication release wording for the CFO Financial Analysis release train.
+`v4.5.2 CFO Financial Analysis Release State Finalization` was a documentation and release-control PATCH that finalized durable post-publication release wording for the CFO Financial Analysis release train.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**. The roster remains exactly 10 registered agents.
+The canonical Phase 1 authority/runtime contract remained **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remained **4.4.0**. CFO implementation remained **1.1.0**.
 
 ## Patch scope
 
 v4.5.2:
 
-- replaces current-release `release candidate` wording with durable `current repository release` wording;
-- preserves the completed v4.5.0 feature and v4.5.1 closeout evidence;
-- adds regression coverage preventing current-release wording from becoming stale after publication;
-- adds a verified v4.5.2 semantic release workflow.
+- replaced current-release `release candidate` wording with durable `current repository release` wording;
+- preserved the completed v4.5.0 feature and v4.5.1 closeout evidence;
+- added regression coverage preventing current-release wording from becoming stale after publication;
+- added a verified v4.5.2 semantic release workflow.
 
-It does **not** change CFO behavior, authority, source scope, Skill methods, MCP tools, connector permissions, credentials, dependencies, database schemas, QNAP runtime, or external-action rights.
+It did **not** change CFO behavior, authority, source scope, Skill methods, MCP tools, connector permissions, credentials, dependencies, database schemas, QNAP runtime, or external-action rights.
 
 ## Authority preserved
 
@@ -53,11 +61,11 @@ It does **not** change CFO behavior, authority, source scope, Skill methods, MCP
 - External-action authority: unchanged
 - New dependency or connector: none
 
-No QNAP deployment is part of v4.5.2. The live Mesh CoS MCP 4.4.0 runtime remains production.
+No QNAP deployment was part of v4.5.2. The live Mesh CoS MCP 4.4.0 runtime remained production.
 
 ## Verification gates
 
-The v4.5.2 release must pass the existing full repository CI plus the CFO feature, closeout, and durable-release-state regressions. The tagged source itself identifies v4.5.2 as the current repository release, so no post-release wording patch is required.
+The v4.5.2 release passed the existing full repository CI plus the CFO feature, closeout, and durable-release-state regressions.
 
 ## Rollback
 
@@ -69,7 +77,7 @@ If this documentation patch creates drift, revert it and issue a corrective patc
 
 `v4.5.1` is the prior documentation and release-control patch that finalized the v4.5.0 verification receipt with actual main, tag, CI, and GitHub Release evidence. It did not change CFO behavior or runtime authority.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**.
+The canonical Phase 1 authority/runtime contract remained **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remained **4.4.0**. CFO implementation remained **1.1.0**.
 
 ---
 
@@ -77,7 +85,7 @@ The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly 
 
 `v4.5.0` is the feature release that expanded the governed analytical depth of the CFO from implementation `1.0.0` to `1.1.0` without changing the Mesh CoS MCP runtime binary or authority architecture.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**.
+The canonical Phase 1 authority/runtime contract remained **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remained **4.4.0**.
 
 ## Capability change
 
@@ -103,7 +111,7 @@ No enterprise GL, treasury, bank-balance, tax, audit, trading, brokerage, person
 
 `v4.4.2` corrected Data Intelligence caller/work-package construction, owner routing, deterministic recovery, executive reporting, TaskLedger control-plane state, and production scheduler evidence without changing the Mesh CoS MCP runtime binary.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**.
+The canonical Phase 1 authority/runtime contract remained **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remained **4.4.0**.
 
 Data Intelligence continues to preserve canonical dependency semantics, Revenue Intelligence commercial-truth authority, fail-closed recovery, no provider-effect replay, and separate business-outcome versus technical-health reporting.
 
@@ -113,7 +121,7 @@ Data Intelligence continues to preserve canonical dependency semantics, Revenue 
 
 `v4.4.1` corrected Commercial Operations caller/work-package construction, scheduler drift, bounded recovery, CMO/VP Content composition, and business-first executive reporting without changing the Mesh CoS MCP runtime binary.
 
-The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**.
+The canonical Phase 1 authority/runtime contract remained **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remained **4.4.0**.
 
 Commercial Operations continues to preserve Revenue Intelligence commercial truth, event-driven HITL send isolation, canonical parentage, and no provider-effect replay.
 
@@ -121,4 +129,4 @@ Commercial Operations continues to preserve Revenue Intelligence commercial trut
 
 # v4.4.0 Authority Closure
 
-Historical release identity is preserved for regression and audit continuity. At that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. Historical v4.3.x and v4.4.x release documents and verification artifacts remain retained and do not override the current v4.5.2 repository release or the current QNAP 4.4.0 production deployment.
+Historical release identity is preserved for regression and audit continuity. At that release-train point, the canonical Phase 1 authority/runtime contract remained **4.0.0**, and the then-current production deployment was `v4.3.0`. Historical v4.3.x and v4.4.x release documents and verification artifacts remain retained and do not override the current v4.7.0 repository capability release or the current QNAP 4.4.0 production deployment.

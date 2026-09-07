@@ -1,0 +1,119 @@
+name: v4.7.0 Enterprise Consulting Skill Consumption
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agents/cos.md'
+      - 'agents/cro.md'
+      - 'agents/cfo.md'
+      - 'agents/coo.md'
+      - 'agents/cmo.md'
+      - 'agents/answer-desk.md'
+      - 'specs/enterprise-consulting-skill-consumption-v4.7.0.feature'
+      - 'tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py'
+      - 'docs/enterprise-consulting-skill-consumption-v4.7.0.md'
+      - 'docs/architecture-v4.7.0-enterprise-consulting.md'
+      - 'docs/security-review-v4.7.0-enterprise-consulting.md'
+      - 'docs/release-v4.7.0-enterprise-consulting.md'
+      - 'docs/verification-v4.7.0-enterprise-consulting.md'
+      - 'CHANGELOG-v4.7.0.md'
+      - 'README.md'
+      - 'RELEASE.md'
+      - '.github/workflows/release-v4.6.0.yml'
+      - '.github/workflows/release-v4.7.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v4.7.0-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/check-owner-execution-readiness.py
+      - run: python scripts/check-capability-closure.py
+      - run: python scripts/check-published-action-surface.py
+      - run: ruff check src
+      - run: ruff check tests scripts --select E9,F63,F7,F82
+      - run: mypy src --check-untyped-defs
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - run: python -m compileall -q src tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py
+      - run: pytest -q tests/evaluations/test_phase1_role_model_consistency.py
+      - run: pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
+      - run: pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
+      - run: pytest -q tests/evaluations/test_cfo_release_state_v452.py
+      - run: pytest -q tests/evaluations/test_cfo_execution_v460.py
+      - run: pytest -q tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py
+      - name: Confirm v4.7.0 authority and release boundaries
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          registry = json.load(open('agents/registry.json'))
+          agents = {a['agent_id']: a for a in registry['agents']}
+          assert len(agents) == 10
+          assert agents['cos']['skills'] == ['mesh-ppmd-bot', 'mesh-devils-advocate']
+          assert agents['cfo']['skills'] == ['mesh-data-analytics']
+          assert agents['coo']['skills'] == []
+          assert agents['answer-desk']['skills'] == ['mesh-firm-360']
+          assert agents['message-ops']['decision_authority'] == 'L1 execution of explicitly approved communication'
+          PY
+          grep -q 'Current repository release: `v4.7.0 Enterprise Consulting Skill Consumption`' README.md
+          grep -q '^# v4.7.0 Enterprise Consulting Skill Consumption' RELEASE.md
+          grep -q 'Repository capability release: `v4.7.0`' docs/release-v4.7.0-enterprise-consulting.md
+          grep -q 'Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged' docs/release-v4.7.0-enterprise-consulting.md
+          grep -q 'Production QNAP deployment: `4.4.0`, unchanged' docs/release-v4.7.0-enterprise-consulting.md
+          ! grep -q 'branches: \[main\]' .github/workflows/release-v4.6.0.yml
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Publish v4.7.0 semantic release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.7.0 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.7.0 --json targetCommitish --jq .targetCommitish)"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "v4.7.0 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              exit 1
+            fi
+            echo "v4.7.0 already exists at the exact main SHA"
+            exit 0
+          fi
+          gh release create v4.7.0 \
+            --target "$GITHUB_SHA" \
+            --title 'Mesh CoS v4.7.0 Enterprise Consulting Skill Consumption' \
+            --notes-file docs/release-v4.7.0-enterprise-consulting.md

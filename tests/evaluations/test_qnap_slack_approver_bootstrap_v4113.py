@@ -74,7 +74,7 @@ def test_current_release_requires_native_trigger_and_dedicated_bot_protected_cre
     assert "U01KG3CNYHK" not in compose
 
 
-def test_historical_release_evidence_remains_while_v450_is_candidate_and_v440_is_deployed() -> None:
+def test_historical_release_evidence_remains_while_v470_is_current_and_v440_is_deployed() -> None:
     wrapper = text(ROOT / "scripts" / "build-qnap-release-v4.2.0.sh")
     legacy_workflow = text(ROOT / ".github" / "workflows" / "release-production-readiness.yml")
     historical_v423 = text(ROOT / ".github" / "workflows" / "release-v4.2.3.yml")
@@ -85,9 +85,11 @@ def test_historical_release_evidence_remains_while_v450_is_candidate_and_v440_is
     assert "v4.2.3 QNAP qnet egress readiness release candidate" in historical_v423
     assert "v4.3.0 cross-agent owner execution release candidate" in historical_v430
     readme = text(ROOT / "README.md")
+    assert "v4.7.0 Enterprise Consulting Skill Consumption" in readme
     assert "v4.4.0 Authority Closure" in readme
     assert "Current production QNAP deployment: `4.4.0`" in readme
-    assert "Historical v4.3.x and v4.4.x documents remain release-train evidence" in readme
+    assert "Historical v4.3.x through v4.6.x documents remain release-train evidence" in readme
+    assert "Canonical Phase 1 authority/runtime contract: `4.0.0`" in readme
     contract = json.loads(text(ROOT / "chatgpt" / "mcp" / "mesh-cos-mcp.v1.json"))
     assert contract["runtime_release"] == "4.0.0"
     assert len(contract["agent_tool_allowlists"]) == 10

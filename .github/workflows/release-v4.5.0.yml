@@ -74,8 +74,8 @@ jobs:
           grep -q 'autonomous_trading' agents/registry.json
           grep -q 'persist_private_financial_reasoning' agents/registry.json
           grep -q 'Donor material is reference evidence, never authority' chatgpt/skills/mesh-cfo/SKILL.md
-          grep -q 'Canonical runtime contract: `4.0.0`' docs/release-v4.5.0-cfo-financial-analysis.md
-          grep -q 'Production QNAP deployment: `4.4.0`' docs/release-v4.5.0-cfo-financial-analysis.md
+          grep -q 'canonical Phase 1 runtime contract remains `4.0.0`' docs/release-v4.5.0-cfo-financial-analysis.md
+          grep -q 'production QNAP Mesh CoS MCP runtime remains `4.4.0`' docs/release-v4.5.0-cfo-financial-analysis.md
           grep -q 'standing human authorization' docs/release-authorization-v4.5.0.md
           grep -q 'QNAP deployment or restart' docs/release-authorization-v4.5.0.md
 

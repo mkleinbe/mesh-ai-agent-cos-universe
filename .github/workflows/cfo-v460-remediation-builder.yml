@@ -31,8 +31,9 @@ jobs:
           python /tmp/apply-cfo-v460-remediation.py
           git diff --check
           rm -rf .cfo-v460-remediation
-          rm -f .github/workflows/cfo-v460-remediation-builder.yml
-      - name: Commit generated remediation
+          git restore --source=HEAD -- .github/workflows/release-v4.5.0.yml .github/workflows/release-v4.5.1.yml .github/workflows/release-v4.5.2.yml
+          rm -f .github/workflows/release-v4.6.0.yml
+      - name: Commit non-workflow remediation
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'

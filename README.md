@@ -2,9 +2,9 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release candidate: `v4.5.0 CFO Financial Analysis Capability`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release candidate: `v4.5.1 CFO Financial Analysis Release Closeout`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.5.0 is a repository and Workspace Agent capability release. It advances the CFO implementation to `1.1.0` without modifying or redeploying the healthy QNAP Mesh CoS MCP runtime.
+v4.5.1 is a documentation and release-control PATCH that closes the already published v4.5.0 CFO Financial Analysis capability release. CFO implementation remains `1.1.0`; no runtime, QNAP, authority, connector, credential, dependency, or external-action surface changes.
 
 ## Canonical architecture
 
@@ -12,11 +12,34 @@ Phase 1 contains exactly 10 registered agents: Chief of Staff, AgentOps Controll
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Google TaskLedger, Prospect Universe, Slack, Gmail, connectors, Workspace state, and conversation history are scheduling, interaction, evidence, or mirror surfaces. `COMPLETED` remains distinct from `VERIFIED`.
 
+## v4.5.1 CFO Financial Analysis Release Closeout
+
+v4.5.1 synchronizes repository documentation with the completed v4.5.0 publication state. It records final main/tag/release evidence and adds regression coverage so release documentation cannot remain in a pre-publication state after semantic release.
+
+Preserved without behavioral change:
+
+- CFO implementation `1.1.0`;
+- canonical Phase 1 runtime `4.0.0`;
+- production QNAP Mesh CoS MCP `4.4.0`;
+- exactly 10 registered agents;
+- CFO L3 recommendation authority and Engagement Finance / FP&A domain;
+- exact CFO MCP allowlist and Google Drive read-only scope;
+- qualified-human approval gates;
+- no autonomous trading, personal investment advice, enterprise GL/treasury/tax/audit authority, or private financial-reasoning persistence.
+
+Current v4.5.1 material:
+
+- `CHANGELOG-v4.5.1.md`
+- `docs/material-turn-v4.5.1.md`
+- `docs/release-authorization-v4.5.1.md`
+- `docs/release-v4.5.1-release-closeout.md`
+- `tests/evaluations/test_cfo_release_closeout_v451.py`
+
 ## v4.5.0 CFO Financial Analysis Capability
 
-The CFO remains the governed Engagement Finance / FP&A executive and retains the same L3 recommendation boundary, source authority, parentage, delegation depth, MCP allowlist, read-only Workspace app scope, and qualified-human approval requirements.
+v4.5.0 is the feature release that expanded the governed analytical depth of the CFO to implementation `1.1.0`. The CFO remains the Engagement Finance / FP&A executive with the same L3 recommendation boundary, source authority, parentage, delegation depth, MCP allowlist, read-only Workspace app scope, and qualified-human approval requirements.
 
-v4.5.0 expands analytical depth with:
+v4.5.0 added:
 
 - ROI, NPV, IRR, payback, break-even, and internal investment business-case methods;
 - driver-based forecasting and forecast-versus-actual decomposition;
@@ -29,13 +52,12 @@ v4.5.0 expands analytical depth with:
 
 Donor repositories are synthesized as reference material only. No donor code, packages, credentials, APIs, connectors, execution permissions, or numeric policies are imported.
 
-Current v4.5.0 material:
+Published v4.5.0 evidence:
 
-- `docs/cfo-financial-analysis-v4.5.0.md`
-- `docs/architecture-v4.5.0-cfo-financial-analysis.md`
-- `docs/security-review-v4.5.0-cfo-financial-analysis.md`
-- `docs/release-v4.5.0-cfo-financial-analysis.md`
-- `specs/cfo-financial-analysis-v4.5.0.feature`
+- semantic tag `v4.5.0` and GitHub Release target `075eb8de04d6035a16ff2b6a24d2106ef8783b95`;
+- ordinary main CI `34148492601`: SUCCESS;
+- dedicated release workflow `34148492715`: SUCCESS;
+- `docs/verification-v4.5.0-cfo-financial-analysis.md` records the final release receipt.
 
 ## v4.4.2 Data Intelligence correction
 
@@ -87,7 +109,7 @@ The v4.4.1 material remains preserved:
 
 ## Production runtime and authority boundaries
 
-The current QNAP Mesh CoS MCP 4.4.0 deployment remains production. Its current owner-execution, registry, audit, completion, verification, and Slack HITL runtime boundaries are unchanged by v4.5.0.
+The current production QNAP deployment: `4.4.0`. The Mesh CoS MCP 4.4.0 runtime remains production and is unchanged by v4.5.0 or v4.5.1.
 
 Key invariants remain:
 
@@ -136,7 +158,7 @@ Key invariants remain:
 
 ## Verification
 
-The v4.5.0 pull request must pass the repository's existing full CI plus the CFO financial-analysis regression suite. Core gates include:
+The repository release train retains full CI gates including:
 
 ```bash
 python scripts/validate-contracts.py
@@ -151,16 +173,17 @@ mypy src --check-untyped-defs
 pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
 pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
+pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
 ```
 
-GitHub CI also retains the existing TypeScript/MCP, QNAP shell/security, container, packaging, and transport checks for repository regression protection. Passing those checks does not imply a new QNAP deployment.
+GitHub CI also retains the existing TypeScript/MCP, QNAP shell/security, container, packaging, and transport checks. Passing these checks does not imply a new QNAP deployment.
 
 ## Release model
 
-`v4.5.0` is a MINOR repository release because it adds a backward-compatible CFO analytical capability while preserving the public MCP/runtime contract and QNAP production binary. After the verified pull request is merged to `main`, the v4.5.0 release workflow reruns verification and creates semantic tag `v4.5.0` plus the immutable GitHub Release from the merged main SHA.
+`v4.5.0` is the MINOR feature release for the backward-compatible CFO analytical capability. `v4.5.1` is the PATCH release that synchronizes final release evidence and current documentation after v4.5.0 publication. Neither changes the public MCP/runtime contract or QNAP production binary.
 
-No QNAP deployment is part of v4.5.0. Runtime code remains at the canonical `4.0.0` authority/package contract and the production QNAP deployment remains `4.4.0`.
+No QNAP deployment is part of v4.5.1. Runtime code remains at the canonical `4.0.0` authority/package contract and production QNAP remains `4.4.0`.
 
 ## Historical release-train evidence
 
-The `v4.4.2 Data Intelligence Orchestration`, `v4.4.1 Commercial Operations Orchestration`, and `v4.4.0 Authority Closure` baselines remain intentionally preserved. Historical v4.3.x and v4.4.x documents remain release-train evidence and do not override the current v4.5.0 repository capability release.
+The `v4.5.0 CFO Financial Analysis Capability`, `v4.4.2 Data Intelligence Orchestration`, `v4.4.1 Commercial Operations Orchestration`, and `v4.4.0 Authority Closure` baselines remain preserved. Historical v4.3.x and v4.4.x documents remain release-train evidence and do not override the current v4.5.1 repository release candidate.

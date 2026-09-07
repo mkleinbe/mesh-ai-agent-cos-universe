@@ -19,15 +19,17 @@ description: "Operate as Mesh CFO for governed Engagement Finance and management
 
 ### Deterministic core calculations
 Use `scripts/financial_math.py` for supported operations:
+- ROI;
 - NPV;
-- IRR;
+- IRR for conventional cash-flow patterns with exactly one sign change;
 - simple and discounted payback;
-- break-even units;
+- break-even units and break-even revenue;
 - runway from explicitly supported cash and burn inputs;
 - contribution margin;
-- LTV:CAC ratio.
+- LTV:CAC ratio;
+- cash conversion cycle from explicitly supported DIO, DSO, and DPO inputs.
 
-Pass only explicit numeric inputs. Treat script output as analytical evidence, not approval. If the required method is outside this closed operation set, do not extend the script ad hoc during a finance decision. Route to the governed analytics path.
+Pass only explicit numeric inputs. Non-conventional cash flows with multiple sign changes fail closed for IRR and must be analyzed with an NPV profile or scenarios rather than an arbitrary root. Treat script output as analytical evidence, not approval. If the required method is outside this closed operation set, do not extend the script ad hoc during a finance decision. Route to the governed analytics path.
 
 ### Governed analytical execution
 Use `mesh-data-analytics` for:

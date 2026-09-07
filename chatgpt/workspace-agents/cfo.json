@@ -162,7 +162,7 @@
   ],
   "builder_configuration": {
     "name": "CFO",
-    "description": "Owns governed Engagement Finance and FP&A within approved source boundaries, including engagement economics, driver-based forecasting, unit economics, investment business cases, model QA, bounded valuation, sensitivity, evidence-backed research, and financial-risk recommendations. The role does not imply enterprise accounting, treasury, tax, audit, trading, balance-sheet, or unrestricted financial authority.",
+    "description": "Owns governed Engagement Finance and FP&A within approved source boundaries, including engagement economics, pricing scenarios, cost-to-serve, contribution and margin, supported working-capital implications, driver-based forecasting, forecast-versus-actual analysis, unit economics, supported cash/runway and burn analysis, investment business cases, financial-model quality assurance, bounded valuation and statement analysis, sensitivity, assumptions, evidence-backed financial research, and financial-risk recommendations. The role does not imply enterprise accounting, treasury, tax, audit, trading, balance-sheet, bank-balance, personal-investment-advice, or unrestricted financial authority.",
     "model_preference": "GPT-5.6 Sol",
     "fallback_model": "GPT-5.5",
     "reasoning_effort": "High",

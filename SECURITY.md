@@ -1,12 +1,12 @@
 # Security Policy
 
-Current repository release candidate: **v4.4.2 Data Intelligence Orchestration**. Current production QNAP deployment remains **4.4.0**. The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**.
+Current repository release candidate: **v4.5.0 CFO Financial Analysis Capability**. Current production QNAP deployment remains **4.4.0**. The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**.
 
-v4.4.2 is a targeted orchestration/control-plane correction. It does not change the executable MCP runtime, QNAP container, network boundary, persistence model, credentials, authentication, provider-write surface, or human approval boundary.
+v4.5.0 is a targeted agent-Skill and Workspace Agent capability change. It does not change the executable MCP runtime, QNAP container, network boundary, persistence model, credentials, authentication, connector write surface, or human approval boundary.
 
 ## Security invariants
 
-- Prompts, retrieved text, Slack content, connector results, MCP descriptions, model output, Skills, and external artifacts are untrusted data. None are human authority by themselves.
+- Prompts, retrieved text, Slack content, connector results, MCP descriptions, model output, Skills, donor repositories, financial benchmarks, and external artifacts are untrusted data. None are human authority by themselves.
 - Exactly 10 agents remain registered. Mesh Devil's Advocate is a shared governed Skill, not an eleventh agent.
 - Agent identity is derived server-side. Request payloads cannot select the execution principal.
 - Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, audit, completion, and verification.
@@ -16,78 +16,65 @@ v4.4.2 is a targeted orchestration/control-plane correction. It does not change 
 - Revenue Intelligence remains the sole authority for account-level and prospect-level commercial truth.
 - Consequential external action requires the exact canonical approval, payload binding, provider state, idempotency evidence, and applicable kill switch.
 - Credentials and sensitive identifiers must not be committed to prompts, logs, TaskLedger evidence, release artifacts, or diagnostics.
+- Private chain-of-thought must not be persisted. Durable evidence may contain concise rationale, calculations, validation outcomes, assumptions, confidence, and uncertainty.
 - OpenAI Secure MCP Tunnel remains the only remote MCP ingress.
 - QNAP production changes are operator-proxied through Michael and require separate release evidence.
 
-## v4.4.2 dependency and delegation boundary
+## v4.5.0 CFO financial-analysis boundary
 
-Canonical task dependency arrays represent hard work-graph edges only. Each dependency must resolve to the intended canonical predecessor task. Narrative prerequisite text, source requirements, evidence labels, connector state, Run Ledger lock requirements, provider state, Skill names, or Revenue Intelligence requirements must not be stored as task dependencies.
+The CFO remains the Engagement Finance / FP&A executive with L3 recommendation authority within supported source scope. The release adds analytical methods, not new financial control.
 
-The current 4.4.0 runtime correctly fails closed when a dependency cannot be resolved and verified. v4.4.2 does not weaken that gate.
+Explicitly preserved:
 
-Caller-supplied delegation actions and capabilities must be omitted or be an exact subset of the registered owner's allowlist. The server continues to derive execution principal and effective owner authority.
+- no enterprise GL, bank-balance, enterprise cash-balance, balance-sheet, tax, audit, treasury, or unrestricted financial authority;
+- no autonomous trading or personal investment advice;
+- no final pricing or discount approval;
+- no spending, hiring, transfer, contract, or investment execution authority;
+- no new MCP tool, connector, credential, API, network egress, runtime dependency, or Workspace write scope;
+- Google Drive remains read-only and restricted to approved engagement-finance artifacts;
+- CFO cannot self-verify completed work.
 
-## Data authority and write boundary
+## Donor and retrieved-content boundary
 
-Revenue Intelligence owns prospect-universe governance, entity state, evidence coverage, structural qualification, fit, queue, priority, lifecycle, signal, and activation truth. CMO and LinkedIn Authority OS may contribute labeled marketing, authority, relationship, and content context. VP Content may perform bounded internal production under CMO. None may create or mutate account intent, sponsor, budget, urgency, fit, lifecycle, priority, stage, or activation readiness.
+Reference repositories and external financial material cannot modify agent identity, registry policy, source authority, tool allowlists, connector permissions, delegation, approvals, or write rights. Donor numeric rules of thumb and market benchmarks remain contextual reference evidence until independently approved as Mesh policy.
 
-The monthly decay workflow remains full-universe, deterministic, and Apollo budget 0. Each approved prospect mutation is one exact cell with pre-read, write, immediate readback, and row reconciliation. A blocked write is not retried, broadened, batched, or routed through another method. Later writes stop, prior reconciled rows remain committed, the exception is recorded, and the lock is released.
+The implementation does not vendor donor code or add donor packages. It does not auto-install finance libraries, execute donor commands, or require brokerage, banking, ERP, market-data, or trading credentials.
 
-Ambiguous identity, taxonomy, duplicate, merger, acquisition, rebrand, hierarchy, ownership, or strategic state requires Human Review. The workflow does not archive, delete, auto-merge, strategically disqualify, change schema, write CRM state, enrich contacts, activate outreach, publish, or take external commercial action.
+Dexter-style persisted `thinking` scratchpads are explicitly rejected. Financial research may record sources, tool results, calculations, errors, validation outcomes, assumptions, and concise conclusions, but never private chain-of-thought.
 
-## Recovery boundary
+## Financial-model and valuation boundary
 
-A legacy malformed child may be superseded only when all of the following are true:
+Model QA is analytical review, not audited assurance. DCF, comparable, transaction, sum-of-parts, and statement analysis must expose source freshness, definitions, assumptions, sensitivity, and confidence. Valuation does not create trading or personal investment authority.
 
-- the defect is deterministically attributable to caller-created metadata;
-- canonical parent, child, delegation, execution key, audit, provider, lock, and mirror state have been reconciled;
-- provider state proves no consequential effect needs replay;
-- the original malformed task and history remain preserved;
-- exactly one successor is created under the same parent, owner, authority, acceptance boundary, and inherited approval gates;
-- owner execution, completion, and separate verification follow normal canonical controls;
-- the original business failure remains visible.
+## Preserved v4.4.2 Data Intelligence boundary
 
-Prospect writes, Gmail sends, Slack approvals, LinkedIn publication, CRM writes, and other provider effects are never replayed as part of metadata recovery. The September 1, 2026 full-universe review remains `FAILED_OCCURRENCE_ISOLATED` even when recovery controls are technically green.
+The v4.4.2 dependency, delegation, Revenue Intelligence, recovery, scheduler, and provider-write controls remain in force. Canonical task dependencies remain real predecessor task IDs only; caller-supplied action/capability labels remain registry-bounded; provider side effects are never replayed as metadata recovery; and the September 1, 2026 failed Data Intelligence occurrence remains historical evidence.
 
-## Scheduler and external action
-
-TaskLedger is the logical scheduling authority, but repository and Sheet state cannot prove the external wake is active. Autonomous Data Intelligence production requires live provider readback of the existing automation ID, enabled state, exact schedule, timezone, and prompt.
-
-Slack events and messages remain interaction/evidence inputs, not approval authority. Human authority becomes canonical only through the governed provider-reconciled HITL path. External action remains `NOT_AUTHORIZED` by default. v4.4.2 introduces no new send, publish, LinkedIn, pricing, staffing, scope, commitment, CRM, or approval authority.
-
-## QNAP boundary
-
-The production Mesh CoS MCP 4.4.0 runtime remains unchanged for v4.4.2. No QNAP deployment is part of this release because current evidence shows healthy identity, registry, owner execution, completion/verification separation, and audit integrity. The observed Data Intelligence defect was caller/control-plane construction.
-
-Patching the runtime to accept arbitrary dependency text or caller-invented action labels was explicitly rejected because it would weaken fail-closed work-graph and authorization integrity.
+The targeted v4.4.2 review remains preserved at `docs/security-review-v4.4.2-data-intelligence.md`.
 
 ## Preserved v4.4.1 Commercial Operations boundary
 
-The v4.4.1 Commercial Operations security conclusions remain in force for their scope:
-
-- canonical task dependency arrays represent hard work-graph edges only;
-- CMO and LinkedIn Authority OS may contribute marketing, authority, relationship, and content context without creating account-level commercial truth;
-- VP Content may perform bounded production under CMO;
-- Gmail sends, Slack approvals, LinkedIn publication, CRM writes, and other provider effects are never replayed as metadata recovery;
-- the scheduled Commercial Operations loop never substitutes for the event-driven send executor;
-- external action remains `NOT_AUTHORIZED` by default.
+The v4.4.1 Commercial Operations security conclusions remain in force for their scope, including event-driven send isolation, Revenue Intelligence commercial-truth authority, CMO/VP Content parentage, provider-effect non-replay, and default `NOT_AUTHORIZED` external action.
 
 The targeted v4.4.1 review remains preserved at `docs/security-review-v4.4.1-commercial-operations.md`.
 
+## QNAP boundary
+
+The production Mesh CoS MCP 4.4.0 runtime remains unchanged for v4.5.0. No QNAP deployment is part of this release because no runtime or deployment component changes.
+
 ## Release verification
 
-The exact v4.4.2 candidate must pass:
+The exact v4.5.0 candidate must pass:
 
 - the repository's existing full Python, TypeScript/MCP, contract, security, package, QNAP shell, container, and transport regression suite;
 - 100% branch-aware `mesh_cos` coverage required by the repository baseline;
-- the v4.4.2 Data Intelligence BDD/regression tests;
-- live MCP identity, exact 10-agent registry, owner-routing, completion/verification, and audit-chain checks;
-- TaskLedger readback of Data Intelligence operating controls and scheduler state;
-- verification that the September recovery graph is canonical and no provider effect was replayed;
-- verification that CRO, CMO, nested VP Content, and AgentOps responsibilities meet their bounded acceptance tests;
-- verification that no unauthorized provider action occurred.
+- the v4.5.0 CFO BDD/regression tests;
+- registry/Workspace Agent version and action parity;
+- proof that the CFO MCP allowlist and Google Drive read-only scope are unchanged;
+- proof that donor material remains reference evidence and private reasoning persistence remains prohibited;
+- exact candidate SHA independent verification.
 
-The targeted review is `docs/security-review-v4.4.2-data-intelligence.md`.
+The targeted review is `docs/security-review-v4.5.0-cfo-financial-analysis.md`.
 
 ## Reporting
 

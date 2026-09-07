@@ -2,15 +2,40 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release candidate: `v4.4.2 Data Intelligence Orchestration`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release candidate: `v4.5.0 CFO Financial Analysis Capability`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.4.2 is an orchestration and operating-control patch. It does not modify or redeploy the healthy QNAP Mesh CoS MCP runtime.
+v4.5.0 is a repository and Workspace Agent capability release. It advances the CFO implementation to `1.1.0` without modifying or redeploying the healthy QNAP Mesh CoS MCP runtime.
 
 ## Canonical architecture
 
 Phase 1 contains exactly 10 registered agents: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations. Mesh Devil's Advocate remains a governed shared Skill, not an eleventh agent.
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Google TaskLedger, Prospect Universe, Slack, Gmail, connectors, Workspace state, and conversation history are scheduling, interaction, evidence, or mirror surfaces. `COMPLETED` remains distinct from `VERIFIED`.
+
+## v4.5.0 CFO Financial Analysis Capability
+
+The CFO remains the governed Engagement Finance / FP&A executive and retains the same L3 recommendation boundary, source authority, parentage, delegation depth, MCP allowlist, read-only Workspace app scope, and qualified-human approval requirements.
+
+v4.5.0 expands analytical depth with:
+
+- ROI, NPV, IRR, payback, break-even, and internal investment business-case methods;
+- driver-based forecasting and forecast-versus-actual decomposition;
+- unit economics, supported runway/burn, cash-conversion, and working-capital analysis;
+- financial-model formula integrity, tie-out, and scenario QA;
+- bounded financial-statement analysis and valuation using DCF, comparable, transaction, and sum-of-parts methods where applicable;
+- WACC, terminal-value, source-freshness, scenario, and sensitivity controls;
+- evidence-backed financial research planning, provenance, freshness, validation, and confidence;
+- explicit prohibitions against autonomous trading, personal investment advice, external benchmark-as-policy behavior, and private financial-reasoning persistence.
+
+Donor repositories are synthesized as reference material only. No donor code, packages, credentials, APIs, connectors, execution permissions, or numeric policies are imported.
+
+Current v4.5.0 material:
+
+- `docs/cfo-financial-analysis-v4.5.0.md`
+- `docs/architecture-v4.5.0-cfo-financial-analysis.md`
+- `docs/security-review-v4.5.0-cfo-financial-analysis.md`
+- `docs/release-v4.5.0-cfo-financial-analysis.md`
+- `specs/cfo-financial-analysis-v4.5.0.feature`
 
 ## v4.4.2 Data Intelligence correction
 
@@ -30,7 +55,7 @@ v4.4.2 fixes the caller and control-plane contract instead of weakening the runt
 - the monthly full-universe, Apollo-budget-0, exact single-cell pre-read/write/readback/reconciliation contract is preserved;
 - the external Scheduled Task remains wake transport and cannot be considered production-active without live enabled-state, schedule, timezone, and prompt readback.
 
-The detailed architecture and operating runbook are:
+The detailed v4.4.2 architecture and operating runbook remain preserved:
 
 - `docs/data-intelligence-orchestrator-v4.4.2.md`
 - `docs/architecture-v4.4.2-data-intelligence.md`
@@ -44,7 +69,7 @@ The Commercial Operations incidents were caused by caller-created work packages 
 
 v4.4.1 therefore fixes the caller/control-plane contract rather than weakening or redeploying the runtime:
 
-- canonical dependencies contain only actual predecessor task IDs;
+- canonical dependencies contain only real canonical predecessor task IDs;
 - narrative prerequisites move to job contracts, acceptance tests, constraints, trigger conditions, evidence, or operating mirrors;
 - legacy malformed children are preserved and may be superseded once by a deterministic dependency-clean successor when provider state proves recovery is safe;
 - business outcome and technical health are reported separately;
@@ -62,7 +87,7 @@ The v4.4.1 material remains preserved:
 
 ## Production runtime and authority boundaries
 
-The current QNAP Mesh CoS MCP 4.4.0 deployment remains production. Its current owner-execution, registry, audit, completion, verification, and Slack HITL boundaries are unchanged by v4.4.2.
+The current QNAP Mesh CoS MCP 4.4.0 deployment remains production. Its current owner-execution, registry, audit, completion, verification, and Slack HITL runtime boundaries are unchanged by v4.5.0.
 
 Key invariants remain:
 
@@ -73,7 +98,7 @@ Key invariants remain:
 - human-only operations excluded from agent action surfaces;
 - Revenue Intelligence as the sole account-level commercial-truth authority;
 - exact canonical approval before consequential external action;
-- no autonomous public publishing, prospect email send, LinkedIn action, pricing/scope commitment, or approval on Michael's behalf;
+- no autonomous public publishing, prospect email send, LinkedIn action, pricing/scope commitment, trading action, or approval on Michael's behalf;
 - OpenAI Secure MCP Tunnel as the only remote MCP ingress;
 - QNAP changes remain operator-proxied through Michael.
 
@@ -111,7 +136,7 @@ Key invariants remain:
 
 ## Verification
 
-The v4.4.2 pull request must pass the repository's existing full CI plus the Data Intelligence regression suite. Core gates include:
+The v4.5.0 pull request must pass the repository's existing full CI plus the CFO financial-analysis regression suite. Core gates include:
 
 ```bash
 python scripts/validate-contracts.py
@@ -125,17 +150,17 @@ ruff check tests scripts --select E9,F63,F7,F82
 mypy src --check-untyped-defs
 pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
-pytest -q tests/evaluations/test_data_intelligence_orchestrator_v442.py
+pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
 ```
 
-GitHub CI also retains the existing TypeScript/MCP, QNAP shell/security, container, packaging, and transport checks for repository regression protection. Passing those checks does not imply a new QNAP deployment or prove the external monthly Scheduled Task is enabled.
+GitHub CI also retains the existing TypeScript/MCP, QNAP shell/security, container, packaging, and transport checks for repository regression protection. Passing those checks does not imply a new QNAP deployment.
 
 ## Release model
 
-`v4.4.2` is a PATCH release because it corrects orchestration/control-plane behavior without changing the public MCP runtime contract or QNAP production binary. After the verified pull request is merged to `main`, the v4.4.2 release workflow re-runs verification and creates semantic tag `v4.4.2` plus the immutable GitHub Release from the merged main SHA.
+`v4.5.0` is a MINOR repository release because it adds a backward-compatible CFO analytical capability while preserving the public MCP/runtime contract and QNAP production binary. After the verified pull request is merged to `main`, the v4.5.0 release workflow reruns verification and creates semantic tag `v4.5.0` plus the immutable GitHub Release from the merged main SHA.
 
-No QNAP deployment is part of v4.4.2. If a future defect is proven to originate in runtime code rather than caller work-package construction, QNAP work requires a separately justified release and user-proxied operator steps.
+No QNAP deployment is part of v4.5.0. Runtime code remains at the canonical `4.0.0` authority/package contract and the production QNAP deployment remains `4.4.0`.
 
 ## Historical release-train evidence
 
-The `v4.4.1 Commercial Operations Orchestration` and `v4.4.0 Authority Closure` baselines remain intentionally preserved. At the time of the v4.4.0 candidate, the historical statement was: **Current deployed QNAP release remains `v4.3.0`**. Historical v4.3.x documents remain retained as release-train evidence. These statements are preserved as historical evidence only; the current production QNAP deployment is 4.4.0.
+The `v4.4.2 Data Intelligence Orchestration`, `v4.4.1 Commercial Operations Orchestration`, and `v4.4.0 Authority Closure` baselines remain intentionally preserved. Historical v4.3.x and v4.4.x documents remain release-train evidence and do not override the current v4.5.0 repository capability release.

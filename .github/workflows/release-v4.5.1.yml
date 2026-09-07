@@ -56,12 +56,12 @@ jobs:
       - run: python -m compileall -q src
       - run: pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
       - run: pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
-      - name: Confirm closeout and preserved runtime boundaries
+      - name: Confirm preserved v4.5.1 history and runtime boundaries
         run: |
           set -euo pipefail
-          grep -q 'v4.5.1 CFO Financial Analysis Release Closeout' README.md
-          grep -q '^# v4.5.1 CFO Financial Analysis Release Closeout' RELEASE.md
-          grep -q 'v4.5.1 CFO Financial Analysis Release Closeout' SECURITY.md
+          grep -q '## v4.5.1 CFO Financial Analysis Release Closeout' README.md
+          grep -q '^# v4.5.1 CFO Financial Analysis Release Closeout' docs/release-v4.5.1-release-closeout.md
+          grep -q '^# Changelog v4.5.1' CHANGELOG-v4.5.1.md
           grep -q '\*\*RELEASED\*\*' docs/verification-v4.5.0-cfo-financial-analysis.md
           grep -q 'CFO implementation version: `1.1.0`' docs/verification-v4.5.0-cfo-financial-analysis.md
           grep -q 'Canonical Phase 1 runtime contract: `4.0.0`' docs/verification-v4.5.0-cfo-financial-analysis.md
@@ -75,7 +75,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
-      - name: Publish v4.5.1 release closeout
+      - name: Preserve immutable v4.5.1 release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

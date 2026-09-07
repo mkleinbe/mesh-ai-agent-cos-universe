@@ -19,5 +19,5 @@ jobs:
       - name: Verify immutable v4.5.2 release record
         run: |
           set -euo pipefail
-          grep -q '^# v4.5.2 CFO Financial Analysis Release State Finalization' docs/release-v4.5.2-release-state-finalization.md
+          grep -q '^# Release v4.5.2: CFO Financial Analysis Release State Finalization' docs/release-v4.5.2-release-state-finalization.md
           grep -q '^# Changelog v4.5.2' CHANGELOG-v4.5.2.md

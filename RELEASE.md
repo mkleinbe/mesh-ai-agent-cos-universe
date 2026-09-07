@@ -1,6 +1,6 @@
 # v4.5.2 CFO Financial Analysis Release State Finalization
 
-`v4.5.2` is the current repository release. It is a documentation and release-control PATCH that finalizes durable post-publication release wording for the CFO Financial Analysis release train.
+`v4.5.2 CFO Financial Analysis Release State Finalization` is the current repository release. It is a documentation and release-control PATCH that finalizes durable post-publication release wording for the CFO Financial Analysis release train.
 
 The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. CFO implementation remains **1.1.0**. The roster remains exactly 10 registered agents.
 

@@ -394,7 +394,7 @@
       ],
       "decision_authority": "L3 financial recommendation within supported source scope",
       "required_approvals": [
-        "qualified human for final pricing/discount/material commercial action"
+        "qualified human for final pricing, discount, investment, spending, hiring, contractual, or other material commercial action"
       ],
       "delegation_permissions": [
         "specialist/worker within engagement-finance scope"

@@ -161,6 +161,9 @@ def test_cfz004_management_fpa_source_scope_expands_analysis_not_enterprise_auth
         "personal_investment_advice",
     } <= set(cfo["prohibited_actions"])
     assert cfo["decision_authority"] == "L3 financial recommendation within supported source scope"
+    assert cfo["required_approvals"] == [
+        "qualified human for final pricing, discount, investment, spending, hiring, contractual, or other material commercial action"
+    ]
 
 
 def test_cfz006_operating_cadence_and_artifact_contract_is_routed() -> None:
@@ -211,6 +214,12 @@ def test_cfz007_cfo_mcp_allowlist_remains_exact_and_human_only_tools_stay_absent
     ]
     assert "approval.record_decision" not in expected
     assert "reliability.human_override" not in expected
+    assert manifest["required_approvals"] == [
+        "qualified human for final pricing, discount, investment, spending, hiring, contractual, or other material commercial action"
+    ]
+    assert "approved CFO finance artifacts within the registered allowed-source scope" in manifest[
+        "connector_action_constraints"
+    ][0]
 
 
 def test_cfz008_historical_cfo_release_workflows_are_manual_only() -> None:

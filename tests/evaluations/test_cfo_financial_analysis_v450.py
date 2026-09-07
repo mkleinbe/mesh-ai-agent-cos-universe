@@ -150,3 +150,15 @@ def test_cfo_donor_provenance_is_documented_and_non_normative() -> None:
     assert "reference material" in text.lower()
     assert "not copied as authority" in text.lower()
     assert "license" in text.lower()
+
+
+def test_v450_release_gate_assertions_match_documented_runtime_boundaries() -> None:
+    release_doc = (ROOT / "docs" / "release-v4.5.0-cfo-financial-analysis.md").read_text()
+    workflow = (ROOT / ".github" / "workflows" / "release-v4.5.0.yml").read_text()
+    phrases = (
+        "canonical Phase 1 runtime contract remains `4.0.0`",
+        "production QNAP Mesh CoS MCP runtime remains `4.4.0`",
+    )
+    for phrase in phrases:
+        assert phrase in release_doc
+        assert phrase in workflow

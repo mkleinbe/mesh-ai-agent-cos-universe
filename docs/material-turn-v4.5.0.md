@@ -51,7 +51,7 @@ The decision boundary remains L3 recommendation within supported source scope.
 
 ## Architecture
 
-The canonical control path is validated with the connected Mermaid Chart renderer and preserved below.
+The canonical control path was validated with the connected Mermaid Chart renderer and is preserved below.
 
 ```mermaid
 flowchart TD
@@ -147,24 +147,30 @@ See `docs/skills-v4.5.0.md`.
 
 Executable acceptance gate: `tests/evaluations/test_cfo_financial_analysis_v450.py`.
 
-Full CI and exact-candidate verification are required before integration. The final verification receipt is `docs/verification-v4.5.0-cfo-financial-analysis.md` and must be updated with the exact candidate and merged main SHA before release closeout.
+The initial implementation CI correctly blocked integration on two regressions: Workspace Builder description drift and an obsolete historical test that still asserted QNAP `v4.3.0` as the current deployment. Both were corrected without weakening finance, security, or runtime acceptance criteria. Full CI and exact-candidate verification remain required before integration.
 
-## Exact candidate and merge commit identity
+The authoritative verification receipt is `docs/verification-v4.5.0-cfo-financial-analysis.md`. It records the exact verified branch candidate, CI run evidence, security/diff review, and final release disposition. The merged-main identity is then bound by the successful v4.5.0 main release workflow, semantic tag, and GitHub Release.
+
+## Candidate and integration identity
 
 - Baseline main SHA: `0e7c52cb26f7b9fede20b6582ca130514b2bf3dd`.
 - Pull request: `#65`.
-- Exact final candidate SHA: `PENDING_FINAL_VERIFICATION`.
-- Merged main SHA: `PENDING_INTEGRATION`.
+- Exact verified branch candidate: recorded in `docs/verification-v4.5.0-cfo-financial-analysis.md` after final branch verification.
+- Integrated main SHA: resolved and verified by the v4.5.0 main release workflow and immutable semantic tag/release.
 
-These placeholders must be replaced before release closeout.
+This follows the repository's established pattern: final documentation and release-control changes are reverified before merge, then final release evidence is rebound to the actual integrated main SHA and semantic tag.
 
 ## Semantic version rationale
 
 `v4.5.0` is MINOR because it adds backward-compatible CFO capability without changing the public MCP/runtime contract. CFO implementation advances to `1.1.0` for the same reason.
 
+## Release authorization
+
+`docs/release-authorization-v4.5.0.md` records the standing human authorization for the bounded implementation, PR integration, semantic tag, and GitHub Release lifecycle. It does not authorize QNAP deployment or any new consequential finance action.
+
 ## Release artifacts and checksums
 
-No binary or deployment bundle is produced. Release artifacts are source, Skill/package records, BDD/tests, documentation, semantic tag, and GitHub Release. The tag and release must target the final merged main SHA.
+No binary or deployment bundle is produced. Release artifacts are source, Skill/package records, BDD/tests, documentation, semantic tag, and GitHub Release. The tag and release must target the final verified merged main SHA.
 
 ## Production acceptance boundary
 

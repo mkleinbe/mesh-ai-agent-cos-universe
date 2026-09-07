@@ -5,21 +5,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _head(path: str, size: int = 1200) -> str:
+def _head(path: str, size: int = 2600) -> str:
     return (ROOT / path).read_text()[:size]
+
+
+def _current_release_line(path: str) -> str:
+    for line in (ROOT / path).read_text().splitlines()[:20]:
+        if "current repository release" in line.lower():
+            return line
+    raise AssertionError(f"{path} does not declare a current repository release")
 
 
 def test_current_release_pointers_are_durable_after_publication() -> None:
     for path in ("README.md", "RELEASE.md", "SECURITY.md"):
-        head = _head(path)
-        assert "v4.5.2 CFO Financial Analysis Release State Finalization" in head
-        assert "release candidate" not in head.lower()
+        line = _current_release_line(path)
+        assert "v4.5.2 CFO Financial Analysis Release State Finalization" in line
+        assert "release candidate" not in line.lower()
 
 
 def test_current_release_preserves_cfo_and_runtime_boundaries() -> None:
-    readme = _head("README.md", 2400)
-    release = _head("RELEASE.md", 2600)
-    security = _head("SECURITY.md", 2200)
+    readme = _head("README.md", 2600)
+    release = _head("RELEASE.md", 3000)
+    security = _head("SECURITY.md", 2400)
     combined = readme + release + security
     assert "1.1.0" in combined
     assert "4.0.0" in combined

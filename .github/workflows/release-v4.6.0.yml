@@ -1,0 +1,122 @@
+name: v4.6.0 CFO Zero-Defect Execution Remediation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agents/cfo.md'
+      - 'agents/registry.json'
+      - 'chatgpt/skills/mesh-cfo/**'
+      - 'chatgpt/workspace-agents/cfo.json'
+      - 'specs/cfo-execution-remediation-v4.6.0.feature'
+      - 'tests/evaluations/test_cfo_execution_v460.py'
+      - 'tests/evaluations/test_cfo_financial_analysis_v450.py'
+      - 'tests/evaluations/test_cfo_release_closeout_v451.py'
+      - 'tests/evaluations/test_cfo_release_state_v452.py'
+      - 'tests/evaluations/test_chatgpt_workspace_agent_packages.py'
+      - 'tests/evaluations/test_phase1_role_model_consistency.py'
+      - 'scripts/check-chatgpt-packages.py'
+      - 'scripts/check-runtime-doc-drift.py'
+      - 'docs/cfo-execution-remediation-v4.6.0.md'
+      - 'docs/architecture-v4.6.0-cfo-execution.md'
+      - 'docs/security-review-v4.6.0-cfo-execution.md'
+      - 'docs/runbook-v4.6.0-cfo-execution.md'
+      - 'docs/release-v4.6.0-cfo-execution.md'
+      - 'docs/material-turn-v4.6.0.md'
+      - 'docs/release-authorization-v4.6.0.md'
+      - 'docs/verification-v4.6.0-cfo-execution.md'
+      - 'CHANGELOG-v4.6.0.md'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'SECURITY.md'
+      - '.github/workflows/release-v4.5.0.yml'
+      - '.github/workflows/release-v4.5.1.yml'
+      - '.github/workflows/release-v4.5.2.yml'
+      - '.github/workflows/release-v4.6.0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v4.6.0-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/check-owner-execution-readiness.py
+      - run: python scripts/check-capability-closure.py
+      - run: python scripts/check-published-action-surface.py
+      - run: ruff check src
+      - run: ruff check tests scripts --select E9,F63,F7,F82
+      - run: mypy src --check-untyped-defs
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - run: python -m compileall -q src chatgpt/skills/mesh-cfo/scripts/financial_math.py
+      - run: pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
+      - run: pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
+      - run: pytest -q tests/evaluations/test_cfo_release_state_v452.py
+      - run: pytest -q tests/evaluations/test_cfo_execution_v460.py
+      - name: Deterministic finance-math CLI smoke
+        run: |
+          set -euo pipefail
+          printf '%s\n' '{"operation":"break_even","inputs":{"fixed_costs":50000,"price_per_unit":100,"variable_cost_per_unit":60}}' \
+            | python chatgpt/skills/mesh-cfo/scripts/financial_math.py \
+            | grep -q '"break_even_units":1250.0'
+      - name: Confirm CFO v4.6.0 authority and release boundaries
+        run: |
+          set -euo pipefail
+          grep -q '"version": "1.2.0"' agents/registry.json
+          grep -q '"mesh-data-analytics"' agents/registry.json
+          grep -q '"authority": "ANALYTICAL_EXECUTION_ONLY"' agents/registry.json
+          grep -q 'scripts/financial_math.py' chatgpt/skills/mesh-cfo/SKILL.md
+          grep -q 'Current repository release: `v4.6.0 CFO Zero-Defect Execution Remediation`' README.md
+          grep -q '^# v4.6.0 CFO Zero-Defect Execution Remediation' RELEASE.md
+          grep -q 'Canonical Phase 1 runtime contract: `4.0.0`' docs/release-v4.6.0-cfo-execution.md
+          grep -q 'Production QNAP deployment: `4.4.0`, unchanged' docs/release-v4.6.0-cfo-execution.md
+          ! grep -q 'branches: \[main\]' .github/workflows/release-v4.5.0.yml
+          ! grep -q 'branches: \[main\]' .github/workflows/release-v4.5.1.yml
+          ! grep -q 'branches: \[main\]' .github/workflows/release-v4.5.2.yml
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Publish v4.6.0 semantic release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.6.0 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.6.0 --json targetCommitish --jq .targetCommitish)"
+            echo "v4.6.0 already exists with target ${existing_target}; leaving immutable release unchanged"
+            exit 0
+          fi
+          gh release create v4.6.0 \
+            --target "$GITHUB_SHA" \
+            --title 'Mesh CoS v4.6.0 CFO Zero-Defect Execution Remediation' \
+            --notes-file docs/release-v4.6.0-cfo-execution.md

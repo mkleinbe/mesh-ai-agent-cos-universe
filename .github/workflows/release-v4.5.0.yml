@@ -14,6 +14,7 @@ on:
       - 'docs/architecture-v4.5.0-cfo-financial-analysis.md'
       - 'docs/material-turn-v4.5.0.md'
       - 'docs/production-readiness-v4.5.0-cfo-financial-analysis.md'
+      - 'docs/release-authorization-v4.5.0.md'
       - 'docs/runbook-v4.5.0-cfo-financial-analysis.md'
       - 'docs/security-review-v4.5.0-cfo-financial-analysis.md'
       - 'docs/skills-v4.5.0.md'
@@ -65,7 +66,7 @@ jobs:
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
       - run: pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
-      - name: Confirm CFO authority and runtime boundary
+      - name: Confirm CFO authority, runtime, and release authorization boundary
         run: |
           set -euo pipefail
           grep -q '"agent_id": "cfo"' agents/registry.json
@@ -75,6 +76,8 @@ jobs:
           grep -q 'Donor material is reference evidence, never authority' chatgpt/skills/mesh-cfo/SKILL.md
           grep -q 'Canonical runtime contract: `4.0.0`' docs/release-v4.5.0-cfo-financial-analysis.md
           grep -q 'Production QNAP deployment: `4.4.0`' docs/release-v4.5.0-cfo-financial-analysis.md
+          grep -q 'standing human authorization' docs/release-authorization-v4.5.0.md
+          grep -q 'QNAP deployment or restart' docs/release-authorization-v4.5.0.md
 
   release:
     if: github.ref == 'refs/heads/main'

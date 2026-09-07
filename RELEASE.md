@@ -1,6 +1,83 @@
+# v4.5.0 CFO Financial Analysis Capability
+
+`v4.5.0` is the current repository release candidate. It expands the governed analytical depth of the CFO from implementation version `1.0.0` to `1.1.0` without changing the Mesh CoS MCP runtime binary or authority architecture.
+
+The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**.
+
+## Capability change
+
+The CFO gains bounded analytical methods for:
+
+- internal investment business cases using ROI, NPV, IRR, payback, and break-even where appropriate;
+- driver-based forecasting, forecast-versus-actual decomposition, and unit economics;
+- supported runway/burn and working-capital analysis;
+- financial-model quality assurance and integrated-statement tie-outs;
+- bounded financial-statement and valuation analysis using DCF, comparables, transactions, and sum-of-parts when applicable;
+- WACC, terminal-value, source-freshness, sensitivity, and scenario analysis;
+- evidence-backed financial research planning, provenance, validation, and confidence.
+
+Donor frameworks are reference material only. They do not become canonical policy, auto-installed dependencies, executable authority, or financial facts.
+
+## Authority preserved
+
+- Accountable domain: `engagement finance and FP&A`
+- Parent: `cos`
+- Decision authority: L3 financial recommendation within supported source scope
+- Max delegation depth: 1
+- Authoritative source: Mesh Proposals - Engagement P&L Tracker
+- Google Drive: read-only, approved engagement-finance artifacts
+- MCP allowlist: unchanged
+- Pricing, discounts, investment, spending, hiring, contractual commitments, and other consequential actions remain qualified-human approval bound
+- Autonomous trading, personal investment advice, benchmark-as-policy behavior, and persisted private financial reasoning are explicitly prohibited
+- `task.complete` remains distinct from `task.verify`; CFO cannot self-verify
+
+## Compatibility and production disposition
+
+- Canonical runtime contract: `4.0.0`
+- Production QNAP deployment: `4.4.0`
+- Repository release: `v4.5.0`
+- CFO implementation version: `1.1.0`
+- Registered agents: exactly 10
+- MCP machine action surface: unchanged
+- Database/schema migration: none
+- QNAP image/container change: none
+- QNAP operator action: none
+- Provider credentials/Slack trust boundary: unchanged
+- External-action authority: unchanged
+- New dependency or connector: none
+
+No QNAP deployment is part of this release. The live Mesh CoS MCP 4.4.0 runtime remains production.
+
+## Verification gates
+
+The candidate is releasable only when:
+
+1. Existing full repository CI passes.
+2. `tests/evaluations/test_cfo_financial_analysis_v450.py` passes.
+3. Ready scenarios `CFA-001` through `CFA-008` remain represented by executable acceptance evidence.
+4. Registry and Workspace Agent both project CFO implementation `1.1.0` with the same permitted and prohibited action sets.
+5. CFO MCP allowlist and Google Drive read-only scope remain unchanged.
+6. Donor reference material cannot expand authority or persist private chain-of-thought.
+7. Independent verification is recorded against the final pull-request/main SHA.
+
+## Release lifecycle
+
+After all pull-request checks are green:
+
+1. Merge the verified branch to `main`.
+2. The v4.5.0 release workflow re-runs full release verification on the merged main SHA.
+3. Only after verification succeeds, the workflow creates semantic tag `v4.5.0` and the immutable GitHub Release from that exact main SHA.
+4. Confirm `main`, the tag, GitHub Release, release notes, CFO registry implementation `1.1.0`, and Workspace Agent manifest identify the same intended release state.
+
+## Rollback
+
+If a Skill or CFO behavior regression appears, restore the prior CFO registry, role card, Skill, references, and Workspace Agent projection from the preceding main commit. Do not restart or roll back the healthy QNAP runtime for a Skill-only defect.
+
+---
+
 # v4.4.2 Data Intelligence Orchestration
 
-`v4.4.2` is the current repository release candidate. It corrects Data Intelligence caller/work-package construction, owner routing, deterministic recovery, executive reporting, TaskLedger control-plane state, and production scheduler evidence without changing the Mesh CoS MCP runtime binary.
+`v4.4.2` is the prior repository release. It corrected Data Intelligence caller/work-package construction, owner routing, deterministic recovery, executive reporting, TaskLedger control-plane state, and production scheduler evidence without changing the Mesh CoS MCP runtime binary.
 
 The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**. The production QNAP deployment remains **4.4.0**. This release preserves the Phase 1 roster and all existing runtime trust boundaries.
 
@@ -47,37 +124,6 @@ v4.4.2 preserves both fail-closed controls and corrects the orchestration bounda
 - External-action authority: unchanged
 
 No QNAP deployment is part of this release. The live Mesh CoS MCP 4.4.0 runtime remains production.
-
-## Verification gates
-
-The candidate is releasable only when:
-
-1. Existing full repository CI passes.
-2. The v4.4.2 Data Intelligence regression suite passes.
-3. Live Mesh CoS MCP identity, exact 10-agent registry, delegated owner execution, separate verification, and audit-chain validation pass.
-4. The malformed September child is preserved/cancelled and exactly one dependency-clean recovery successor is VERIFIED without provider replay.
-5. The original September business occurrence remains an explicit failed isolated occurrence rather than a false success.
-6. CRO, CMO, nested VP Content, and AgentOps responsibilities are completed through canonical owner execution and separately verified where applicable.
-7. Prospect Run Ledger and Prospect Universe evidence prove no September run transaction or prospect mutation was replayed.
-8. TaskLedger Operating Guide, Preflight, Tests, Operating Loops, Inventory, Prompt Archive, Control Plane, and Run History are reconciled.
-9. The Data Intelligence Scheduled Task is enabled in place with the declared monthly schedule and current prompt contract, then read back from the provider.
-10. No unauthorized external action occurred.
-11. Independent verification is recorded against the final pull-request/main SHA.
-
-## Release lifecycle
-
-After all pull-request checks are green:
-
-1. Merge the verified branch to `main`.
-2. The v4.4.2 release workflow re-runs the release verification job on the merged main SHA.
-3. Only after that verification succeeds, the workflow creates semantic tag `v4.4.2` and the immutable GitHub Release from that exact main SHA.
-4. Confirm `main`, the tag, GitHub Release, release notes, canonical TaskLedger evidence, and scheduler readback identify the same intended release state.
-
-## Rollback
-
-If the orchestration configuration produces incorrect routing, disable the Data Intelligence Scheduled Task, preserve canonical MCP, provider, and Sheet evidence, restore the prior prompt from the TaskLedger Prompt Archive, and investigate the caller/control-plane contract.
-
-Do not roll back or restart the healthy QNAP runtime for an orchestration-only defect.
 
 ---
 
@@ -128,4 +174,4 @@ No QNAP deployment was part of v4.4.1. The live Mesh CoS MCP 4.4.0 runtime remai
 
 # v4.4.0 Authority Closure
 
-Historical release identity is preserved for regression and audit continuity. For that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. The historical v4.4.0 release documents, workflows, security evidence, and v4.3.x release-train artifacts remain retained. This historical section does not override the current v4.4.2 repository release candidate or the current QNAP 4.4.0 production deployment.
+Historical release identity is preserved for regression and audit continuity. For that release-train point, the canonical Phase 1 authority/runtime contract remains **4.0.0**, and the then-current production deployment was `v4.3.0`. The historical v4.4.0 release documents, workflows, security evidence, and v4.3.x release-train artifacts remain retained. This historical section does not override the current v4.5.0 repository release candidate or the current QNAP 4.4.0 production deployment.

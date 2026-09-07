@@ -25,6 +25,7 @@ def _finance_math() -> ModuleType:
 
 def test_cfz001_known_answer_finance_math_is_reproducible() -> None:
     finance = _finance_math()
+    assert finance.roi(30000, 100000) == pytest.approx(0.3)
     assert finance.npv(0.10, [-100000, 30000, 35000, 40000, 45000]) == pytest.approx(
         16986.544634929287
     )
@@ -34,6 +35,7 @@ def test_cfz001_known_answer_finance_math_is_reproducible() -> None:
         [-100, 60, 60], discount_rate=0.10
     ) == pytest.approx(1.9166666667, abs=1e-9)
     assert finance.break_even_units(50000, 100, 60) == pytest.approx(1250)
+    assert finance.break_even_revenue(50000, 0.4) == pytest.approx(125000)
     assert finance.runway(100000, 10000) == {
         "cash_generative": False,
         "runway_periods": 10.0,
@@ -47,22 +49,51 @@ def test_cfz001_known_answer_finance_math_is_reproducible() -> None:
         "contribution_margin_ratio": 0.4,
     }
     assert finance.ltv_cac(1200, 300) == pytest.approx(4.0)
+    assert finance.cash_conversion_cycle(0, 45, 30) == pytest.approx(15.0)
 
 
-def test_cfz001_finance_math_fails_closed_on_invalid_or_unsupported_input() -> None:
+def test_cfz001_finance_math_fails_closed_on_invalid_ambiguous_or_unsupported_input() -> None:
     finance = _finance_math()
+    with pytest.raises(finance.FinanceInputError):
+        finance.roi(100, 0)
     with pytest.raises(finance.FinanceInputError):
         finance.npv(-1, [-1, 2])
     with pytest.raises(finance.FinanceInputError):
         finance.irr([1, 2, 3])
+    with pytest.raises(finance.FinanceInputError, match="ambiguous"):
+        finance.irr([-100, 230, -132])
     with pytest.raises(finance.FinanceInputError):
         finance.break_even_units(100, 50, 50)
+    with pytest.raises(finance.FinanceInputError):
+        finance.break_even_revenue(100, 0)
     with pytest.raises(finance.FinanceInputError):
         finance.ltv_cac(1000, 0)
     with pytest.raises(finance.FinanceInputError, match="unsupported operation"):
         finance.execute({"operation": "trade", "inputs": {}})
     with pytest.raises(finance.FinanceInputError, match="unsupported fields"):
         finance.execute({"operation": "npv", "inputs": {}, "command": "shell"})
+
+
+def test_cfz001_closed_dispatcher_executes_supported_core_methods() -> None:
+    finance = _finance_math()
+    cases = {
+        "roi": {"net_benefit": 30, "investment_cost": 100},
+        "npv": {"rate": 0.1, "cash_flows": [-100, 60, 60]},
+        "irr": {"cash_flows": [-100, 60, 60]},
+        "payback": {"cash_flows": [-100, 60, 60]},
+        "discounted_payback": {"cash_flows": [-100, 60, 60], "discount_rate": 0.1},
+        "break_even": {"fixed_costs": 100, "price_per_unit": 10, "variable_cost_per_unit": 5},
+        "break_even_revenue": {"fixed_costs": 100, "contribution_margin_ratio": 0.5},
+        "runway": {"available_cash": 100, "net_burn_per_period": 10},
+        "contribution_margin": {"revenue": 100, "variable_costs": 60},
+        "ltv_cac": {"ltv": 400, "cac": 100},
+        "cash_conversion_cycle": {"dio": 0, "dso": 45, "dpo": 30},
+    }
+    for operation, inputs in cases.items():
+        result = finance.execute({"operation": operation, "inputs": inputs})
+        assert result["ok"] is True
+        assert result["operation"] == operation
+        assert result["result"]
 
 
 def test_cfz002_cfz003_cfo_only_governed_analytics_handoff_is_bounded() -> None:

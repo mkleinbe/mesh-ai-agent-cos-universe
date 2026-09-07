@@ -12,13 +12,31 @@
       "display_name": "Mesh Devil's Advocate",
       "type": "shared_skill",
       "deployment": "EXTERNAL_SHARED_SKILL",
-      "consumers": ["cos", "cro"],
+      "consumers": [
+        "cos",
+        "cro"
+      ],
       "authority": "ADVISORY_ONLY",
       "canonical_facts_modified": false,
       "external_action_included": false,
       "request_contract": "mesh.devils-advocate.challenge-request.v1",
       "response_contract": "mesh.devils-advocate.challenge-packet.v1",
       "rule": "Challenge decision logic without becoming the decision owner or overwriting canonical facts; route authority back to the owning agent or qualified human."
+    },
+    {
+      "capability": "mesh-data-analytics",
+      "display_name": "Mesh Data Analytics",
+      "type": "shared_skill",
+      "deployment": "EXTERNAL_SHARED_SKILL",
+      "consumers": [
+        "cfo"
+      ],
+      "authority": "ANALYTICAL_EXECUTION_ONLY",
+      "canonical_facts_modified": false,
+      "external_action_included": false,
+      "request_contract": "mesh.data.analytics.handoff.v1.2",
+      "response_contract": "mesh.data.analytics.handoff.v1.2",
+      "rule": "Execute and validate quantitative analysis, model inspection, research, and finance artifacts without changing CFO decision authority, canonical financial truth, or consequential write rights."
     }
   ],
   "agents": [
@@ -32,17 +50,67 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "executive orchestration and outcome accountability",
-      "authoritative_sources": ["Task and Outcome Ledger", "Agent Registry", "Decision and Audit Records"],
-      "allowed_sources": ["authorized Mesh enterprise sources"],
-      "skills": ["mesh-ppmd-bot", "mesh-devils-advocate"],
-      "tools": ["task-ledger", "authority-engine", "approval-engine", "audit", "agentops", "slack-adapter"],
-      "input_contracts": ["task.v1", "delegation.v1", "conflict.v1", "performance-scorecard.v1"],
-      "output_contracts": ["delegation.v1", "decision.v1", "conflict.v1", "agent-event.v1"],
-      "permitted_actions": ["triage", "decompose", "delegate", "reprioritize", "reassign", "arbitrate_within_delegated_authority", "verify_outcome", "recommend_agent_portfolio_changes"],
-      "prohibited_actions": ["rewrite_canonical_financial_facts", "rewrite_canonical_commercial_facts", "rewrite_delivery_capacity_truth", "unilateral_external_send", "commercial_commitment_without_approval", "autonomous_agent_creation", "material_authority_expansion"],
+      "authoritative_sources": [
+        "Task and Outcome Ledger",
+        "Agent Registry",
+        "Decision and Audit Records"
+      ],
+      "allowed_sources": [
+        "authorized Mesh enterprise sources"
+      ],
+      "skills": [
+        "mesh-ppmd-bot",
+        "mesh-devils-advocate"
+      ],
+      "tools": [
+        "task-ledger",
+        "authority-engine",
+        "approval-engine",
+        "audit",
+        "agentops",
+        "slack-adapter"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "delegation.v1",
+        "conflict.v1",
+        "performance-scorecard.v1"
+      ],
+      "output_contracts": [
+        "delegation.v1",
+        "decision.v1",
+        "conflict.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "triage",
+        "decompose",
+        "delegate",
+        "reprioritize",
+        "reassign",
+        "arbitrate_within_delegated_authority",
+        "verify_outcome",
+        "recommend_agent_portfolio_changes"
+      ],
+      "prohibited_actions": [
+        "rewrite_canonical_financial_facts",
+        "rewrite_canonical_commercial_facts",
+        "rewrite_delivery_capacity_truth",
+        "unilateral_external_send",
+        "commercial_commitment_without_approval",
+        "autonomous_agent_creation",
+        "material_authority_expansion"
+      ],
       "decision_authority": "L3 only where explicitly delegated; L4/L5 require human authority",
-      "required_approvals": ["L4 qualified human", "L5 Michael"],
-      "delegation_permissions": ["functional executive", "controller", "operations"],
+      "required_approvals": [
+        "L4 qualified human",
+        "L5 Michael"
+      ],
+      "delegation_permissions": [
+        "functional executive",
+        "controller",
+        "operations"
+      ],
       "max_delegation_depth": 2,
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
@@ -59,16 +127,50 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "agent operations and performance management",
-      "authoritative_sources": ["Task and Outcome Ledger", "Performance Events", "Audit Events"],
-      "allowed_sources": ["agent telemetry", "task metadata", "approved cost telemetry"],
+      "authoritative_sources": [
+        "Task and Outcome Ledger",
+        "Performance Events",
+        "Audit Events"
+      ],
+      "allowed_sources": [
+        "agent telemetry",
+        "task metadata",
+        "approved cost telemetry"
+      ],
       "skills": [],
-      "tools": ["task-ledger", "performance-engine", "audit"],
-      "input_contracts": ["task.v1", "performance-event.v1", "agent-event.v1"],
-      "output_contracts": ["performance-scorecard.v1", "agent-event.v1"],
-      "permitted_actions": ["calculate_score", "detect_stall", "detect_coordination_loop", "recommend_watch", "recommend_restrict", "recommend_quarantine", "recommend_retire", "recommend_new_specialist"],
-      "prohibited_actions": ["set_business_strategy", "material_authority_expansion"],
+      "tools": [
+        "task-ledger",
+        "performance-engine",
+        "audit"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "performance-event.v1",
+        "agent-event.v1"
+      ],
+      "output_contracts": [
+        "performance-scorecard.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "calculate_score",
+        "detect_stall",
+        "detect_coordination_loop",
+        "recommend_watch",
+        "recommend_restrict",
+        "recommend_quarantine",
+        "recommend_retire",
+        "recommend_new_specialist"
+      ],
+      "prohibited_actions": [
+        "set_business_strategy",
+        "material_authority_expansion"
+      ],
       "decision_authority": "L2 operational management",
-      "required_approvals": ["CoS for bounded routing changes", "Michael for material authority changes"],
+      "required_approvals": [
+        "CoS for bounded routing changes",
+        "Michael for material authority changes"
+      ],
       "delegation_permissions": [],
       "max_delegation_depth": 0,
       "normal_SLA": "continuous/periodic monitoring by configuration",
@@ -86,16 +188,52 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "authorized team questions and routing",
-      "authoritative_sources": ["approved Mesh policies", "documented decisions", "authorized firm knowledge"],
-      "allowed_sources": ["mesh-firm-360", "authorized enterprise artifacts"],
-      "skills": ["mesh-firm-360"],
-      "tools": ["source-permission-check", "answer-routing", "slack-adapter", "audit"],
-      "input_contracts": ["task.v1", "agent-event.v1"],
-      "output_contracts": ["decision.v1", "agent-event.v1"],
-      "permitted_actions": ["answer_authorized_fact", "apply_established_policy", "route", "recommend", "escalate"],
-      "prohibited_actions": ["private_dm_exposure", "confidential_client_exposure", "personal_information_exposure", "unauthorized_financial_exposure", "privileged_executive_context_exposure", "invent_missing_evidence"],
+      "authoritative_sources": [
+        "approved Mesh policies",
+        "documented decisions",
+        "authorized firm knowledge"
+      ],
+      "allowed_sources": [
+        "mesh-firm-360",
+        "authorized enterprise artifacts"
+      ],
+      "skills": [
+        "mesh-firm-360"
+      ],
+      "tools": [
+        "source-permission-check",
+        "answer-routing",
+        "slack-adapter",
+        "audit"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "agent-event.v1"
+      ],
+      "output_contracts": [
+        "decision.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "answer_authorized_fact",
+        "apply_established_policy",
+        "route",
+        "recommend",
+        "escalate"
+      ],
+      "prohibited_actions": [
+        "private_dm_exposure",
+        "confidential_client_exposure",
+        "personal_information_exposure",
+        "unauthorized_financial_exposure",
+        "privileged_executive_context_exposure",
+        "invent_missing_evidence"
+      ],
       "decision_authority": "L0-L2 within explicit policy and permissions",
-      "required_approvals": ["L4 qualified human", "L5 Michael"],
+      "required_approvals": [
+        "L4 qualified human",
+        "L5 Michael"
+      ],
       "delegation_permissions": [],
       "max_delegation_depth": 0,
       "normal_SLA": "configurable",
@@ -113,17 +251,66 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "commercial strategy, pursuits, opportunity quality, buyer dynamics, and expansion",
-      "authoritative_sources": ["Revenue Intelligence where available"],
-      "allowed_sources": ["mesh-revenue-intelligence", "mesh-firm-360", "approved commercial artifacts"],
-      "skills": ["mesh-revenue-intelligence", "mesh-firm-360", "mesh-competitive-displacement-engine", "mesh-gtm-orchestrator", "mesh-buyer-psychology", "mesh-sales-messaging", "mesh-client-servicing-messaging", "mesh-devils-advocate"],
-      "tools": ["task-ledger", "delegation", "audit"],
-      "input_contracts": ["task.v1", "delegation.v1"],
-      "output_contracts": ["decision.v1", "delegation.v1", "agent-event.v1"],
-      "permitted_actions": ["commercial_analysis", "opportunity_qualification", "pipeline_health_analysis", "pursuit_prioritization", "proposal_strategy", "next_best_commercial_action", "expansion_strategy", "commercial_risk_framing", "request_cfo_economics", "request_coo_feasibility", "request_devils_advocate_review"],
-      "prohibited_actions": ["final_pricing_approval", "discount_approval", "contractual_commitment", "final_material_scope_commitment", "irreversible_client_commitment"],
+      "authoritative_sources": [
+        "Revenue Intelligence where available"
+      ],
+      "allowed_sources": [
+        "mesh-revenue-intelligence",
+        "mesh-firm-360",
+        "approved commercial artifacts"
+      ],
+      "skills": [
+        "mesh-revenue-intelligence",
+        "mesh-firm-360",
+        "mesh-competitive-displacement-engine",
+        "mesh-gtm-orchestrator",
+        "mesh-buyer-psychology",
+        "mesh-sales-messaging",
+        "mesh-client-servicing-messaging",
+        "mesh-devils-advocate"
+      ],
+      "tools": [
+        "task-ledger",
+        "delegation",
+        "audit"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "delegation.v1"
+      ],
+      "output_contracts": [
+        "decision.v1",
+        "delegation.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "commercial_analysis",
+        "opportunity_qualification",
+        "pipeline_health_analysis",
+        "pursuit_prioritization",
+        "proposal_strategy",
+        "next_best_commercial_action",
+        "expansion_strategy",
+        "commercial_risk_framing",
+        "request_cfo_economics",
+        "request_coo_feasibility",
+        "request_devils_advocate_review"
+      ],
+      "prohibited_actions": [
+        "final_pricing_approval",
+        "discount_approval",
+        "contractual_commitment",
+        "final_material_scope_commitment",
+        "irreversible_client_commitment"
+      ],
       "decision_authority": "L3 recommendations; bounded L2 operating decisions",
-      "required_approvals": ["qualified human for L4 commercial actions", "Michael for L5/material exceptions"],
-      "delegation_permissions": ["specialist/worker within commercial scope"],
+      "required_approvals": [
+        "qualified human for L4 commercial actions",
+        "Michael for L5/material exceptions"
+      ],
+      "delegation_permissions": [
+        "specialist/worker within commercial scope"
+      ],
       "max_delegation_depth": 1,
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
@@ -133,24 +320,85 @@
     {
       "agent_id": "cfo",
       "display_name": "CFO",
-      "role": "Engagement Finance / FP&A executive agent",
-      "description": "Owns governed Engagement Finance and FP&A analysis within approved source boundaries, including engagement economics, pricing scenarios, cost-to-serve, contribution and margin, supported working-capital implications, driver-based forecasting, forecast-versus-actual analysis, unit economics, supported cash/runway and burn analysis, investment business cases, financial-model quality assurance, bounded valuation and statement analysis, sensitivity, assumptions, evidence-backed financial research, and financial-risk recommendations. The role does not imply enterprise accounting, treasury, tax, audit, trading, balance-sheet, bank-balance, personal-investment-advice, or unrestricted financial authority.",
+      "role": "Engagement Finance / Management FP&A executive agent",
+      "description": "Owns governed Engagement Finance and management FP&A analysis within approved source boundaries, including engagement economics, pricing scenarios, cost-to-serve, contribution and margin, supported working-capital implications, driver-based forecasting, forecast-versus-actual analysis, unit economics, supported cash/runway and burn analysis, investment business cases, deterministic financial calculations, financial-model quality assurance, bounded valuation and statement analysis, sensitivity, governed financial research execution, and decision-ready finance artifacts. The role does not imply enterprise accounting, treasury, tax, audit, trading, balance-sheet, bank-balance, personal-investment-advice, or unrestricted financial authority.",
       "parent_agent_id": "cos",
       "agent_type": "executive",
       "status": "ACTIVE",
-      "version": "1.1.0",
-      "accountable_domain": "engagement finance and FP&A",
-      "authoritative_sources": ["Mesh Proposals - Engagement P&L Tracker"],
-      "allowed_sources": ["approved engagement finance artifacts"],
-      "skills": [],
-      "tools": ["task-ledger", "financial-modeling", "audit"],
-      "input_contracts": ["task.v1", "delegation.v1"],
-      "output_contracts": ["decision.v1", "agent-event.v1"],
-      "permitted_actions": ["engagement_economics", "pricing_scenarios", "cost_to_serve_analysis", "contribution_economics", "margin_analysis", "margin_leakage_detection", "working_capital_implications", "economic_scenario_comparison", "assumption_management", "financial_risk_analysis", "forecast_vs_actual", "investment_business_case", "roi_npv_irr_payback_analysis", "break_even_analysis", "driver_based_forecasting", "cash_runway_and_burn_analysis", "unit_economics_analysis", "financial_model_quality_assurance", "valuation_analysis", "financial_statement_analysis", "sensitivity_and_scenario_analysis", "financial_research_planning"],
-      "prohibited_actions": ["claim_enterprise_gl_authority", "claim_bank_balance", "claim_enterprise_cash_balance", "claim_balance_sheet_authority", "claim_tax_position", "claim_audited_financial_authority", "approve_price_or_discount", "autonomous_trading", "personal_investment_advice", "treat_external_benchmark_as_mesh_policy", "persist_private_financial_reasoning"],
+      "version": "1.2.0",
+      "accountable_domain": "engagement finance and management FP&A",
+      "authoritative_sources": [
+        "Mesh Proposals - Engagement P&L Tracker"
+      ],
+      "allowed_sources": [
+        "approved engagement finance artifacts",
+        "approved Mesh management FP&A artifacts",
+        "approved primary or public financial evidence for an authorized analysis"
+      ],
+      "skills": [
+        "mesh-data-analytics"
+      ],
+      "tools": [
+        "task-ledger",
+        "financial-modeling",
+        "audit"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "delegation.v1"
+      ],
+      "output_contracts": [
+        "decision.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "engagement_economics",
+        "pricing_scenarios",
+        "cost_to_serve_analysis",
+        "contribution_economics",
+        "margin_analysis",
+        "margin_leakage_detection",
+        "working_capital_implications",
+        "economic_scenario_comparison",
+        "assumption_management",
+        "financial_risk_analysis",
+        "forecast_vs_actual",
+        "investment_business_case",
+        "roi_npv_irr_payback_analysis",
+        "break_even_analysis",
+        "driver_based_forecasting",
+        "cash_runway_and_burn_analysis",
+        "unit_economics_analysis",
+        "financial_model_quality_assurance",
+        "valuation_analysis",
+        "financial_statement_analysis",
+        "sensitivity_and_scenario_analysis",
+        "financial_research_planning",
+        "management_fpa_analysis",
+        "reproducible_financial_calculation",
+        "financial_research_execution",
+        "financial_artifact_production"
+      ],
+      "prohibited_actions": [
+        "claim_enterprise_gl_authority",
+        "claim_bank_balance",
+        "claim_enterprise_cash_balance",
+        "claim_balance_sheet_authority",
+        "claim_tax_position",
+        "claim_audited_financial_authority",
+        "approve_price_or_discount",
+        "autonomous_trading",
+        "personal_investment_advice",
+        "treat_external_benchmark_as_mesh_policy",
+        "persist_private_financial_reasoning"
+      ],
       "decision_authority": "L3 financial recommendation within supported source scope",
-      "required_approvals": ["qualified human for final pricing/discount/material commercial action"],
-      "delegation_permissions": ["specialist/worker within engagement-finance scope"],
+      "required_approvals": [
+        "qualified human for final pricing, discount, investment, spending, hiring, contractual, or other material commercial action"
+      ],
+      "delegation_permissions": [
+        "specialist/worker within engagement-finance scope"
+      ],
       "max_delegation_depth": 1,
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
@@ -167,17 +415,53 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "delivery feasibility, capacity, and resource readiness",
-      "authoritative_sources": ["Capabilities Partner & Consultant Tracker"],
-      "allowed_sources": ["approved delivery plans", "approved resource data"],
+      "authoritative_sources": [
+        "Capabilities Partner & Consultant Tracker"
+      ],
+      "allowed_sources": [
+        "approved delivery plans",
+        "approved resource data"
+      ],
       "skills": [],
-      "tools": ["task-ledger", "staffing-readiness", "delegation", "audit"],
-      "input_contracts": ["task.v1", "delegation.v1"],
-      "output_contracts": ["decision.v1", "delegation.v1", "agent-event.v1"],
-      "permitted_actions": ["delivery_feasibility", "delivery_configuration", "capacity_analysis", "pod_resource_composition", "dependency_readiness_analysis", "delivery_risk_sensing", "partner_capacity_analysis", "operational_constraint_management", "staffing_recommendation", "delegate_network_steward"],
-      "prohibited_actions": ["treat_stale_availability_as_confirmed", "final_staffing_commitment_without_approval", "material_delivery_commitment_without_approval"],
+      "tools": [
+        "task-ledger",
+        "staffing-readiness",
+        "delegation",
+        "audit"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "delegation.v1"
+      ],
+      "output_contracts": [
+        "decision.v1",
+        "delegation.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "delivery_feasibility",
+        "delivery_configuration",
+        "capacity_analysis",
+        "pod_resource_composition",
+        "dependency_readiness_analysis",
+        "delivery_risk_sensing",
+        "partner_capacity_analysis",
+        "operational_constraint_management",
+        "staffing_recommendation",
+        "delegate_network_steward"
+      ],
+      "prohibited_actions": [
+        "treat_stale_availability_as_confirmed",
+        "final_staffing_commitment_without_approval",
+        "material_delivery_commitment_without_approval"
+      ],
       "decision_authority": "L3 delivery recommendation; L2 bounded allocation/routing",
-      "required_approvals": ["qualified human for final staffing/material delivery commitments"],
-      "delegation_permissions": ["consultant-network-steward"],
+      "required_approvals": [
+        "qualified human for final staffing/material delivery commitments"
+      ],
+      "delegation_permissions": [
+        "consultant-network-steward"
+      ],
       "max_delegation_depth": 1,
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
@@ -194,16 +478,44 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "consultant identification, matching, and readiness verification",
-      "authoritative_sources": ["Capabilities Partner & Consultant Tracker"],
-      "allowed_sources": ["approved consultant-network data"],
+      "authoritative_sources": [
+        "Capabilities Partner & Consultant Tracker"
+      ],
+      "allowed_sources": [
+        "approved consultant-network data"
+      ],
       "skills": [],
-      "tools": ["staffing-readiness", "audit"],
-      "input_contracts": ["delegation.v1"],
-      "output_contracts": ["agent-event.v1"],
-      "permitted_actions": ["candidate_identification", "candidate_matching", "candidate_fit_check", "availability_freshness_check", "validation_timestamp_check", "rate_validity_check", "contracting_readiness_check", "readiness_gap_analysis", "refresh_workflow", "mark_requires_refresh", "establish_staffing_ready_status"],
-      "prohibited_actions": ["confirm_stale_availability", "make_final_staffing_commitment"],
+      "tools": [
+        "staffing-readiness",
+        "audit"
+      ],
+      "input_contracts": [
+        "delegation.v1"
+      ],
+      "output_contracts": [
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "candidate_identification",
+        "candidate_matching",
+        "candidate_fit_check",
+        "availability_freshness_check",
+        "validation_timestamp_check",
+        "rate_validity_check",
+        "contracting_readiness_check",
+        "readiness_gap_analysis",
+        "refresh_workflow",
+        "mark_requires_refresh",
+        "establish_staffing_ready_status"
+      ],
+      "prohibited_actions": [
+        "confirm_stale_availability",
+        "make_final_staffing_commitment"
+      ],
       "decision_authority": "L2 specialist judgment within explicit readiness rules",
-      "required_approvals": ["COO/qualified human for final staffing commitment"],
+      "required_approvals": [
+        "COO/qualified human for final staffing commitment"
+      ],
       "delegation_permissions": [],
       "max_delegation_depth": 0,
       "normal_SLA": "configurable",
@@ -221,17 +533,58 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "marketing strategy, demand architecture, brand governance, and delegated execution",
-      "authoritative_sources": ["approved Mesh brand and messaging context"],
-      "allowed_sources": ["AuthoredUp", "LinkedIn", "approved marketing artifacts"],
-      "skills": ["mesh-marketing-messaging", "mesh-messaging-orchestrator", "mesh-executive-communications"],
-      "tools": ["task-ledger", "delegation", "audit"],
-      "input_contracts": ["task.v1", "delegation.v1"],
-      "output_contracts": ["decision.v1", "delegation.v1", "agent-event.v1"],
-      "permitted_actions": ["marketing_strategy", "audience_icp_strategy", "category_positioning", "campaign_strategy", "demand_campaign_architecture", "distribution_strategy", "campaign_performance_optimization", "marketing_commercial_feedback", "brand_governance", "editorial_priority", "content_review", "delegate_vp_content"],
-      "prohibited_actions": ["public_publish_without_approval", "unapproved_public_claim"],
+      "authoritative_sources": [
+        "approved Mesh brand and messaging context"
+      ],
+      "allowed_sources": [
+        "AuthoredUp",
+        "LinkedIn",
+        "approved marketing artifacts"
+      ],
+      "skills": [
+        "mesh-marketing-messaging",
+        "mesh-messaging-orchestrator",
+        "mesh-executive-communications"
+      ],
+      "tools": [
+        "task-ledger",
+        "delegation",
+        "audit"
+      ],
+      "input_contracts": [
+        "task.v1",
+        "delegation.v1"
+      ],
+      "output_contracts": [
+        "decision.v1",
+        "delegation.v1",
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "marketing_strategy",
+        "audience_icp_strategy",
+        "category_positioning",
+        "campaign_strategy",
+        "demand_campaign_architecture",
+        "distribution_strategy",
+        "campaign_performance_optimization",
+        "marketing_commercial_feedback",
+        "brand_governance",
+        "editorial_priority",
+        "content_review",
+        "delegate_vp_content"
+      ],
+      "prohibited_actions": [
+        "public_publish_without_approval",
+        "unapproved_public_claim"
+      ],
       "decision_authority": "L3 marketing recommendation; L2 bounded internal execution",
-      "required_approvals": ["qualified human for public publishing/consequential public claims"],
-      "delegation_permissions": ["vp-content"],
+      "required_approvals": [
+        "qualified human for public publishing/consequential public claims"
+      ],
+      "delegation_permissions": [
+        "vp-content"
+      ],
       "max_delegation_depth": 1,
       "normal_SLA": "configurable",
       "performance_policy": "phase1-scorecard-v1",
@@ -248,16 +601,50 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "editorial planning, content production, adaptation, QA, and reuse",
-      "authoritative_sources": ["CMO marketing intent", "approved Mesh brand and messaging context"],
-      "allowed_sources": ["approved Mesh IP", "approved campaign inputs"],
-      "skills": ["mesh-marketing-messaging"],
-      "tools": ["content-production", "audit"],
-      "input_contracts": ["delegation.v1"],
-      "output_contracts": ["agent-event.v1"],
-      "permitted_actions": ["editorial_planning", "editorial_calendar_management", "source_evidence_assembly", "draft_content", "channel_adaptation", "derivative_content_production", "repurpose_content", "ip_reuse", "content_inventory_management", "editorial_qa", "performance_feedback", "prepare_for_cmo_review"],
-      "prohibited_actions": ["public_publish", "unapproved_public_claim"],
+      "authoritative_sources": [
+        "CMO marketing intent",
+        "approved Mesh brand and messaging context"
+      ],
+      "allowed_sources": [
+        "approved Mesh IP",
+        "approved campaign inputs"
+      ],
+      "skills": [
+        "mesh-marketing-messaging"
+      ],
+      "tools": [
+        "content-production",
+        "audit"
+      ],
+      "input_contracts": [
+        "delegation.v1"
+      ],
+      "output_contracts": [
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "editorial_planning",
+        "editorial_calendar_management",
+        "source_evidence_assembly",
+        "draft_content",
+        "channel_adaptation",
+        "derivative_content_production",
+        "repurpose_content",
+        "ip_reuse",
+        "content_inventory_management",
+        "editorial_qa",
+        "performance_feedback",
+        "prepare_for_cmo_review"
+      ],
+      "prohibited_actions": [
+        "public_publish",
+        "unapproved_public_claim"
+      ],
       "decision_authority": "L2 production execution",
-      "required_approvals": ["CMO review", "qualified human approval before public publishing where required"],
+      "required_approvals": [
+        "CMO review",
+        "qualified human approval before public publishing where required"
+      ],
       "delegation_permissions": [],
       "max_delegation_depth": 0,
       "normal_SLA": "configurable",
@@ -275,16 +662,40 @@
       "status": "ACTIVE",
       "version": "1.0.0",
       "accountable_domain": "controlled approved communication execution",
-      "authoritative_sources": ["recorded approval state"],
-      "allowed_sources": ["approved outbound message artifact"],
-      "skills": ["mesh-message-operations"],
-      "tools": ["approval-check", "external-message-adapter", "audit"],
-      "input_contracts": ["approval.v1", "task.v1"],
-      "output_contracts": ["agent-event.v1"],
-      "permitted_actions": ["prepare_execution", "execute_approved_message"],
-      "prohibited_actions": ["consequential_external_send_without_approval", "fabricate_approval", "modify_approved_message_materially_without_reapproval"],
+      "authoritative_sources": [
+        "recorded approval state"
+      ],
+      "allowed_sources": [
+        "approved outbound message artifact"
+      ],
+      "skills": [
+        "mesh-message-operations"
+      ],
+      "tools": [
+        "approval-check",
+        "external-message-adapter",
+        "audit"
+      ],
+      "input_contracts": [
+        "approval.v1",
+        "task.v1"
+      ],
+      "output_contracts": [
+        "agent-event.v1"
+      ],
+      "permitted_actions": [
+        "prepare_execution",
+        "execute_approved_message"
+      ],
+      "prohibited_actions": [
+        "consequential_external_send_without_approval",
+        "fabricate_approval",
+        "modify_approved_message_materially_without_reapproval"
+      ],
       "decision_authority": "L1 execution of explicitly approved communication",
-      "required_approvals": ["qualified human approval for consequential external send"],
+      "required_approvals": [
+        "qualified human approval for consequential external send"
+      ],
       "delegation_permissions": [],
       "max_delegation_depth": 0,
       "normal_SLA": "configurable",

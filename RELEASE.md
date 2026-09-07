@@ -1,3 +1,11 @@
+# v4.6.0 CFO Zero-Defect Execution Remediation
+
+`v4.6.0 CFO Zero-Defect Execution Remediation` is the current repository release. It advances CFO implementation to **1.2.0** while the canonical Phase 1 authority/runtime contract remains **4.0.0**, production QNAP remains **4.4.0**, and the roster remains exactly **10 registered agents**.
+
+The release adds deterministic finance math, a CFO-only governed `mesh-data-analytics` execution handoff, approved management-FP&A source scope, financial research execution, executive finance artifacts and operating cadence, behavior-level regression evidence, durable version identity, and historical release-workflow isolation. The CFO retains L3 recommendation authority. Google Drive remains read-only. No new MCP tool, credential, GL/treasury/tax/audit authority, autonomous trading, external send, or self-approved consequential action is introduced.
+
+See `docs/release-v4.6.0-cfo-execution.md` and `docs/verification-v4.6.0-cfo-execution.md`.
+
 # v4.5.2 CFO Financial Analysis Release State Finalization
 
 `v4.5.2 CFO Financial Analysis Release State Finalization` is the current repository release. It is a documentation and release-control PATCH that finalizes durable post-publication release wording for the CFO Financial Analysis release train.

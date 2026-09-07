@@ -52,7 +52,11 @@ def test_all_workspace_agents_use_local_stdio_without_remote_url_dependency() ->
         assert builder["mcp_transport"] == "LOCAL_STDIO", path.name
         assert builder["mcp_command"] == "node", path.name
         assert builder["mcp_args"] == ["mcp/dist/index.js"], path.name
-        expected_shared = ["mesh-devils-advocate"] if manifest["agent_id"] in {"cos", "cro"} else []
+        expected_shared: list[str] = []
+        if manifest["agent_id"] in {"cos", "cro"}:
+            expected_shared.append("mesh-devils-advocate")
+        if manifest["agent_id"] == "cfo":
+            expected_shared.append("mesh-data-analytics")
         assert manifest.get("shared_skills", []) == expected_shared, path.name
         assert builder.get("shared_skills", []) == expected_shared, path.name
 

@@ -63,3 +63,7 @@ python -m compileall -q src
 `check-runtime-doc-drift.py` independently instantiates the serialized runtime, certifies the 10-agent roster, executes owner completion plus separate verification, confirms unauthorized self-verification denial, and verifies the governance audit chain.
 
 Green tests alone are not sufficient. The requirements gap audit and independent verification must also report zero known defects before merge.
+
+## CFO v4.6.0 behavioral finance verification
+
+`tests/evaluations/test_cfo_execution_v460.py` verifies known-answer NPV, IRR, payback, discounted payback, break-even, runway, contribution-margin, and LTV:CAC behavior; CFO-only Mesh Data Analytics authorization; unchanged MCP least privilege; current version identity; operating-cadence/artifact contracts; and historical release-workflow isolation. Text-presence tests remain secondary compatibility gates, not proof of finance correctness.

@@ -154,7 +154,7 @@ def test_registry_source_preserves_role_boundaries() -> None:
     raw = json.loads((ROOT / "agents" / "registry.json").read_text())
     records = {record["agent_id"]: record for record in raw["agents"]}
 
-    assert records["cfo"]["accountable_domain"] == "engagement finance and FP&A"
+    assert records["cfo"]["accountable_domain"] == "engagement finance and management FP&A"
     assert "claim_enterprise_gl_authority" in records["cfo"]["prohibited_actions"]
     assert "approve_price_or_discount" in records["cfo"]["prohibited_actions"]
 
@@ -175,5 +175,8 @@ def test_registry_source_preserves_role_boundaries() -> None:
     assert "consequential_external_send_without_approval" in records["message-ops"]["prohibited_actions"]
 
     shared = {item["capability"]: item for item in raw["shared_capabilities"]}
-    assert set(shared) == {"mesh-devils-advocate"}
+    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}
     assert shared["mesh-devils-advocate"]["authority"] == "ADVISORY_ONLY"
+    assert shared["mesh-data-analytics"]["authority"] == "ANALYTICAL_EXECUTION_ONLY"
+    assert shared["mesh-data-analytics"]["consumers"] == ["cfo"]
+    assert records["cfo"]["skills"] == ["mesh-data-analytics"]

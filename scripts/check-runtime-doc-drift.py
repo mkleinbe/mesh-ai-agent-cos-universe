@@ -48,12 +48,17 @@ require(set(registry) == EXPECTED_AGENTS, "Canonical Phase 1 roster must contain
 require("devils-advocate" not in registry, "Devil's Advocate must remain outside the agent roster")
 require("message-ops" in registry, "Message Operations must remain the tenth registered agent")
 shared = {item["capability"]: item for item in registry_source.get("shared_capabilities", [])}
-require(set(shared) == {"mesh-devils-advocate"}, "Only Mesh Devil's Advocate may be an external Phase 1 shared Skill")
+require(set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}, "External Phase 1 shared Skill set drifted")
 challenge = shared["mesh-devils-advocate"]
 require(set(challenge["consumers"]) == {"cos", "cro"}, "Devil's Advocate consumers drifted")
 require(challenge["authority"] == "ADVISORY_ONLY", "Devil's Advocate authority drifted")
 require(challenge["canonical_facts_modified"] is False, "Devil's Advocate cannot modify canonical facts")
 require(challenge["external_action_included"] is False, "Devil's Advocate cannot execute external actions")
+analytics = shared["mesh-data-analytics"]
+require(set(analytics["consumers"]) == {"cfo"}, "Mesh Data Analytics consumers drifted")
+require(analytics["authority"] == "ANALYTICAL_EXECUTION_ONLY", "Mesh Data Analytics authority drifted")
+require(analytics["canonical_facts_modified"] is False, "Mesh Data Analytics cannot modify canonical facts")
+require(analytics["external_action_included"] is False, "Mesh Data Analytics cannot execute external actions")
 
 require(__version__ == RELEASE, f"Expected runtime release {RELEASE}")
 require(f'version = "{RELEASE}"' in (ROOT / "pyproject.toml").read_text(), "Package/runtime release drifted")

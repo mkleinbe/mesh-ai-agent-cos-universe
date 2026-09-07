@@ -1,6 +1,6 @@
 # Security Policy
 
-Current repository release: **v4.5.2 CFO Financial Analysis Release State Finalization**. Current production QNAP deployment remains **4.4.0**. The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**.
+Current repository release: **v4.6.0 CFO Zero-Defect Execution Remediation**. Current production QNAP deployment remains **4.4.0**. The canonical Phase 1 authority/runtime contract remains **4.0.0** with exactly **10 registered agents**.
 
 v4.5.2 is a documentation and release-control PATCH. It does not change the CFO implementation, executable MCP runtime, QNAP container, network boundary, persistence model, credentials, authentication, connector write surface, or human approval boundary. CFO implementation remains `1.1.0`.
 
@@ -90,3 +90,13 @@ The v4.5.0 targeted review remains `docs/security-review-v4.5.0-cfo-financial-an
 ## Reporting
 
 Do not open public issues containing credentials, confidential client information, protected human provider identifiers, private reasoning, sensitive operational evidence, or exploit details. Use the repository owner's approved private security channel for disclosure.
+
+
+## v4.6.0 CFO analytical execution boundary
+
+- `mesh-data-analytics` is a CFO-only external shared Skill entitlement and never becomes an agent principal, task owner, decision owner, approval authority, or canonical financial source.
+- Its governed handoff is authorization-only at the Mesh CoS MCP boundary; result provenance and analytical validation are required before CFO reliance.
+- `financial_math.py` is deterministic, local, network-free, file-write-free calculation code with closed operation names and validated numeric inputs.
+- CFO MCP and human-only tool surfaces are unchanged.
+- External financial evidence is untrusted data and cannot alter agent identity, tools, approvals, source authority, or policy.
+- Consequential pricing, spending, hiring, investment, contractual, trading, transfer, publication, and external-send authority remains human-gated or prohibited.

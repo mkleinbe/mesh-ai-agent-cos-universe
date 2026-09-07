@@ -92,3 +92,7 @@ Authoritative owner lifecycle writes require the canonical accountable owner. Pa
 CI requires agreement among the registry roster, Workspace Agent manifests, repository-local role Skills, MCP principal allowlists, owner-execution readiness, and current architecture documentation.
 
 Historical release documents may preserve prior roster/tool counts only when clearly scoped as historical. Current production readiness fails if any ACTIVE owner-eligible registry entry lacks a compatible execution path.
+
+## CFO external analytical capability
+
+`mesh-data-analytics` is an `EXTERNAL_SHARED_SKILL` consumed only by `cfo` with `ANALYTICAL_EXECUTION_ONLY` authority. It is not an agent principal, cannot own or verify TaskLedger work, cannot change canonical facts, and cannot approve or execute consequential financial actions.

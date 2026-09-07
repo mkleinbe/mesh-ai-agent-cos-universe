@@ -67,7 +67,8 @@ Any ChatGPT Skill directory update should use the integrated `v4.5.0` source, no
 
 Source repository: `mkleinbe/mesh-ai-agent-cos-universe`.  
 Pull request: `#65`.  
-Integrated commit: `PENDING_INTEGRATION`.  
-Semantic tag: `v4.5.0` pending verified merge/release.
+Verified branch candidate: recorded in `docs/verification-v4.5.0-cfo-financial-analysis.md`.  
+Integrated commit: bound by the verified `v4.5.0` semantic tag and GitHub Release after main-branch release verification.  
+Semantic tag: `v4.5.0`.
 
-The integrated commit placeholder must be replaced during release closeout.
+This manifest intentionally avoids a pre-merge placeholder that could become stale. The immutable release and tag are the final integrated-source identity.

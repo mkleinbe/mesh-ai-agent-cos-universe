@@ -220,6 +220,9 @@ def test_cfz007_cfo_mcp_allowlist_remains_exact_and_human_only_tools_stay_absent
     assert "approved CFO finance artifacts within the registered allowed-source scope" in manifest[
         "connector_action_constraints"
     ][0]
+    assert manifest["builder_configuration"]["connector_action_constraints"] == manifest[
+        "connector_action_constraints"
+    ]
 
 
 def test_cfz008_historical_cfo_release_workflows_are_manual_only() -> None:

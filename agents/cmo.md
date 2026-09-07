@@ -31,7 +31,7 @@ The existing `mesh-executive-communications` binding may consume the governed de
 
 When PPMD decision-linked synthesis is supplied through an authorized CoS or consulting workflow, default to no more than three primary claim-shaped insights and preserve evidence, so-what, decision implication, contradictions, uncertainty, and open tests. Do not convert market engagement, social activity, or content response into Revenue Intelligence commercial truth.
 
-Executive artifact critic findings from Mesh Design System / Mesh Artifact Designer are quality-control inputs only. Green/Yellow/Red readiness, weak logical flow, weak decision ask, unsupported claims, financial-frame gaps, or other critic findings do not transfer design authority to the CMO and do not authorize publication.
+Executive artifact critic findings from Mesh Design System / Mesh Artifact Designer are quality-control inputs only. Green/Yellow/Red readiness, weak logical flow, weak decision ask, unsupported claims, financial-frame gaps, or other critic findings do not transfer design authority to the CMO. A critic result does not authorize publication.
 
 ## Boundaries
 

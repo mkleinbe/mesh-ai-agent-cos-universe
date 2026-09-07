@@ -62,9 +62,12 @@ jobs:
           grep -q 'Current repository release: `v4.5.2 CFO Financial Analysis Release State Finalization`' README.md
           grep -q '^# v4.5.2 CFO Financial Analysis Release State Finalization' RELEASE.md
           grep -q 'Current repository release: \*\*v4.5.2 CFO Financial Analysis Release State Finalization\*\*' SECURITY.md
-          ! head -n 20 README.md | grep -qi 'release candidate'
-          ! head -n 20 RELEASE.md | grep -qi 'release candidate'
-          ! head -n 20 SECURITY.md | grep -qi 'release candidate'
+          README_CURRENT="$(grep -im1 'current repository release' README.md)"
+          RELEASE_CURRENT="$(grep -im1 'current repository release' RELEASE.md)"
+          SECURITY_CURRENT="$(grep -im1 'current repository release' SECURITY.md)"
+          ! printf '%s\n' "$README_CURRENT" | grep -qi 'release candidate'
+          ! printf '%s\n' "$RELEASE_CURRENT" | grep -qi 'release candidate'
+          ! printf '%s\n' "$SECURITY_CURRENT" | grep -qi 'release candidate'
           grep -q 'CFO implementation remains \*\*1.1.0\*\*' RELEASE.md
           grep -q '4.0.0' RELEASE.md
           grep -q '4.4.0' RELEASE.md

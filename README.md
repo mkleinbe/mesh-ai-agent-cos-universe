@@ -2,9 +2,9 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.6.0 CFO Zero-Defect Execution Remediation`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.7.0 Enterprise Consulting Skill Consumption`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.6.0 upgrades the CFO to implementation `1.2.0` with deterministic financial calculations, governed Mesh Data Analytics execution, management-FP&A source scope, research execution, operating cadence, executive artifacts, behavior-level acceptance tests, and historical release-workflow isolation. The canonical runtime contract remains `4.0.0` and production QNAP remains `4.4.0`; no new MCP tool, credential, autonomous external action, or consequential approval authority is introduced.
+v4.7.0 integrates the released Mesh enterprise consulting enhancements into Chief of Staff, CRO, CFO, COO, CMO, and Answer & Decision Desk role guidance without changing the machine-readable registry, direct Skill arrays, L0-L5 authority, canonical sources, TaskLedger ownership, external-action controls, or production runtime. It adds no new MCP tool, connector, credential, database schema, QNAP deployment, autonomous communication, or consequential approval authority.
 
 ## Canonical architecture
 
@@ -12,9 +12,45 @@ Phase 1 contains exactly 10 registered agents: Chief of Staff, AgentOps Controll
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Google TaskLedger, Prospect Universe, Slack, Gmail, connectors, Workspace state, and conversation history are scheduling, interaction, evidence, or mirror surfaces. `COMPLETED` remains distinct from `VERIFIED`.
 
+## v4.7.0 Enterprise Consulting Skill Consumption
+
+v4.7.0 consumes the newly released consulting-method capabilities through existing Skill bindings and governed delegation:
+
+- Chief of Staff uses Mesh PPMD Bot v1.1+ for falsification-first Day-1 hypotheses, decision-linked synthesis, decision memos, outcome-first meetings, and artifact-first workshops.
+- CRO consumes Revenue Intelligence v1.4+, Firm 360 v1.5+, Competitive Displacement v1.14+, GTM Orchestrator v2.3+, Buyer Psychology v3.1+, and Devil's Advocate v1.4+ through existing registry bindings.
+- CFO contributes evidence-bound financial analysis, risks, mitigations, sensitivities, reversal conditions, and next tests to decision packages without receiving a new direct Skill binding.
+- COO contributes delivery evidence, workstream outputs, owners, commitments, and approval dependencies to meetings and workshops without receiving a new direct Skill binding.
+- CMO uses its existing Executive Communications binding for Mesh Messaging v1.2+ decision memos; Mesh Design System / Artifact Designer v0.4+ critic findings remain review inputs and do not transfer design or publication authority.
+- Answer & Decision Desk may use approved decision artifacts as permission-scoped evidence but cannot promote draft hypotheses, syntheses, memos, workshop outputs, or critic findings into policy, precedent, or approval.
+
+Key controls:
+
+- skill capability is not agent authority;
+- exactly 10 registered agents remain canonical;
+- machine-readable direct Skill bindings and shared capabilities remain unchanged;
+- Revenue Intelligence remains canonical for designated commercial and stakeholder truth;
+- unsupported stakeholder power, stance, interest, dependency, budget authority, or purchase intent remains unknown;
+- hypothesis confidence is not a deterministic score or approval input;
+- decision memos do not approve themselves;
+- meeting and workshop artifacts do not create commitments beyond delegated authority;
+- critic readiness does not authorize publication or replace Mesh design authority;
+- Message Operations and human approval remain the external communication execution boundary;
+- `COMPLETED` remains distinct from `VERIFIED`.
+
+Current v4.7.0 material:
+
+- `specs/enterprise-consulting-skill-consumption-v4.7.0.feature`
+- `tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py`
+- `docs/enterprise-consulting-skill-consumption-v4.7.0.md`
+- `docs/architecture-v4.7.0-enterprise-consulting.md`
+- `docs/security-review-v4.7.0-enterprise-consulting.md`
+- `docs/release-v4.7.0-enterprise-consulting.md`
+- `docs/verification-v4.7.0-enterprise-consulting.md`
+- `CHANGELOG-v4.7.0.md`
+
 ## v4.6.0 CFO Zero-Defect Execution Remediation
 
-v4.6.0 closes the CFO execution and verification gaps identified after v4.5.x. CFO implementation is `1.2.0`; it retains L3 recommendation authority while gaining a deterministic core calculator and a CFO-only `mesh-data-analytics` shared Skill handoff for approved spreadsheet/model analysis, research, validation, visualization, and finance artifacts.
+v4.6.0 closed the CFO execution and verification gaps identified after v4.5.x. CFO implementation is `1.2.0`; it retains L3 recommendation authority while gaining a deterministic core calculator and a CFO-only `mesh-data-analytics` shared Skill handoff for approved spreadsheet/model analysis, research, validation, visualization, and finance artifacts.
 
 Key controls:
 
@@ -40,7 +76,7 @@ Current v4.6.0 material:
 
 ## v4.5.2 CFO Financial Analysis Release State Finalization
 
-v4.5.2 removes pre-publication `release candidate` wording from current-release pointers so the tagged source remains accurate after semantic publication.
+v4.5.2 removed pre-publication `release candidate` wording from current-release pointers so the tagged source remained accurate after semantic publication.
 
 Preserved without behavioral change:
 
@@ -139,7 +175,7 @@ The v4.4.1 material remains preserved:
 
 ## Production runtime and authority boundaries
 
-The current production QNAP deployment: `4.4.0`. The Mesh CoS MCP 4.4.0 runtime remains production and is unchanged by v4.5.0, v4.5.1, or v4.5.2.
+The current production QNAP deployment is `4.4.0`. The Mesh CoS MCP 4.4.0 runtime remains production and is unchanged by repository capability release v4.7.0.
 
 Key invariants remain:
 
@@ -202,19 +238,22 @@ ruff check tests scripts --select E9,F63,F7,F82
 mypy src --check-untyped-defs
 pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
+pytest -q tests/evaluations/test_phase1_role_model_consistency.py
 pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
 pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
 pytest -q tests/evaluations/test_cfo_release_state_v452.py
+pytest -q tests/evaluations/test_cfo_execution_v460.py
+pytest -q tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py
 ```
 
 GitHub CI also retains the existing TypeScript/MCP, QNAP shell/security, container, packaging, and transport checks. Passing these checks does not imply a new QNAP deployment.
 
 ## Release model
 
-`v4.5.0` is the MINOR feature release for the backward-compatible CFO analytical capability. `v4.5.1` closes release evidence. `v4.5.2` is the PATCH that finalizes durable current-release wording. None changes the public MCP/runtime contract or QNAP production binary.
+`v4.7.0` is the MINOR repository capability release for backward-compatible enterprise consulting skill consumption. It changes role guidance and release governance only. The canonical Phase 1 runtime remains `4.0.0`; CFO implementation remains `1.2.0`; production QNAP remains `4.4.0`.
 
-No QNAP deployment is part of v4.5.2. Runtime code remains at the canonical `4.0.0` authority/package contract and production QNAP remains `4.4.0`.
+No QNAP deployment is part of v4.7.0.
 
 ## Historical release-train evidence
 
-The `v4.5.0 CFO Financial Analysis Capability`, `v4.5.1 CFO Financial Analysis Release Closeout`, `v4.4.2 Data Intelligence Orchestration`, `v4.4.1 Commercial Operations Orchestration`, and `v4.4.0 Authority Closure` baselines remain preserved. Historical v4.3.x and v4.4.x documents remain release-train evidence and do not override the current v4.5.2 repository release.
+The `v4.6.0 CFO Zero-Defect Execution Remediation`, `v4.5.2 CFO Financial Analysis Release State Finalization`, `v4.5.1 CFO Financial Analysis Release Closeout`, `v4.4.2 Data Intelligence Orchestration`, `v4.4.1 Commercial Operations Orchestration`, and `v4.4.0 Authority Closure` baselines remain preserved. Historical v4.3.x through v4.6.x documents remain release-train evidence and do not override the current v4.7.0 repository capability release.

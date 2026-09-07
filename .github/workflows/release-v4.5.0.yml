@@ -12,11 +12,17 @@ on:
       - 'tests/evaluations/test_cfo_financial_analysis_v450.py'
       - 'docs/cfo-financial-analysis-v4.5.0.md'
       - 'docs/architecture-v4.5.0-cfo-financial-analysis.md'
+      - 'docs/material-turn-v4.5.0.md'
+      - 'docs/production-readiness-v4.5.0-cfo-financial-analysis.md'
+      - 'docs/runbook-v4.5.0-cfo-financial-analysis.md'
       - 'docs/security-review-v4.5.0-cfo-financial-analysis.md'
+      - 'docs/skills-v4.5.0.md'
+      - 'docs/verification-v4.5.0-cfo-financial-analysis.md'
       - 'docs/release-v4.5.0-cfo-financial-analysis.md'
       - 'CHANGELOG-v4.5.0.md'
       - 'README.md'
       - 'RELEASE.md'
+      - 'SECURITY.md'
       - '.github/workflows/release-v4.5.0.yml'
   workflow_dispatch:
 

@@ -4,15 +4,17 @@
 
 **VERIFIED_CANDIDATE**
 
-The CFO Financial Analysis implementation candidate is independently verified for integration subject to the final receipt-bearing branch revision also passing the repository CI and remaining materially equivalent to the verified implementation candidate.
+The CFO Financial Analysis implementation is independently verified and integrated. Semantic release remains gated on successful verification of the release-control correction documented below.
 
 ## Identity
 
 - Repository: `mkleinbe/mesh-ai-agent-cos-universe`
 - Base branch: `main`
 - Baseline main SHA: `0e7c52cb26f7b9fede20b6582ca130514b2bf3dd`
-- Pull request: `#65`
+- Capability pull request: `#65`
 - Verified implementation candidate SHA: `cb72ba4c5d8405067bd4e95396b4f5bf76d2f824`
+- Receipt-bearing candidate SHA: `97d4695316bc94c1cd0c8f38d5a809135edd5e09`
+- Initial integrated main SHA: `c1a99ded1fdff12f2430dcb8bcc9f9a165029867`
 - CFO implementation version: `1.1.0`
 - Repository semantic release: `v4.5.0`
 - Canonical Phase 1 runtime contract: `4.0.0`
@@ -36,7 +38,7 @@ Executable regression gate: `tests/evaluations/test_cfo_financial_analysis_v450.
 
 ## CI evidence
 
-### Initial blocking evidence
+### Initial implementation blocking evidence
 
 CI run `34147625059` correctly failed before integration. The two observed defects were:
 1. Workspace Agent top-level description and Builder description had drifted.
@@ -49,6 +51,10 @@ Both defects were remediated at root cause. Acceptance criteria, security contro
 Push CI run `34147994975` for SHA `cb72ba4c5d8405067bd4e95396b4f5bf76d2f824`: **SUCCESS**.
 
 Pull-request CI run `34147998808` for the same SHA: **SUCCESS**.
+
+Receipt-bearing final candidate `97d4695316bc94c1cd0c8f38d5a809135edd5e09` also passed:
+- push CI `34148110865`: **SUCCESS**;
+- pull-request CI `34148113142`: **SUCCESS**.
 
 The successful pipeline included:
 - Python and Node dependency installation and dependency checks;
@@ -69,6 +75,23 @@ The successful pipeline included:
 - production-equivalent container build;
 - modern MCP discovery and sequential-request verification;
 - candidate verification artifact generation/upload.
+
+### Post-merge release-control finding
+
+Capability PR `#65` merged successfully to main at `c1a99ded1fdff12f2430dcb8bcc9f9a165029867` after both receipt-bearing CI runs passed and no review threads remained.
+
+Dedicated release workflow run `34148245569` then correctly blocked semantic release. All substantive finance, security, type, lint, full-suite, 100% coverage, and CFO acceptance tests passed. The only failure was the final release boundary shell assertion.
+
+Root cause: the workflow searched for documentation strings `Canonical runtime contract: 4.0.0` and `Production QNAP deployment: 4.4.0`, while the authoritative release document states the same boundaries as `canonical Phase 1 runtime contract remains 4.0.0` and `production QNAP Mesh CoS MCP runtime remains 4.4.0`. The values and authority boundaries were correct; the grep contract was stale.
+
+Remediation:
+- update `.github/workflows/release-v4.5.0.yml` to assert the exact documented boundary wording;
+- add a regression test that requires both release-boundary phrases to exist in the release document and workflow;
+- rerun full branch/PR CI before integrating the release-control fix;
+- rerun the dedicated main release workflow after the correction is merged;
+- create tag/release only after that workflow succeeds.
+
+No CFO behavior, permission, source, MCP, connector, QNAP, or runtime boundary changes as part of this remediation.
 
 ## Independent diff verification
 
@@ -159,27 +182,23 @@ Both v4.5.0 Mermaid diagrams were validated through the connected Mermaid Chart 
 - CFO financial-analysis control path;
 - governed analysis sequence.
 
-## PR/review state at verification
+## PR/review state
 
-At the verified implementation candidate:
-- PR `#65` was mergeable;
-- no pull-request review submissions were present;
-- no unresolved review threads were present;
+Capability PR `#65`:
+- merged to `main`;
+- no review submissions blocked integration;
+- no unresolved review threads were present before merge;
 - changed-file review showed only the bounded CFO capability, documentation/release controls, acceptance tests, and the stale historical QNAP regression correction.
 
-## Receipt-bearing revision rule
+The release-control correction must follow the same branch, CI, PR, and merge discipline before semantic release.
 
-Creating this receipt changes the branch SHA but not implementation behavior. The exact receipt-bearing revision must pass the same repository CI before the PR is marked ready and merged. If any material implementation, authority, source, Skill, connector, MCP, test, or security behavior changes after this receipt, this verification is stale and must be repeated.
+## Release closeout gate
 
-## Integration and release gate
-
-Integration is authorized only after:
-1. receipt-bearing branch CI is green;
-2. PR remains mergeable with no unresolved material review thread;
-3. PR description is updated from initial RED/TDD state to final verified state;
-4. the verified branch is merged to `main` under the standing release authorization;
-5. main-branch v4.5.0 release verification succeeds;
-6. semantic tag `v4.5.0` and the GitHub Release target the verified integrated main SHA;
-7. final main/tag/release identity and CFO `1.1.0` state are rechecked.
+Release is complete only after:
+1. release-control correction branch CI and PR CI are green;
+2. correction PR is merged to `main` with no unresolved material review thread;
+3. main-branch `v4.5.0 CFO Financial Analysis Capability` verification succeeds;
+4. semantic tag `v4.5.0` and GitHub Release target that final verified main SHA;
+5. final main/tag/release identity and CFO `1.1.0` state are rechecked.
 
 No QNAP deployment is required or authorized by this release.

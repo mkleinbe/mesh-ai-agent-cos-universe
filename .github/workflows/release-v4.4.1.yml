@@ -1,5 +1,8 @@
 name: v4.4.1 Commercial Operations orchestration historical verification
 
+# Historical publisher retired: gh release create v4.4.1
+# Historical automatic trigger retired: branches: [main]
+
 on:
   workflow_dispatch:
 

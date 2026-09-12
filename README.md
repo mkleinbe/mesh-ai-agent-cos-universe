@@ -2,9 +2,9 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.8.0 Functional Method Expansion`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.8.1 Release State Finalization`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.8.0 deepens methods inside the existing Phase 1 organization without changing the machine-readable registry, direct Skill arrays, MCP allowlists, L0-L5 authority, canonical sources, TaskLedger ownership, external-action controls, or production runtime.
+v4.8.1 is a documentation and release-control PATCH that finalizes the published v4.8.0 release receipts and semantic-release state. It makes no agent behavior, runtime, QNAP, registry, authority, Skill, method, connector, source-authority, or external-action change.
 
 ## Canonical architecture
 
@@ -14,9 +14,20 @@ Mesh Devil's Advocate and Mesh Data Analytics remain governed external shared Sk
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Revenue Intelligence remains canonical commercial/account truth where designated. `COMPLETED` remains distinct from `VERIFIED`. L4 requires qualified-human approval and L5 remains Michael-only.
 
+## v4.8.1 Release State Finalization
+
+This PATCH closes the post-publication documentation gap left after v4.8.0 successfully merged and released. It:
+
+- finalizes the v4.8.0 verification and security receipts with actual `main`, tag, GitHub Release, and workflow evidence;
+- retires the v4.8.0 semantic publisher from automatic `main` execution while preserving manual historical verification;
+- adds a dedicated v4.8.1 release-state regression and exact-SHA semantic release workflow;
+- preserves runtime contract `4.0.0`, QNAP `4.4.0`, the 10-agent organization, and every v4.8.0 functional behavior unchanged.
+
+See `docs/release-v4.8.1-release-state-finalization.md`, `docs/security-review-v4.8.1-release-state-finalization.md`, and `CHANGELOG-v4.8.1.md`.
+
 ## v4.8.0 Functional Method Expansion
 
-The current release adds:
+The v4.8.0 feature release added:
 
 - CoS deliberation selection, independent cross-functional contributions, disagreement preservation, scenario composition, strategic work-graph alignment, and change-readiness orchestration;
 - AgentOps P50/P90 flow intelligence, wait/approval/rework/handoff/WIP diagnostics, and assumption-gated queue/capacity methods;
@@ -29,9 +40,9 @@ The current release adds:
 - VP Content proof/inventory freshness and derivative lineage;
 - Message Operations consumption of separately approved campaign/change execution metadata.
 
-Reusable Base / Stress / Severe scenario methodology is owned by Mesh PPMD Bot v1.2.0. Reusable change communications is owned by Mesh Messaging v1.3.0. Revenue Intelligence, GTM Orchestrator, Mesh Data Analytics, and Mesh Devil's Advocate do not change for this release because their governing behavior remains sufficient.
+Reusable Base / Stress / Severe scenario methodology is owned by Mesh PPMD Bot v1.2.0. Reusable change communications is owned by Mesh Messaging v1.3.0. Revenue Intelligence, GTM Orchestrator, Mesh Data Analytics, and Mesh Devil's Advocate did not change for v4.8.0 because their governing behavior remained sufficient.
 
-Current v4.8.0 material:
+v4.8.0 material:
 
 - `specs/functional-method-expansion-v4.8.0.feature`
 - `tests/evaluations/test_functional_method_expansion_v480.py`
@@ -53,7 +64,7 @@ The fourth donor URL referenced by the inherited assessment was not retained, so
 
 ## Quantitative integrity
 
-The CFO deterministic calculator remains the closed, local core for supported finance math. v4.8.0 adds fixed-cost-to-serve deal-discount economics. For list price 100, fixed cost 20, and a 30% discount:
+The CFO deterministic calculator remains the closed, local core for supported finance math. v4.8.0 added fixed-cost-to-serve deal-discount economics. For list price 100, fixed cost 20, and a 30% discount:
 
 - pre-discount margin dollars = 80;
 - post-discount revenue = 70;
@@ -70,11 +81,11 @@ Substantial quantitative analysis continues to route through governed Mesh Data 
 - no role gains write/send/approval authority through Skill composition;
 - private chain-of-thought and raw deliberation are not persisted;
 - pricing, discounts, deals, procurement, staffing, publishing, and sends remain governed by the existing approval model;
-- no runtime schema, connector, secret, OAuth, network boundary, or QNAP deployment is introduced by v4.8.0.
+- v4.8.1 introduces no runtime schema, connector, secret, OAuth, dependency, network boundary, or QNAP deployment change.
 
 ## Verification
 
-Current release gates include:
+Current release-state gates include:
 
 ```bash
 python scripts/validate-contracts.py
@@ -83,23 +94,18 @@ python scripts/check-chatgpt-packages.py
 python scripts/check-owner-execution-readiness.py
 python scripts/check-capability-closure.py
 python scripts/check-published-action-surface.py
-ruff check src
-ruff check tests scripts --select E9,F63,F7,F82
-mypy src --check-untyped-defs
-pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
-bandit -q -r src -lll
 pytest -q tests/evaluations/test_phase1_role_model_consistency.py
-pytest -q tests/evaluations/test_cfo_financial_analysis_v450.py
-pytest -q tests/evaluations/test_cfo_release_closeout_v451.py
-pytest -q tests/evaluations/test_cfo_release_state_v452.py
-pytest -q tests/evaluations/test_cfo_execution_v460.py
-pytest -q tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py
 pytest -q tests/evaluations/test_functional_method_expansion_v480.py
+pytest -q tests/evaluations/test_release_state_v481.py
 ```
 
-Passing repository checks does not imply a new QNAP deployment. Production remains 4.4.0.
+The canonical CI continues to run the complete source, typing, coverage, security, QNAP regression, production-equivalent container, and MCP transport suite. Passing repository checks does not imply a new QNAP deployment. Production remains 4.4.0.
 
 ## Historical release-train evidence
+
+### v4.8.0 Functional Method Expansion
+
+The prior feature release introduced the governed functional-method expansion. Its final merged main, tag, and GitHub Release all target `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`.
 
 ### v4.7.0 Enterprise Consulting Skill Consumption
 
@@ -123,7 +129,7 @@ Historical financial-analysis feature release. Detailed evidence remains in the 
 
 ### v4.4.0 Authority Closure
 
-The authority-closure release established the current 10-agent Phase 1 authority architecture. Historical v4.3.x through v4.6.x documents remain release-train evidence and do not override the current repository capability release or current QNAP deployment.
+The authority-closure release established the current 10-agent Phase 1 authority architecture. Historical v4.3.x through v4.8.x documents remain release-train evidence and do not override the current repository release or current QNAP deployment.
 
 ## Repository layout
 
@@ -139,4 +145,4 @@ The authority-closure release established the current 10-agent Phase 1 authority
 
 ## Release model
 
-`v4.8.0` is a backward-compatible MINOR repository capability release. The canonical Phase 1 authority/runtime contract remains `4.0.0`; production QNAP remains `4.4.0`. No QNAP deployment is part of v4.8.0.
+`v4.8.1` is a documentation and release-control PATCH. The functional capability baseline remains v4.8.0, the canonical Phase 1 authority/runtime contract remains `4.0.0`, and production QNAP remains `4.4.0`. No QNAP deployment is part of v4.8.1.

@@ -1,6 +1,16 @@
+# v4.8.0 Functional Method Expansion
+
+`v4.8.0 Functional Method Expansion` is the current repository capability release. It deepens the operating methods of the existing Mesh Phase 1 organization while leaving the machine-readable registry, canonical Phase 1 authority/runtime contract **4.0.0**, production QNAP **4.4.0**, and exactly **10 registered agents** unchanged.
+
+The release adds governed CoS deliberation and alignment methods, AgentOps flow intelligence, Answer Desk source-health states, CRO commercial operating depth, CFO commercial economics and corrected fixed-cost deal math, COO process/capacity/vendor diagnostics, consultant-network concentration/contingency evidence, CMO growth/change methods, VP Content proof-lineage controls, and bounded Message Operations sequence metadata. Reusable scenario stress is routed to Mesh PPMD Bot v1.2.0 and reusable change communications to Mesh Messaging v1.3.0.
+
+It adds no new agent principal, MCP tool, connector, credential, database schema, TaskLedger alternative, autonomous communication, autonomous deal/procurement/staffing action, or consequential approval authority. Donor methods remain untrusted evidence and cannot change identity, tools, source authority, approvals, delegation, persistence, or canonical state.
+
+See `docs/functional-method-expansion-v4.8.0.md`, `docs/architecture-v4.8.0-functional-method-expansion.md`, `docs/security-review-v4.8.0-functional-method-expansion.md`, `docs/source-governance-v4.8.0.md`, and `docs/verification-v4.8.0-functional-method-expansion.md`.
+
 # v4.7.0 Enterprise Consulting Skill Consumption
 
-`v4.7.0 Enterprise Consulting Skill Consumption` is the current repository capability release. It integrates the released Mesh consulting-method enhancements into Chief of Staff, CRO, CFO, COO, CMO, and Answer & Decision Desk role guidance while leaving the machine-readable registry, canonical Phase 1 authority/runtime contract **4.0.0**, production QNAP **4.4.0**, and exactly **10 registered agents** unchanged.
+`v4.7.0 Enterprise Consulting Skill Consumption` is the prior repository capability release. It integrates the released Mesh consulting-method enhancements into Chief of Staff, CRO, CFO, COO, CMO, and Answer & Decision Desk role guidance while leaving the machine-readable registry, canonical Phase 1 authority/runtime contract **4.0.0**, production QNAP **4.4.0**, and exactly **10 registered agents** unchanged.
 
 The release consumes Mesh PPMD Bot v1.1+, Revenue Intelligence v1.4+, Firm 360 v1.5+, Competitive Displacement v1.14+, GTM Orchestrator v2.3+, Buyer Psychology v3.1+, Devil's Advocate v1.4+, Mesh Messaging v1.2+, and Mesh Design System / Artifact Designer v0.4+ through existing bindings and governed delegation. It adds no new MCP tool, connector, credential, database schema, direct Skill array, autonomous communication, or consequential approval authority.
 
@@ -129,4 +139,4 @@ Commercial Operations continues to preserve Revenue Intelligence commercial trut
 
 # v4.4.0 Authority Closure
 
-Historical release identity is preserved for regression and audit continuity. At that release-train point, the canonical Phase 1 authority/runtime contract remained **4.0.0**, and the then-current production deployment was `v4.3.0`. Historical v4.3.x and v4.4.x release documents and verification artifacts remain retained and do not override the current v4.7.0 repository capability release or the current QNAP 4.4.0 production deployment.
+Historical release identity is preserved for regression and audit continuity. At that release-train point, the canonical Phase 1 authority/runtime contract remained **4.0.0**, and the then-current production deployment was `v4.3.0`. Historical v4.3.x and v4.4.x release documents and verification artifacts remain retained and do not override the current v4.8.0 repository capability release or the current QNAP 4.4.0 production deployment.

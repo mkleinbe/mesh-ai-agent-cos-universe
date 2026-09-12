@@ -28,22 +28,20 @@ def test_v480_verification_receipt_is_final_not_pending() -> None:
     assert "only remaining release gate" not in receipt
 
 
-def test_v481_verification_receipt_is_durable_and_governed() -> None:
+def test_v481_verification_receipt_is_durable_and_published() -> None:
     receipt = _read("docs/verification-v4.8.1-release-state-finalization.md")
     assert "Verification status: **PASS**" in receipt
-    assert "Verification status: **PASS for release candidate**" not in receipt
-    assert "Final publication status: **PENDING" not in receipt
-    assert "Publication binding: **EXACT-SHA ENFORCED BY RELEASE WORKFLOW**" in receipt
+    assert "Publication state: **PUBLISHED AND HISTORICAL**" in receipt
+    assert "PR #72 is merged" in receipt
+    assert "ecb04f495910912fb9181adf3553a62a9f408f3c" in receipt
     assert "f1fa3601e373515950e61ead7c6b9cbdb37fdb28" in receipt
     assert "31063070a5794c40eb76fc3a27138c87e60740e3" in receipt
     assert "34724550131" in receipt
     assert "34724552349" in receipt
     assert "runtime contract: `4.0.0`, unchanged" in receipt
     assert "production QNAP: `4.4.0`, unchanged" in receipt
-    assert "V481-01" in receipt
-    assert "V481-02" in receipt
-    assert "V481-03" in receipt
-    assert "V481-04" in receipt
+    assert "One final exact-head" not in receipt
+    assert "eligible to merge" not in receipt
 
 
 def test_v481_security_receipt_is_durable() -> None:
@@ -54,27 +52,25 @@ def test_v481_security_receipt_is_durable() -> None:
     assert "SEC-481-06" in security
 
 
-def test_v481_is_current_repository_release() -> None:
+def test_v481_is_preserved_as_prior_repository_release() -> None:
     readme = _read("README.md")
     release = _read("RELEASE.md")
-    assert "Current repository release: `v4.8.1 Release State Finalization`" in readme
-    assert release.startswith("# v4.8.1 Release State Finalization")
+    assert "v4.8.1 Release State Finalization" in readme
+    assert "# v4.8.1 Release State Finalization" in release
     assert "# v4.8.0 Functional Method Expansion" in release
 
 
-def test_v480_publisher_is_historical_only_and_v481_owns_main() -> None:
-    old = _read(".github/workflows/release-v4.8.0.yml")
-    new = _read(".github/workflows/release-v4.8.1.yml")
-    assert "branches: [main]" not in old
-    assert "workflow_dispatch:" in old
-    assert "branches: [main]" in new
-    assert "gh release create v4.8.1" in new
-    assert "--target \"$GITHUB_SHA\"" in new
-    assert "test_release_state_v481.py" in new
-    assert "docs/verification-v4.8.1-release-state-finalization.md" in new
-    assert "docs/security-review-v4.8.1-release-state-finalization.md" in new
-    assert "Verification status: \\*\\*PASS\\*\\*" in new
-    assert "Security result: \\*\\*PASS\\*\\*" in new
+def test_v480_and_v481_publishers_are_historical_only() -> None:
+    v480 = _read(".github/workflows/release-v4.8.0.yml")
+    v481 = _read(".github/workflows/release-v4.8.1.yml")
+    for workflow in (v480, v481):
+        assert "workflow_dispatch:" in workflow
+        assert "branches: [main]" not in workflow
+        assert "pull_request:" not in workflow
+        assert "gh release create" not in workflow
+        assert "permissions:\n  contents: read" in workflow
+    assert "ecb04f495910912fb9181adf3553a62a9f408f3c" in v481
+    assert "PR #72 is merged" in v481
 
 
 def test_v481_changelog_records_only_release_state_correction() -> None:

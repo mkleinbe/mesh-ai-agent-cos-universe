@@ -160,6 +160,46 @@ def cash_conversion_cycle(dio: float, dso: float, dpo: float) -> float:
     return _number(dio, "dio") + _number(dso, "dso") - _number(dpo, "dpo")
 
 
+def deal_discount_economics(
+    list_price: float,
+    fixed_cost_to_serve: float,
+    discount_rate: float,
+) -> dict[str, float]:
+    """Return deal economics under an explicit fixed-cost-to-serve assumption.
+
+    A price discount reduces revenue, not the supported fixed cost-to-serve. This avoids
+    the donor deal-desk defect that proportionally scaled cost with the discount and
+    understated margin-dollar loss.
+    """
+
+    price = _number(list_price, "list_price")
+    cost = _number(fixed_cost_to_serve, "fixed_cost_to_serve")
+    discount = _number(discount_rate, "discount_rate")
+    if price <= 0:
+        raise FinanceInputError("list_price must be greater than zero")
+    if cost < 0:
+        raise FinanceInputError("fixed_cost_to_serve cannot be negative")
+    if discount < 0 or discount >= 1:
+        raise FinanceInputError("discount_rate must be at least zero and less than one")
+
+    post_revenue = price * (1 - discount)
+    pre_margin = price - cost
+    post_margin = post_revenue - cost
+    pre_margin_ratio = pre_margin / price
+    post_margin_ratio = post_margin / post_revenue
+    margin_dollar_loss_ratio = 0.0 if pre_margin == 0 else (pre_margin - post_margin) / abs(pre_margin)
+
+    return {
+        "pre_discount_revenue": price,
+        "post_discount_revenue": post_revenue,
+        "pre_discount_margin_dollars": pre_margin,
+        "post_discount_margin_dollars": post_margin,
+        "pre_discount_margin_ratio": pre_margin_ratio,
+        "post_discount_margin_ratio": post_margin_ratio,
+        "margin_dollar_loss_ratio": margin_dollar_loss_ratio,
+    }
+
+
 def execute(request: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(request, dict):
         raise FinanceInputError("request must be an object")
@@ -213,6 +253,12 @@ def execute(request: dict[str, Any]) -> dict[str, Any]:
                 inputs.get("dio"), inputs.get("dso"), inputs.get("dpo")
             )
         }
+    elif operation == "deal_discount_economics":
+        result = deal_discount_economics(
+            inputs.get("list_price"),
+            inputs.get("fixed_cost_to_serve"),
+            inputs.get("discount_rate"),
+        )
     else:
         raise FinanceInputError(f"unsupported operation: {operation}")
     return {"ok": True, "operation": operation, "result": result}

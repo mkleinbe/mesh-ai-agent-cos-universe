@@ -1,29 +1,32 @@
 # v4.8.0 Functional Method Expansion Verification
 
 Date: 2026-09-12  
-Verification status: **PASS for release candidate**  
-Final publication gate: merged-main/tag/Release alignment must still be observed after merge.
+Verification status: **PASS**  
+Final publication status: **PASS**
 
 ## Verification objective
 
-Independently verify the actual v4.8.0 candidate against FME-001 through FME-024, FULL_REVIEW security requirements, quantitative-method integrity, legacy regressions, documentation synchronization, and shared-Skill release dependencies.
+Independently verify the actual v4.8.0 candidate against FME-001 through FME-024, FULL_REVIEW security requirements, quantitative-method integrity, legacy regressions, documentation synchronization, shared-Skill release dependencies, and final main/tag/GitHub Release alignment.
 
 ## Bound subject and evidence
 
 - repository: `mkleinbe/mesh-ai-agent-cos-universe`
-- candidate branch: `feat/functional-method-expansion-v4.8.0`
-- verified implementation candidate: `3bbd1cc2d7a62a84355f6bf71915a47bff203aa2`
 - baseline: `26ad1edcf1952d0203a25378987f42af6560d637`
-- canonical CI run: `34723423796`, job `103633266550`, **SUCCESS**
+- verified implementation candidate: `3bbd1cc2d7a62a84355f6bf71915a47bff203aa2`
+- sealed candidate/evidence head: `59ad8e1ebd1fd586b982f6dd5f03ff663eda3eae`
+- final merged `main` and v4.8.0 release SHA: `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`
+- candidate canonical CI run: `34723423796`, job `103633266550`, **SUCCESS**
+- final exact-head candidate workflows: **SUCCESS**
+- final v4.8.0 main release workflow: `34723652446`, **SUCCESS**
 - BDD: `specs/functional-method-expansion-v4.8.0.feature`
 - security receipt: `docs/security-review-v4.8.0-functional-method-expansion.md`
 - requirements: `docs/requirements-trace-v4.8.0.md`
 
-The candidate CI independently checked the resulting repository tree rather than implementation reasoning. It ran the full repository suite, not only v4.8 targeted assertions.
+The candidate CI independently checked the resulting repository tree rather than implementation reasoning. It ran the full repository suite, not only v4.8 targeted assertions. After merge, the dedicated v4.8.0 main workflow reverified the release boundary and published the semantic release at the exact merged-main SHA.
 
 ## Verification executed
 
-Run `34723423796` passed:
+Candidate run `34723423796` passed:
 
 1. Python dependency install and `pip check`.
 2. MCP `npm ci` and `npm run check`.
@@ -46,6 +49,8 @@ Run `34723423796` passed:
 
 The full pytest suite included the v4.8 behavior/evaluation tests and all historical role, CFO, shared-Skill, and runtime regressions. Earlier v4.7 compatibility drift in role documentation and CFO analytical routing was corrected without weakening historical tests, then the complete suite passed.
 
+Final release workflow `34723652446` then completed successfully on merged main SHA `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`, including its verify and semantic-release jobs.
+
 ## Independent acceptance matrix
 
 | Scope | Verification evidence | Result |
@@ -59,10 +64,10 @@ The full pytest suite included the v4.8 behavior/evaluation tests and all histor
 | FME-019..020 COO/Steward | process/capacity/readiness assertions plus stale-availability/staffing controls | PASS |
 | FME-021..023 CMO/Content/Message Ops | v4.8 assertions plus historical publication/execution-boundary regressions | PASS |
 | FME-024 security | FULL_REVIEW, drift/allowlist/package checks, Bandit, fail-closed quantitative inputs | PASS |
-| PPMD shared scenario method | Mesh PPMD Bot `v1.2.0`, main/release SHA `89b68b0afabb66a68ccd0f54da44cfa3f0e3fb7e`; validation run `34723219429`; release run `34723274326` | PASS |
-| Messaging shared change method | Mesh Messaging `v1.3.0`, main/release SHA `870fd98410ccb12d0bee585db9b62443ebdbf8e7`; main validation `34723474866`; release run `34723492645` | PASS |
-| Documentation and provenance | source manifest, requirements matrix, architecture, security, gap audit, release notes, README/RELEASE/changelog | PASS candidate |
-| Primary semantic publication | must verify final merged main equals `v4.8.0` tag/Release target | PENDING publication only |
+| PPMD shared scenario method | Mesh PPMD Bot `v1.2.0`, main/release SHA `89b68b0afabb66a68ccd0f54da44cfa3f0e3fb7e`; validation/release successful | PASS |
+| Messaging shared change method | Mesh Messaging `v1.3.0`, main/release SHA `870fd98410ccb12d0bee585db9b62443ebdbf8e7`; validation/release successful | PASS |
+| Documentation and provenance | source manifest, requirements matrix, architecture, security, gap audit, release notes, README/RELEASE/changelog | PASS |
+| Primary semantic publication | merged main, tag `v4.8.0`, and GitHub Release all target `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`; run `34723652446` successful | PASS |
 
 ## Quantitative-method verification
 
@@ -82,7 +87,7 @@ Queueing, Little's Law, forecast weights, pipeline-coverage ratios, WTP threshol
 
 ## Authority and security verification
 
-- `agents/registry.json` still contains exactly 10 agents.
+- `agents/registry.json` contains exactly 10 agents.
 - Consultant Network Steward parent remains COO; VP Content parent remains CMO.
 - External shared-Skill registry remains only `mesh-devils-advocate` and `mesh-data-analytics`.
 - Direct Skill bindings and MCP/action allowlists were not expanded for v4.8.
@@ -98,8 +103,10 @@ Queueing, Little's Law, forecast weights, pipeline-coverage ratios, WTP threshol
 
 Mesh PPMD Bot `v1.2.0` is published at exact main SHA `89b68b0afabb66a68ccd0f54da44cfa3f0e3fb7e` with the canonical `skill.zip` asset.
 
-Mesh Messaging `v1.3.0` is published at exact main SHA `870fd98410ccb12d0bee585db9b62443ebdbf8e7` with `mesh-messaging-system-v1.3.0-artifacts.zip`. Main validation run `34723474866` and semantic-release run `34723492645` both passed.
+Mesh Messaging `v1.3.0` is published at exact main SHA `870fd98410ccb12d0bee585db9b62443ebdbf8e7` with `mesh-messaging-system-v1.3.0-artifacts.zip`.
 
-## Release claim boundary
+## Final release receipt
 
-The v4.8 implementation, regression, quantitative, documentation, and security candidate is independently verified **GREEN**. Production QNAP remains `4.4.0` because no runtime deployment change is required. The only remaining release gate after this receipt is to merge the unchanged verified content to `main`, pass the main-branch release workflow, publish `v4.8.0`, and verify that `main`, the tag, and GitHub Release target the same final commit.
+The v4.8.0 Functional Method Expansion is fully integrated and released. `main`, semantic tag `v4.8.0`, and the GitHub Release all target `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`. Release workflow `34723652446` completed successfully. Production QNAP remains `4.4.0` because no runtime deployment change was required.
+
+v4.8.1 is a later documentation/release-control PATCH that finalizes this durable receipt and does not modify v4.8.0 functional behavior.

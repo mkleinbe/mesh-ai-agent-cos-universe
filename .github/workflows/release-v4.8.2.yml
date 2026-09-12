@@ -1,5 +1,8 @@
 name: v4.8.2 Functional Method Audit Remediation historical verification
 
+# Historical publisher retired: gh release create v4.8.2 --target "$GITHUB_SHA"
+# Historical automatic trigger retired: branches: [main]
+
 on:
   workflow_dispatch:
 

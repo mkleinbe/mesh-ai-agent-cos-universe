@@ -1,191 +1,30 @@
-name: v4.8.2 Functional Method Audit Remediation
+name: v4.8.2 Functional Method Audit Remediation historical verification
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'chatgpt/skills/**'
-      - 'specs/functional-method-remediation-v4.8.2.feature'
-      - 'tests/evaluations/test_functional_method_remediation_v482.py'
-      - 'tests/evaluations/test_functional_method_expansion_v480.py'
-      - 'tests/evaluations/test_release_state_v481.py'
-      - 'docs/**v4.8.2*'
-      - 'docs/donor-disposition-ledger-v4.8.2.md'
-      - 'docs/source-governance-v4.8.2.md'
-      - 'README.md'
-      - 'RELEASE.md'
-      - 'CHANGELOG-v4.8.2.md'
-      - '.github/workflows/release-v4.8.1.yml'
-      - '.github/workflows/release-v4.8.2.yml'
-  pull_request:
-    paths:
-      - 'chatgpt/skills/**'
-      - 'specs/functional-method-remediation-v4.8.2.feature'
-      - 'tests/evaluations/test_functional_method_remediation_v482.py'
-      - 'tests/evaluations/test_functional_method_expansion_v480.py'
-      - 'tests/evaluations/test_release_state_v481.py'
-      - 'docs/**v4.8.2*'
-      - 'docs/donor-disposition-ledger-v4.8.2.md'
-      - 'docs/source-governance-v4.8.2.md'
-      - 'README.md'
-      - 'RELEASE.md'
-      - 'CHANGELOG-v4.8.2.md'
-      - '.github/workflows/release-v4.8.1.yml'
-      - '.github/workflows/release-v4.8.2.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: v4.8.2-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  verify:
+  verify-historical:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: v4.8.2
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: mcp/package-lock.json
       - run: pip install -e '.[dev]'
-      - run: python -m pip check
-      - run: npm ci
-        working-directory: mcp
-      - run: npm run check
-        working-directory: mcp
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py
-      - run: python scripts/check-owner-execution-readiness.py
-      - run: python scripts/check-capability-closure.py
-      - run: python scripts/check-published-action-surface.py
-      - run: ruff check src
-      - run: ruff check tests scripts --select E9,F63,F7,F82
-      - run: mypy src --check-untyped-defs
-      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=100
-      - run: bandit -q -r src -lll
-      - run: python -m compileall -q src
-      - name: Functional Method behavior and legacy regressions
+      - run: pytest -q tests/evaluations/test_functional_method_remediation_v482.py
+      - run: pytest -q tests/evaluations/test_functional_method_expansion_v480.py
+      - run: pytest -q tests/evaluations/test_release_state_v481.py
+      - name: Preserve published v4.8.2 boundary
         run: |
           set -euo pipefail
-          pytest -q tests/evaluations/test_functional_method_remediation_v482.py
-          pytest -q tests/evaluations/test_functional_method_expansion_v480.py
-          pytest -q tests/evaluations/test_release_state_v481.py
-          pytest -q tests/evaluations/test_phase1_role_model_consistency.py
-          pytest -q tests/evaluations/test_cfo_execution_v460.py
-      - name: QNAP POSIX shell regressions
-        run: |
-          set -euo pipefail
-          sh -n deployment/qnap/qnap-environment-probe.sh
-          for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
-          sh deployment/qnap/tests/test-compose-discovery.sh
-          sh deployment/qnap/tests/test-observability.sh
-          sh deployment/qnap/tests/test-runtime-permissions.sh
-          sh deployment/qnap/tests/test-image-provenance.sh
-          sh deployment/qnap/tests/test-slack-hitl-configure.sh
-          sh deployment/qnap/tests/test-transactional-promotion.sh
-          sh deployment/qnap/tests/test-versioned-release-layout.sh
-          sh deployment/qnap/tests/test-restarting-container-backup.sh
-      - name: Build production-equivalent 4.4.0 container
-        env:
-          CANDIDATE_VERSION: '4.4.0'
-        run: |
-          set -euo pipefail
-          bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"
-          bash scripts/finalize-qnap-release-v4.4.0.sh
-          BUNDLE="dist/qnap-bundle/v${CANDIDATE_VERSION}"
-          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION="${CANDIDATE_VERSION}-qnap" -t "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}" "$BUNDLE/cos-mcp/build-context"
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "${CANDIDATE_VERSION}-qnap"
-          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "$GITHUB_SHA"
-      - name: Verify MCP discovery and sequential requests
-        env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.4.0'
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.4.0
-      - name: Build v4.8.2 ChatGPT Skill bundle
-        run: |
-          set -euo pipefail
-          ROOT="dist/chatgpt-skill-bundle/v4.8.2"
-          mkdir -p "$ROOT"
-          for skill in \
-            mesh-chief-of-staff \
-            mesh-agentops-controller \
-            mesh-answer-decision-desk \
-            mesh-cro \
-            mesh-cfo \
-            mesh-coo \
-            mesh-consultant-network-steward \
-            mesh-cmo \
-            mesh-vp-content \
-            mesh-message-operations; do
-            cp -R "chatgpt/skills/$skill" "$ROOT/$skill"
-          done
-          {
-            printf 'repository_release=v4.8.2\n'
-            printf 'source_commit=%s\n' "$GITHUB_SHA"
-            printf 'skill_count=10\n'
-            printf 'runtime_contract=4.0.0\n'
-            printf 'production_qnap=4.4.0\n'
-            printf 'fourth_donor=BLOCKED_SOURCE_IDENTIFICATION\n'
-          } > "$ROOT/MANIFEST.txt"
-          (cd dist/chatgpt-skill-bundle && zip -qr ../mesh-cos-chatgpt-skills-v4.8.2.zip v4.8.2)
-          (cd dist && sha256sum mesh-cos-chatgpt-skills-v4.8.2.zip > mesh-cos-chatgpt-skills-v4.8.2.zip.sha256)
-          grep -q "^source_commit=$GITHUB_SHA$" "$ROOT/MANIFEST.txt"
-          grep -q '^skill_count=10$' "$ROOT/MANIFEST.txt"
-          (cd dist && sha256sum -c mesh-cos-chatgpt-skills-v4.8.2.zip.sha256)
-      - uses: actions/upload-artifact@v6
-        with:
-          name: mesh-cos-v4.8.2-verification
-          path: |
-            dist/mesh-cos-chatgpt-skills-v4.8.2.zip
-            dist/mesh-cos-chatgpt-skills-v4.8.2.zip.sha256
-          if-no-files-found: error
-          retention-days: 30
-
-  release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Build release Skill bundle
-        run: |
-          set -euo pipefail
-          ROOT="dist/chatgpt-skill-bundle/v4.8.2"
-          mkdir -p "$ROOT"
-          for skill in mesh-chief-of-staff mesh-agentops-controller mesh-answer-decision-desk mesh-cro mesh-cfo mesh-coo mesh-consultant-network-steward mesh-cmo mesh-vp-content mesh-message-operations; do
-            cp -R "chatgpt/skills/$skill" "$ROOT/$skill"
-          done
-          printf 'repository_release=v4.8.2\nsource_commit=%s\nskill_count=10\nruntime_contract=4.0.0\nproduction_qnap=4.4.0\nfourth_donor=BLOCKED_SOURCE_IDENTIFICATION\n' "$GITHUB_SHA" > "$ROOT/MANIFEST.txt"
-          (cd dist/chatgpt-skill-bundle && zip -qr ../mesh-cos-chatgpt-skills-v4.8.2.zip v4.8.2)
-          (cd dist && sha256sum mesh-cos-chatgpt-skills-v4.8.2.zip > mesh-cos-chatgpt-skills-v4.8.2.zip.sha256)
-      - name: Publish exact-SHA v4.8.2 release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if gh release view v4.8.2 >/dev/null 2>&1; then
-            existing_target="$(gh release view v4.8.2 --json targetCommitish --jq .targetCommitish)"
-            if [ "$existing_target" != "$GITHUB_SHA" ]; then
-              echo "v4.8.2 already exists at $existing_target, expected $GITHUB_SHA" >&2
-              exit 1
-            fi
-            echo "v4.8.2 already exists at exact main SHA"
-            exit 0
-          fi
-          gh release create v4.8.2 \
-            --target "$GITHUB_SHA" \
-            --title 'Mesh CoS v4.8.2 Functional Method Audit Remediation' \
-            --notes-file docs/release-v4.8.2-functional-method-audit-remediation.md \
-            dist/mesh-cos-chatgpt-skills-v4.8.2.zip \
-            dist/mesh-cos-chatgpt-skills-v4.8.2.zip.sha256
+          grep -q 'Verification status: \*\*PASS\*\*' docs/verification-v4.8.2-functional-method-audit-remediation.md
+          echo 'v4.8.2 is a published historical release; this workflow cannot publish or retarget it.'

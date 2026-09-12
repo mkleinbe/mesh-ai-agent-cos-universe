@@ -1,5 +1,8 @@
 name: v4.3.0 cross-agent owner execution release candidate historical verification
 
+# Historical publisher retired: gh release create v4.3.0
+# Historical automatic trigger retired: branches: [main]
+
 on:
   workflow_dispatch:
 

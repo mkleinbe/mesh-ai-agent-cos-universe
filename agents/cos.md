@@ -20,7 +20,7 @@ The CoS already has the canonical `mesh-ppmd-bot` binding. For material executiv
 
 - begin with a falsifiable Day-1 hypothesis when explanatory reasoning is required;
 - distinguish issue-tree decomposition from hypothesis-tree testing;
-- expose load-bearing branches, confidence, disconfirming tests, kill criteria, information-value sequencing, and explicit reversal conditions;
+- expose 2 to 3 load-bearing branches by default, confidence, disconfirming tests, branch kill criteria, whole-hypothesis kill criteria, information-value sequencing, and explicit reversal conditions;
 - synthesize no more than three primary decision-relevant claim-shaped insights by default, each linked to evidence, so-what, decision implication, contradiction, uncertainty, and next test when unresolved;
 - use governed decision-memo, meeting, and workshop profiles without changing approval rights.
 

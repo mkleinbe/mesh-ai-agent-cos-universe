@@ -31,6 +31,8 @@ def test_v480_verification_receipt_is_final_not_pending() -> None:
 def test_v481_verification_receipt_is_durable_and_governed() -> None:
     receipt = _read("docs/verification-v4.8.1-release-state-finalization.md")
     assert "Verification status: **PASS**" in receipt
+    assert "Verification status: **PASS for release candidate**" not in receipt
+    assert "Final publication status: **PENDING" not in receipt
     assert "Publication binding: **EXACT-SHA ENFORCED BY RELEASE WORKFLOW**" in receipt
     assert "f1fa3601e373515950e61ead7c6b9cbdb37fdb28" in receipt
     assert "31063070a5794c40eb76fc3a27138c87e60740e3" in receipt
@@ -42,15 +44,14 @@ def test_v481_verification_receipt_is_durable_and_governed() -> None:
     assert "V481-02" in receipt
     assert "V481-03" in receipt
     assert "V481-04" in receipt
-    assert "PENDING" not in receipt
 
 
 def test_v481_security_receipt_is_durable() -> None:
     security = _read("docs/security-review-v4.8.1-release-state-finalization.md")
     assert "Security result: **PASS**" in security
+    assert "Security result: **PASS for release candidate**" not in security
     assert "Publication binding: **EXACT-SHA ENFORCED BY RELEASE WORKFLOW**" in security
     assert "SEC-481-06" in security
-    assert "PENDING" not in security
 
 
 def test_v481_is_current_repository_release() -> None:

@@ -105,3 +105,7 @@ For material work return:
 ## References
 
 Read `references/role-contract.md` and `references/production-readiness.md` before consequential work or whenever role scope, source authority, approvals, delegation, human-only operations, completion, verification, or prohibited actions matter.
+
+## Behavioral verification
+
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits observable mode, disposition, boundary, and refusal evidence for repository acceptance tests. It does not replace authoritative facts, TaskLedger, role contracts, human approvals, or normal professional judgment, cannot grant new authority, and must never be used to persist private reasoning.

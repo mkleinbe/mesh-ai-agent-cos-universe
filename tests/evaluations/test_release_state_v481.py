@@ -28,6 +28,16 @@ def test_v480_verification_receipt_is_final_not_pending() -> None:
     assert "only remaining release gate" not in receipt
 
 
+def test_v481_candidate_verification_receipt_is_governed() -> None:
+    receipt = _read("docs/verification-v4.8.1-release-state-finalization.md")
+    assert "Verification status: **PASS for release candidate**" in receipt
+    assert "a41334cdadb7dfca84704b8584c97c2c57dc7ed2" in receipt
+    assert "34724275150" in receipt
+    assert "34724277292" in receipt
+    assert "runtime contract: `4.0.0`, unchanged" in receipt
+    assert "production QNAP: `4.4.0`, unchanged" in receipt
+
+
 def test_v481_is_current_repository_release() -> None:
     readme = _read("README.md")
     release = _read("RELEASE.md")
@@ -45,6 +55,7 @@ def test_v480_publisher_is_historical_only_and_v481_owns_main() -> None:
     assert "gh release create v4.8.1" in new
     assert "--target \"$GITHUB_SHA\"" in new
     assert "test_release_state_v481.py" in new
+    assert "docs/verification-v4.8.1-release-state-finalization.md" in new
 
 
 def test_v481_changelog_records_only_release_state_correction() -> None:

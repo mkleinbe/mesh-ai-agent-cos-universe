@@ -129,7 +129,7 @@ Historical financial-analysis feature release. Detailed evidence remains in the 
 
 ### v4.4.0 Authority Closure
 
-The authority-closure release established the current 10-agent Phase 1 authority architecture. Historical v4.3.x through v4.8.x documents remain release-train evidence and do not override the current repository release or current QNAP deployment.
+The authority-closure release established the current 10-agent Phase 1 authority architecture. Historical v4.3.x through v4.6.x documents remain release-train evidence. Later v4.7.x and v4.8.x documents likewise remain retained as historical evidence and do not override the current repository release or current QNAP deployment.
 
 ## Repository layout
 

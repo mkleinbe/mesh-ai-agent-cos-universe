@@ -10,6 +10,7 @@ on:
       - 'docs/release-v4.8.1-release-state-finalization.md'
       - 'docs/security-review-v4.8.1-release-state-finalization.md'
       - 'docs/security-review-v4.8.0-functional-method-expansion.md'
+      - 'docs/verification-v4.8.1-release-state-finalization.md'
       - 'docs/verification-v4.8.0-functional-method-expansion.md'
       - 'tests/evaluations/test_release_state_v481.py'
       - '.github/workflows/release-v4.8.0.yml'
@@ -22,6 +23,7 @@ on:
       - 'docs/release-v4.8.1-release-state-finalization.md'
       - 'docs/security-review-v4.8.1-release-state-finalization.md'
       - 'docs/security-review-v4.8.0-functional-method-expansion.md'
+      - 'docs/verification-v4.8.1-release-state-finalization.md'
       - 'docs/verification-v4.8.0-functional-method-expansion.md'
       - 'tests/evaluations/test_release_state_v481.py'
       - '.github/workflows/release-v4.8.0.yml'
@@ -70,6 +72,7 @@ jobs:
           grep -q 'no agent behavior change' docs/release-v4.8.1-release-state-finalization.md
           grep -q 'Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged' docs/release-v4.8.1-release-state-finalization.md
           grep -q 'Production QNAP deployment: `4.4.0`, unchanged' docs/release-v4.8.1-release-state-finalization.md
+          grep -q 'Verification status: \*\*PASS for release candidate\*\*' docs/verification-v4.8.1-release-state-finalization.md
           ! grep -q 'branches: \[main\]' .github/workflows/release-v4.8.0.yml
           grep -q 'Verification status: \*\*PASS\*\*' docs/verification-v4.8.0-functional-method-expansion.md
           grep -q 'Final publication status: \*\*PASS\*\*' docs/verification-v4.8.0-functional-method-expansion.md

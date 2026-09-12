@@ -1,5 +1,8 @@
 name: v4.2.3 QNAP qnet egress readiness release candidate historical verification
 
+# Historical publisher retired: gh release create v4.2.3
+# Historical automatic trigger retired: branches: [main]
+
 on:
   workflow_dispatch:
 

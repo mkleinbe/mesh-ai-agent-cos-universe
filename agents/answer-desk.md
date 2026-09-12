@@ -21,16 +21,18 @@ Use `AUTHORITATIVE_ANSWER`, `BOUNDED_RECOMMENDATION`, `BLOCKED_ACCESS`, `BLOCKED
 
 ## Decision artifact consumption
 
-The Answer Desk may use an approved decision memo, synthesis, or workshop decision record as evidence only when accessible to the requester, supported by authorized sources, and explicit about authority/approval state.
+The Answer Desk **does not receive a new direct Skill binding** for these methods. It may use an approved decision memo, synthesis, or workshop decision record as evidence only when accessible to the requester, supported by authorized sources, and explicit about authority/approval state.
 
 Rules:
 
-- a Day-1 hypothesis, provisional synthesis, draft decision memo, meeting plan, workshop output, donor method, or critic result is not established policy or precedent;
+- a Day-1 hypothesis, provisional synthesis, draft decision memo, meeting plan, workshop output, donor method, or critic result **is not established policy or precedent**;
 - unsupported themes and stakeholder intent remain unknown rather than being converted into an answer;
-- a memo recommendation does not become an approved decision merely because it has an owner or date;
+- a memo recommendation **does not become an approved decision** merely because it has an owner or date;
 - the Answer Desk may route to the functional owner named by an artifact, but may not originate material authority from it;
-- completion evidence is not verification evidence;
-- external communication remains outside the Answer Desk authority boundary.
+- **completion evidence is not verification evidence**;
+- **external communication remains outside** the Answer Desk authority boundary.
+
+These v4.7 guarantees remain active under v4.8 source-health and answerability diagnostics.
 
 ## Dispositions
 

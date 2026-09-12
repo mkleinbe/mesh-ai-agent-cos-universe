@@ -38,19 +38,7 @@ The fourth donor source referenced by inherited scope could not be recovered fro
 
 ## Behavioral verification
 
-v4.8.2 behavior tests cover:
-
-- CoS deliberation selection, independent contributions, disagreement, scenario structure, work-graph gaps, and non-HR change readiness;
-- AgentOps flow evidence and assumption-gated queue methods;
-- all five Answer Desk answerability states;
-- CRO pricing versus approval, unknown buyer intent, commercial exceptions, forecast views, partnership attribution, and RFP proof gaps;
-- CFO evidence versus approval and governed Data Analytics routing;
-- COO measured evidence, constraints, queueing, stale availability, and procurement non-authority;
-- Consultant Network freshness, concentration, fallback and contingency readiness;
-- CMO contextual benchmarks, CRO/CFO dependencies, and human-gated publication;
-- VP Content stale/orphan/duplicate/unsupported proof and derivative lineage;
-- Message Operations per-message approval, recipient/send authority, idempotency, duplicate/suppression, and kill-switch controls;
-- adversarial donor/retrieved instructions attempting identity, tool, source, approval, external-action, or private-reasoning persistence changes.
+v4.8.2 behavior tests cover CoS deliberation/disagreement/scenarios/work-graph/change readiness; AgentOps flow and queue assumptions; all five Answer Desk answerability states; CRO pricing/intent/forecast/partnership/RFP controls; CFO evidence and governed analytics; COO evidence/queueing/procurement bounds; consultant freshness/concentration/contingency; CMO dependencies/publication bounds; VP Content inventory/proof lineage; Message Operations approval/idempotency/suppression/kill-switch controls; and adversarial donor/retrieved instructions attempting identity, tool, source, approval, external-action, or private-reasoning persistence changes.
 
 Structural phrase tests remain compatibility regressions. They are not treated as sufficient proof of observable behavior.
 
@@ -70,21 +58,7 @@ Mesh PPMD Bot v1.2.0 remains the governed Base / Stress / Severe scenario-stress
 
 ## Verification
 
-Primary v4.8.2 gates include:
-
-```bash
-python scripts/validate-contracts.py
-python scripts/check-runtime-doc-drift.py
-python scripts/check-chatgpt-packages.py
-python scripts/check-owner-execution-readiness.py
-python scripts/check-capability-closure.py
-python scripts/check-published-action-surface.py
-pytest -q tests/evaluations/test_functional_method_remediation_v482.py
-pytest -q tests/evaluations/test_functional_method_expansion_v480.py
-pytest -q tests/evaluations/test_release_state_v481.py
-```
-
-Canonical CI also runs Ruff, mypy, full pytest at the 100% `mesh_cos` coverage gate, Bandit, QNAP POSIX regressions, production-equivalent container build, and MCP discovery/sequential request verification.
+Primary v4.8.2 gates include contract validation, runtime/documentation drift, ChatGPT package drift, owner execution readiness, capability closure, published action surface, the v4.8.2 behavioral suite, v4.8.0 structural regressions, and v4.8.1 release-state regressions. Canonical CI also runs Ruff, mypy, full pytest at the 100% `mesh_cos` coverage gate, Bandit, QNAP POSIX regressions, production-equivalent container build, and MCP discovery/sequential request verification.
 
 ## v4.8.1 Release State Finalization
 
@@ -101,6 +75,10 @@ Historical repository capability release integrating governed enterprise consult
 ## v4.6.0 CFO Zero-Defect Execution Remediation
 
 Historical CFO execution release adding deterministic finance math and governed Mesh Data Analytics execution while preserving CFO recommendation-only authority.
+
+## v4.5.2 CFO Financial Analysis Release State Finalization
+
+Historical release-state PATCH preserving the v4.5.0/v4.5.1 CFO capability and closeout evidence without changing CFO behavior, runtime authority, or QNAP deployment.
 
 ## v4.5.1 CFO Financial Analysis Release Closeout
 

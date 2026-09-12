@@ -65,14 +65,19 @@ jobs:
       - run: pytest -q tests/evaluations/test_phase1_role_model_consistency.py
       - run: pytest -q tests/evaluations/test_functional_method_expansion_v480.py
       - run: pytest -q tests/evaluations/test_release_state_v481.py
-      - name: Confirm documentation-only security and runtime boundaries
+      - name: Confirm durable security and release-control boundaries
         run: |
           set -euo pipefail
           grep -q 'Applicability: \*\*TARGETED\*\*' docs/security-review-v4.8.1-release-state-finalization.md
+          grep -q 'Security result: \*\*PASS\*\*' docs/security-review-v4.8.1-release-state-finalization.md
+          grep -q 'Publication binding: \*\*EXACT-SHA ENFORCED BY RELEASE WORKFLOW\*\*' docs/security-review-v4.8.1-release-state-finalization.md
           grep -q 'no agent behavior change' docs/release-v4.8.1-release-state-finalization.md
           grep -q 'Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged' docs/release-v4.8.1-release-state-finalization.md
           grep -q 'Production QNAP deployment: `4.4.0`, unchanged' docs/release-v4.8.1-release-state-finalization.md
-          grep -q 'Verification status: \*\*PASS for release candidate\*\*' docs/verification-v4.8.1-release-state-finalization.md
+          grep -q 'Verification status: \*\*PASS\*\*' docs/verification-v4.8.1-release-state-finalization.md
+          grep -q 'Publication binding: \*\*EXACT-SHA ENFORCED BY RELEASE WORKFLOW\*\*' docs/verification-v4.8.1-release-state-finalization.md
+          ! grep -q 'PENDING' docs/verification-v4.8.1-release-state-finalization.md
+          ! grep -q 'PENDING' docs/security-review-v4.8.1-release-state-finalization.md
           ! grep -q 'branches: \[main\]' .github/workflows/release-v4.8.0.yml
           grep -q 'Verification status: \*\*PASS\*\*' docs/verification-v4.8.0-functional-method-expansion.md
           grep -q 'Final publication status: \*\*PASS\*\*' docs/verification-v4.8.0-functional-method-expansion.md

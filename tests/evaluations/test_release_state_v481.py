@@ -28,16 +28,29 @@ def test_v480_verification_receipt_is_final_not_pending() -> None:
     assert "only remaining release gate" not in receipt
 
 
-def test_v481_candidate_verification_receipt_is_governed() -> None:
+def test_v481_verification_receipt_is_durable_and_governed() -> None:
     receipt = _read("docs/verification-v4.8.1-release-state-finalization.md")
-    assert "Verification status: **PASS for release candidate**" in receipt
+    assert "Verification status: **PASS**" in receipt
+    assert "Publication binding: **EXACT-SHA ENFORCED BY RELEASE WORKFLOW**" in receipt
     assert "f1fa3601e373515950e61ead7c6b9cbdb37fdb28" in receipt
-    assert "34724369995" in receipt
-    assert "34724369989" in receipt
+    assert "31063070a5794c40eb76fc3a27138c87e60740e3" in receipt
+    assert "34724550131" in receipt
+    assert "34724552349" in receipt
     assert "runtime contract: `4.0.0`, unchanged" in receipt
     assert "production QNAP: `4.4.0`, unchanged" in receipt
     assert "V481-01" in receipt
     assert "V481-02" in receipt
+    assert "V481-03" in receipt
+    assert "V481-04" in receipt
+    assert "PENDING" not in receipt
+
+
+def test_v481_security_receipt_is_durable() -> None:
+    security = _read("docs/security-review-v4.8.1-release-state-finalization.md")
+    assert "Security result: **PASS**" in security
+    assert "Publication binding: **EXACT-SHA ENFORCED BY RELEASE WORKFLOW**" in security
+    assert "SEC-481-06" in security
+    assert "PENDING" not in security
 
 
 def test_v481_is_current_repository_release() -> None:
@@ -58,6 +71,9 @@ def test_v480_publisher_is_historical_only_and_v481_owns_main() -> None:
     assert "--target \"$GITHUB_SHA\"" in new
     assert "test_release_state_v481.py" in new
     assert "docs/verification-v4.8.1-release-state-finalization.md" in new
+    assert "docs/security-review-v4.8.1-release-state-finalization.md" in new
+    assert "Verification status: \\*\\*PASS\\*\\*" in new
+    assert "Security result: \\*\\*PASS\\*\\*" in new
 
 
 def test_v481_changelog_records_only_release_state_correction() -> None:

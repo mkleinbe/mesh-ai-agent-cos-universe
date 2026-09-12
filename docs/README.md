@@ -1,24 +1,31 @@
 # Documentation Index
 
-Current repository release: **`v4.8.2 Functional Method Audit Remediation`**.  
+Current repository release: **`v4.8.3 Historical Publisher Retirement`**.  
 Current production QNAP deployment: **`4.4.0`**.  
 Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 
-The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, and release verification.
+The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, historical-release immutability, and release verification.
 
-## Current v4.8.2 remediation documentation
+## Current v4.8.3 closeout documentation
 
-- `release-v4.8.2-functional-method-audit-remediation.md`: PATCH scope, compatibility, release boundary, and known blocker.
-- `architecture-v4.8.2-functional-method-remediation.md`: donor, behavior-verification, and historical-release architecture.
+- `release-v4.8.3-historical-publisher-retirement.md`: release-control-only PATCH scope and historical publisher retirement.
+- `security-review-v4.8.3-historical-publisher-retirement.md`: TARGETED release-control security review and least-privilege evidence.
+- `verification-v4.8.3-historical-publisher-retirement.md`: systemic historical-workflow and exact-SHA publication proof model.
+- `gap-audit-v4.8.3-historical-publisher-retirement.md`: verification-discovered defect and closure state.
+- `../CHANGELOG-v4.8.3.md`: semantic PATCH change record.
+- `../RELEASE.md`: current and historical repository release record.
+
+## v4.8.2 functional remediation evidence
+
+- `release-v4.8.2-functional-method-audit-remediation.md`: functional PATCH scope, compatibility, release boundary, and known blocker.
+- `architecture-v4.8.2-functional-method-remediation.md`: donor, behavior-verification, and release architecture.
 - `security-review-v4.8.2-functional-method-audit-remediation.md`: FULL_REVIEW security evidence and residual advisory.
-- `verification-v4.8.2-functional-method-audit-remediation.md`: durable exact-candidate and external publication proof model.
+- `verification-v4.8.2-functional-method-audit-remediation.md`: durable behavior verification evidence.
 - `requirements-trace-v4.8.2.md`: requirement -> BDD -> implementation -> test -> security -> verification traceability.
 - `source-governance-v4.8.2.md`: pinned donor source governance and fourth-source blocker.
 - `donor-disposition-ledger-v4.8.2.md`: explicit disposition for all 49 candidates in the three evidenced donor collections.
-- `gap-audit-v4.8.2-functional-method-remediation.md`: audit-finding remediation and residual blocker status.
+- `gap-audit-v4.8.2-functional-method-remediation.md`: original audit remediation state.
 - `testing-evaluation.md`: BDD/TDD, behavior-level evaluation, structural regressions, and release gates.
-- `../CHANGELOG-v4.8.2.md`: semantic PATCH change record.
-- `../RELEASE.md`: current and historical repository release record.
 
 ## Canonical architecture and governance
 
@@ -54,7 +61,7 @@ agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
-The repository capability release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.8.2 does not deploy QNAP or change the runtime contract.
+The repository release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.8.3 does not deploy QNAP or change the runtime contract.
 
 ## Current topology
 
@@ -75,4 +82,4 @@ flowchart TB
     CFO -. governed analytics .-> MDA[[Mesh Data Analytics\nShared Skill]]
 ```
 
-Historical release records remain snapshots. They do not override the current v4.8.2 repository release, canonical 4.0.0 authority/runtime contract, or production QNAP 4.4.0 deployment.
+Historical release records remain snapshots. They do not override the current v4.8.3 repository release, canonical 4.0.0 authority/runtime contract, or production QNAP 4.4.0 deployment.

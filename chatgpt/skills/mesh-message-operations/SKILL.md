@@ -31,3 +31,6 @@ Return approval validation, exact execution scope, metadata checks, delivery res
 
 ## References
 Read `references/role-contract.md` before every consequential send.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits approval, recipient/send authority, idempotency, duplicate, suppression, kill-switch, and metadata-consumption dispositions for acceptance tests. It cannot originate approval or recipient/send authority and never executes an external message by itself.

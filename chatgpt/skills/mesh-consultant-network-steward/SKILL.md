@@ -42,3 +42,6 @@ Return candidate match, criticality, concentration, freshness, contracting/relia
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits availability freshness, concentration risk, fallback, contingency, and staffing-commitment boundaries for acceptance tests. It cannot convert stale evidence into current availability or make a final staffing commitment.

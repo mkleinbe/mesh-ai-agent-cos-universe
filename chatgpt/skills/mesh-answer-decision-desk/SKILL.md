@@ -46,3 +46,6 @@ Return answerability state, answer or recommendation if authorized, source owner
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits the five answerability states and observable routing/blocking behavior for acceptance tests. It does not rewrite policy, change source ownership, or substitute for live permission and freshness checks.

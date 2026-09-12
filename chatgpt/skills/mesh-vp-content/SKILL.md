@@ -36,3 +36,6 @@ Return the production artifact/plan, proof and source lineage, inventory/claim Q
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits stale/orphan/duplicate/unsupported-claim inventory findings, derivative proof lineage, and pursuit/policy/publication authority boundaries for acceptance tests. It cannot create proof, pursuit strategy, enterprise policy, or publication authority.

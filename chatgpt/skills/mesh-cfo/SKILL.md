@@ -83,3 +83,6 @@ Return the decision and recommendation first, followed by methods, supported eco
 
 ## References
 Use the routed reference modules above. The role contract remains authoritative when any reference conflicts with it.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits finance-evidence, assumption, and approval-boundary dispositions for acceptance tests. It supplements, but never replaces, `scripts/financial_math.py`, governed `mesh-data-analytics`, source provenance, or qualified-human approval and cannot authorize pricing, discounts, procurement, spend, contracts, or other consequential finance actions.

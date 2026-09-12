@@ -1,113 +1,28 @@
-name: v4.8.1 Release State Finalization
+name: v4.8.1 Release State Finalization historical verification
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'README.md'
-      - 'RELEASE.md'
-      - 'CHANGELOG-v4.8.1.md'
-      - 'docs/release-v4.8.1-release-state-finalization.md'
-      - 'docs/security-review-v4.8.1-release-state-finalization.md'
-      - 'docs/security-review-v4.8.0-functional-method-expansion.md'
-      - 'docs/verification-v4.8.1-release-state-finalization.md'
-      - 'docs/verification-v4.8.0-functional-method-expansion.md'
-      - 'tests/evaluations/test_release_state_v481.py'
-      - '.github/workflows/release-v4.8.0.yml'
-      - '.github/workflows/release-v4.8.1.yml'
-  pull_request:
-    paths:
-      - 'README.md'
-      - 'RELEASE.md'
-      - 'CHANGELOG-v4.8.1.md'
-      - 'docs/release-v4.8.1-release-state-finalization.md'
-      - 'docs/security-review-v4.8.1-release-state-finalization.md'
-      - 'docs/security-review-v4.8.0-functional-method-expansion.md'
-      - 'docs/verification-v4.8.1-release-state-finalization.md'
-      - 'docs/verification-v4.8.0-functional-method-expansion.md'
-      - 'tests/evaluations/test_release_state_v481.py'
-      - '.github/workflows/release-v4.8.0.yml'
-      - '.github/workflows/release-v4.8.1.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: v4.8.1-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  verify:
+  verify-historical:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: mcp/package-lock.json
       - run: pip install -e '.[dev]'
-      - run: python -m pip check
-      - run: npm ci
-        working-directory: mcp
-      - run: npm run check
-        working-directory: mcp
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py
-      - run: python scripts/check-owner-execution-readiness.py
-      - run: python scripts/check-capability-closure.py
-      - run: python scripts/check-published-action-surface.py
-      - run: pytest -q tests/evaluations/test_phase1_role_model_consistency.py
-      - run: pytest -q tests/evaluations/test_functional_method_expansion_v480.py
       - run: pytest -q tests/evaluations/test_release_state_v481.py
-      - name: Confirm durable security and release-control boundaries
+      - name: Preserve published v4.8.1 historical boundary
         run: |
           set -euo pipefail
-          grep -Eq '^Applicability: \*\*TARGETED\*\*[[:space:]]*$' docs/security-review-v4.8.1-release-state-finalization.md
-          grep -Eq '^Security result: \*\*PASS\*\*[[:space:]]*$' docs/security-review-v4.8.1-release-state-finalization.md
-          ! grep -q '^Security result: .*candidate' docs/security-review-v4.8.1-release-state-finalization.md
-          grep -Eq '^Publication binding: \*\*EXACT-SHA ENFORCED BY RELEASE WORKFLOW\*\*[[:space:]]*$' docs/security-review-v4.8.1-release-state-finalization.md
-          grep -q 'no agent behavior change' docs/release-v4.8.1-release-state-finalization.md
-          grep -q 'Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged' docs/release-v4.8.1-release-state-finalization.md
-          grep -q 'Production QNAP deployment: `4.4.0`, unchanged' docs/release-v4.8.1-release-state-finalization.md
           grep -Eq '^Verification status: \*\*PASS\*\*[[:space:]]*$' docs/verification-v4.8.1-release-state-finalization.md
-          ! grep -q '^Verification status: .*candidate' docs/verification-v4.8.1-release-state-finalization.md
-          ! grep -q '^Final publication status: .*PENDING' docs/verification-v4.8.1-release-state-finalization.md
-          grep -Eq '^Publication binding: \*\*EXACT-SHA ENFORCED BY RELEASE WORKFLOW\*\*[[:space:]]*$' docs/verification-v4.8.1-release-state-finalization.md
-          ! grep -q 'branches: \[main\]' .github/workflows/release-v4.8.0.yml
-          grep -Eq '^Verification status: \*\*PASS\*\*[[:space:]]*$' docs/verification-v4.8.0-functional-method-expansion.md
-          grep -Eq '^Final publication status: \*\*PASS\*\*[[:space:]]*$' docs/verification-v4.8.0-functional-method-expansion.md
-
-  release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: verify
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Publish v4.8.1 semantic release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if gh release view v4.8.1 >/dev/null 2>&1; then
-            existing_target="$(gh release view v4.8.1 --json targetCommitish --jq .targetCommitish)"
-            if [ "$existing_target" != "$GITHUB_SHA" ]; then
-              echo "v4.8.1 already exists at $existing_target, expected $GITHUB_SHA" >&2
-              exit 1
-            fi
-            echo "v4.8.1 already exists at the exact main SHA"
-            exit 0
-          fi
-          gh release create v4.8.1 \
-            --target "$GITHUB_SHA" \
-            --title 'Mesh CoS v4.8.1 Release State Finalization' \
-            --notes-file docs/release-v4.8.1-release-state-finalization.md
+          grep -q 'ecb04f495910912fb9181adf3553a62a9f408f3c' docs/verification-v4.8.1-release-state-finalization.md
+          grep -q 'PR #72 is merged' docs/verification-v4.8.1-release-state-finalization.md
+          echo 'v4.8.1 is a published historical boundary; semantic publication is owned by the existing immutable tag and GitHub Release.'

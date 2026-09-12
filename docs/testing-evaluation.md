@@ -67,3 +67,21 @@ Green tests alone are not sufficient. The requirements gap audit and independent
 ## CFO v4.6.0 behavioral finance verification
 
 `tests/evaluations/test_cfo_execution_v460.py` verifies known-answer NPV, IRR, payback, discounted payback, break-even, runway, contribution-margin, and LTV:CAC behavior; CFO-only Mesh Data Analytics authorization; unchanged MCP least privilege; current version identity; operating-cadence/artifact contracts; and historical release-workflow isolation. Text-presence tests remain secondary compatibility gates, not proof of finance correctness.
+
+## v4.8.2 Functional Method behavioral verification
+
+The v4.8.0 content-contract suite remains a structural regression. v4.8.2 adds behavior-level proof in `tests/evaluations/test_functional_method_remediation_v482.py` against the deterministic `scripts/fme_behavior.py` resource in each of the 10 Phase 1 role Skill packages.
+
+The evaluation standard is observable behavior, not private reasoning. Tests assert modes, answerability states, recommendation/approval separation, freshness/readiness classes, GAP classifications, dependency routing, blocks, kill-switch/idempotency/suppression outcomes, and fail-closed security dispositions. Positive, negative, boundary, and adversarial cases are used where appropriate.
+
+```mermaid
+flowchart LR
+    B[Ready FMR BDD] --> E[Executable Skill behavior gate]
+    E --> T[Behavior-level pytest]
+    T --> S[Structural v4.8 regression]
+    S --> C[Canonical CI]
+    C --> V[Independent verification]
+    V --> R[Exact-SHA release]
+```
+
+A passing phrase-presence test cannot substitute for a behavior-level requirement. Conversely, the deterministic behavior gates are evaluation resources and cannot substitute for TaskLedger, canonical sources, role contracts, human approvals, or live external-action controls.

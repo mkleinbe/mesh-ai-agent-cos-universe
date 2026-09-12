@@ -57,3 +57,6 @@ Return commercial recommendation, authoritative evidence, assumptions/unknowns, 
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits pricing recommendation, buyer-intent, discount-exception, forecast, partnership-attribution, RFP proof, and security-boundary dispositions for acceptance tests. It never grants pricing, discount, deal, partnership, proposal, or external-action authority.

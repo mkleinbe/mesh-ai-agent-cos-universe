@@ -42,3 +42,6 @@ Return marketing recommendation, evidence and audience basis, growth/channel/inv
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits contextual-benchmark, CRO/CFO dependency, change-communication, publication-boundary, and security dispositions for acceptance tests. It cannot make donor benchmarks policy or create publication authority.

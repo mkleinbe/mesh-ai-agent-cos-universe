@@ -22,6 +22,12 @@ Vendor and partner dependency analysis may cover criticality, service performanc
 
 These methods are analysis only. The COO cannot authorize procurement, supplier selection, renewal, spend, security certification, or contractual commitment through them.
 
+## v4.7 compatibility guarantees preserved
+
+The COO **does not receive a new direct Skill binding** in this release. In governed workshops and executive operating sessions, the COO continues to distinguish **locked versus decisions still open**, use a **workshop parking mechanism** for unresolved delivery issues, and preserve decision owners and approval dependencies.
+
+No method can make **stale availability current**, **authorize staffing**, create delivery capacity, or approve a partner or procurement commitment. These controls remain active under v4.8.
+
 ## Governed capabilities
 
 The canonical registry remains authoritative for permitted actions. v4.8.0 deepens methods inside delivery feasibility, capacity analysis, dependency readiness, partner capacity, operational constraint management, and staffing recommendation without adding new tools or decision rights.

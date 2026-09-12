@@ -1,61 +1,60 @@
 # Documentation Index
 
-Current repository/QNAP deployment release: **`v4.1.7 QNAP Image Provenance and Hosted Envelope Verification`**.  
+Current repository release: **`v4.8.2 Functional Method Audit Remediation`**.  
+Current production QNAP deployment: **`4.4.0`**.  
 Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 
-The current documentation describes the canonical **10-agent** Phase 1 workforce, Mesh Devil's Advocate as the sole external governed shared Skill, the published **Mesh CoS MCP** ChatGPT app, OpenAI Secure MCP Tunnel production transport, human-principal authority boundary, completion/verification lifecycle, bounded delegation, QNAP deployment controls, serving-release observability, release-image provenance, governed response-envelope verification, security controls, acceptance, and release verification.
+The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, and release verification.
 
-## Current release and production documentation
+## Current v4.8.2 remediation documentation
 
-- `release-4.1.7-qnap-image-provenance-envelope.md`: v4.1.7 release requirements, release-image provenance control, governed tool-envelope verification, and hosted acceptance boundary.
-- `qnap-image-provenance-envelope-debugging-v4.1.7.md`: causal debugging record for the v4.1.6 hosted `deployment_release` blocker.
-- `qnap-security-review-v4.1.7.md`: targeted security review of image provenance and the ephemeral tunnel-network verifier.
-- `qnap-production-preflight.md`: current QNAP production preflight, release provenance, and dual release identity boundary.
-- `../deployment/qnap/README-QNAP.md`: QNAP production topology and operator controls.
-- `../deployment/qnap/DEPLOYMENT-STEPS.md`: SSH-safe v4.1.7 deployment procedure.
-- `../deployment/qnap/CHATGPT-ACCEPTANCE.md`: published app tool/catalog/transport/identity acceptance procedure.
-- `chatgpt-published-app-production-acceptance-v4.1.6.md`: historical live v4.1.6 published-app baseline that exposed the serving-release envelope blocker.
-- `release-4.1.6-secure-mcp-published-app-identity.md`: historical v4.1.6 dual-identity implementation record.
-- `release-4.0.0-cos-delegation-remediation.md`: canonical Phase 1 authority remediation record retained as the 4.0.0 runtime-contract baseline.
+- `release-v4.8.2-functional-method-audit-remediation.md`: PATCH scope, compatibility, release boundary, and known blocker.
+- `architecture-v4.8.2-functional-method-remediation.md`: donor, behavior-verification, and historical-release architecture.
+- `security-review-v4.8.2-functional-method-audit-remediation.md`: FULL_REVIEW security evidence and residual advisory.
+- `verification-v4.8.2-functional-method-audit-remediation.md`: durable exact-candidate and external publication proof model.
+- `requirements-trace-v4.8.2.md`: requirement -> BDD -> implementation -> test -> security -> verification traceability.
+- `source-governance-v4.8.2.md`: pinned donor source governance and fourth-source blocker.
+- `donor-disposition-ledger-v4.8.2.md`: explicit disposition for all 49 candidates in the three evidenced donor collections.
+- `gap-audit-v4.8.2-functional-method-remediation.md`: audit-finding remediation and residual blocker status.
+- `testing-evaluation.md`: BDD/TDD, behavior-level evaluation, structural regressions, and release gates.
+- `../CHANGELOG-v4.8.2.md`: semantic PATCH change record.
+- `../RELEASE.md`: current and historical repository release record.
+
+## Canonical architecture and governance
+
 - `phase-1-operating-contract.md`: canonical operating constitution.
 - `architecture.md`: 10-agent runtime, MCP, authority, lifecycle, and production deployment integrity diagrams.
 - `agent-registry.md`: canonical roster and shared-Skill boundary.
 - `decision-rights.md`: L0-L5 authority and human-principal-only operations.
 - `delegation-model.md`: direct-child delegation, authority inheritance, and depth ceilings.
 - `task-lifecycle.md`: `task.complete` versus `task.verify` semantics.
-- `security-governance.md`: immutable identity, deny-by-default MCP exposure, human-only separation, and current QNAP release-integrity controls.
-- `testing-evaluation.md`: BDD, TDD, negative tests, end-to-end certification, and release gates.
+- `security-governance.md`: immutable identity, deny-by-default MCP exposure, human-only separation, and QNAP integrity controls.
 - `production-readiness.md`: fail-closed activation contract.
 - `runbook.md`: build, certification, preflight, activation, and incident operations.
-- `../RELEASE.md`: current GitHub Release notes.
-- `../CHANGELOG.md`: semantic release history.
 
 ## Canonical runtime sources
 
-- `../agents/registry.json`: exactly 10 registered agents and external Mesh Devil's Advocate entitlement.
+- `../agents/registry.json`: exactly 10 registered agents.
 - `../chatgpt/workspace-agents/`: exactly 10 Workspace Agent manifests.
 - `../chatgpt/skills/`: exactly 10 repository-local role Skills.
-- `../chatgpt/mcp/mesh-cos-mcp.v1.json`: canonical 4.0.0 per-agent allowlists plus the separate human-only allowlist.
-- `../mcp/src/server.ts`: transport-neutral MCP projection and governed response envelope.
-- `../mcp/src/remote.ts`: Secure MCP Tunnel production HTTP adapter, readiness, source-IP gate, and deployment identity requirement.
-- `../deployment/qnap/scripts/mesh-cos-mcp-prepare.sh`: release metadata and local-image provenance enforcement.
-- `../deployment/qnap/scripts/mesh-cos-mcp-verify.sh`: running health, security, image identity, and governed tool-envelope verification.
+- `../chatgpt/mcp/mesh-cos-mcp.v1.json`: canonical 4.0.0 per-agent allowlists plus human-only allowlist.
+- `../mcp/src/server.ts`: MCP projection and governed response envelope.
 - `../src/mesh_cos/mcp_runtime.py`: serialized authorization and dispatch boundary.
 - `../src/mesh_cos/lifecycle.py`: lifecycle transition enforcement.
 - `../src/mesh_cos/orchestration.py`: task intake, completion, and verification services.
 - `../src/mesh_cos/delegation.py`: delegation invariants.
-- `TaskLedger`: canonical runtime state.
+- `TaskLedger`: canonical operating state.
 
 ## Production identity
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.1.7
+deployment_release: 4.4.0
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
-The canonical authority/runtime contract and the QNAP deployment release are deliberately separate version domains. Every successful hosted governed response must include the first three fields. Status endpoints additionally identify the Secure MCP Tunnel transport.
+The repository capability release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.8.2 does not deploy QNAP or change the runtime contract.
 
 ## Current topology
 
@@ -73,8 +72,7 @@ flowchart TB
     C --> MSG[Message Operations]
     C -. governed challenge .-> DA[[Mesh Devil's Advocate\nShared Skill]]
     CRO -. governed challenge .-> DA
-    APP[Mesh CoS MCP ChatGPT app] --> TUN[OpenAI Secure MCP Tunnel]
-    TUN --> C
+    CFO -. governed analytics .-> MDA[[Mesh Data Analytics\nShared Skill]]
 ```
 
-Historical release records remain historical snapshots. v3.0.0's 9-agent architecture is superseded by the canonical v4.0.0 10-agent authority model. The v4.1.x train changes deployment/transport/reliability surfaces without changing that authority contract.
+Historical release records remain snapshots. They do not override the current v4.8.2 repository release, canonical 4.0.0 authority/runtime contract, or production QNAP 4.4.0 deployment.

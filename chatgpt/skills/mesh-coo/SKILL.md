@@ -48,3 +48,6 @@ Return feasibility, current-state process evidence, capacity assumptions, constr
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits process-evidence, queue-assumption, availability-freshness, and procurement-authority dispositions for acceptance tests. It cannot authorize procurement, staffing, contracting, spend, or treat stale resource evidence as current.

@@ -44,3 +44,6 @@ Return observed evidence, flow/capacity measures and assumptions, score or signa
 
 ## References
 Read `references/role-contract.md` before consequential work.
+
+## Behavioral verification
+Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits observable diagnostics, queue-method dispositions, and authority boundaries for acceptance tests. It does not replace TaskLedger or telemetry evidence, cannot create agents, headcount, tools, or authority, and must never persist private reasoning.

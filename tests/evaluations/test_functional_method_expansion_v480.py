@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 SKILLS = ROOT / "chatgpt" / "skills"
@@ -69,9 +73,9 @@ def test_fme_004_through_009_cos_methods_are_explicit_and_bounded() -> None:
         "stale commitments",
         "change saturation",
         "post-change adoption signals",
+        "Do not create a parallel OKR",
     ):
         assert marker in text
-    assert "parallel OKR" not in text
 
 
 def test_fme_010_011_agentops_flow_intelligence_is_assumption_bound() -> None:
@@ -122,7 +126,7 @@ def test_fme_013_015_016_017_cro_method_depth_preserves_commercial_bounds() -> N
         "cannot execute external commitments",
     ):
         assert marker in text
-    assert "unsupported buyer intent remains unknown" in text
+    assert "unsupported buyer intent remains unknown" in text.lower()
 
 
 def test_fme_014_deal_discount_math_uses_fixed_cost_to_serve() -> None:
@@ -143,6 +147,43 @@ def test_fme_014_deal_discount_math_uses_fixed_cost_to_serve() -> None:
     })
     assert response["ok"] is True
     assert response["result"]["margin_dollar_loss_ratio"] == 0.375
+
+
+@pytest.mark.parametrize(
+    ("list_price", "fixed_cost", "discount"),
+    [
+        (0, 20, 0.30),
+        (-1, 20, 0.30),
+        (100, -1, 0.30),
+        (100, 20, -0.01),
+        (100, 20, 1.0),
+        (True, 20, 0.30),
+    ],
+)
+def test_fme_014_deal_discount_math_rejects_invalid_boundaries(
+    list_price: object, fixed_cost: object, discount: object
+) -> None:
+    finance = _finance_math()
+    with pytest.raises(finance.FinanceInputError):
+        finance.deal_discount_economics(list_price, fixed_cost, discount)
+
+
+def test_fme_014_invalid_cli_input_returns_nonzero_status() -> None:
+    script = SKILLS / "mesh-cfo" / "scripts" / "financial_math.py"
+    completed = subprocess.run(
+        [sys.executable, str(script)],
+        input=json.dumps({
+            "operation": "deal_discount_economics",
+            "inputs": {"list_price": 100, "fixed_cost_to_serve": 20, "discount_rate": 1.0},
+        }),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode == 2
+    payload = json.loads(completed.stdout)
+    assert payload["ok"] is False
+    assert payload["error"] == "invalid_input"
 
 
 def test_fme_018_cfo_commercial_economics_are_evidence_only() -> None:
@@ -240,3 +281,15 @@ def test_fme_024_shared_skills_do_not_become_principals() -> None:
     ))
     assert "Skill is a capability, not an agent principal" in combined
     assert "private chain-of-thought" in combined
+
+
+def test_v480_release_state_preserves_runtime_contract() -> None:
+    release = (ROOT / "docs" / "release-v4.8.0-functional-method-expansion.md").read_text(encoding="utf-8")
+    security = (ROOT / "docs" / "security-review-v4.8.0-functional-method-expansion.md").read_text(encoding="utf-8")
+    source = (ROOT / "docs" / "source-governance-v4.8.0.md").read_text(encoding="utf-8")
+    assert "Repository capability release: `v4.8.0`" in release
+    assert "Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged" in release
+    assert "Production QNAP deployment: `4.4.0`, unchanged" in release
+    assert "Applicability: **FULL_REVIEW**" in security
+    assert "19392f7a08264ed00486a251f5b2098321771f94" in source
+    assert "No fourth URL is available" in source

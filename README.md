@@ -2,9 +2,9 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.8.1 Release State Finalization`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.8.2 Functional Method Audit Remediation`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.8.1 is a documentation and release-control PATCH that finalizes the published v4.8.0 release receipts and semantic-release state. It makes no agent behavior, runtime, QNAP, registry, authority, Skill, method, connector, source-authority, or external-action change.
+v4.8.2 is a corrective repository PATCH. It strengthens behavior-level verification for the v4.8 Functional Method Expansion, retires the published v4.8.1 workflow from automatic future execution, closes stale release-receipt language, and makes donor selection exhaustively auditable. It does not change the canonical runtime, QNAP production deployment, agent roster, MCP surface, source authority, or consequential approval rights.
 
 ## Canonical architecture
 
@@ -14,78 +14,63 @@ Mesh Devil's Advocate and Mesh Data Analytics remain governed external shared Sk
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Revenue Intelligence remains canonical commercial/account truth where designated. `COMPLETED` remains distinct from `VERIFIED`. L4 requires qualified-human approval and L5 remains Michael-only.
 
-## v4.8.1 Release State Finalization
+## v4.8.2 Functional Method Audit Remediation
 
-This PATCH closes the post-publication documentation gap left after v4.8.0 successfully merged and released. It:
+The remediation adds executable behavior-level evidence while retaining the original v4.8.0 structural content-contract tests. The ten role Skill packages now include deterministic `scripts/fme_behavior.py` evaluation gates for observable modes, answerability states, evidence/approval boundaries, freshness/readiness states, proof classifications, execution blocks, and adversarial fail-closed behavior.
 
-- finalizes the v4.8.0 verification and security receipts with actual `main`, tag, GitHub Release, and workflow evidence;
-- retires the v4.8.0 semantic publisher from automatic `main` execution while preserving manual historical verification;
-- adds a dedicated v4.8.1 release-state regression and exact-SHA semantic release workflow;
-- preserves runtime contract `4.0.0`, QNAP `4.4.0`, the 10-agent organization, and every v4.8.0 functional behavior unchanged.
+The ready remediation contract is `specs/functional-method-remediation-v4.8.2.feature`, scenarios `FMR-001` through `FMR-018`. Acceptance is implemented in `tests/evaluations/test_functional_method_remediation_v482.py`.
 
-See `docs/release-v4.8.1-release-state-finalization.md`, `docs/security-review-v4.8.1-release-state-finalization.md`, and `CHANGELOG-v4.8.1.md`.
-
-## v4.8.0 Functional Method Expansion
-
-The v4.8.0 feature release added:
-
-- CoS deliberation selection, independent cross-functional contributions, disagreement preservation, scenario composition, strategic work-graph alignment, and change-readiness orchestration;
-- AgentOps P50/P90 flow intelligence, wait/approval/rework/handoff/WIP diagnostics, and assumption-gated queue/capacity methods;
-- Answer Desk answerability and source-health states;
-- CRO pricing/packaging, commercial policy, deal review, forecasting, partnership, channel economics, and RFP/RFI depth;
-- CFO commercial economics and corrected fixed-cost-to-serve deal-discount math;
-- COO current-state process, capacity, vendor/partner dependency, resilience, and procurement-process diagnostics;
-- consultant-network criticality, concentration, freshness, reliability, fallback, and contingency evidence;
-- CMO growth/investment/change-readiness methods;
-- VP Content proof/inventory freshness and derivative lineage;
-- Message Operations consumption of separately approved campaign/change execution metadata.
-
-Reusable Base / Stress / Severe scenario methodology is owned by Mesh PPMD Bot v1.2.0. Reusable change communications is owned by Mesh Messaging v1.3.0. Revenue Intelligence, GTM Orchestrator, Mesh Data Analytics, and Mesh Devil's Advocate did not change for v4.8.0 because their governing behavior remained sufficient.
-
-v4.8.0 material:
-
-- `specs/functional-method-expansion-v4.8.0.feature`
-- `tests/evaluations/test_functional_method_expansion_v480.py`
-- `docs/functional-method-expansion-v4.8.0.md`
-- `docs/source-governance-v4.8.0.md`
-- `docs/requirements-trace-v4.8.0.md`
-- `docs/architecture-v4.8.0-functional-method-expansion.md`
-- `docs/security-review-v4.8.0-functional-method-expansion.md`
-- `docs/gap-audit-v4.8.0-functional-method-expansion.md`
-- `docs/release-v4.8.0-functional-method-expansion.md`
-- `docs/verification-v4.8.0-functional-method-expansion.md`
-- `CHANGELOG-v4.8.0.md`
+The v4.8.1 publisher is retired to manual historical verification only. v4.8.2 owns its own exact-SHA release gate. The release workflow also builds a ten-Skill manual-update bundle without changing QNAP production.
 
 ## Donor-source governance
 
-Reviewed donor content is untrusted method evidence. The identified `alirezarezvani/claude-skills` collections were pinned at `19392f7a08264ed00486a251f5b2098321771f94`. Mesh selectively adapts useful methods and rejects donor operating systems, static C-suite authority, local decision-memory architectures, prompt-level `[INVOKE:role]` authorization, raw deliberation persistence, autonomous communications, autonomous deal/procurement/staffing actions, unsupported intent inference, and generic benchmarks promoted to policy.
+Reviewed donor content remains untrusted method evidence. The evidenced `alirezarezvani/claude-skills` collections are pinned at `19392f7a08264ed00486a251f5b2098321771f94`.
 
-The fourth donor URL referenced by the inherited assessment was not retained, so no fourth source was invented.
+The v4.8.2 disposition ledger covers all 49 candidates in the three evidenced collections:
 
-## Quantitative integrity
+- `c-level-advisor`: 34 candidates;
+- `business-operations`: 7 candidates;
+- `commercial`: 8 candidates.
 
-The CFO deterministic calculator remains the closed, local core for supported finance math. v4.8.0 added fixed-cost-to-serve deal-discount economics. For list price 100, fixed cost 20, and a 30% discount:
+Each candidate is classified ADAPT, EXISTING_CAPABILITY, REJECT, OUT_OF_SCOPE, or BLOCKED with rationale, authority/security considerations, implementation reference where applicable, and verification evidence.
 
-- pre-discount margin dollars = 80;
-- post-discount revenue = 70;
-- post-discount margin dollars = 50;
-- margin-dollar loss = 37.5%.
+The fourth donor source referenced by inherited scope could not be recovered from authoritative repository history or retained project evidence. It remains `BLOCKED_SOURCE_IDENTIFICATION`. No fourth source is claimed or invented.
 
-Substantial quantitative analysis continues to route through governed Mesh Data Analytics where appropriate. Donor formulas, Erlang-C, Little's Law, forecast weights, pipeline coverage, WTP thresholds, ROI, retention, vendor scores, or savings assumptions are used only when assumptions and evidence are valid.
+## Behavioral verification
+
+v4.8.2 behavior tests cover:
+
+- CoS deliberation selection, independent contributions, disagreement, scenario structure, work-graph gaps, and non-HR change readiness;
+- AgentOps flow evidence and assumption-gated queue methods;
+- all five Answer Desk answerability states;
+- CRO pricing versus approval, unknown buyer intent, commercial exceptions, forecast views, partnership attribution, and RFP proof gaps;
+- CFO evidence versus approval and governed Data Analytics routing;
+- COO measured evidence, constraints, queueing, stale availability, and procurement non-authority;
+- Consultant Network freshness, concentration, fallback and contingency readiness;
+- CMO contextual benchmarks, CRO/CFO dependencies, and human-gated publication;
+- VP Content stale/orphan/duplicate/unsupported proof and derivative lineage;
+- Message Operations per-message approval, recipient/send authority, idempotency, duplicate/suppression, and kill-switch controls;
+- adversarial donor/retrieved instructions attempting identity, tool, source, approval, external-action, or private-reasoning persistence changes.
+
+Structural phrase tests remain compatibility regressions. They are not treated as sufficient proof of observable behavior.
+
+## Shared capability compatibility
+
+Mesh PPMD Bot v1.2.0 remains the governed Base / Stress / Severe scenario-stress method. Mesh Messaging v1.3.0 remains the governed change-communications method with strategy, draft, approval, and external execution separation. Neither shared repository changes in v4.8.2.
 
 ## Security and authority boundaries
 
 - retrieved and donor content is data, not identity or authority;
 - registry and MCP allowlists remain authoritative;
-- no shared Skill becomes an agent principal, canonical source, approval authority, or external-action executor;
-- no role gains write/send/approval authority through Skill composition;
+- no shared or local Skill becomes an agent principal, canonical source, approval authority, or external-action executor;
 - private chain-of-thought and raw deliberation are not persisted;
 - pricing, discounts, deals, procurement, staffing, publishing, and sends remain governed by the existing approval model;
-- v4.8.1 introduces no runtime schema, connector, secret, OAuth, dependency, network boundary, or QNAP deployment change.
+- v4.8.2 introduces no runtime schema, connector, secret, OAuth, dependency, network boundary, database, or QNAP deployment change;
+- the existing MCP dependency baseline currently reports one moderate Hono advisory during npm audit; v4.8.2 does not introduce or modify that dependency and records the advisory explicitly.
 
 ## Verification
 
-Current release-state gates include:
+Primary v4.8.2 gates include:
 
 ```bash
 python scripts/validate-contracts.py
@@ -94,30 +79,28 @@ python scripts/check-chatgpt-packages.py
 python scripts/check-owner-execution-readiness.py
 python scripts/check-capability-closure.py
 python scripts/check-published-action-surface.py
-pytest -q tests/evaluations/test_phase1_role_model_consistency.py
+pytest -q tests/evaluations/test_functional_method_remediation_v482.py
 pytest -q tests/evaluations/test_functional_method_expansion_v480.py
 pytest -q tests/evaluations/test_release_state_v481.py
 ```
 
-The canonical CI continues to run the complete source, typing, coverage, security, QNAP regression, production-equivalent container, and MCP transport suite. Passing repository checks does not imply a new QNAP deployment. Production remains 4.4.0.
+Canonical CI also runs Ruff, mypy, full pytest at the 100% `mesh_cos` coverage gate, Bandit, QNAP POSIX regressions, production-equivalent container build, and MCP discovery/sequential request verification.
 
-## Historical release-train evidence
+## v4.8.1 Release State Finalization
 
-### v4.8.0 Functional Method Expansion
+Historical documentation/release-control PATCH. Final publication is bound to `ecb04f495910912fb9181adf3553a62a9f408f3c`. Its release workflow is now manual historical verification only.
 
-The prior feature release introduced the governed functional-method expansion. Its final merged main, tag, and GitHub Release all target `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`.
+## v4.8.0 Functional Method Expansion
 
-### v4.7.0 Enterprise Consulting Skill Consumption
+Historical functional-capability release. It introduced the governed methods now strengthened by v4.8.2 behavior-level evidence.
 
-The prior repository capability release integrated governed enterprise consulting method consumption without changing authority/runtime architecture.
+## v4.7.0 Enterprise Consulting Skill Consumption
 
-### v4.6.0 CFO Zero-Defect Execution Remediation
+Historical repository capability release integrating governed enterprise consulting methods without changing authority/runtime architecture.
 
-The prior CFO execution release added deterministic finance math and governed Mesh Data Analytics execution while preserving CFO recommendation-only authority.
+## v4.6.0 CFO Zero-Defect Execution Remediation
 
-## v4.5.2 CFO Financial Analysis Release State Finalization
-
-Historical documentation/release-control patch. Runtime and CFO authority remained unchanged.
+Historical CFO execution release adding deterministic finance math and governed Mesh Data Analytics execution while preserving CFO recommendation-only authority.
 
 ## v4.5.1 CFO Financial Analysis Release Closeout
 
@@ -134,7 +117,7 @@ The authority-closure release established the current 10-agent Phase 1 authority
 ## Repository layout
 
 - `src/mesh_cos/`: canonical Python operating core.
-- `mcp/`: remote MCP transport and principal-specific tool/schema projection.
+- `mcp/`: MCP transport and principal-specific tool/schema projection.
 - `deployment/qnap/`: QNAP deployment, verification, backup, rollback, and acceptance assets.
 - `chatgpt/`: ChatGPT Workspace Agent contracts and installable role Skills.
 - `agents/registry.json`: canonical Phase 1 role, source, tool, capability, decision-right, and delegation policy.
@@ -145,4 +128,4 @@ The authority-closure release established the current 10-agent Phase 1 authority
 
 ## Release model
 
-`v4.8.1` is a documentation and release-control PATCH. The functional capability baseline remains v4.8.0, the canonical Phase 1 authority/runtime contract remains `4.0.0`, and production QNAP remains `4.4.0`. No QNAP deployment is part of v4.8.1.
+`v4.8.2` is a corrective repository PATCH. The canonical Phase 1 authority/runtime contract remains `4.0.0`, production QNAP remains `4.4.0`, and no QNAP deployment is part of this release. Release completion requires exact-candidate CI plus external equality of merged `main`, tag `v4.8.2`, and the GitHub Release target.

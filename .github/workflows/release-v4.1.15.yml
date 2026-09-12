@@ -1,5 +1,8 @@
 name: v4.1.15 historical QNAP verification
 
+# Historical publisher retired: gh release create v4.1.15
+# Historical automatic trigger retired: branches: [main]
+
 on:
   workflow_dispatch:
 

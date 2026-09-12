@@ -2,15 +2,17 @@
 
 Date: 2026-09-12  
 Applicability: **FULL_REVIEW**  
-Security result: **PASS for verified release candidate**  
+Security result: **PASS**  
 Verified implementation candidate: `3bbd1cc2d7a62a84355f6bf71915a47bff203aa2`  
-Canonical CI evidence: run `34723423796`, job `103633266550`, **SUCCESS**
+Final merged/released SHA: `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`  
+Candidate canonical CI evidence: run `34723423796`, job `103633266550`, **SUCCESS**  
+Final release workflow: run `34723652446`, **SUCCESS**
 
 ## Security decision
 
-The change is security-sensitive because it modifies agent and Skill behavior around authorization-adjacent routing, consequential commercial/financial decisions, external communications, cross-agent composition, and untrusted donor content. Independent candidate verification is green. The release does not modify runtime authentication, MCP transport, credentials, network boundaries, database schema, or the machine-readable registry.
+The change is security-sensitive because it modifies agent and Skill behavior around authorization-adjacent routing, consequential commercial/financial decisions, external communications, cross-agent composition, and untrusted donor content. Independent candidate verification and final merged-main release verification both passed. The release does not modify runtime authentication, MCP transport, credentials, network boundaries, database schema, or the machine-readable registry.
 
-Final release publication is allowed only if the merged main content is the verified candidate content plus verification/security receipt updates and the final v4.8 main workflow passes.
+Final publication verification is complete: `main`, semantic tag `v4.8.0`, and the GitHub Release all target `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`.
 
 ## Trust boundaries reviewed
 
@@ -38,6 +40,7 @@ Final release publication is allowed only if the merged main content is the veri
 | Human L4/L5 boundary remains | Registry/decision authority unchanged; role guidance retains L4 qualified-human and L5 Michael boundary | PASS |
 | Historical safety contracts remain | v4.7 role/CFO regressions passed after explicit compatibility remediation; tests were not weakened | PASS |
 | Runtime/deployment security unchanged | QNAP regression, production-equivalent container build, MCP discovery/sequential requests passed; production remains 4.4.0 | PASS |
+| Final release binding | v4.8.0 tag/Release and merged main target the same SHA; release workflow successful | PASS |
 
 ## AI-native security profile
 
@@ -67,7 +70,7 @@ Queueing, Little's Law, coverage, weighting, WTP, channel ROI, partner economics
 
 The governing Mesh Dev Security process applies prompt-injection resistance, least authority, explicit consequential-action approval, data/source separation, human review, failure-safe validation, and AI-native tool-boundary controls. No new network, secret, OAuth, shell/code-execution, dependency, or persistence surface was added by v4.8.
 
-Candidate CI run `34723423796` passed contract validation, runtime/doc drift, ChatGPT package drift, owner-execution readiness, capability closure, published-action-surface checks, Ruff, Mypy, 100% core coverage, Bandit, QNAP regressions, production-equivalent container build, and modern MCP discovery/sequential-request verification.
+Candidate CI run `34723423796` passed contract validation, runtime/doc drift, ChatGPT package drift, owner-execution readiness, capability closure, published-action-surface checks, Ruff, Mypy, 100% core coverage, Bandit, QNAP regressions, production-equivalent container build, and modern MCP discovery/sequential-request verification. Final release workflow `34723652446` passed on the merged/released SHA.
 
 ## Shared capability security evidence
 
@@ -83,4 +86,4 @@ Candidate CI run `34723423796` passed contract validation, runtime/doc drift, Ch
 - `SEC-480-05` v4.8 role-card edits initially removed historical safety markers: **RESOLVED** by restoring the safety contracts and passing the complete historical regression suite without weakening tests.
 - `SEC-480-06` CFO method rewrite initially removed explicit governed analytics/reference routing: **RESOLVED** by restoring `skills.invoke_governed` and reference routing, then passing the full suite.
 
-No unresolved critical/high security finding is accepted. The verified candidate is **GREEN**. Final publication verification must confirm that `main`, tag `v4.8.0`, and the GitHub Release target the same final commit.
+No unresolved critical/high security finding is accepted. v4.8.0 is released and final at exact SHA `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`.

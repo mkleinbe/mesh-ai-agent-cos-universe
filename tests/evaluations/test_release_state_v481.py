@@ -31,11 +31,13 @@ def test_v480_verification_receipt_is_final_not_pending() -> None:
 def test_v481_candidate_verification_receipt_is_governed() -> None:
     receipt = _read("docs/verification-v4.8.1-release-state-finalization.md")
     assert "Verification status: **PASS for release candidate**" in receipt
-    assert "a41334cdadb7dfca84704b8584c97c2c57dc7ed2" in receipt
-    assert "34724275150" in receipt
-    assert "34724277292" in receipt
+    assert "f1fa3601e373515950e61ead7c6b9cbdb37fdb28" in receipt
+    assert "34724369995" in receipt
+    assert "34724369989" in receipt
     assert "runtime contract: `4.0.0`, unchanged" in receipt
     assert "production QNAP: `4.4.0`, unchanged" in receipt
+    assert "V481-01" in receipt
+    assert "V481-02" in receipt
 
 
 def test_v481_is_current_repository_release() -> None:

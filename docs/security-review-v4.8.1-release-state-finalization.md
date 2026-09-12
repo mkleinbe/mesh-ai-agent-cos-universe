@@ -19,6 +19,7 @@ This patch touches CI/CD release automation, so TARGETED review is required. It 
 3. Historical release workflow -> later `main` commits.
 4. Release documentation -> operator understanding of actual published state.
 5. Verification/security receipt changes -> workflow path-filter coverage.
+6. Evidence fixtures -> durable candidate evidence without self-referential SHA drift.
 
 ## Falsifiable security properties
 
@@ -29,6 +30,7 @@ This patch touches CI/CD release automation, so TARGETED review is required. It 
 - Existing agent/runtime authority, MCP action surfaces, credentials, secrets, and QNAP deployment must remain unchanged.
 - The documentation-only patch must not introduce or modify executable runtime dependencies.
 - Changes to the v4.8.1 verification/security receipts must trigger the targeted release-state workflow.
+- Regression fixtures may pin the independently verified release-control candidate and its run IDs, but must not require a self-referential final evidence commit SHA.
 
 ## Verification evidence
 
@@ -44,6 +46,7 @@ PR #72's changed-file surface contains only release workflow, release documentat
 - `SEC-481-02` The already-published v4.8.0 workflow still owned future automatic `main` publication and could fail or create release ambiguity after PATCH commits: **RESOLVED** by converting v4.8.0 to manual historical verification and assigning automatic publication to v4.8.1.
 - `SEC-481-03` README release-state edits initially removed a protected historical evidence guarantee: **RESOLVED** by restoring the exact guarantee and passing canonical CI without weakening the historical regression.
 - `SEC-481-04` The v4.8.1 verification receipt was initially absent from the workflow path filters, allowing an evidence-only receipt change to bypass the targeted gate: **RESOLVED** by adding the receipt to push/PR filters, checking its candidate-PASS marker, and enforcing the path in `test_release_state_v481.py`.
+- `SEC-481-05` The first evidence-only recheck found that the regression still required an obsolete intermediate candidate SHA after the receipt advanced to the independently verified `f1fa3601...` candidate: **RESOLVED** by pinning the regression to the verified release-control candidate and its successful run IDs. No runtime or security acceptance criterion was weakened.
 
 No critical or high security finding remains open in the v4.8.1 candidate.
 
@@ -56,6 +59,7 @@ The candidate satisfies the required security properties:
 - release creation is exact-SHA bound;
 - release permissions remain least privilege at workflow/job scope;
 - verification/security receipt changes are release-gated;
+- evidence fixtures are tied to independently verified candidate evidence without creating an impossible self-referential SHA requirement;
 - no runtime, dependency, secret, connector, identity, source-authority, or consequential-action authority change is included.
 
 ## Residual risk and non-blocking maintenance
@@ -64,6 +68,8 @@ The GitHub connector does not expose branch-ref deletion. Merged feature refs ar
 
 A separate Dependabot PR #62 proposes `actions/upload-artifact` v6 -> v7. Current canonical CI still succeeds on v6. That dependency update is unrelated to this documentation/release-state PATCH and is intentionally not absorbed into v4.8.1.
 
+The existing MCP dependency graph also reports one moderate Hono advisory during `npm audit`. This condition predates v4.8.1 and is not introduced or modified by this docs/release-control PATCH. Existing canonical security checks remain green under the repository's current policy. Remediation belongs in a separately scoped dependency/security maintenance change.
+
 ## Final security gate
 
-Security status is **PASS for release candidate**. The two evidence receipts are now the only new changes after the verified `f1fa3601` candidate. A final exact-head canonical and targeted recheck must pass after this evidence-only commit. After merge, final publication verification must prove `main`, tag `v4.8.1`, and the GitHub Release target the same merged commit.
+Security status is **PASS for release candidate**. After the verified `f1fa3601` release-control candidate, remaining changes are limited to evidence receipts and regression-fixture alignment. A final exact-head canonical and targeted recheck must pass after they are committed. After merge, final publication verification must prove `main`, tag `v4.8.1`, and the GitHub Release target the same merged commit.

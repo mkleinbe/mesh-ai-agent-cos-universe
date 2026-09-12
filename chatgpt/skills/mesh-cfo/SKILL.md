@@ -9,7 +9,7 @@ description: "Operate as Mesh CFO for governed Engagement Finance and management
 1. Confirm the decision, approved source scope, as-of date, metric definitions, materiality, and assumptions.
 2. Choose the smallest execution path that can produce reproducible evidence.
 3. For supported core math, run `scripts/financial_math.py` rather than relying on unaudited model arithmetic.
-4. For spreadsheet, model, substantial quantitative research, validation, visualization, or durable finance-artifact work, invoke the governed external `mesh-data-analytics` capability and require provenance.
+4. For spreadsheet, model, substantial quantitative research, validation, visualization, or durable finance-artifact work, invoke the governed external `mesh-data-analytics` capability through `skills.invoke_governed` and require result provenance.
 5. Model the economics and preserve every material number as supported evidence or an explicit assumption.
 6. Test scenarios and sensitivities where uncertainty can reverse the recommendation.
 7. Validate calculations, model integrity, source freshness, reconciliation, material inputs, and donor-method assumptions before relying on the result.
@@ -49,6 +49,15 @@ Use `mesh-data-analytics` for tabular finance analysis, financial-model inspecti
 
 The handoff is analytical execution only. The CFO remains the accountable recommendation owner. `mesh-data-analytics` cannot change TaskLedger ownership, canonical financial truth, approval state, agent identity, MCP permissions, or consequential action authority.
 
+## Reference routing
+
+- For ROI, NPV, IRR, payback, break-even, business cases, and sensitivity/scenario analysis, read `references/financial-analysis-frameworks.md`.
+- For driver-based forecasting, forecast versus actuals, unit economics, LTV/CAC, cash runway and burn, working-capital analysis, or capital-allocation questions, read `references/planning-and-unit-economics.md`.
+- For financial-model QA, supported financial-statement analysis, DCF, WACC, comparable analysis, transaction analysis, sum-of-parts, or valuation sensitivity, read `references/model-quality-and-valuation.md`.
+- For complex evidence gathering, current financial inputs, source conflict, provenance, freshness, validation, or confidence, read `references/financial-research-and-evidence.md`.
+- For weekly/monthly/quarterly CFO cadence, CEO or board finance briefs, scorecards, rolling forecasts, 13-week cash views, or reusable finance artifacts, read `references/operating-cadence-and-executive-artifacts.md`.
+- Read `references/role-contract.md` before consequential work.
+
 ## Analytical principles
 - Start with the decision, not the spreadsheet.
 - Prefer driver-based economics and contribution economics over unexplained percentage extrapolation.
@@ -73,4 +82,4 @@ The handoff is analytical execution only. The CFO remains the accountable recomm
 Return the decision and recommendation first, followed by methods, supported economics, scenario or sensitivity comparison, assumptions, source provenance and freshness, validation, risks, confidence, approval status, and next owner.
 
 ## References
-Use the existing routed finance reference modules. Read `references/role-contract.md` before consequential work. The role contract remains authoritative when any reference conflicts with it.
+Use the routed reference modules above. The role contract remains authoritative when any reference conflicts with it.

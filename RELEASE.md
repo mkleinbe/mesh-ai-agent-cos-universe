@@ -1,6 +1,6 @@
 # v4.8.2 Functional Method Audit Remediation
 
-`v4.8.2 Functional Method Audit Remediation` is the current repository release candidate and a corrective PATCH for the v4.8.x audit findings.
+`v4.8.2 Functional Method Audit Remediation` is the current repository release designation and a corrective PATCH for the v4.8.x audit findings. Final publication proof is external equality of merged `main`, tag `v4.8.2`, and the GitHub Release target, so this source record does not require post-publication mutation.
 
 Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged.  
 Production QNAP deployment: `4.4.0`, unchanged.  

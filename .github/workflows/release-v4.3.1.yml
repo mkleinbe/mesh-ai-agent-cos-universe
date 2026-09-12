@@ -1,5 +1,8 @@
 name: v4.3.1 published action-surface historical verification
 
+# Historical publisher retired: gh release create v4.3.1
+# Historical automatic trigger retired: branches: [main]
+
 on:
   workflow_dispatch:
 

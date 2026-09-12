@@ -18,6 +18,14 @@ Within existing authority the CMO may compare growth models, channel-allocation 
 
 For organizational or market change, the CMO may consume governed change-readiness and messaging methods covering audience segmentation, change magnitude, communication sequence, manager/cascade preparation where applicable, FAQ structure, knowledge/ability needs, reinforcement measurement, and post-change signals. Generic donor benchmarks and universal touchpoint counts are contextual only and do not become Mesh policy.
 
+## v4.7 compatibility guarantees preserved
+
+The CMO continues to compose **Mesh Messaging v1.2.0 or later** through the existing registry bindings. For material decision communication, options remain **mutually exclusive options** at the decision level where alternatives exist, and the packet surfaces the **top three material risks** where supported.
+
+Designed executive artifacts remain governed by **Mesh Design System / Mesh Artifact Designer**. Messaging or consulting methods **do not transfer design authority**. A decision memo, campaign plan, change-communication plan, visual artifact, or content review **does not authorize publication**.
+
+These controls remain active as Mesh Messaging advances to v1.3.0 for change communications.
+
 ## Governed capabilities
 
 The canonical registry remains authoritative for permitted actions. v4.8.0 deepens methods within existing marketing strategy, campaign, distribution, performance, brand, editorial, and content-review capabilities without adding new tools or publication rights.

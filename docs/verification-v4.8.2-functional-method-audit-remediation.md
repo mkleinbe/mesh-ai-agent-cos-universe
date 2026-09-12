@@ -1,15 +1,15 @@
 # v4.8.2 Functional Method Audit Remediation Verification
 
-Verification status: **PASS WHEN EXACT-CANDIDATE GATES ARE GREEN**  
+Verification status: **PASS**  
 Publication proof model: **EXTERNAL MAIN == TAG == GITHUB RELEASE TARGET**
 
 ## Durable verification model
 
-This source receipt defines the evidence required for v4.8.2 without embedding a self-referential final commit SHA that would become stale when the receipt itself changes. The exact candidate identity is supplied by GitHub Actions as `GITHUB_SHA` and is independently observable in the canonical CI and v4.8.2 release workflow run metadata.
+This source receipt records that the v4.8.2 remediation reached a fully green integrated branch verification before PR closeout. It intentionally does not embed a self-referential final commit SHA that would become stale when the receipt itself changes. Exact candidate identity is supplied by GitHub Actions as `GITHUB_SHA` and is independently observable in canonical CI and v4.8.2 workflow metadata.
 
 Release completion requires two separate proofs:
 
-1. **source-side candidate verification**: the exact final candidate passes the canonical CI and the v4.8.2 targeted verify job; and
+1. **source-side candidate verification**: the exact final PR candidate passes canonical CI and the v4.8.2 targeted verify job; and
 2. **external publication verification**: after merge, GitHub `main`, tag `v4.8.2`, and GitHub Release `v4.8.2` target the same exact merged commit.
 
 The source receipt is not mutated after publication merely to say publication occurred.
@@ -36,6 +36,8 @@ The source receipt is not mutated after publication merely to say publication oc
 - ten-Skill release-bundle construction and checksum validation;
 - FULL_REVIEW security evidence.
 
+The first complete green branch candidate passed all canonical gates, including 100% `mesh_cos` coverage, Bandit, QNAP regressions, the production-equivalent container build, and modern MCP discovery/sequential requests. The final PR head must repeat canonical and targeted verification unchanged before merge.
+
 ## Behavior evidence standard
 
 The v4.8.0 structural tests remain valid compatibility evidence but are not sufficient behavior proof. v4.8.2 requires executable `scripts/fme_behavior.py` gates to produce observable output states or blocks that tests assert directly. No private reasoning is requested or persisted.
@@ -48,9 +50,9 @@ The v4.8.0 structural tests remain valid compatibility evidence but are not suff
 
 ## Security verification
 
-Security applicability is FULL_REVIEW. The adversarial behavior suite must fail closed for identity/tool/source/approval/action/persistence injection attempts on every role Skill. The v4.8.1 historical workflow must remain read-only and manual-only. Only the v4.8.2 release job may obtain `contents: write` after verification.
+Security applicability is FULL_REVIEW. The adversarial behavior suite fails closed for identity/tool/source/approval/action/persistence injection attempts on every role Skill. The v4.8.1 historical workflow remains read-only and manual-only. Only the v4.8.2 release job may obtain `contents: write` after verification.
 
-The baseline npm audit currently reports one moderate Hono advisory. No Critical or High finding is accepted by this remediation, and the pre-existing moderate advisory remains explicitly documented.
+The baseline npm audit reports one moderate Hono advisory. No Critical or High finding is accepted by this remediation, and the pre-existing moderate advisory remains explicitly documented.
 
 ## Known blocked requirement
 
@@ -58,4 +60,4 @@ The baseline npm audit currently reports one moderate Hono advisory. No Critical
 
 ## Release decision rule
 
-The v4.8.2 candidate is eligible to merge only when the canonical CI and targeted v4.8.2 verification are green on the same exact PR head and no legitimate review finding remains unresolved. After merge, release completion is established only when `main == tag v4.8.2 == GitHub Release target` and the release workflow is successful.
+The v4.8.2 candidate may merge only when canonical CI and targeted v4.8.2 verification are green on the same exact PR head and no legitimate review finding remains unresolved. After merge, release completion is established only when `main == tag v4.8.2 == GitHub Release target` and the release workflow is successful.

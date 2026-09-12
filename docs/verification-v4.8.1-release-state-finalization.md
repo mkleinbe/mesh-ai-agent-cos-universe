@@ -8,7 +8,7 @@ Final publication status: **PENDING merged-main release verification**
 
 - repository: `mkleinbe/mesh-ai-agent-cos-universe`
 - base/released v4.8.0 main SHA: `fec9abd4e3cd44f66eeddf3c33f05cc52745c225`
-- verified v4.8.1 candidate SHA: `a41334cdadb7dfca84704b8584c97c2c57dc7ed2`
+- verified v4.8.1 release-control candidate SHA: `f1fa3601e373515950e61ead7c6b9cbdb37fdb28`
 - pull request: `#72`
 - patch type: documentation and release-control PATCH only
 - runtime contract: `4.0.0`, unchanged
@@ -18,7 +18,7 @@ Final publication status: **PENDING merged-main release verification**
 
 ### Canonical repository CI
 
-Exact-head canonical CI run `34724275150` completed **SUCCESS** on `a41334cdadb7dfca84704b8584c97c2c57dc7ed2`.
+Exact-head canonical CI run `34724369995` completed **SUCCESS** on `f1fa3601e373515950e61ead7c6b9cbdb37fdb28`.
 
 It passed:
 
@@ -43,7 +43,7 @@ It passed:
 
 ### v4.8.1 targeted release-state gate
 
-Exact-head release-state run `34724277292` completed its `verify` job **SUCCESS** on the same candidate SHA. The release job was correctly skipped because the run was a pull-request event.
+Exact-head release-state run `34724369989` completed **SUCCESS** on the same candidate SHA. The release job was correctly skipped because the run was a pull-request event.
 
 It passed:
 
@@ -52,17 +52,26 @@ It passed:
 - Phase 1 role-model regression;
 - v4.8.0 Functional Method Expansion regression;
 - v4.8.1 release-state regression;
-- documentation-only security and runtime-boundary assertions.
+- documentation-only security and runtime-boundary assertions;
+- explicit verification-receipt path gating.
 
-## Defect found and resolved during verification
+## Defects found and resolved during verification
+
+### V481-01 Historical README evidence wording drift
 
 The first full canonical PR run found one historical documentation-contract regression: the README rewrite had removed the exact statement `Historical v4.3.x through v4.6.x documents remain release-train evidence` protected by the QNAP/Slack release-train regression.
 
-Root cause was documentation wording drift, not runtime or behavioral code. The test was not weakened. The exact historical guarantee was restored while retaining the new v4.7.x/v4.8.x evidence language. The subsequent exact-head canonical CI passed the full suite.
+Root cause was documentation wording drift, not runtime or behavioral code. The test was not weakened. The exact historical guarantee was restored while retaining the new v4.7.x/v4.8.x evidence language. Subsequent exact-head canonical CI passed the full suite.
+
+### V481-02 Verification-receipt release-gate path gap
+
+Independent closeout review found that `docs/verification-v4.8.1-release-state-finalization.md` was initially absent from the v4.8.1 workflow path filters. An evidence-only receipt commit could therefore have bypassed the targeted release-state workflow.
+
+Root cause was an incomplete release path filter. The receipt path was added to both push and pull-request triggers, the verification step now requires the receipt's candidate-PASS marker, and `test_release_state_v481.py` asserts the path is present. Exact-head targeted and canonical verification then passed.
 
 ## Change-surface verification
 
-PR #72 changes only these release-state surfaces:
+PR #72 changes only release-state surfaces:
 
 - `.github/workflows/release-v4.8.0.yml`
 - `.github/workflows/release-v4.8.1.yml`
@@ -73,8 +82,8 @@ PR #72 changes only these release-state surfaces:
 - `docs/security-review-v4.8.0-functional-method-expansion.md`
 - `docs/security-review-v4.8.1-release-state-finalization.md`
 - `docs/verification-v4.8.0-functional-method-expansion.md`
+- `docs/verification-v4.8.1-release-state-finalization.md`
 - `tests/evaluations/test_release_state_v481.py`
-- this verification receipt
 
 No `src/`, `agents/`, `chatgpt/skills/`, `mcp/`, `config/`, dependency manifest, deployment, secret, credential, or database file is changed by the PATCH.
 
@@ -91,6 +100,7 @@ No `src/`, `agents/`, `chatgpt/skills/`, `mcp/`, `config/`, dependency manifest,
 | Preserve MCP/action/Skill/source authority | PASS |
 | Retire v4.8.0 auto-publisher from future main commits | PASS |
 | Add exact-SHA v4.8.1 publisher with least release permissions | PASS |
+| Gate v4.8.1 verification-receipt changes through targeted workflow | PASS |
 | Preserve historical release evidence wording | PASS |
 | Full canonical CI | PASS |
 | Targeted v4.8.1 verification | PASS |
@@ -99,4 +109,4 @@ No `src/`, `agents/`, `chatgpt/skills/`, `mcp/`, `config/`, dependency manifest,
 
 ## Release decision
 
-The v4.8.1 candidate is independently verified **GREEN** for merge subject to an unchanged exact-head recheck after this evidence-only receipt is committed. After merge, completion requires successful main-branch canonical/release workflows and proof that final `main`, tag `v4.8.1`, and the GitHub Release target the same merged commit.
+The v4.8.1 candidate is independently verified **GREEN**. This receipt and the matching security receipt are evidence-only changes. One final exact-head canonical and targeted recheck is required after they are committed. After merge, completion requires successful main-branch canonical/release workflows and proof that final `main`, tag `v4.8.1`, and the GitHub Release target the same merged commit.

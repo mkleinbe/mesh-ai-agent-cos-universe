@@ -2,11 +2,15 @@
 
 Date: 2026-09-12  
 Applicability: **TARGETED**  
-Scope: documentation and GitHub release-control only
+Security result: **PASS for release candidate**  
+Scope: documentation and GitHub release-control only  
+Verified release-control candidate: `f1fa3601e373515950e61ead7c6b9cbdb37fdb28`  
+Canonical CI: `34724369995`, **SUCCESS**  
+Targeted release-state gate: `34724369989`, **SUCCESS**
 
 ## Security profile
 
-This patch touches CI/CD release automation, so at least a TARGETED review is required. It does not alter application runtime, agent identity, MCP tools, connectors, credentials, secrets, data handling, network boundaries, persistence, OAuth, TaskLedger, or L0-L5 authority.
+This patch touches CI/CD release automation, so TARGETED review is required. It does not alter application runtime, agent identity, MCP tools, connectors, credentials, secrets, data handling, network boundaries, persistence, OAuth, TaskLedger, dependencies, or L0-L5 authority.
 
 ## Trust boundaries reviewed
 
@@ -14,6 +18,7 @@ This patch touches CI/CD release automation, so at least a TARGETED review is re
 2. GitHub Actions token -> tag/Release creation.
 3. Historical release workflow -> later `main` commits.
 4. Release documentation -> operator understanding of actual published state.
+5. Verification/security receipt changes -> workflow path-filter coverage.
 
 ## Falsifiable security properties
 
@@ -23,21 +28,42 @@ This patch touches CI/CD release automation, so at least a TARGETED review is re
 - The workflow must use read-only contents permission except the release job, which receives only `contents: write`.
 - Existing agent/runtime authority, MCP action surfaces, credentials, secrets, and QNAP deployment must remain unchanged.
 - The documentation-only patch must not introduce or modify executable runtime dependencies.
+- Changes to the v4.8.1 verification/security receipts must trigger the targeted release-state workflow.
 
-## Review result
+## Verification evidence
 
-The intended design satisfies the required security properties:
+Exact-head canonical CI run `34724369995` passed the full repository verification surface on `f1fa3601e373515950e61ead7c6b9cbdb37fdb28`, including contract/drift/package/action checks, Ruff, Mypy, 100% core coverage, Bandit, QNAP regressions, production-equivalent container build, and MCP discovery/sequential-request verification.
 
-- v4.8.0 publication is converted to manual historical verification only;
-- v4.8.1 owns automatic `main` release publication;
-- release creation is exact-SHA bound;
-- release permissions remain least-privilege at workflow/job scope;
-- no runtime, dependency, secret, connector, identity, or authority change is included.
+Exact-head targeted run `34724369989` passed the v4.8.1 release-state contract, including exact-SHA publishing configuration, historical-publisher retirement, candidate verification receipt checks, and documentation-only runtime/security boundaries.
+
+PR #72's changed-file surface contains only release workflow, release documentation, security/verification receipts, README/RELEASE/changelog, and a release-state regression. It contains no runtime source, role/agent registry, Skill package, MCP source, dependency manifest, deployment asset, database schema, secret, or credential change.
 
 ## Findings
 
-No critical or high security finding is identified in the bounded patch design. Final PASS requires fresh CI on the exact patch candidate and independent verification that the workflow and documentation match this contract.
+- `SEC-481-01` Stale v4.8.0 verification/security receipts described an already-published release as awaiting final publication: **RESOLVED** by durable final receipt updates tied to main/tag/Release SHA `fec9abd4e3cd44f66eeddf3c33f05cc52745c225` and successful release run `34723652446`.
+- `SEC-481-02` The already-published v4.8.0 workflow still owned future automatic `main` publication and could fail or create release ambiguity after PATCH commits: **RESOLVED** by converting v4.8.0 to manual historical verification and assigning automatic publication to v4.8.1.
+- `SEC-481-03` README release-state edits initially removed a protected historical evidence guarantee: **RESOLVED** by restoring the exact guarantee and passing canonical CI without weakening the historical regression.
+- `SEC-481-04` The v4.8.1 verification receipt was initially absent from the workflow path filters, allowing an evidence-only receipt change to bypass the targeted gate: **RESOLVED** by adding the receipt to push/PR filters, checking its candidate-PASS marker, and enforcing the path in `test_release_state_v481.py`.
 
-## Residual risk
+No critical or high security finding remains open in the v4.8.1 candidate.
+
+## Release-control result
+
+The candidate satisfies the required security properties:
+
+- v4.8.0 publication is historical/manual only;
+- v4.8.1 owns automatic `main` publication;
+- release creation is exact-SHA bound;
+- release permissions remain least privilege at workflow/job scope;
+- verification/security receipt changes are release-gated;
+- no runtime, dependency, secret, connector, identity, source-authority, or consequential-action authority change is included.
+
+## Residual risk and non-blocking maintenance
 
 The GitHub connector does not expose branch-ref deletion. Merged feature refs are therefore reconciled to their exact released `main` SHAs rather than deleted. This does not create code divergence or release ambiguity.
+
+A separate Dependabot PR #62 proposes `actions/upload-artifact` v6 -> v7. Current canonical CI still succeeds on v6. That dependency update is unrelated to this documentation/release-state PATCH and is intentionally not absorbed into v4.8.1.
+
+## Final security gate
+
+Security status is **PASS for release candidate**. The two evidence receipts are now the only new changes after the verified `f1fa3601` candidate. A final exact-head canonical and targeted recheck must pass after this evidence-only commit. After merge, final publication verification must prove `main`, tag `v4.8.1`, and the GitHub Release target the same merged commit.

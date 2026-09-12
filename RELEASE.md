@@ -74,4 +74,10 @@ Historical orchestration correction preserving Revenue Intelligence commercial t
 
 # v4.4.0 Authority Closure
 
-Historical release identity is preserved for regression and audit continuity. The canonical Phase 1 authority/runtime contract **4.0.0** remains the current authority contract, and production QNAP **4.4.0** remains current. Historical v4.3.x through v4.6.x documents remain release-train evidence and do not override the current repository release.
+Historical release identity is preserved for regression and audit continuity. The canonical Phase 1 authority/runtime contract **4.0.0** remains the current authority contract, and production QNAP **4.4.0** remains current.
+
+# v4.3.0 Cross-Agent Owner Execution
+
+Historical release identity `v4.3.0` is preserved. It established governed server-derived owner execution and nested child execution before later authority-closure and QNAP release trains. It does not override the current runtime or release state.
+
+Historical v4.3.x through v4.6.x documents remain release-train evidence and do not override the current repository release.

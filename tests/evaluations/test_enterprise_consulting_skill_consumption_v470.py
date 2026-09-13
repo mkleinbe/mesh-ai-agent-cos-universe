@@ -37,10 +37,12 @@ def test_registry_authority_and_roster_are_unchanged() -> None:
     assert records["cfo"]["decision_authority"] == "L3 financial recommendation within supported source scope"
     assert records["coo"]["decision_authority"] == "L3 delivery recommendation; L2 bounded allocation/routing"
     assert records["cmo"]["decision_authority"] == "L3 marketing recommendation; L2 bounded internal execution"
+    assert records["vp-content"]["decision_authority"] == "L2 production execution"
+    assert records["vp-content"]["delegation_permissions"] == []
     assert records["answer-desk"]["decision_authority"] == "L0-L2 within explicit policy and permissions"
 
 
-def test_direct_skill_bindings_are_not_expanded() -> None:
+def test_direct_skill_bindings_match_governed_registry_contract() -> None:
     records, _ = _registry()
     assert records["cos"]["skills"] == ["mesh-ppmd-bot", "mesh-devils-advocate"]
     assert records["cro"]["skills"] == [
@@ -60,6 +62,13 @@ def test_direct_skill_bindings_are_not_expanded() -> None:
         "mesh-marketing-messaging",
         "mesh-messaging-orchestrator",
         "mesh-executive-communications",
+        "mesh-media-production",
+        "mesh-media-verification",
+        "mesh-media-distribution",
+    ]
+    assert records["vp-content"]["skills"] == [
+        "mesh-marketing-messaging",
+        "mesh-media-production",
     ]
 
 

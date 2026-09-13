@@ -1,0 +1,142 @@
+name: v4.8.4 Release Record Correction
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v4.8.3.yml'
+      - '.github/workflows/release-v4.8.4.yml'
+      - 'tests/evaluations/test_historical_release_workflows_v483.py'
+      - 'tests/evaluations/test_release_record_correction_v484.py'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG-v4.8.3.md'
+      - 'CHANGELOG-v4.8.4.md'
+      - 'docs/release-v4.8.3-historical-publisher-retirement.md'
+      - 'docs/gap-audit-v4.8.3-historical-publisher-retirement.md'
+      - 'docs/release-v4.8.4-release-record-correction.md'
+      - 'docs/security-review-v4.8.4-release-record-correction.md'
+      - 'docs/verification-v4.8.4-release-record-correction.md'
+      - 'docs/gap-audit-v4.8.4-release-record-correction.md'
+      - 'docs/README.md'
+  pull_request:
+    paths:
+      - '.github/workflows/release-v4.8.3.yml'
+      - '.github/workflows/release-v4.8.4.yml'
+      - 'tests/evaluations/test_historical_release_workflows_v483.py'
+      - 'tests/evaluations/test_release_record_correction_v484.py'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG-v4.8.3.md'
+      - 'CHANGELOG-v4.8.4.md'
+      - 'docs/release-v4.8.3-historical-publisher-retirement.md'
+      - 'docs/gap-audit-v4.8.3-historical-publisher-retirement.md'
+      - 'docs/release-v4.8.4-release-record-correction.md'
+      - 'docs/security-review-v4.8.4-release-record-correction.md'
+      - 'docs/verification-v4.8.4-release-record-correction.md'
+      - 'docs/gap-audit-v4.8.4-release-record-correction.md'
+      - 'docs/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v4.8.4-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/check-owner-execution-readiness.py
+      - run: python scripts/check-capability-closure.py
+      - run: python scripts/check-published-action-surface.py
+      - run: ruff check src
+      - run: ruff check tests scripts --select E9,F63,F7,F82
+      - run: mypy src --check-untyped-defs
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - run: python -m compileall -q src
+      - name: Release-record and historical-publisher regressions
+        run: |
+          set -euo pipefail
+          pytest -q tests/evaluations/test_release_record_correction_v484.py
+          pytest -q tests/evaluations/test_historical_release_workflows_v483.py
+          pytest -q tests/evaluations/test_functional_method_remediation_v482.py
+          pytest -q tests/evaluations/test_release_state_v481.py
+      - name: QNAP POSIX shell regressions
+        run: |
+          set -euo pipefail
+          sh -n deployment/qnap/qnap-environment-probe.sh
+          for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
+          sh deployment/qnap/tests/test-compose-discovery.sh
+          sh deployment/qnap/tests/test-observability.sh
+          sh deployment/qnap/tests/test-runtime-permissions.sh
+          sh deployment/qnap/tests/test-image-provenance.sh
+          sh deployment/qnap/tests/test-slack-hitl-configure.sh
+          sh deployment/qnap/tests/test-transactional-promotion.sh
+          sh deployment/qnap/tests/test-versioned-release-layout.sh
+          sh deployment/qnap/tests/test-restarting-container-backup.sh
+      - name: Build production-equivalent 4.4.0 container
+        env:
+          CANDIDATE_VERSION: '4.4.0'
+        run: |
+          set -euo pipefail
+          bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"
+          bash scripts/finalize-qnap-release-v4.4.0.sh
+          BUNDLE="dist/qnap-bundle/v${CANDIDATE_VERSION}"
+          docker build --build-arg VCS_REF="$GITHUB_SHA" --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --build-arg IMAGE_VERSION="${CANDIDATE_VERSION}-qnap" -t "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}" "$BUNDLE/cos-mcp/build-context"
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "${CANDIDATE_VERSION}-qnap"
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "$GITHUB_SHA"
+      - name: Verify MCP discovery and sequential requests
+        env:
+          MESH_COS_DEPLOYMENT_RELEASE: '4.4.0'
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.4.0
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Publish exact-SHA v4.8.4 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.8.4 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.8.4 --json targetCommitish --jq .targetCommitish)"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "v4.8.4 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              exit 1
+            fi
+            echo 'v4.8.4 already exists at exact main SHA'
+            exit 0
+          fi
+          gh release create v4.8.4 \
+            --target "$GITHUB_SHA" \
+            --title 'Mesh CoS v4.8.4 Release Record Correction' \
+            --notes-file docs/release-v4.8.4-release-record-correction.md

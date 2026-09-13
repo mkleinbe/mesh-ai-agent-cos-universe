@@ -12,7 +12,7 @@ The source change does not itself establish QNAP production activation. Canonica
 
 v4.9.0 is preserved as an immutable historical repository release. Its publisher is retired to manual read-only verification and v4.9.1 becomes the sole current exact-SHA SemVer publisher after verification.
 
-Historical v4.3.x through v4.9.0 documents remain release-train evidence. Historical tags and GitHub Releases remain immutable.
+Historical v4.3.x through v4.6.x documents remain release-train evidence. Historical v4.3.x through v4.9.0 documents remain release-train evidence. Historical tags and GitHub Releases remain immutable. The historical `v4.6.0 CFO Zero-Defect Execution Remediation` release remains part of that retained evidence chain.
 
 ## Canonical architecture
 

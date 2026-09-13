@@ -1,0 +1,44 @@
+name: Clean v4.9.0 generated artifacts
+
+on:
+  push:
+    branches: [feature/mesh-opex-bot-integration-v4.9.0]
+    paths:
+      - '.github/workflows/cleanup-v4.9.0-generated-artifacts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/mesh-opex-bot-integration-v4.9.0
+          fetch-depth: 0
+      - name: Remove generated artifacts and harden ignore rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .coverage
+          rm -rf mcp/node_modules mcp/dist src/mesh_ai_agent_cos_universe.egg-info
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.gitignore')
+          lines = path.read_text().splitlines()
+          for entry in ('.coverage', 'mcp/node_modules/', 'mcp/dist/', 'src/*.egg-info/'):
+              if entry not in lines:
+                  lines.append(entry)
+          path.write_text('\n'.join(lines) + '\n')
+          PY
+          test ! -e .coverage
+          test ! -d mcp/node_modules
+          test ! -d mcp/dist
+          test ! -d src/mesh_ai_agent_cos_universe.egg-info
+          git config user.name 'Mesh Release Bot'
+          git config user.email 'release-bot@meshdigital.io'
+          git add -A
+          git commit -m 'chore: remove generated verification artifacts'
+          git push origin HEAD:feature/mesh-opex-bot-integration-v4.9.0

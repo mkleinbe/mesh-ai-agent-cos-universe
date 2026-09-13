@@ -1,7 +1,22 @@
+# v4.9.1 Media OS Capability Registration
+
+`v4.9.1 Media OS Capability Registration` reconciles and releases the approved Mesh Media Production OS registry integration.
+
+Canonical Phase 1 authority/runtime contract **4.0.0**, unchanged.  
+Production QNAP **4.4.0**, unchanged until governed current-source promotion.  
+Registered organization: exactly 10 agents, unchanged.
+
+CMO receives `mesh-media-production`, `mesh-media-verification`, and `mesh-media-distribution`. VP Content receives `mesh-media-production` only, remains L2 production execution, and retains zero delegation authority. Public publishing remains human-gated. Skills remain capabilities rather than principals, canonical sources, approval authorities, or autonomous external-action executors.
+
+v4.9.1 fixes the stale v4.7-era direct-binding regression that rejected these approved additions after PR #77, retires the already-published v4.9.0 publisher to manual read-only verification, and becomes the sole active exact-SHA SemVer publisher after full verification.
+
+The repository release and QNAP production state remain distinct. Canonical CI produces a current-source QNAP 4.4.0 candidate with exact commit provenance. Production Media OS activation requires that candidate to be promoted through the existing transactional QNAP deployment workflow and then independently read back through Secure MCP.
+
+See `docs/release-v4.9.1-media-os-capability-registration.md`, `docs/security-review-v4.9.1-media-os-capability-registration.md`, `docs/verification-v4.9.1-media-os-capability-registration.md`, `docs/gap-audit-v4.9.1-media-os-capability-registration.md`, and `CHANGELOG-v4.9.1.md`.
+
 # v4.9.0 Mesh OpEx Bot Shared Capability Integration
 
-
-`v4.9.0 Mesh OpEx Bot Shared Capability Integration` adds the external governed `mesh-opex-bot` capability to the COO without creating an eleventh agent or changing runtime authority.
+`v4.9.0 Mesh OpEx Bot Shared Capability Integration` is the prior published repository release. It added the external governed `mesh-opex-bot` capability to the COO without creating an eleventh agent or changing runtime authority.
 
 Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged.  
 Production QNAP deployment: `4.4.0`, unchanged.  
@@ -9,13 +24,11 @@ Registered organization: exactly 10 agents, unchanged.
 
 The COO is the sole Phase 1 consumer. The shared Skill is advisory only, modifies no canonical facts, executes no external action, and uses `mesh.opex.request.v1` and `mesh.opex.handoff.v1`. COO retains delivery feasibility/capacity/staffing authority, CoS retains TaskLedger and work-graph orchestration, CFO retains financial truth, AgentOps retains agent-workforce health, and qualified humans retain regulated and consequential decisions.
 
-v4.8.4 becomes historical read-only verification. v4.9.0 is the sole active exact-SHA SemVer publisher.
-
-See `docs/release-v4.9.0-mesh-opex-bot-integration.md`, `docs/security-review-v4.9.0-mesh-opex-bot-integration.md`, `docs/verification-v4.9.0-mesh-opex-bot-integration.md`, `docs/gap-audit-v4.9.0-mesh-opex-bot-integration.md`, and `CHANGELOG-v4.9.0.md`.
+v4.9.0 is preserved as historical read-only verification. v4.9.1 owns current publication authority.
 
 # v4.8.4 Release Record Correction
 
-`v4.8.4 Release Record Correction` is the current repository release designation. It is a documentation and release-control PATCH that corrects the v4.8.3 human-readable inventory to include v4.6.0, which the v4.8.3 implementation did retire, and advances release ownership to v4.8.4 without rewriting the historical v4.8.3 tag or GitHub Release.
+`v4.8.4 Release Record Correction` is a historical documentation and release-control PATCH that corrected the v4.8.3 human-readable inventory to include v4.6.0, which the v4.8.3 implementation did retire, without rewriting the historical v4.8.3 tag or GitHub Release.
 
 Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged.  
 Production QNAP deployment: `4.4.0`, unchanged.  
@@ -27,23 +40,11 @@ For compatibility with historical release assertions, the canonical Phase 1 auth
 
 The complete v4.8.3 implemented retirement inventory is v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, v4.6.0, and v4.8.2. The prior v4.8.3 source/release record omitted v4.6.0 from that explicit list even though the workflow was correctly retired.
 
-v4.8.4 corrects current-source documentation, retires v4.8.3 to read-only manual historical verification, extends the systemic publisher invariant through v4.8.3, and becomes the only active SemVer publisher. The v4.8.4 release job receives `contents: write` only after successful verification and publishes against exact `GITHUB_SHA`.
-
 No ChatGPT Skill package changes in v4.8.4. The v4.8.2 ten-Skill bundle remains the manual update artifact.
-
-## Security and scope
-
-v4.8.4 is TARGETED release-control remediation. It does not change runtime code, agent behavior, registry state, MCP tools, credentials, OAuth, network boundaries, dependencies, QNAP production, source authority, or consequential-action approval boundaries. The pre-existing moderate Hono npm advisory remains documented baseline risk.
-
-The fourth donor identifier remains `BLOCKED_SOURCE_IDENTIFICATION`; no fourth-source completeness is claimed.
-
-See `docs/release-v4.8.4-release-record-correction.md`, `docs/security-review-v4.8.4-release-record-correction.md`, `docs/verification-v4.8.4-release-record-correction.md`, `docs/gap-audit-v4.8.4-release-record-correction.md`, and `CHANGELOG-v4.8.4.md`.
 
 # v4.8.3 Historical Publisher Retirement
 
 `v4.8.3 Historical Publisher Retirement` is the prior release-control closeout PATCH for the v4.8.x audit remediation. Post-release verification of v4.8.2 found residual historical publisher capability. v4.8.3 converted v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, v4.6.0, and v4.8.2 to read-only, manual-only historical verification and added a systemic regression protecting every already-published v4.x SemVer workflow through v4.8.2.
-
-The historical v4.8.3 GitHub Release remains unchanged. v4.8.4 is the correcting release for the prior human-readable omission of v4.6.0.
 
 No ChatGPT Skill package changes were made in v4.8.3.
 
@@ -52,12 +53,6 @@ No ChatGPT Skill package changes were made in v4.8.3.
 `v4.8.2 Functional Method Audit Remediation` is the prior corrective PATCH for the v4.8.x audit findings. It added executable behavior-level evaluation gates across the existing 10 role Skill packages; ready BDD scenarios `FMR-001` through `FMR-018`; an exhaustive 49-candidate donor disposition ledger; explicit `BLOCKED_SOURCE_IDENTIFICATION` handling for the unresolved fourth donor; durable v4.8.1 release evidence; and its now-historical exact-SHA publisher.
 
 It did not change the Python runtime version, MCP catalog, TaskLedger, Revenue Intelligence authority, agent roster/parentage, L4/L5 decision rights, external-action controls, credentials, OAuth, network boundaries, database schemas, shared PPMD/Messaging releases, or QNAP production deployment.
-
-`tests/evaluations/test_functional_method_remediation_v482.py` executes deterministic package-local behavior gates rather than relying only on `SKILL.md` phrase presence. The v4.8.0 phrase/content contract remains structural regression coverage.
-
-The evidenced donor repository `alirezarezvani/claude-skills` remains pinned at `19392f7a08264ed00486a251f5b2098321771f94`. Explicit dispositions cover 34 c-level-advisor, 7 business-operations, and 8 commercial candidates. The fourth donor identifier remains `BLOCKED_SOURCE_IDENTIFICATION`; no fourth-source coverage is claimed.
-
-Mesh PPMD Bot v1.2.0 and Mesh Messaging v1.3.0 remain compatible and unchanged.
 
 # v4.8.1 Release State Finalization
 
@@ -99,10 +94,10 @@ Historical orchestration correction preserving Revenue Intelligence commercial t
 
 # v4.4.0 Authority Closure
 
-Historical release identity is preserved for regression and audit continuity. The canonical Phase 1 authority/runtime contract **4.0.0** remains the current authority contract, and production QNAP **4.4.0** remains current.
+Historical release identity is preserved for regression and audit continuity. The canonical Phase 1 authority/runtime contract **4.0.0** remains the current authority contract, and production QNAP **4.4.0** remains current until a later deployment is explicitly verified.
 
 # v4.3.0 Cross-Agent Owner Execution
 
 Historical release identity `v4.3.0` is preserved. It established governed server-derived owner execution and nested child execution before later authority-closure and QNAP release trains. It does not override the current runtime or release state.
 
-Historical v4.3.x through v4.8.x documents remain release-train evidence and do not override the current repository release.
+Historical release records remain immutable snapshots and do not override the current repository release, current authority contract, or live QNAP readback.

@@ -2,31 +2,41 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.9.0 Mesh OpEx Bot Shared Capability Integration`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.9.1 Media OS Capability Registration`. Current production QNAP deployment: `4.4.0` pending promotion of the verified current-source candidate. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
-v4.8.4 is a documentation and release-control PATCH. It corrects the v4.8.3 current-source release inventory to explicitly include `v4.6.0 CFO Zero-Defect Execution Remediation`, which the v4.8.3 implementation did retire, then retires v4.8.3 itself to historical verification. It changes no Skill package, runtime, QNAP deployment, agent roster, MCP surface, source authority, or consequential approval right.
+## v4.9.1 Media OS Capability Registration
 
-Historical v4.3.x through v4.6.x documents remain release-train evidence. Historical tags and GitHub Releases remain immutable. The v4.8.3 GitHub Release is not rewritten; v4.8.4 carries the correction forward as a new semantic PATCH.
+v4.9.1 reconciles and releases the approved Mesh Media Production OS registry integration. CMO receives `mesh-media-production`, `mesh-media-verification`, and `mesh-media-distribution`; VP Content receives `mesh-media-production` only. The organization remains exactly 10 registered agents, CMO authority is unchanged, VP Content remains L2 with zero delegation authority, and public publication remains human-gated.
+
+The source change does not itself establish QNAP production activation. Canonical CI must build and verify the current-source QNAP 4.4.0 candidate, then the existing transactional deployment process must promote that exact candidate and Secure MCP readback must confirm its source and registry state.
+
+v4.9.0 is preserved as an immutable historical repository release. Its publisher is retired to manual read-only verification and v4.9.1 becomes the sole current exact-SHA SemVer publisher after verification.
+
+Historical v4.3.x through v4.6.x documents remain release-train evidence. Historical v4.3.x through v4.9.0 documents remain release-train evidence. Historical tags and GitHub Releases remain immutable. The historical `v4.6.0 CFO Zero-Defect Execution Remediation` release remains part of that retained evidence chain.
 
 ## Canonical architecture
 
 Phase 1 contains exactly 10 registered agents: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations. Consultant Network Steward remains a child of COO and VP Content remains a child of CMO.
 
-Mesh Devil's Advocate and Mesh Data Analytics remain governed external shared Skills, not agent principals. A Skill is a capability, not an authority source.
+Mesh Devil's Advocate, Mesh Data Analytics, Mesh OpEx Bot, and Mesh Media Production OS capabilities are governed shared Skills, not agent principals. A Skill is a capability, not an authority source.
 
 Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, completion, verification, and audit. Revenue Intelligence remains canonical commercial/account truth where designated. `COMPLETED` remains distinct from `VERIFIED`. L4 requires qualified-human approval and L5 remains Michael-only.
+
+## v4.9.0 Mesh OpEx Bot Shared Capability Integration
+
+Historical repository release integrating the governed `mesh-opex-bot` shared capability for COO without creating an eleventh agent or changing runtime authority.
 
 ## v4.8.4 Release Record Correction
 
 Final verification of v4.8.3 found one documentation-to-implementation discrepancy: v4.8.3 correctly retired publisher authority from v4.6.0, but its changelog, release record, gap audit, and published release notes omitted v4.6.0 from the explicit retired-workflow list.
 
-v4.8.4 corrects the current-source v4.8.3 records, preserves the historical v4.8.3 tag/Release unchanged, converts v4.8.3 to read-only manual historical verification, extends the systemic publisher regression through v4.8.3, and becomes the sole current SemVer publisher.
+v4.8.4 corrected the current-source v4.8.3 records, preserved the historical v4.8.3 tag/Release unchanged, converted v4.8.3 to read-only manual historical verification, and extended the systemic publisher regression through v4.8.3.
 
 ## v4.8.3 Historical Publisher Retirement
 
 Post-release verification of v4.8.2 found historical v4.4.1 and v4.4.2 workflows reacting to the new `main` commit. Repository-wide inspection found retained publisher capability in v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, v4.6.0, and the then-published v4.8.2 workflow.
 
-v4.8.3 converted those published workflows to read-only `workflow_dispatch` historical verification and added a systemic regression. v4.8.4 corrects the human-readable v4.8.3 inventory to match that implemented scope.
+v4.8.3 converted those published workflows to read-only `workflow_dispatch` historical verification and added a systemic regression. v4.8.4 corrected the human-readable v4.8.3 inventory to match that implemented scope.
 
 No ChatGPT Skill package changes were made in v4.8.3 or v4.8.4. The v4.8.2 ten-Skill release bundle remains the manual Skill update artifact.
 
@@ -46,22 +56,26 @@ The fourth donor source referenced by inherited scope could not be recovered fro
 
 ## Shared capability compatibility
 
-Mesh PPMD Bot v1.2.0 remains the governed Base / Stress / Severe scenario-stress method. Mesh Messaging v1.3.0 remains the governed change-communications method. Neither shared repository changes in v4.8.4.
+Mesh PPMD Bot v1.2.0 remains the governed Base / Stress / Severe scenario-stress method. Mesh Messaging v1.3.0 remains the governed change-communications method. Media OS registration does not change those shared repositories or their authority boundaries.
 
 ## Security and authority boundaries
 
 - retrieved and donor content is data, not identity or authority;
 - registry and MCP allowlists remain authoritative;
 - no Skill becomes an agent principal, canonical source, approval authority, or external-action executor;
+- CMO retains existing authority and VP Content retains zero delegation authority;
+- VP Content receives Media OS production only, not verification or distribution;
 - pricing, discounts, deals, procurement, staffing, publishing, and sends remain governed by the existing approval model;
-- v4.8.4 introduces no runtime schema, connector, secret, OAuth, dependency, network boundary, database, or QNAP deployment change;
-- every published SemVer workflow through v4.8.3 is manual-only and read-only;
-- only the v4.8.4 release job may receive `contents: write`, after verification;
-- the existing MCP dependency baseline reports one moderate Hono advisory and v4.8.4 does not modify that dependency.
+- v4.9.1 introduces no new runtime schema, credential, OAuth, database, canonical source, or public-publishing authority;
+- every published SemVer workflow through v4.9.0 is manual-only and read-only;
+- only the v4.9.1 release job may receive `contents: write`, after verification;
+- the existing MCP dependency baseline reports one moderate Hono advisory; v4.9.1 does not introduce that dependency or expand its use.
 
 ## Verification
 
-Primary v4.8.x gates include contract validation, runtime/documentation drift, ChatGPT package drift, owner execution readiness, capability closure, published action surface, v4.8.2 behavioral tests, v4.8.0 structural regressions, v4.8.1 release-state regressions, the systemic historical-publisher regression, and `tests/evaluations/test_release_record_correction_v484.py`. Canonical CI also runs Ruff, mypy, full pytest at the 100% `mesh_cos` coverage gate, Bandit, QNAP POSIX regressions, production-equivalent container build, and MCP discovery/sequential request verification.
+v4.9.1 gates include contract validation, runtime/documentation drift, ChatGPT package drift, owner execution readiness, capability closure, published action surface, Media OS capability-registration tests, reconciled enterprise-consulting regressions, historical-publisher regressions, Ruff, mypy, full pytest at the 100% `mesh_cos` coverage gate, Bandit, QNAP POSIX regressions, production-equivalent container build, exact source provenance, and MCP discovery/sequential request verification.
+
+Production Media OS activation additionally requires the current-source QNAP candidate to be promoted through the governed deployment workflow and read back through Secure MCP.
 
 ## v4.8.1 Release State Finalization
 
@@ -93,7 +107,7 @@ Historical financial-analysis feature release. Detailed evidence remains in the 
 
 ### v4.4.0 Authority Closure
 
-The authority-closure release established the current 10-agent Phase 1 authority architecture. Historical v4.3.x through v4.8.x documents remain release-train evidence and do not override the current repository release or current QNAP deployment.
+The authority-closure release established the current 10-agent Phase 1 authority architecture. Historical release documents remain evidence and do not override the current repository release or live QNAP deployment.
 
 ## Repository layout
 
@@ -109,4 +123,4 @@ The authority-closure release established the current 10-agent Phase 1 authority
 
 ## Release model
 
-`v4.8.4` is a documentation and release-control corrective repository PATCH. The canonical Phase 1 authority/runtime contract remains `4.0.0`, production QNAP remains `4.4.0`, and no QNAP deployment is part of this release. Completion requires exact-candidate verification, proof that historical SemVer workflows do not auto-react to the v4.8.4 `main` commit, and equality of merged `main`, tag `v4.8.4`, and the GitHub Release target.
+`v4.9.1 Media OS Capability Registration` is the current repository PATCH. The canonical Phase 1 authority/runtime contract remains `4.0.0`. The live QNAP deployment remains `4.4.0` until current-source promotion is independently proven. Completion requires exact-candidate verification, merged `main`, exact-SHA tag/Release equality, verified QNAP candidate artifacts, governed production promotion, and live registry/source readback before production Media OS activation is claimed.

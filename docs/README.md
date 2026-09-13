@@ -1,19 +1,38 @@
 # Documentation Index
 
-Current repository release: **`v4.9.0 Mesh OpEx Bot Shared Capability Integration`**.  
-Current production QNAP deployment: **`4.4.0`**.  
+Current repository release: **`v4.9.1 Media OS Capability Registration`**.  
+Current production QNAP deployment: **`4.4.0`** pending promotion of the verified current-source candidate.  
 Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 
 The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, historical-release immutability, and release verification.
 
-## Current v4.8.4 closeout documentation
+## Current v4.9.1 release documentation
+
+- `release-v4.9.1-media-os-capability-registration.md`: Media OS capability-registration scope, authority preservation, runtime identity, and rollback boundary.
+- `security-review-v4.9.1-media-os-capability-registration.md`: TARGETED registry, MCP, release-control, and QNAP provenance review.
+- `verification-v4.9.1-media-os-capability-registration.md`: requirement-to-evidence matrix and live post-deploy acceptance contract.
+- `gap-audit-v4.9.1-media-os-capability-registration.md`: stale-regression root cause, remediation, and preserved boundaries.
+- `../CHANGELOG-v4.9.1.md`: semantic PATCH change record.
+- `../RELEASE.md`: current and historical repository release record.
+
+v4.9.1 registers `mesh-media-production`, `mesh-media-verification`, and `mesh-media-distribution` for CMO, and `mesh-media-production` for VP Content only. VP Content remains L2 with zero delegation authority. No Skill becomes an agent principal or gains approval/publication authority.
+
+## v4.9.0 historical capability evidence
+
+- `release-v4.9.0-mesh-opex-bot-integration.md`: historical Mesh OpEx Bot shared-capability release.
+- `security-review-v4.9.0-mesh-opex-bot-integration.md`: v4.9.0 security record.
+- `verification-v4.9.0-mesh-opex-bot-integration.md`: v4.9.0 verification record.
+- `gap-audit-v4.9.0-mesh-opex-bot-integration.md`: v4.9.0 gap audit.
+
+The published v4.9.0 workflow is manual-only and read-only. v4.9.1 is the sole active exact-SHA SemVer publisher after verification.
+
+## v4.8.4 closeout documentation
 
 - `release-v4.8.4-release-record-correction.md`: documentation/release-control PATCH scope and corrected v4.8.3 retirement inventory.
 - `security-review-v4.8.4-release-record-correction.md`: TARGETED release-control security review and least-privilege evidence.
 - `verification-v4.8.4-release-record-correction.md`: exact-candidate, historical-workflow, and exact-SHA publication proof model.
 - `gap-audit-v4.8.4-release-record-correction.md`: documentation-to-implementation defect and remediation.
 - `../CHANGELOG-v4.8.4.md`: semantic PATCH change record.
-- `../RELEASE.md`: current and historical repository release record.
 
 ## v4.8.3 historical publisher evidence
 
@@ -67,7 +86,7 @@ agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
-The repository release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.8.4 does not deploy QNAP or change the runtime contract.
+The repository release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.9.1 produces a verified current-source QNAP 4.4.0 candidate, but production activation is not established until that candidate is promoted through the governed QNAP deployment process and read back through Secure MCP.
 
 ## Current topology
 
@@ -86,6 +105,8 @@ flowchart TB
     C -. governed challenge .-> DA[[Mesh Devil's Advocate\nShared Skill]]
     CRO -. governed challenge .-> DA
     CFO -. governed analytics .-> MDA[[Mesh Data Analytics\nShared Skill]]
+    CMO -. governed media production/verification/distribution .-> MOS[[Mesh Media Production OS\nShared Skills]]
+    VPC -. governed media production only .-> MOS
 ```
 
-Historical release records remain snapshots. They do not override the current v4.8.4 repository release, canonical 4.0.0 authority/runtime contract, or production QNAP 4.4.0 deployment.
+Historical release records remain snapshots. They do not override the current v4.9.1 repository release, canonical 4.0.0 authority/runtime contract, or the production QNAP 4.4.0 deployment state established by live readback.

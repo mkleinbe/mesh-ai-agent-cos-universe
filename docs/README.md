@@ -1,6 +1,6 @@
 # Documentation Index
 
-Current repository release: **`v4.8.4 Release Record Correction`**.  
+Current repository release: **`v4.9.0 Mesh OpEx Bot Shared Capability Integration`**.  
 Current production QNAP deployment: **`4.4.0`**.  
 Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 

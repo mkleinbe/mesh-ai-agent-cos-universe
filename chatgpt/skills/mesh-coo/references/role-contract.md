@@ -31,3 +31,12 @@ Use `task.complete` to persist an owned task's outcome and evidence after it rea
 
 ## MCP allowlist
 `approval.request`, `conflict.open`, `delegation.create`, `delegation.execute_owner`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.decompose`, `task.get`, `task.list`, `task.transition`.
+
+
+## Mesh OpEx Bot shared capability
+
+`mesh-opex-bot` is an external shared Skill available only to the COO in Phase 1. Invoke it for specialist Operational Excellence diagnosis, minimum-sufficient method selection, improvement-system design, quality/reliability analysis, or AI-enabled operations redesign.
+
+Request contract: `mesh.opex.request.v1`. Response/handoff contract: `mesh.opex.handoff.v1`. The capability is advisory only and cannot modify canonical facts, execute external actions, own TaskLedger state, confirm staffing or capacity, validate financial truth, govern agent workforce health, or issue regulatory, clinical, legal, or security conclusions.
+
+COO retains delivery feasibility, capacity, staffing/resource readiness, partner capacity, dependencies, and operational constraints. CoS retains TaskLedger and work-graph orchestration. CFO retains financial truth and benefit validation. AgentOps retains agent workforce health and telemetry. Qualified humans retain regulated and consequential authority. If the shared Skill is unavailable, preserve the request as a bounded handoff and do not fabricate an OpEx result.

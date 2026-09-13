@@ -2,7 +2,7 @@
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.8.4 Release Record Correction`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.9.0 Mesh OpEx Bot Shared Capability Integration`. Current production QNAP deployment: `4.4.0`. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
 v4.8.4 is a documentation and release-control PATCH. It corrects the v4.8.3 current-source release inventory to explicitly include `v4.6.0 CFO Zero-Defect Execution Remediation`, which the v4.8.3 implementation did retire, then retires v4.8.3 itself to historical verification. It changes no Skill package, runtime, QNAP deployment, agent roster, MCP surface, source authority, or consequential approval right.
 

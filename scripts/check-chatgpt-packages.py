@@ -29,6 +29,7 @@ EXPECTED = {
 }
 DA_CONSUMERS = {"cos", "cro"}
 ANALYTICS_CONSUMERS = {"cfo"}
+OPEX_CONSUMERS = {"coo"}
 CURRENT_DOCS = [
     ROOT / "README.md",
     ROOT / "AGENTS.md",
@@ -81,7 +82,7 @@ require(__version__ == RELEASE, f"Workspace Agent release must be {RELEASE}")
 require(f'version = "{RELEASE}"' in (ROOT / "pyproject.toml").read_text(), "Runtime/package version drifted")
 
 shared = {item["capability"]: item for item in registry_source.get("shared_capabilities", [])}
-require(set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}, "External Phase 1 shared Skill set drifted")
+require(set(shared) == {"mesh-devils-advocate", "mesh-data-analytics", "mesh-opex-bot"}, "External Phase 1 shared Skill set drifted")
 challenge = shared["mesh-devils-advocate"]
 require(challenge["deployment"] == "EXTERNAL_SHARED_SKILL", "Shared challenge deployment drifted")
 require(set(challenge["consumers"]) == DA_CONSUMERS, "Shared challenge consumers drifted")
@@ -94,6 +95,14 @@ require(set(analytics["consumers"]) == ANALYTICS_CONSUMERS, "Shared analytics co
 require(analytics["authority"] == "ANALYTICAL_EXECUTION_ONLY", "Shared analytics authority drifted")
 require(analytics["canonical_facts_modified"] is False, "Shared analytics cannot modify canonical facts")
 require(analytics["external_action_included"] is False, "Shared analytics cannot execute external actions")
+opex = shared["mesh-opex-bot"]
+require(opex["deployment"] == "EXTERNAL_SHARED_SKILL", "Mesh OpEx Bot deployment drifted")
+require(set(opex["consumers"]) == OPEX_CONSUMERS, "Mesh OpEx Bot consumers drifted")
+require(opex["authority"] == "OPERATIONAL_EXCELLENCE_ADVISORY_ONLY", "Mesh OpEx Bot authority drifted")
+require(opex["canonical_facts_modified"] is False, "Mesh OpEx Bot cannot modify canonical facts")
+require(opex["external_action_included"] is False, "Mesh OpEx Bot cannot execute external actions")
+require(opex["request_contract"] == "mesh.opex.request.v1", "Mesh OpEx Bot request contract drifted")
+require(opex["response_contract"] == "mesh.opex.handoff.v1", "Mesh OpEx Bot response contract drifted")
 require(not (ROOT / "agents" / "devils-advocate.md").exists(), "Duplicate Devil's Advocate role card remains")
 require(not (AGENTS / "devils-advocate.json").exists(), "Duplicate Devil's Advocate Workspace Agent remains")
 require(not (SKILLS / "mesh-devils-advocate").exists(), "Duplicate local Devil's Advocate Skill remains")
@@ -153,10 +162,13 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
         expected_shared.append("mesh-devils-advocate")
     if agent_id in ANALYTICS_CONSUMERS:
         expected_shared.append("mesh-data-analytics")
+    if agent_id in OPEX_CONSUMERS:
+        expected_shared.append("mesh-opex-bot")
     require(manifest.get("shared_skills", []) == expected_shared, f"{agent_id}: shared Skill projection drifted")
     require(manifest["builder_configuration"].get("shared_skills", []) == expected_shared, f"{agent_id}: builder shared Skill projection drifted")
     require(("mesh-devils-advocate" in record.get("skills", [])) is (agent_id in DA_CONSUMERS), f"{agent_id}: Devil's Advocate entitlement drifted")
     require(("mesh-data-analytics" in record.get("skills", [])) is (agent_id in ANALYTICS_CONSUMERS), f"{agent_id}: Mesh Data Analytics entitlement drifted")
+    require(("mesh-opex-bot" in record.get("skills", [])) is (agent_id in OPEX_CONSUMERS), f"{agent_id}: Mesh OpEx Bot entitlement drifted")
 
 package = json.loads((ROOT / "mcp" / "package.json").read_text())
 package_lock = json.loads((ROOT / "mcp" / "package-lock.json").read_text())

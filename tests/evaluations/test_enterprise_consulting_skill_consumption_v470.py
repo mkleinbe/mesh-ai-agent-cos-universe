@@ -31,7 +31,7 @@ def test_registry_authority_and_roster_are_unchanged() -> None:
         "message-ops",
     }
     shared = {item["capability"]: item for item in raw["shared_capabilities"]}
-    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}
+    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics", "mesh-opex-bot"}
     assert records["cos"]["decision_authority"] == "L3 only where explicitly delegated; L4/L5 require human authority"
     assert records["cro"]["decision_authority"] == "L3 recommendations; bounded L2 operating decisions"
     assert records["cfo"]["decision_authority"] == "L3 financial recommendation within supported source scope"
@@ -54,7 +54,7 @@ def test_direct_skill_bindings_are_not_expanded() -> None:
         "mesh-devils-advocate",
     ]
     assert records["cfo"]["skills"] == ["mesh-data-analytics"]
-    assert records["coo"]["skills"] == []
+    assert records["coo"]["skills"] == ["mesh-opex-bot"]
     assert records["answer-desk"]["skills"] == ["mesh-firm-360"]
     assert records["cmo"]["skills"] == [
         "mesh-marketing-messaging",

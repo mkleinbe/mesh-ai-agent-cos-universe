@@ -37,6 +37,21 @@
       "request_contract": "mesh.data.analytics.handoff.v1.2",
       "response_contract": "mesh.data.analytics.handoff.v1.2",
       "rule": "Execute and validate quantitative analysis, model inspection, research, and finance artifacts without changing CFO decision authority, canonical financial truth, or consequential write rights."
+    },
+    {
+      "capability": "mesh-opex-bot",
+      "display_name": "Mesh OpEx Bot",
+      "type": "shared_skill",
+      "deployment": "EXTERNAL_SHARED_SKILL",
+      "consumers": [
+        "coo"
+      ],
+      "authority": "OPERATIONAL_EXCELLENCE_ADVISORY_ONLY",
+      "canonical_facts_modified": false,
+      "external_action_included": false,
+      "request_contract": "mesh.opex.request.v1",
+      "response_contract": "mesh.opex.handoff.v1",
+      "rule": "Provide Operational Excellence advisory evidence without replacing COO delivery feasibility, CoS TaskLedger/work-graph authority, CFO financial truth, AgentOps workforce-health authority, or qualified-human regulatory, clinical, legal, security, staffing, and consequential decision authority."
     }
   ],
   "agents": [
@@ -422,7 +437,9 @@
         "approved delivery plans",
         "approved resource data"
       ],
-      "skills": [],
+      "skills": [
+        "mesh-opex-bot"
+      ],
       "tools": [
         "task-ledger",
         "staffing-readiness",

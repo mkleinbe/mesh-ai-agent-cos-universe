@@ -175,8 +175,13 @@ def test_registry_source_preserves_role_boundaries() -> None:
     assert "consequential_external_send_without_approval" in records["message-ops"]["prohibited_actions"]
 
     shared = {item["capability"]: item for item in raw["shared_capabilities"]}
-    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}
+    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics", "mesh-opex-bot"}
     assert shared["mesh-devils-advocate"]["authority"] == "ADVISORY_ONLY"
     assert shared["mesh-data-analytics"]["authority"] == "ANALYTICAL_EXECUTION_ONLY"
     assert shared["mesh-data-analytics"]["consumers"] == ["cfo"]
+    assert shared["mesh-opex-bot"]["authority"] == "OPERATIONAL_EXCELLENCE_ADVISORY_ONLY"
+    assert shared["mesh-opex-bot"]["consumers"] == ["coo"]
+    assert shared["mesh-opex-bot"]["canonical_facts_modified"] is False
+    assert shared["mesh-opex-bot"]["external_action_included"] is False
+    assert records["coo"]["skills"] == ["mesh-opex-bot"]
     assert records["cfo"]["skills"] == ["mesh-data-analytics"]

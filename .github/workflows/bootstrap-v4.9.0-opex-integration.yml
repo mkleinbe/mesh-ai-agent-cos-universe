@@ -31,6 +31,7 @@ jobs:
           python scripts/migrate_v490_opex.py
           python scripts/fix_v490_checker.py
           python scripts/fix_v490_runtime_drift.py
+          python scripts/fix_v490_regression_expectations.py
       - name: Verify migrated repository
         shell: bash
         run: |
@@ -56,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f scripts/migrate_v490_opex.py scripts/fix_v490_checker.py scripts/fix_v490_runtime_drift.py
+          rm -f scripts/migrate_v490_opex.py scripts/fix_v490_checker.py scripts/fix_v490_runtime_drift.py scripts/fix_v490_regression_expectations.py
           git config user.name 'Mesh Release Bot'
           git config user.email 'release-bot@meshdigital.io'
           git add -A

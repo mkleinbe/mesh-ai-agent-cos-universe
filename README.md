@@ -6,6 +6,8 @@ Production operating core for Mesh Digital LLC's governed AI Chief of Staff work
 
 v4.8.3 is the release-control closeout PATCH for the v4.8.x remediation. It retires residual historical publisher authority discovered during v4.8.2 post-release verification. It changes no Skill package, runtime, QNAP deployment, agent roster, MCP surface, source authority, or consequential approval right.
 
+Historical release identity is preserved, including `v4.6.0 CFO Zero-Defect Execution Remediation`; historical evidence remains immutable and does not override the current release.
+
 ## Canonical architecture
 
 Phase 1 contains exactly 10 registered agents: Chief of Staff, AgentOps Controller, Answer & Decision Desk, CRO, CFO, COO, Consultant Network Steward, CMO, VP Content, and Message Operations. Consultant Network Steward remains a child of COO and VP Content remains a child of CMO.
@@ -16,7 +18,7 @@ Mesh CoS MCP TaskLedger is canonical for task ownership, delegation, approval, c
 
 ## v4.8.3 Historical Publisher Retirement
 
-Post-release verification of v4.8.2 found historical v4.4.1 and v4.4.2 workflows reacting to the new `main` commit. Their immutable-release guards prevented retargeting, but the workflows still retained unnecessary `contents: write` and publisher logic. Repository-wide inspection found the same stale publisher capability in v4.1.15, v4.2.3, v4.3.0, v4.3.1, and the now-published v4.8.2 workflow.
+Post-release verification of v4.8.2 found historical v4.4.1 and v4.4.2 workflows reacting to the new `main` commit. Their immutable-release guards prevented retargeting, but the workflows still retained unnecessary `contents: write` and publisher logic. Repository-wide inspection found the same stale publisher capability in v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.6.0, and the now-published v4.8.2 workflow.
 
 v4.8.3 converts those published workflows to read-only `workflow_dispatch` historical verification and adds a systemic regression covering every published v4.x SemVer workflow through v4.8.2. v4.8.3 is the sole current SemVer publisher and binds its release to exact `GITHUB_SHA` after verification.
 

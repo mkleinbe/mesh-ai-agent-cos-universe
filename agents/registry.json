@@ -561,7 +561,10 @@
       "skills": [
         "mesh-marketing-messaging",
         "mesh-messaging-orchestrator",
-        "mesh-executive-communications"
+        "mesh-executive-communications",
+        "mesh-media-production",
+        "mesh-media-verification",
+        "mesh-media-distribution"
       ],
       "tools": [
         "task-ledger",
@@ -627,7 +630,8 @@
         "approved campaign inputs"
       ],
       "skills": [
-        "mesh-marketing-messaging"
+        "mesh-marketing-messaging",
+        "mesh-media-production"
       ],
       "tools": [
         "content-production",

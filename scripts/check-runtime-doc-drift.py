@@ -48,7 +48,7 @@ require(set(registry) == EXPECTED_AGENTS, "Canonical Phase 1 roster must contain
 require("devils-advocate" not in registry, "Devil's Advocate must remain outside the agent roster")
 require("message-ops" in registry, "Message Operations must remain the tenth registered agent")
 shared = {item["capability"]: item for item in registry_source.get("shared_capabilities", [])}
-require(set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}, "External Phase 1 shared Skill set drifted")
+require(set(shared) == {"mesh-devils-advocate", "mesh-data-analytics", "mesh-opex-bot"}, "External Phase 1 shared Skill set drifted")
 challenge = shared["mesh-devils-advocate"]
 require(set(challenge["consumers"]) == {"cos", "cro"}, "Devil's Advocate consumers drifted")
 require(challenge["authority"] == "ADVISORY_ONLY", "Devil's Advocate authority drifted")
@@ -59,6 +59,13 @@ require(set(analytics["consumers"]) == {"cfo"}, "Mesh Data Analytics consumers d
 require(analytics["authority"] == "ANALYTICAL_EXECUTION_ONLY", "Mesh Data Analytics authority drifted")
 require(analytics["canonical_facts_modified"] is False, "Mesh Data Analytics cannot modify canonical facts")
 require(analytics["external_action_included"] is False, "Mesh Data Analytics cannot execute external actions")
+opex = shared["mesh-opex-bot"]
+require(set(opex["consumers"]) == {"coo"}, "Mesh OpEx Bot consumers drifted")
+require(opex["authority"] == "OPERATIONAL_EXCELLENCE_ADVISORY_ONLY", "Mesh OpEx Bot authority drifted")
+require(opex["canonical_facts_modified"] is False, "Mesh OpEx Bot cannot modify canonical facts")
+require(opex["external_action_included"] is False, "Mesh OpEx Bot cannot execute external actions")
+require(opex["request_contract"] == "mesh.opex.request.v1", "Mesh OpEx Bot request contract drifted")
+require(opex["response_contract"] == "mesh.opex.handoff.v1", "Mesh OpEx Bot response contract drifted")
 
 require(__version__ == RELEASE, f"Expected runtime release {RELEASE}")
 require(f'version = "{RELEASE}"' in (ROOT / "pyproject.toml").read_text(), "Package/runtime release drifted")

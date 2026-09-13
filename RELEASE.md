@@ -1,3 +1,18 @@
+# v4.9.0 Mesh OpEx Bot Shared Capability Integration
+
+
+`v4.9.0 Mesh OpEx Bot Shared Capability Integration` adds the external governed `mesh-opex-bot` capability to the COO without creating an eleventh agent or changing runtime authority.
+
+Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged.  
+Production QNAP deployment: `4.4.0`, unchanged.  
+Registered organization: exactly 10 agents, unchanged.
+
+The COO is the sole Phase 1 consumer. The shared Skill is advisory only, modifies no canonical facts, executes no external action, and uses `mesh.opex.request.v1` and `mesh.opex.handoff.v1`. COO retains delivery feasibility/capacity/staffing authority, CoS retains TaskLedger and work-graph orchestration, CFO retains financial truth, AgentOps retains agent-workforce health, and qualified humans retain regulated and consequential decisions.
+
+v4.8.4 becomes historical read-only verification. v4.9.0 is the sole active exact-SHA SemVer publisher.
+
+See `docs/release-v4.9.0-mesh-opex-bot-integration.md`, `docs/security-review-v4.9.0-mesh-opex-bot-integration.md`, `docs/verification-v4.9.0-mesh-opex-bot-integration.md`, `docs/gap-audit-v4.9.0-mesh-opex-bot-integration.md`, and `CHANGELOG-v4.9.0.md`.
+
 # v4.8.4 Release Record Correction
 
 `v4.8.4 Release Record Correction` is the current repository release designation. It is a documentation and release-control PATCH that corrects the v4.8.3 human-readable inventory to include v4.6.0, which the v4.8.3 implementation did retire, and advances release ownership to v4.8.4 without rewriting the historical v4.8.3 tag or GitHub Release.

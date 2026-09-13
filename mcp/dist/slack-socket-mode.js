@@ -1,0 +1,286 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import { pythonEnvironment, repositoryRoot } from './python-bridge.js';
+const CONNECTIONS_OPEN_URL = 'https://slack.com/api/apps.connections.open';
+const DEFAULT_CONNECT_TIMEOUT_MS = 10_000;
+const DEFAULT_RECONNECT_BASE_MS = 1_000;
+const DEFAULT_RECONNECT_MAX_MS = 30_000;
+const DEFAULT_BRIDGE_TIMEOUT_MS = 2_500;
+const MAX_BRIDGE_RESPONSE_BYTES = 1_000_000;
+function truthy(value) {
+    return ['1', 'true', 'yes', 'on'].includes((value ?? '').trim().toLowerCase());
+}
+export function readSlackSocketAppToken(env = process.env) {
+    const file = env.MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE?.trim();
+    if (!file)
+        throw new Error('MESH_COS_SLACK_SOCKET_APP_TOKEN_FILE is required');
+    let token;
+    try {
+        token = fs.readFileSync(file, 'utf8').trim();
+    }
+    catch {
+        throw new Error('Slack Socket Mode app token file is unavailable');
+    }
+    if (!token.startsWith('xapp-'))
+        throw new Error('Slack Socket Mode requires an app-level token');
+    return token;
+}
+function defaultSocketFactory(url) {
+    const constructor = globalThis.WebSocket;
+    if (!constructor)
+        throw new Error('Node runtime does not provide WebSocket support');
+    return new constructor(url);
+}
+async function defaultFetch(url, init) {
+    return fetch(url, init);
+}
+let bridgeTail = Promise.resolve();
+async function invokeTrustedBridge(envelope, env) {
+    const python = env.MESH_COS_PYTHON_BIN?.trim() || 'python';
+    const timeoutValue = Number(env.MESH_COS_SLACK_BRIDGE_TIMEOUT_MS ?? DEFAULT_BRIDGE_TIMEOUT_MS);
+    const timeoutMs = Number.isInteger(timeoutValue) && timeoutValue > 0
+        ? timeoutValue
+        : DEFAULT_BRIDGE_TIMEOUT_MS;
+    const child = spawn(python, ['-m', 'mesh_cos.slack_socket_bridge'], {
+        cwd: repositoryRoot(),
+        env: pythonEnvironment(env),
+        stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    let stdout = '';
+    let tooLarge = false;
+    let timedOut = false;
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+        if (Buffer.byteLength(stdout + chunk, 'utf8') > MAX_BRIDGE_RESPONSE_BYTES) {
+            tooLarge = true;
+            child.kill('SIGKILL');
+            return;
+        }
+        stdout += chunk;
+    });
+    const timer = setTimeout(() => {
+        timedOut = true;
+        child.kill('SIGKILL');
+    }, timeoutMs);
+    const completed = new Promise((resolve, reject) => {
+        child.once('error', reject);
+        child.once('close', code => resolve(code ?? 1));
+    });
+    child.stdin.end(JSON.stringify(envelope));
+    let code;
+    try {
+        code = await completed;
+    }
+    finally {
+        clearTimeout(timer);
+    }
+    if (timedOut)
+        throw new Error('Slack approval bridge timed out');
+    if (tooLarge)
+        throw new Error('Slack approval bridge response exceeded maximum size');
+    if (code !== 0)
+        throw new Error('Slack approval bridge process failed');
+    let response;
+    try {
+        response = JSON.parse(stdout);
+    }
+    catch {
+        throw new Error('Slack approval bridge returned invalid JSON');
+    }
+    return response;
+}
+export async function callSlackSocketApprovalBridge(envelope, env = process.env) {
+    let release;
+    const previous = bridgeTail;
+    bridgeTail = new Promise(resolve => { release = resolve; });
+    await previous;
+    try {
+        return await invokeTrustedBridge(envelope, env);
+    }
+    finally {
+        release();
+    }
+}
+function textData(value) {
+    if (typeof value === 'string')
+        return value;
+    if (Buffer.isBuffer(value))
+        return value.toString('utf8');
+    if (value instanceof ArrayBuffer)
+        return Buffer.from(value).toString('utf8');
+    return null;
+}
+export class SlackSocketModeApprovalListener {
+    env;
+    fetchImpl;
+    socketFactory;
+    bridge;
+    scheduleReconnect;
+    socket = null;
+    active = false;
+    stopped = false;
+    reconnectAttempt = 0;
+    reconnectScheduled = false;
+    constructor(env = process.env, dependencies = {}) {
+        this.env = env;
+        this.fetchImpl = dependencies.fetchImpl ?? defaultFetch;
+        this.socketFactory = dependencies.socketFactory ?? defaultSocketFactory;
+        this.bridge = dependencies.bridge ?? (envelope => callSlackSocketApprovalBridge(envelope, env));
+        this.scheduleReconnect = dependencies.scheduleReconnect ?? ((callback, delayMs) => setTimeout(callback, delayMs));
+    }
+    isRequired() {
+        return truthy(this.env.MESH_COS_SLACK_HITL_REQUIRED);
+    }
+    isActive() {
+        return !this.isRequired() || this.active;
+    }
+    async start() {
+        this.stopped = false;
+        if (!this.isRequired()) {
+            this.active = true;
+            return;
+        }
+        readSlackSocketAppToken(this.env);
+        this.active = false;
+        void this.connect().catch(() => this.scheduleReconnectAttempt());
+    }
+    async stop() {
+        this.stopped = true;
+        this.active = false;
+        this.reconnectScheduled = false;
+        const socket = this.socket;
+        this.socket = null;
+        socket?.close();
+    }
+    reconnectDelayMs() {
+        const exponent = Math.min(this.reconnectAttempt, 10);
+        return Math.min(DEFAULT_RECONNECT_BASE_MS * (2 ** exponent), DEFAULT_RECONNECT_MAX_MS);
+    }
+    scheduleReconnectAttempt() {
+        if (this.stopped || !this.isRequired() || this.reconnectScheduled)
+            return;
+        const delayMs = this.reconnectDelayMs();
+        this.reconnectAttempt += 1;
+        this.reconnectScheduled = true;
+        this.scheduleReconnect(() => {
+            this.reconnectScheduled = false;
+            if (this.stopped)
+                return;
+            void this.connect().catch(() => this.scheduleReconnectAttempt());
+        }, delayMs);
+    }
+    async openUrl() {
+        const token = readSlackSocketAppToken(this.env);
+        const response = await this.fetchImpl(CONNECTIONS_OPEN_URL, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+        });
+        if (!response.ok)
+            throw new Error('Slack Socket Mode connection request failed');
+        const payload = await response.json();
+        if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+            throw new Error('Slack Socket Mode connection response is invalid');
+        }
+        const record = payload;
+        const url = typeof record.url === 'string' ? record.url : '';
+        if (record.ok !== true || !url.startsWith('wss://')) {
+            throw new Error('Slack Socket Mode connection URL is unavailable');
+        }
+        return url;
+    }
+    async connect() {
+        if (this.stopped)
+            return;
+        const url = await this.openUrl();
+        if (this.stopped)
+            return;
+        const socket = this.socketFactory(url);
+        this.socket = socket;
+        this.active = false;
+        const connectTimeoutValue = Number(this.env.MESH_COS_SLACK_SOCKET_CONNECT_TIMEOUT_MS ?? DEFAULT_CONNECT_TIMEOUT_MS);
+        const connectTimeoutMs = Number.isInteger(connectTimeoutValue) && connectTimeoutValue > 0
+            ? connectTimeoutValue
+            : DEFAULT_CONNECT_TIMEOUT_MS;
+        const timer = setTimeout(() => {
+            if (this.socket !== socket || this.active || this.stopped)
+                return;
+            this.active = false;
+            try {
+                socket.close();
+            }
+            catch {
+                this.scheduleReconnectAttempt();
+            }
+        }, connectTimeoutMs);
+        socket.onopen = () => {
+            clearTimeout(timer);
+            if (this.stopped || this.socket !== socket) {
+                socket.close();
+                return;
+            }
+            this.active = true;
+            this.reconnectAttempt = 0;
+            this.reconnectScheduled = false;
+        };
+        socket.onerror = () => {
+            clearTimeout(timer);
+            this.active = false;
+            this.scheduleReconnectAttempt();
+        };
+        socket.onclose = () => {
+            clearTimeout(timer);
+            if (this.socket === socket)
+                this.socket = null;
+            this.active = false;
+            this.scheduleReconnectAttempt();
+        };
+        socket.onmessage = event => {
+            void this.handleMessage(event.data);
+        };
+    }
+    async handleMessage(data) {
+        const raw = textData(data);
+        if (!raw)
+            return;
+        let envelope;
+        try {
+            const parsed = JSON.parse(raw);
+            if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
+                return;
+            envelope = parsed;
+        }
+        catch {
+            return;
+        }
+        const type = String(envelope.type ?? '');
+        if (type === 'hello') {
+            this.active = true;
+            this.reconnectAttempt = 0;
+            return;
+        }
+        if (type === 'disconnect') {
+            this.active = false;
+            this.socket?.close();
+            return;
+        }
+        if (type !== 'events_api' && type !== 'interactive')
+            return;
+        const envelopeId = typeof envelope.envelope_id === 'string' ? envelope.envelope_id : '';
+        if (!envelopeId)
+            return;
+        try {
+            await this.bridge(envelope);
+            // Canonical state is written by the trusted bridge before acknowledgement. Structured
+            // fail-closed rejections are final and are acknowledged; transport/process failures
+            // are not acknowledged so Slack can redeliver them.
+            this.socket?.send(JSON.stringify({ envelope_id: envelopeId }));
+        }
+        catch {
+            // No internal error text is exposed to Slack or the caller.
+        }
+    }
+}
+//# sourceMappingURL=slack-socket-mode.js.map

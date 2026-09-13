@@ -29,6 +29,7 @@ EXPECTED = {
 }
 SHARED_CHALLENGE_CONSUMERS = {"cos", "cro"}
 SHARED_ANALYTICS_CONSUMERS = {"cfo"}
+SHARED_OPEX_CONSUMERS = {"coo"}
 HUMAN_ONLY = {"approval.record_decision", "reliability.human_override"}
 
 REQUIRED_MCP_TOOLS = {
@@ -94,6 +95,8 @@ def _expected_shared(agent_id: str) -> list[str]:
         capabilities.append("mesh-devils-advocate")
     if agent_id in SHARED_ANALYTICS_CONSUMERS:
         capabilities.append("mesh-data-analytics")
+    if agent_id in SHARED_OPEX_CONSUMERS:
+        capabilities.append("mesh-opex-bot")
     return capabilities
 
 
@@ -128,7 +131,7 @@ def test_all_phase1_agents_have_chatgpt_skill_and_builder_config() -> None:
 
 def test_external_shared_capabilities_are_explicit_and_bounded() -> None:
     capabilities = {item["capability"]: item for item in _raw_registry_source()["shared_capabilities"]}
-    assert set(capabilities) == {"mesh-devils-advocate", "mesh-data-analytics"}
+    assert set(capabilities) == {"mesh-devils-advocate", "mesh-data-analytics", "mesh-opex-bot"}
     challenge = capabilities["mesh-devils-advocate"]
     assert challenge["deployment"] == "EXTERNAL_SHARED_SKILL"
     assert set(challenge["consumers"]) == SHARED_CHALLENGE_CONSUMERS
@@ -141,10 +144,20 @@ def test_external_shared_capabilities_are_explicit_and_bounded() -> None:
     assert analytics["authority"] == "ANALYTICAL_EXECUTION_ONLY"
     assert analytics["canonical_facts_modified"] is False
     assert analytics["external_action_included"] is False
+    opex = capabilities["mesh-opex-bot"]
+    assert opex["deployment"] == "EXTERNAL_SHARED_SKILL"
+    assert set(opex["consumers"]) == SHARED_OPEX_CONSUMERS
+    assert opex["authority"] == "OPERATIONAL_EXCELLENCE_ADVISORY_ONLY"
+    assert opex["canonical_facts_modified"] is False
+    assert opex["external_action_included"] is False
+    assert opex["request_contract"] == "mesh.opex.request.v1"
+    assert opex["response_contract"] == "mesh.opex.handoff.v1"
 
     registry = _raw_registry()
     for agent_id, record in registry.items():
         assert ("mesh-devils-advocate" in record.get("skills", [])) is (agent_id in SHARED_CHALLENGE_CONSUMERS)
+        assert ("mesh-data-analytics" in record.get("skills", [])) is (agent_id in SHARED_ANALYTICS_CONSUMERS)
+        assert ("mesh-opex-bot" in record.get("skills", [])) is (agent_id in SHARED_OPEX_CONSUMERS)
     assert registry["message-ops"]["skills"] == ["mesh-message-operations"]
     assert registry["cfo"]["skills"] == ["mesh-data-analytics"]
 

@@ -45,7 +45,7 @@ def test_fme_001_002_003_governance_invariants() -> None:
     assert agents["consultant-network-steward"]["parent_agent_id"] == "coo"
     assert agents["vp-content"]["parent_agent_id"] == "cmo"
     shared = {item["capability"]: item for item in raw["shared_capabilities"]}
-    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics"}
+    assert set(shared) == {"mesh-devils-advocate", "mesh-data-analytics", "mesh-opex-bot"}
     assert shared["mesh-devils-advocate"]["type"] == "shared_skill"
     assert "L4/L5 require human authority" in agents["cos"]["decision_authority"]
     assert "COMPLETED != VERIFIED" in _skill("mesh-chief-of-staff")

@@ -34,7 +34,7 @@ The Skill may diagnose flow, select a minimum sufficient OpEx method, design exp
 
 COO remains accountable for delivery feasibility, capacity, staffing/resource readiness, partner capacity, dependencies, and operational constraints. CoS remains the work-graph and TaskLedger authority. CFO remains the financial-truth owner. AgentOps remains the AI-agent workforce health and telemetry owner. Qualified humans retain regulated and consequential decision authority.
 
-If the shared Skill is unavailable, preserve the request as a bounded handoff rather than fabricating an OpEx result.
+If the shared Skill is unavailable, preserve the request as a bounded handoff. Do not fabricate an OpEx result.
 
 ## Vendor and partner operational dependency
 

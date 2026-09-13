@@ -1,0 +1,9 @@
+
+[dev]
+bandit>=1.7
+jsonschema>=4.20
+mypy>=1.11
+pytest>=8
+pytest-cov>=5
+ruff>=0.6
+types-jsonschema>=4.23

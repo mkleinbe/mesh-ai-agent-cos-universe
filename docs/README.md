@@ -1,19 +1,26 @@
 # Documentation Index
 
-Current repository release: **`v4.8.3 Historical Publisher Retirement`**.  
+Current repository release: **`v4.8.4 Release Record Correction`**.  
 Current production QNAP deployment: **`4.4.0`**.  
 Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 
 The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, historical-release immutability, and release verification.
 
-## Current v4.8.3 closeout documentation
+## Current v4.8.4 closeout documentation
 
-- `release-v4.8.3-historical-publisher-retirement.md`: release-control-only PATCH scope and historical publisher retirement.
-- `security-review-v4.8.3-historical-publisher-retirement.md`: TARGETED release-control security review and least-privilege evidence.
-- `verification-v4.8.3-historical-publisher-retirement.md`: systemic historical-workflow and exact-SHA publication proof model.
-- `gap-audit-v4.8.3-historical-publisher-retirement.md`: verification-discovered defect and closure state.
-- `../CHANGELOG-v4.8.3.md`: semantic PATCH change record.
+- `release-v4.8.4-release-record-correction.md`: documentation/release-control PATCH scope and corrected v4.8.3 retirement inventory.
+- `security-review-v4.8.4-release-record-correction.md`: TARGETED release-control security review and least-privilege evidence.
+- `verification-v4.8.4-release-record-correction.md`: exact-candidate, historical-workflow, and exact-SHA publication proof model.
+- `gap-audit-v4.8.4-release-record-correction.md`: documentation-to-implementation defect and remediation.
+- `../CHANGELOG-v4.8.4.md`: semantic PATCH change record.
 - `../RELEASE.md`: current and historical repository release record.
+
+## v4.8.3 historical publisher evidence
+
+- `release-v4.8.3-historical-publisher-retirement.md`: corrected current-source record of the workflows retired by v4.8.3, including v4.6.0.
+- `security-review-v4.8.3-historical-publisher-retirement.md`: TARGETED release-control security evidence.
+- `verification-v4.8.3-historical-publisher-retirement.md`: systemic historical-workflow proof model.
+- `gap-audit-v4.8.3-historical-publisher-retirement.md`: corrected inventory and v4.8.4 record-correction lineage.
 
 ## v4.8.2 functional remediation evidence
 
@@ -24,7 +31,6 @@ The current documentation describes the canonical **10-agent** Phase 1 workforce
 - `requirements-trace-v4.8.2.md`: requirement -> BDD -> implementation -> test -> security -> verification traceability.
 - `source-governance-v4.8.2.md`: pinned donor source governance and fourth-source blocker.
 - `donor-disposition-ledger-v4.8.2.md`: explicit disposition for all 49 candidates in the three evidenced donor collections.
-- `gap-audit-v4.8.2-functional-method-remediation.md`: original audit remediation state.
 - `testing-evaluation.md`: BDD/TDD, behavior-level evaluation, structural regressions, and release gates.
 
 ## Canonical architecture and governance
@@ -61,7 +67,7 @@ agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
 
-The repository release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.8.3 does not deploy QNAP or change the runtime contract.
+The repository release, canonical authority/runtime contract, and QNAP deployment release are deliberately separate version domains. v4.8.4 does not deploy QNAP or change the runtime contract.
 
 ## Current topology
 
@@ -82,4 +88,4 @@ flowchart TB
     CFO -. governed analytics .-> MDA[[Mesh Data Analytics\nShared Skill]]
 ```
 
-Historical release records remain snapshots. They do not override the current v4.8.3 repository release, canonical 4.0.0 authority/runtime contract, or production QNAP 4.4.0 deployment.
+Historical release records remain snapshots. They do not override the current v4.8.4 repository release, canonical 4.0.0 authority/runtime contract, or production QNAP 4.4.0 deployment.

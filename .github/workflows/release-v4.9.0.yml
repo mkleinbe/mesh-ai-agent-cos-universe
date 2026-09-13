@@ -8,11 +8,18 @@ on:
       - 'chatgpt/skills/mesh-coo/**'
       - 'chatgpt/workspace-agents/coo.json'
       - 'scripts/check-chatgpt-packages.py'
-      - 'tests/evaluations/test_opex_shared_capability_v490.py'
-      - 'tests/evaluations/test_release_record_correction_v484.py'
+      - 'scripts/check-runtime-doc-drift.py'
+      - 'tests/evaluations/test_chatgpt_workspace_agent_packages.py'
+      - 'tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py'
+      - 'tests/evaluations/test_functional_method_expansion_v480.py'
       - 'tests/evaluations/test_historical_release_workflows_v483.py'
+      - 'tests/evaluations/test_local_chatgpt_mcp_projection.py'
+      - 'tests/evaluations/test_opex_shared_capability_v490.py'
+      - 'tests/evaluations/test_phase1_role_model_consistency.py'
+      - 'tests/evaluations/test_release_record_correction_v484.py'
       - '.github/workflows/release-v4.8.4.yml'
       - '.github/workflows/release-v4.9.0.yml'
+      - '.gitignore'
       - 'README.md'
       - 'RELEASE.md'
       - 'CHANGELOG-v4.9.0.md'
@@ -27,11 +34,18 @@ on:
         - 'chatgpt/skills/mesh-coo/**'
         - 'chatgpt/workspace-agents/coo.json'
         - 'scripts/check-chatgpt-packages.py'
-        - 'tests/evaluations/test_opex_shared_capability_v490.py'
-        - 'tests/evaluations/test_release_record_correction_v484.py'
+        - 'scripts/check-runtime-doc-drift.py'
+        - 'tests/evaluations/test_chatgpt_workspace_agent_packages.py'
+        - 'tests/evaluations/test_enterprise_consulting_skill_consumption_v470.py'
+        - 'tests/evaluations/test_functional_method_expansion_v480.py'
         - 'tests/evaluations/test_historical_release_workflows_v483.py'
+        - 'tests/evaluations/test_local_chatgpt_mcp_projection.py'
+        - 'tests/evaluations/test_opex_shared_capability_v490.py'
+        - 'tests/evaluations/test_phase1_role_model_consistency.py'
+        - 'tests/evaluations/test_release_record_correction_v484.py'
         - '.github/workflows/release-v4.8.4.yml'
         - '.github/workflows/release-v4.9.0.yml'
+        - '.gitignore'
         - 'README.md'
         - 'RELEASE.md'
         - 'CHANGELOG-v4.9.0.md'
@@ -103,6 +117,9 @@ jobs:
               echo "v4.9.0 already exists at $existing_target, expected $GITHUB_SHA" >&2
               exit 1
             fi
-            exit 0
+            echo 'v4.9.0 already exists at exact main SHA'
+          else
+            gh release create v4.9.0 --target "$GITHUB_SHA" --title 'Mesh CoS v4.9.0 Mesh OpEx Bot Integration' --notes-file docs/release-v4.9.0-mesh-opex-bot-integration.md
           fi
-          gh release create v4.9.0 --target "$GITHUB_SHA" --title 'Mesh CoS v4.9.0 Mesh OpEx Bot Integration' --notes-file docs/release-v4.9.0-mesh-opex-bot-integration.md
+      - name: Clean merged feature branch
+        run: git push origin --delete feature/mesh-opex-bot-integration-v4.9.0 || true

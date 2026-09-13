@@ -27,7 +27,9 @@ jobs:
           cache: npm
           cache-dependency-path: mcp/package-lock.json
       - name: Apply governed integration
-        run: python scripts/migrate_v490_opex.py
+        run: |
+          python scripts/migrate_v490_opex.py
+          python scripts/fix_v490_checker.py
       - name: Verify migrated repository
         shell: bash
         run: |
@@ -53,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -f scripts/migrate_v490_opex.py
+          rm -f scripts/migrate_v490_opex.py scripts/fix_v490_checker.py
           git config user.name 'Mesh Release Bot'
           git config user.email 'release-bot@meshdigital.io'
           git add -A

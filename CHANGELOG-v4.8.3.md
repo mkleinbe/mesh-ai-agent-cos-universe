@@ -3,13 +3,13 @@
 ## Fixed
 
 - Retired all remaining published historical SemVer workflows that still retained executable `gh release create` logic or release-write permission.
-- Converted v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, and v4.8.2 to read-only `workflow_dispatch` historical verification.
+- Converted v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, v4.6.0, and v4.8.2 to read-only `workflow_dispatch` historical verification.
 - Added a systemic regression requiring every already-published v4.x SemVer workflow through v4.8.2 to be manual-only, read-only, and non-publishing.
 - Established v4.8.3 as the sole current SemVer publisher with exact `GITHUB_SHA` binding and `contents: write` isolated to the post-verification release job.
 
 ## Why this PATCH exists
 
-During post-release verification of v4.8.2, historical v4.4.1 and v4.4.2 workflows reacted to the new `main` commit. Their idempotency checks correctly left existing tags and Releases unchanged, but the workflows still possessed publication capability. The follow-up audit found the same retained publisher logic in additional older workflows. v4.8.3 removes that unnecessary authority systemically.
+During post-release verification of v4.8.2, historical v4.4.1 and v4.4.2 workflows reacted to the new `main` commit. Their idempotency checks correctly left existing tags and Releases unchanged, but the workflows still possessed publication capability. The follow-up audit found the same retained publisher logic in v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.6.0, and v4.8.2. v4.8.3 removes that unnecessary authority systemically.
 
 ## Unchanged
 

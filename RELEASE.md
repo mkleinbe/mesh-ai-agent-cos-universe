@@ -1,6 +1,6 @@
-# v4.8.3 Historical Publisher Retirement
+# v4.8.4 Release Record Correction
 
-`v4.8.3 Historical Publisher Retirement` is the current repository release designation and the release-control closeout PATCH for the v4.8.x audit remediation. Final publication proof is external equality of merged `main`, tag `v4.8.3`, and the GitHub Release target, so this source record does not require post-publication mutation.
+`v4.8.4 Release Record Correction` is the current repository release designation. It is a documentation and release-control PATCH that corrects the v4.8.3 human-readable inventory to include v4.6.0, which the v4.8.3 implementation did retire, and advances release ownership to v4.8.4 without rewriting the historical v4.8.3 tag or GitHub Release.
 
 Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged.  
 Production QNAP deployment: `4.4.0`, unchanged.  
@@ -8,21 +8,29 @@ Registered organization: exactly 10 agents, unchanged.
 
 For compatibility with historical release assertions, the canonical Phase 1 authority/runtime contract **4.0.0** and production QNAP **4.4.0** remain the governing runtime boundaries.
 
-## Release-control closeout
+## Release-record correction
 
-Post-release verification of v4.8.2 found residual historical publisher capability. v4.8.3 converts v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, and v4.8.2 to read-only, manual-only historical verification and adds a systemic regression protecting every already-published v4.x SemVer workflow through v4.8.2.
+The complete v4.8.3 implemented retirement inventory is v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, v4.6.0, and v4.8.2. The prior v4.8.3 source/release record omitted v4.6.0 from that explicit list even though the workflow was correctly retired.
 
-v4.8.3 is the only current SemVer publisher. Its release job receives `contents: write` only after successful verification and publishes against exact `GITHUB_SHA`.
+v4.8.4 corrects current-source documentation, retires v4.8.3 to read-only manual historical verification, extends the systemic publisher invariant through v4.8.3, and becomes the only active SemVer publisher. The v4.8.4 release job receives `contents: write` only after successful verification and publishes against exact `GITHUB_SHA`.
 
-No ChatGPT Skill package changes in v4.8.3. The v4.8.2 ten-Skill bundle remains the manual update artifact.
+No ChatGPT Skill package changes in v4.8.4. The v4.8.2 ten-Skill bundle remains the manual update artifact.
 
 ## Security and scope
 
-v4.8.3 is TARGETED release-control remediation. It does not change runtime code, agent behavior, registry state, MCP tools, credentials, OAuth, network boundaries, dependencies, QNAP production, source authority, or consequential-action approval boundaries. The pre-existing moderate Hono npm advisory remains documented baseline risk.
+v4.8.4 is TARGETED release-control remediation. It does not change runtime code, agent behavior, registry state, MCP tools, credentials, OAuth, network boundaries, dependencies, QNAP production, source authority, or consequential-action approval boundaries. The pre-existing moderate Hono npm advisory remains documented baseline risk.
 
 The fourth donor identifier remains `BLOCKED_SOURCE_IDENTIFICATION`; no fourth-source completeness is claimed.
 
-See `docs/release-v4.8.3-historical-publisher-retirement.md`, `docs/security-review-v4.8.3-historical-publisher-retirement.md`, `docs/verification-v4.8.3-historical-publisher-retirement.md`, `docs/gap-audit-v4.8.3-historical-publisher-retirement.md`, and `CHANGELOG-v4.8.3.md`.
+See `docs/release-v4.8.4-release-record-correction.md`, `docs/security-review-v4.8.4-release-record-correction.md`, `docs/verification-v4.8.4-release-record-correction.md`, `docs/gap-audit-v4.8.4-release-record-correction.md`, and `CHANGELOG-v4.8.4.md`.
+
+# v4.8.3 Historical Publisher Retirement
+
+`v4.8.3 Historical Publisher Retirement` is the prior release-control closeout PATCH for the v4.8.x audit remediation. Post-release verification of v4.8.2 found residual historical publisher capability. v4.8.3 converted v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, v4.6.0, and v4.8.2 to read-only, manual-only historical verification and added a systemic regression protecting every already-published v4.x SemVer workflow through v4.8.2.
+
+The historical v4.8.3 GitHub Release remains unchanged. v4.8.4 is the correcting release for the prior human-readable omission of v4.6.0.
+
+No ChatGPT Skill package changes were made in v4.8.3.
 
 # v4.8.2 Functional Method Audit Remediation
 
@@ -45,8 +53,6 @@ The canonical Phase 1 authority/runtime contract remained **4.0.0**, production 
 # v4.8.0 Functional Method Expansion
 
 `v4.8.0 Functional Method Expansion` is the prior functional-capability release. It deepened the operating methods of the existing Mesh Phase 1 organization while leaving the machine-readable registry, canonical Phase 1 authority/runtime contract **4.0.0**, production QNAP **4.4.0**, and exactly **10 registered agents** unchanged.
-
-The release added governed CoS deliberation and alignment methods, AgentOps flow intelligence, Answer Desk source-health states, CRO commercial operating depth, CFO commercial economics and corrected fixed-cost deal math, COO process/capacity/vendor diagnostics, consultant-network concentration/contingency evidence, CMO growth/change methods, VP Content proof-lineage controls, and bounded Message Operations sequence metadata. Reusable scenario stress is routed to Mesh PPMD Bot v1.2.0 and reusable change communications to Mesh Messaging v1.3.0.
 
 # v4.7.0 Enterprise Consulting Skill Consumption
 
@@ -84,4 +90,4 @@ Historical release identity is preserved for regression and audit continuity. Th
 
 Historical release identity `v4.3.0` is preserved. It established governed server-derived owner execution and nested child execution before later authority-closure and QNAP release trains. It does not override the current runtime or release state.
 
-Historical v4.3.x through v4.6.x documents remain release-train evidence and do not override the current repository release.
+Historical v4.3.x through v4.8.x documents remain release-train evidence and do not override the current repository release.

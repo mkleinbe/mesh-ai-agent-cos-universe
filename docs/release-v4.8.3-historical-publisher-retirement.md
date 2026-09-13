@@ -12,7 +12,7 @@ v4.8.3 is a release-control-only PATCH discovered during independent verificatio
 
 ## Defect discovered after v4.8.2 publication
 
-The v4.8.2 `main` push also triggered historical v4.4.1 and v4.4.2 workflows. Both exited safely because their Releases already existed, and neither historical tag nor Release target changed. However, both workflows still retained `contents: write` and `gh release create`. A repository-wide audit found equivalent stale publisher logic in v4.1.15, v4.2.3, v4.3.0, v4.3.1, and v4.8.2.
+The v4.8.2 `main` push also triggered historical v4.4.1 and v4.4.2 workflows. Both exited safely because their Releases already existed, and neither historical tag nor Release target changed. However, both workflows still retained `contents: write` and `gh release create`. A repository-wide audit found equivalent stale publisher logic in v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.6.0, and v4.8.2.
 
 That state was unnecessarily privileged and violated the durable rule that future releases own their own publisher.
 
@@ -26,9 +26,10 @@ The following published workflows are converted to `workflow_dispatch` only, `co
 - v4.3.1
 - v4.4.1
 - v4.4.2
+- v4.6.0
 - v4.8.2
 
-The remaining historical SemVer workflows were already manual/read-only. `tests/evaluations/test_historical_release_workflows_v483.py` now asserts the complete published workflow set through v4.8.2 is manual-only, read-only, and non-publishing.
+The remaining historical SemVer workflows were already manual/read-only. `tests/evaluations/test_historical_release_workflows_v483.py` asserts the complete published workflow set through v4.8.2 is manual-only, read-only, and non-publishing.
 
 ## Integrity
 
@@ -43,3 +44,7 @@ No runtime, registry, MCP, QNAP, shared capability, source authority, or consequ
 ## Known blocker
 
 `BLOCKED_SOURCE_IDENTIFICATION`: the fourth donor source remains unavailable. v4.8.3 does not change or conceal that source-completeness blocker.
+
+## Record correction
+
+v4.8.4 corrects the prior source/release-record omission that failed to list v4.6.0 even though the v4.8.3 implementation did retire its historical publisher. The published v4.8.3 tag remains immutable; this current-source record states the complete implemented inventory.

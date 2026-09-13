@@ -1,6 +1,6 @@
-# v4.8.2 Functional Method Audit Remediation
+# v4.8.3 Historical Publisher Retirement
 
-`v4.8.2 Functional Method Audit Remediation` is the current repository release designation and a corrective PATCH for the v4.8.x audit findings. Final publication proof is external equality of merged `main`, tag `v4.8.2`, and the GitHub Release target, so this source record does not require post-publication mutation.
+`v4.8.3 Historical Publisher Retirement` is the current repository release designation and the release-control closeout PATCH for the v4.8.x audit remediation. Final publication proof is external equality of merged `main`, tag `v4.8.3`, and the GitHub Release target, so this source record does not require post-publication mutation.
 
 Canonical Phase 1 authority/runtime contract: `4.0.0`, unchanged.  
 Production QNAP deployment: `4.4.0`, unchanged.  
@@ -8,33 +8,37 @@ Registered organization: exactly 10 agents, unchanged.
 
 For compatibility with historical release assertions, the canonical Phase 1 authority/runtime contract **4.0.0** and production QNAP **4.4.0** remain the governing runtime boundaries.
 
-## Remediation scope
+## Release-control closeout
 
-v4.8.2 adds executable behavior-level evaluation gates across the existing 10 role Skill packages; ready BDD scenarios `FMR-001` through `FMR-018`; an exhaustive 49-candidate donor disposition ledger; explicit `BLOCKED_SOURCE_IDENTIFICATION` handling for the unresolved fourth donor; durable v4.8.1 release evidence; and a v4.8.2 exact-SHA release publisher.
+Post-release verification of v4.8.2 found residual historical publisher capability. v4.8.3 converts v4.1.15, v4.2.3, v4.3.0, v4.3.1, v4.4.1, v4.4.2, and v4.8.2 to read-only, manual-only historical verification and adds a systemic regression protecting every already-published v4.x SemVer workflow through v4.8.2.
 
-It does not change the Python runtime version, MCP catalog, TaskLedger, Revenue Intelligence authority, agent roster/parentage, L4/L5 decision rights, external-action controls, credentials, OAuth, network boundaries, database schemas, shared PPMD/Messaging releases, or QNAP production deployment.
+v4.8.3 is the only current SemVer publisher. Its release job receives `contents: write` only after successful verification and publishes against exact `GITHUB_SHA`.
 
-## Behavioral evidence
+No ChatGPT Skill package changes in v4.8.3. The v4.8.2 ten-Skill bundle remains the manual update artifact.
 
-`tests/evaluations/test_functional_method_remediation_v482.py` executes deterministic package-local behavior gates rather than relying only on `SKILL.md` phrase presence. The v4.8.0 phrase/content contract remains as structural regression coverage.
+## Security and scope
 
-## Donor completeness
+v4.8.3 is TARGETED release-control remediation. It does not change runtime code, agent behavior, registry state, MCP tools, credentials, OAuth, network boundaries, dependencies, QNAP production, source authority, or consequential-action approval boundaries. The pre-existing moderate Hono npm advisory remains documented baseline risk.
+
+The fourth donor identifier remains `BLOCKED_SOURCE_IDENTIFICATION`; no fourth-source completeness is claimed.
+
+See `docs/release-v4.8.3-historical-publisher-retirement.md`, `docs/security-review-v4.8.3-historical-publisher-retirement.md`, `docs/verification-v4.8.3-historical-publisher-retirement.md`, `docs/gap-audit-v4.8.3-historical-publisher-retirement.md`, and `CHANGELOG-v4.8.3.md`.
+
+# v4.8.2 Functional Method Audit Remediation
+
+`v4.8.2 Functional Method Audit Remediation` is the prior corrective PATCH for the v4.8.x audit findings. It added executable behavior-level evaluation gates across the existing 10 role Skill packages; ready BDD scenarios `FMR-001` through `FMR-018`; an exhaustive 49-candidate donor disposition ledger; explicit `BLOCKED_SOURCE_IDENTIFICATION` handling for the unresolved fourth donor; durable v4.8.1 release evidence; and its now-historical exact-SHA publisher.
+
+It did not change the Python runtime version, MCP catalog, TaskLedger, Revenue Intelligence authority, agent roster/parentage, L4/L5 decision rights, external-action controls, credentials, OAuth, network boundaries, database schemas, shared PPMD/Messaging releases, or QNAP production deployment.
+
+`tests/evaluations/test_functional_method_remediation_v482.py` executes deterministic package-local behavior gates rather than relying only on `SKILL.md` phrase presence. The v4.8.0 phrase/content contract remains structural regression coverage.
 
 The evidenced donor repository `alirezarezvani/claude-skills` remains pinned at `19392f7a08264ed00486a251f5b2098321771f94`. Explicit dispositions cover 34 c-level-advisor, 7 business-operations, and 8 commercial candidates. The fourth donor identifier remains `BLOCKED_SOURCE_IDENTIFICATION`; no fourth-source coverage is claimed.
 
-## Shared capability compatibility
-
 Mesh PPMD Bot v1.2.0 and Mesh Messaging v1.3.0 remain compatible and unchanged.
-
-## Security and release control
-
-Security applicability is FULL_REVIEW. The v4.8.1 publisher is retired to read-only manual historical verification. v4.8.2 receives write permission only in its post-verification release job and publishes tag/Release against exact `GITHUB_SHA`. The existing moderate Hono npm advisory is documented as pre-existing baseline risk and is not introduced by this PATCH.
-
-See `docs/release-v4.8.2-functional-method-audit-remediation.md`, `docs/security-review-v4.8.2-functional-method-audit-remediation.md`, `docs/verification-v4.8.2-functional-method-audit-remediation.md`, `docs/requirements-trace-v4.8.2.md`, `docs/donor-disposition-ledger-v4.8.2.md`, and `CHANGELOG-v4.8.2.md`.
 
 # v4.8.1 Release State Finalization
 
-`v4.8.1 Release State Finalization` is the prior documentation and release-control PATCH. It finalized v4.8.0 release-state evidence. It is published at `ecb04f495910912fb9181adf3553a62a9f408f3c`; its workflow is historical manual verification only after v4.8.2.
+`v4.8.1 Release State Finalization` is a historical documentation and release-control PATCH. It is published at `ecb04f495910912fb9181adf3553a62a9f408f3c`; its workflow is manual historical verification only.
 
 The canonical Phase 1 authority/runtime contract remained **4.0.0**, production QNAP remained **4.4.0**, and the organization remained exactly **10 registered agents**.
 

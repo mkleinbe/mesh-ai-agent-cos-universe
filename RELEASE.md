@@ -1,5 +1,10 @@
 # v4.10.0 Outcome-Driven Orchestration
 
+## v4.11.0 Commercial Growth OS Integration
+
+This release integrates the existing CoS universe with the Commercial Growth OS while preserving TaskLedger, Revenue Intelligence, the Phase 1 agent roster, L0-L5 decision rights, Message Operations, human approvals, and completion-versus-verification separation. Release evidence is in `docs/verification-v4.11.0-commercial-growth-os.md`.
+
+
 `v4.10.0 Outcome-Driven Orchestration` adds ODD business-decision semantics and AI execution-economy controls to Chief of Staff, CMO, and AgentOps role Skills.
 
 Canonical Phase 1 authority/runtime contract **4.0.0**, unchanged.  

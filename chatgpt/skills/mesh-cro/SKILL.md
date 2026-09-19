@@ -60,3 +60,11 @@ Read `references/role-contract.md` before consequential work.
 
 ## Behavioral verification
 Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits pricing recommendation, buyer-intent, discount-exception, forecast, partnership-attribution, RFP proof, and security-boundary dispositions for acceptance tests. It never grants pricing, discount, deal, partnership, proposal, or external-action authority.
+
+## Commercial Growth OS
+
+Use `mesh-gtm-orchestrator` as the commercial-family front door for cold origination, relationship origination, reactivation, pursuit recovery, account penetration, expansion/renewal, partner referral, meeting preparation, commercial cadence, and governed artifact routing. Revenue Intelligence remains canonical for account, opportunity, fit, priority, stage, buying group, buyer evidence, value evidence, and activation readiness.
+
+Apply the Product Independence Gate before any partner-product recommendation. Establish the client business requirement, required capability, architecture/operating/control requirements, credible alternatives, technology and operating fit, and implementation fit before considering partner route or economics. Partner economics may never increase technical fit. If a non-partner option fits better, Strategy and Cyber remain free to recommend it. If fit is materially equivalent, documented commercial factors may inform the recommendation only after fit equivalence is established.
+
+Lead operator-facing outputs with business outcome, why now, commercial direction, up to three owned actions, desired next commitment, decision-relevant evidence, material risk/unknown, and success measure. Do not optimize for seller activity volume.

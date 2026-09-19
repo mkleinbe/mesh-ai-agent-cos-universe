@@ -1,44 +1,46 @@
-name: v4.10.0 Outcome-Driven Orchestration
+name: v4.11.0 Commercial Growth OS Integration
 
 on:
   push:
     branches: [main]
     paths:
       - 'chatgpt/skills/mesh-chief-of-staff/SKILL.md'
-      - 'chatgpt/skills/mesh-cmo/SKILL.md'
-      - 'chatgpt/skills/mesh-agentops-controller/SKILL.md'
-      - 'tests/evaluations/test_odd_outcome_delivery_v4100.py'
-      - 'specs/odd-outcome-delivery-v4.10.0.feature'
-      - '.github/workflows/release-v4.10.0.yml'
+      - 'chatgpt/skills/mesh-cro/SKILL.md'
+      - 'chatgpt/skills/mesh-coo/SKILL.md'
+      - 'chatgpt/skills/mesh-cfo/SKILL.md'
+      - 'tests/evaluations/test_commercial_growth_os_v4110.py'
+      - 'specs/commercial-growth-os-v4.11.0.feature'
+      - '.github/workflows/release-v4.11.0.yml'
       - 'README.md'
       - 'RELEASE.md'
       - 'CHANGELOG.md'
-      - 'CHANGELOG-v4.10.0.md'
-      - 'docs/release-v4.10.0-odd-outcome-delivery.md'
-      - 'docs/security-review-v4.10.0-odd-outcome-delivery.md'
-      - 'docs/verification-v4.10.0-odd-outcome-delivery.md'
+      - 'CHANGELOG-v4.11.0.md'
+      - 'docs/release-v4.11.0-commercial-growth-os.md'
+      - 'docs/security-review-v4.11.0-commercial-growth-os.md'
+      - 'docs/verification-v4.11.0-commercial-growth-os.md'
   pull_request:
     paths:
       - 'chatgpt/skills/mesh-chief-of-staff/SKILL.md'
-      - 'chatgpt/skills/mesh-cmo/SKILL.md'
-      - 'chatgpt/skills/mesh-agentops-controller/SKILL.md'
-      - 'tests/evaluations/test_odd_outcome_delivery_v4100.py'
-      - 'specs/odd-outcome-delivery-v4.10.0.feature'
-      - '.github/workflows/release-v4.10.0.yml'
+      - 'chatgpt/skills/mesh-cro/SKILL.md'
+      - 'chatgpt/skills/mesh-coo/SKILL.md'
+      - 'chatgpt/skills/mesh-cfo/SKILL.md'
+      - 'tests/evaluations/test_commercial_growth_os_v4110.py'
+      - 'specs/commercial-growth-os-v4.11.0.feature'
+      - '.github/workflows/release-v4.11.0.yml'
       - 'README.md'
       - 'RELEASE.md'
       - 'CHANGELOG.md'
-      - 'CHANGELOG-v4.10.0.md'
-      - 'docs/release-v4.10.0-odd-outcome-delivery.md'
-      - 'docs/security-review-v4.10.0-odd-outcome-delivery.md'
-      - 'docs/verification-v4.10.0-odd-outcome-delivery.md'
+      - 'CHANGELOG-v4.11.0.md'
+      - 'docs/release-v4.11.0-commercial-growth-os.md'
+      - 'docs/security-review-v4.11.0-commercial-growth-os.md'
+      - 'docs/verification-v4.11.0-commercial-growth-os.md'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: v4.10.0-${{ github.ref }}
+  group: v4.11.0-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -72,10 +74,10 @@ jobs:
       - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=100
       - run: bandit -q -r src -lll
       - run: python -m compileall -q src
-      - run: pytest -q tests/evaluations/test_odd_outcome_delivery_v4100.py
+      - run: pytest -q tests/evaluations/test_commercial_growth_os_v4110.py
 
   release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.sha == '0df486dd0cea2b64ff6f2d1310bcc63497025e4d'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: verify
     runs-on: ubuntu-latest
     permissions:
@@ -84,18 +86,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Publish exact-SHA v4.10.0 release
+      - name: Publish exact-SHA v4.11.0 release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view v4.10.0 >/dev/null 2>&1; then
-            existing_target="$(gh release view v4.10.0 --json targetCommitish --jq .targetCommitish)"
+          if gh release view v4.11.0 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.11.0 --json targetCommitish --jq .targetCommitish)"
             if [ "$existing_target" != "$GITHUB_SHA" ]; then
-              echo "v4.10.0 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              echo "v4.11.0 already exists at $existing_target, expected $GITHUB_SHA" >&2
               exit 1
             fi
-            echo 'v4.10.0 already exists at exact main SHA'
           else
-            gh release create v4.10.0 --target "$GITHUB_SHA" --title 'Mesh CoS v4.10.0 Outcome-Driven Orchestration' --notes-file docs/release-v4.10.0-odd-outcome-delivery.md
+            gh release create v4.11.0 --target "$GITHUB_SHA" --title 'Mesh CoS v4.11.0 Commercial Growth OS Integration' --notes-file docs/release-v4.11.0-commercial-growth-os.md
           fi

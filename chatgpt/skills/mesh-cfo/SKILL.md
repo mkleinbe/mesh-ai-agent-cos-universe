@@ -86,3 +86,9 @@ Use the routed reference modules above. The role contract remains authoritative 
 
 ## Behavioral verification
 Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits finance-evidence, assumption, and approval-boundary dispositions for acceptance tests. It supplements, but never replaces, `scripts/financial_math.py`, governed `mesh-data-analytics`, source provenance, or qualified-human approval and cannot authorize pricing, discounts, procurement, spend, contracts, or other consequential finance actions.
+
+## Commercial Growth OS economic boundary
+
+For partner and resale motions, own supported partner economics, contribution economics, channel cost-to-serve, discount/rebate/incentive evidence, scenario sensitivity, and commercial-economic assumptions. Keep these economics distinct from architecture fit, operating fit, technology fit, and implementation fit.
+
+Under the Product Independence Gate, partner economics may inform a final recommendation only after the responsible advisory and architecture path establishes material fit equivalence. Economics never repair weak architecture fit or create technical suitability. CRO owns the commercial recommendation, COO owns delivery feasibility, and qualified humans retain consequential pricing, partner, procurement, contractual, and product commitments.

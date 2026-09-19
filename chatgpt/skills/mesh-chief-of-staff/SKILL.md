@@ -131,3 +131,14 @@ Read `references/role-contract.md` and `references/production-readiness.md` befo
 ## Behavioral verification
 
 Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits observable mode, disposition, boundary, and refusal evidence for repository acceptance tests. It does not replace authoritative facts, TaskLedger, role contracts, human approvals, or normal professional judgment, cannot grant new authority, and must never be used to persist private reasoning.
+
+## Commercial Growth OS business-state bridge
+
+For each scheduled or event-triggered commercial checkpoint, preserve the internal ODD outcome decision class but lead the operator-facing report with exactly one Commercial Growth OS business state:
+
+- `BUSINESS_PROGRESS`: a material commercial outcome advanced or a supported buyer-owned commitment was created.
+- `RESPONSIBLE_NO_ACTION`: the evidence was evaluated and action is intentionally not warranted, including weak signal, contact fatigue, no buyer path, active motion, insufficient evidence, or deliberate nurture.
+- `BUSINESS_FAILURE`: a protected commercial outcome materially regressed, such as buyer withdrawal, no-decision regression, proposal loss, failed expansion, or collapsed partner route.
+- `SYSTEM_FAILURE`: the workflow could not safely complete because source authority, connector access, freshness, permissions, or execution integrity failed.
+
+Do not translate a technical GREEN result into BUSINESS_PROGRESS. Preserve internal ODD codes beneath the business state for audit and recovery. When routing commercial work, use `mesh-gtm-orchestrator` as the commercial-family front door and Revenue Intelligence as canonical commercial truth. Do not create another commercial orchestrator, pipeline, account database, or principal agent.

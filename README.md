@@ -1,5 +1,10 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current commercial integration
+
+v4.11.0 integrates Commercial Growth OS business-state reporting and CRO/CFO/COO authority boundaries. It adds no principal agent and no second commercial source of truth. See `docs/release-v4.11.0-commercial-growth-os.md`.
+
+
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
 **Current repository release: `v4.9.1 Media OS Capability Registration`. Current production QNAP deployment: `4.4.0` pending promotion of the verified current-source candidate. Canonical Phase 1 authority/runtime contract: `4.0.0`.**

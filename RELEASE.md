@@ -1,5 +1,10 @@
 # v4.10.0 Outcome-Driven Orchestration
 
+## v4.11.1 Commercial Growth OS Skill Package Closeout
+
+This PATCH publishes the four complete ChatGPT Skill directories changed by v4.11.0 as a checksummed human-installable bundle. It changes packaging and release completeness only. The installed ChatGPT runtime remains a separate human-controlled synchronization step and must not be reported as upgraded until re-read confirms the released content.
+
+
 ## v4.11.0 Commercial Growth OS Integration
 
 This release integrates the existing CoS universe with the Commercial Growth OS while preserving TaskLedger, Revenue Intelligence, the Phase 1 agent roster, L0-L5 decision rights, Message Operations, human approvals, and completion-versus-verification separation. Release evidence is in `docs/verification-v4.11.0-commercial-growth-os.md`.

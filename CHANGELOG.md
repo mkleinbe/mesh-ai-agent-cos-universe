@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.10.0 - 2026-09-19 - Outcome-Driven Orchestration
+
+- Added ODD outcome-decision semantics to Chief of Staff and CMO.
+- Added AgentOps wake-liveness and AI execution-efficiency observability.
+- Added T0-T3 progressive evidence-loading controls to reduce unnecessary AI credits, tokens, provider reads, and deep diagnostics.
+- Preserved correct no-action as a valid decision and kept technical health separate from business movement.
+- Preserved the 10-agent roster, authority contract 4.0.0, QNAP 4.4.0, and all human external-action gates.
+
 ## 4.6.0 - 2026-09-07 - CFO Zero-Defect Execution Remediation
 
 - Upgraded CFO implementation to 1.2.0 with deterministic financial calculation execution and behavior-level acceptance tests.

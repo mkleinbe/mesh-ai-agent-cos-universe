@@ -32,3 +32,10 @@ def test_v4120_human_install_boundary_is_documented() -> None:
     doc = (ROOT / "docs" / "skills-v4.12.0.md").read_text()
     assert "mesh-chief-of-staff" in doc
     assert "Installation remains human controlled" in doc
+
+def test_v4120_bundle_has_real_shell_expansion() -> None:
+    script = (ROOT / "scripts" / "build-chatgpt-skill-bundle-v4.12.0.sh").read_text()
+    assert r"\${VERSION}" not in script
+    assert r"\$ROOT" not in script
+    assert 'ROOT="dist/chatgpt-skill-bundle/v${VERSION}"' in script
+    assert 'rm -rf "$ROOT"' in script

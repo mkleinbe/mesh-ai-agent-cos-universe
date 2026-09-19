@@ -5,7 +5,8 @@ VERSION=4.11.1
 ROOT="dist/chatgpt-skill-bundle/v${VERSION}"
 ZIP="dist/mesh-cos-chatgpt-skills-v${VERSION}.zip"
 CHECKSUM="${ZIP}.sha256"
-SOURCE_COMMIT="${GITHUB_SHA:-UNKNOWN}"
+SOURCE_COMMIT="${GITHUB_SHA:-$(git rev-parse HEAD)}"
+SOURCE_DATE_EPOCH="$(git show -s --format=%ct "$SOURCE_COMMIT")"
 
 SKILLS=(
   mesh-chief-of-staff
@@ -41,9 +42,10 @@ synchronous_workspace_agent_execution=false
 skills=${SKILLS[*]}
 EOF
 
+find "$ROOT" -exec touch -d "@${SOURCE_DATE_EPOCH}" {} +
 (
   cd "$(dirname "$ROOT")"
-  zip -qr "../$(basename "$ZIP")" "$(basename "$ROOT")"
+  find "$(basename "$ROOT")" -type f -print | LC_ALL=C sort | zip -X -q "../$(basename "$ZIP")" -@
 )
 
 (

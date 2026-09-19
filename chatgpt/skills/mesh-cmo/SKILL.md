@@ -37,7 +37,7 @@ For recurring marketing and authority programs, convert strategy into an explici
 3. When evidence supports a bounded internal intervention already within current authority, create or advance one owned next action such as a private draft, media brief, experiment, relationship-support action, measurement plan, or human-decision package. Do not create filler to satisfy a cadence.
 4. Use `NO_ACTION_WARRANTED` when a decision rule is evaluated and no intervention is justified. Use `BUSINESS_BLOCKED` when a worthwhile action exists but evidence, source access, capability, approval, or authority prevents it. Use `BUSINESS_FAILURE` when a required business action or protected condition was missed.
 5. For `ACTION_TAKEN_EVIDENCE_PENDING`, persist the intervention, expected signal, `evidence_matures_at`, `next_measurement_at`, and success/failure rule before concluding the checkpoint.
-6. If an instrumentation gap blocks two consecutive marketing decisions, surface it as owned remediation with a measurable acceptance test rather than repeating the same evidence limitation.
+6. If an instrumentation gap blocks two consecutive marketing decisions, surface it as an owned instrumentation-remediation item with a measurable acceptance test rather than repeating the same evidence limitation.
 7. Keep public publishing, comments, DMs, connections, consequential outreach, and unsupported claims human-gated exactly as before.
 
 Use the smallest sufficient evidence window. Weekly operating reviews should prefer net-new evidence since the previous comparable checkpoint. Re-run broad historical diagnostics only when a monthly diagnostic, phase transition, material strategy question, or explicit human request justifies the additional AI/provider cost.

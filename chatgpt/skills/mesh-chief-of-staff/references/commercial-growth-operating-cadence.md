@@ -8,7 +8,7 @@ The central wake cadence remains weekdays at 08:00, 10:00, 12:00, and 16:00 Amer
 
 ## Invocation equivalence
 
-Ad hoc, scheduled, and genuinely event-triggered work use the same commercial decision rules and the same Revenue Intelligence, GTM Orchestrator, authority, Product Independence, Message Operations, and approval boundaries.
+Ad hoc, scheduled, and genuinely event-triggered work use the same commercial decision rules and the same Revenue Intelligence, `mesh-gtm-orchestrator`, authority, Product Independence, Message Operations, and approval boundaries.
 
 - **AD_HOC**: operator starts the run.
 - **SCHEDULED**: `LOOP-COM-001` wakes and evaluates only logically due work.

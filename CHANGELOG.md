@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.11.1 - 2026-09-19
+
+- Closed the Commercial Growth OS ChatGPT deployment-package gap by publishing a reproducible four-Skill installation bundle for mesh-chief-of-staff, mesh-cro, mesh-coo, and mesh-cfo.
+- Added SHA-256 verification and exact-SHA release publication.
+- Froze the historical v4.11.0 release publisher to its original SHA.
+- No commercial behavior, agent roster, authority, MCP, or external-action boundary changed.
+
+
 ## v4.11.0 - 2026-09-19
 
 - Integrated the Mesh Commercial Growth OS into Chief of Staff, CRO, COO, and CFO behavior without changing the 10-agent Phase 1 roster.

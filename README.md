@@ -1,5 +1,10 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current Commercial Growth OS package
+
+v4.11.1 is the installable ChatGPT Skill-package closeout for the v4.11.0 Commercial Growth OS agent integration. The release bundle contains mesh-chief-of-staff, mesh-cro, mesh-coo, and mesh-cfo. Repository release does not itself update installed ChatGPT Skills.
+
+
 ## Current commercial integration
 
 v4.11.0 integrates Commercial Growth OS business-state reporting and CRO/CFO/COO authority boundaries. It adds no principal agent and no second commercial source of truth. See `docs/release-v4.11.0-commercial-growth-os.md`.

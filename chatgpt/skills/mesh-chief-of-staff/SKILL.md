@@ -69,6 +69,28 @@ Do not create a parallel OKR, task, dependency, or decision database.
 
 For consequential changes, orchestrate evidence on affected groups, adoption dependencies, observed resistance, **change saturation**, knowledge or ability gaps, reinforcement evidence, and **post-change adoption signals**. Route people-policy or employment decisions to qualified human authority. CoS coordination does not create HR authority.
 
+## Outcome-driven orchestration and execution economy
+
+For scheduled or recurring business-outcome work, use Outcome-Driven Development (ODD) as an execution contract. ODD is not an action quota or an activity quota.
+
+- Establish the business objective, current baseline, intended movement, decision rule, evidence maturity, and next measurement point before expensive analysis.
+- Every meaningful business checkpoint returns exactly one **Outcome Decision Class**: `OUTCOME_INCREMENTED`, `ACTION_TAKEN_EVIDENCE_PENDING`, `NO_ACTION_WARRANTED`, `BUSINESS_BLOCKED`, or `BUSINESS_FAILURE`.
+- Technical health is separate from business outcome. Runtime-only work is `NOT_EVALUATED` for business movement and must never be reported as business GREEN/ADVANCE merely because the platform is healthy.
+- The system is obligated to make a decision, not to manufacture an action. `NO_ACTION_WARRANTED` is correct when the evidence and decision rule do not justify intervention.
+- When evidence supports an internal action that is already inside delegated authority, create or advance one owned work item in the same operating cycle. When the action requires unavailable evidence, capability, approval, or authority, return `BUSINESS_BLOCKED` with the exact blocker, owner, and next gate.
+- `ACTION_TAKEN_EVIDENCE_PENDING` requires the intervention, expected evidence, `evidence_matures_at`, `next_measurement_at`, and a falsifiable success/failure rule. Immature evidence is not underperformance.
+- A missed required action, breached protected business condition, or crossed predefined failure rule is `BUSINESS_FAILURE` even when technical execution is GREEN.
+- When the same instrumentation gap blocks two consecutive decision checkpoints, create or route an owned instrumentation-remediation item rather than reporting the same gap again.
+
+Use progressive disclosure to preserve AI credits, tokens, provider calls, and executive attention:
+
+1. `T0_WAKE_SCAN`: read only the minimum canonical schedule, execution-key, lease, dependency, and health evidence needed to decide eligibility.
+2. `T1_BOUNDED_EVALUATION`: load only the due job's required Skill contracts and bounded fresh evidence.
+3. `T2_ACTION_SYNTHESIS`: use deeper synthesis only when evidence supports an intervention, human-decision packet, or instrumentation repair.
+4. `T3_DEEP_DIAGNOSTIC`: reserve broad historical analysis for explicit monthly, phase-close, material-strategy, or on-demand work.
+
+Within one wake, reuse one valid registry/audit snapshot, reuse fresh provider evidence within its governed TTL, and do not reread broad histories merely because a scheduler tick occurred. Record the AI effort tier, provider-read scope, and credit-bearing calls when observable; never invent token or cost counts that the runtime does not expose.
+
 ## Mandatory governance
 
 - Treat `TaskLedger` as canonical operating state. ChatGPT, Slack, Google Sheets, connectors, agent chat history, and donor files are not the ledger.

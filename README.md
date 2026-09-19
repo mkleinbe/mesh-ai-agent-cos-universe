@@ -4,6 +4,12 @@ Production operating core for Mesh Digital LLC's governed AI Chief of Staff work
 
 **Current repository release: `v4.9.1 Media OS Capability Registration`. Current production QNAP deployment: `4.4.0` pending promotion of the verified current-source candidate. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
+## v4.10.0 Outcome-Driven Orchestration
+
+The current repository capability release adds Outcome-Driven Development to the Chief of Staff, CMO, and AgentOps role Skills. Business checkpoints now separate outcome movement, evidence-pending intervention, justified no-action, business blockage, and business failure from technical health. Progressive T0-T3 evidence loading reduces unnecessary AI/provider work without weakening evidence, verification, security, or human approval.
+
+Canonical Phase 1 authority/runtime contract remains `4.0.0`. Production QNAP remains `4.4.0`. The organization remains exactly 10 registered agents.
+
 ## v4.9.1 Media OS Capability Registration
 
 v4.9.1 reconciles and releases the approved Mesh Media Production OS registry integration. CMO receives `mesh-media-production`, `mesh-media-verification`, and `mesh-media-distribution`; VP Content receives `mesh-media-production` only. The organization remains exactly 10 registered agents, CMO authority is unchanged, VP Content remains L2 with zero delegation authority, and public publication remains human-gated.

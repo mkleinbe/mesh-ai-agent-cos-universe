@@ -1,3 +1,15 @@
+# v4.10.0 Outcome-Driven Orchestration
+
+`v4.10.0 Outcome-Driven Orchestration` adds ODD business-decision semantics and AI execution-economy controls to Chief of Staff, CMO, and AgentOps role Skills.
+
+Canonical Phase 1 authority/runtime contract **4.0.0**, unchanged.  
+Production QNAP **4.4.0**, unchanged.  
+Registered organization: exactly 10 agents, unchanged.
+
+The release adds no principal or external-action authority. It separates business outcome from technical health, requires explicit business decision classes for meaningful checkpoints, converts supported internal recommendations into owned action, preserves correct no-action, and uses progressive T0-T3 evidence loading to reduce unnecessary AI/provider cost.
+
+See `docs/release-v4.10.0-odd-outcome-delivery.md`, `docs/security-review-v4.10.0-odd-outcome-delivery.md`, `docs/verification-v4.10.0-odd-outcome-delivery.md`, and `CHANGELOG-v4.10.0.md`.
+
 # v4.9.1 Media OS Capability Registration
 
 `v4.9.1 Media OS Capability Registration` reconciles and releases the approved Mesh Media Production OS registry integration.

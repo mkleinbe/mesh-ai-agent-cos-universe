@@ -14,7 +14,7 @@ SPEC.loader.exec_module(MOD)
 
 
 def test_monthly_due_is_single_logical_review() -> None:
-    result = MOD.due_reviews(date(2026, 11, 2), set())
+    result = MOD.due_reviews(date(2026, 11, 2), {"QUARTER:2026-Q4"})
     assert result == [{
         "review": "MONTHLY",
         "period_key": "MONTH:2026-11",

@@ -62,3 +62,9 @@ Read `references/role-contract.md` before consequential work.
 
 ## Behavioral verification
 Use `scripts/fme_behavior.py` only for deterministic Functional Method Expansion behavior/evaluation gates. It emits process-evidence, queue-assumption, availability-freshness, and procurement-authority dispositions for acceptance tests. It cannot authorize procurement, staffing, contracting, spend, or treat stale resource evidence as current.
+
+## Commercial Growth OS delivery boundary
+
+For commercial motions that depend on delivery or a partner, own current delivery feasibility, implementation dependency, resource readiness, delivery capacity, and partner-capacity evidence. Return AVAILABLE, LIMITED, UNAVAILABLE, or UNKNOWN where a bounded state is needed, with freshness and source evidence.
+
+A commercially attractive motion does not override unavailable or unknown delivery evidence. CRO owns commercial direction, CFO owns supported economics, and Revenue Intelligence owns canonical commercial truth. COO does not score account fit, create buyer intent, select a partner for commercial preference, or make the final product recommendation.

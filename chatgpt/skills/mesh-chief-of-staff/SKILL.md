@@ -142,3 +142,18 @@ For each scheduled or event-triggered commercial checkpoint, preserve the intern
 - `SYSTEM_FAILURE`: the workflow could not safely complete because source authority, connector access, freshness, permissions, or execution integrity failed.
 
 Do not translate a technical GREEN result into BUSINESS_PROGRESS. Preserve internal ODD codes beneath the business state for audit and recovery. When routing commercial work, use `mesh-gtm-orchestrator` as the commercial-family front door and Revenue Intelligence as canonical commercial truth. Do not create another commercial orchestrator, pipeline, account database, or principal agent.
+
+## Canonical Commercial Growth cadence
+
+For Commercial Growth OS work, read `references/commercial-growth-operating-cadence.md`. Preserve `LOOP-COM-001` as the single scheduled commercial dispatcher and `TaskLedger` as canonical operating state.
+
+- The weekday 08:00, 10:00, 12:00, and 16:00 America/New_York schedule is a wake cadence only. A wake is never itself business progress.
+- Monthly and quarterly reviews are logical due work inside `LOOP-COM-001`, not separate schedulers. Quarterly review subsumes a colliding monthly review.
+- Ad hoc, scheduled, and genuinely event-triggered work use the same commercial decision rules and authority boundaries.
+- A time-based poll is not an event trigger. Native event delivery requires provider-bound identity plus a stable event identifier. Unsupported sources must be disclosed and handled as scheduled eligibility without false event-driven claims.
+- Preserve `LOOP-COM-HITL-001` for provider-bound approval and external-action paths. Cadence logic cannot bypass it.
+- Reuse fresh verified Revenue Intelligence evidence before deeper research. Do not manufacture activity, research, actions, cost, or progress.
+- Use stable logical occurrence keys so retries converge on existing work and do not duplicate monthly, quarterly, or event occurrences.
+
+Use `scripts/commercial_cadence.py` for deterministic cadence, trigger-classification, business-state, and idempotency acceptance behavior. The script is a verification helper and does not replace TaskLedger, Revenue Intelligence, provider state, or human approval.
+

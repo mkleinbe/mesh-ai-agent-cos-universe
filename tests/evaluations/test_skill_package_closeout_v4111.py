@@ -14,14 +14,13 @@ def test_v4111_skill_bundle_declares_exact_changed_skills() -> None:
     assert "VERSION=4.11.1" in script
 
 
-def test_v4111_release_workflow_builds_and_attaches_skill_bundle() -> None:
+def test_v4111_historical_publisher_is_frozen() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release-v4.11.1.yml").read_text(encoding="utf-8")
-    assert "build-chatgpt-skill-bundle-v4.11.1.sh" in workflow
-    assert "mesh-cos-chatgpt-skills-v4.11.1.zip" in workflow
-    assert "mesh-cos-chatgpt-skills-v4.11.1.zip.sha256" in workflow
-    assert "gh release create v4.11.1" in workflow
-    assert "--target \"$GITHUB_SHA\"" in workflow
-
+    assert "workflow_dispatch:" in workflow
+    assert "push:" not in workflow
+    assert "pull_request:" not in workflow
+    assert "a2860c133c4ca3fc41c2769f2e3bfbe0d2eb2a7f" in workflow
+    assert "gh release create v4.11.1" not in workflow
 
 def test_v4110_historical_publisher_is_frozen() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release-v4.11.0.yml").read_text(encoding="utf-8")

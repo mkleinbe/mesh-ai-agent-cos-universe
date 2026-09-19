@@ -1,5 +1,9 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current Commercial Growth OS cadence
+
+v4.12.0 is the current Commercial Growth operating-model release. It keeps `LOOP-COM-001` as the single scheduled dispatcher, integrates monthly and quarterly reviews as logical TaskLedger due work, distinguishes native events from polling, preserves `LOOP-COM-HITL-001`, and packages the materially changed `mesh-chief-of-staff` Skill for human installation. The canonical Phase 1 runtime authority contract remains 4.0.0 and production QNAP remains 4.4.0.
+
 ## Current Commercial Growth OS package
 
 v4.11.1 is the installable ChatGPT Skill-package closeout for the v4.11.0 Commercial Growth OS agent integration. The release bundle contains mesh-chief-of-staff, mesh-cro, mesh-coo, and mesh-cfo. Repository release does not itself update installed ChatGPT Skills.

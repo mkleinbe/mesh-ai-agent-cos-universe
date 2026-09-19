@@ -1,3 +1,9 @@
+# v4.12.0 Commercial Growth Cadence
+
+This MINOR release integrates Commercial Growth monthly, quarterly, scheduled, ad hoc, and supported native-event execution into the existing TaskLedger-controlled Commercial Operations model. `LOOP-COM-001` remains the single scheduled dispatcher. A scheduler wake is never business progress. Quarterly review subsumes a colliding monthly review. Polling cannot claim native-event compliance. Existing `LOOP-COM-HITL-001`, Message Operations, Revenue Intelligence, GTM Orchestrator, CRO/COO/CFO boundaries, human approval, and completion-versus-verification controls remain unchanged.
+
+The release packages only the materially changed `mesh-chief-of-staff` Skill. ChatGPT installation remains intentionally human controlled.
+
 # v4.10.0 Outcome-Driven Orchestration
 
 ## v4.11.1 Commercial Growth OS Skill Package Closeout

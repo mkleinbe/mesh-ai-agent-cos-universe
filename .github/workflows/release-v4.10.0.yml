@@ -75,7 +75,7 @@ jobs:
       - run: pytest -q tests/evaluations/test_odd_outcome_delivery_v4100.py
 
   release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.sha == '0df486dd0cea2b64ff6f2d1310bcc63497025e4d'
     needs: verify
     runs-on: ubuntu-latest
     permissions:

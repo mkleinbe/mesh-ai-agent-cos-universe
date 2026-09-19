@@ -6,6 +6,12 @@ Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 
 The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, historical-release immutability, and release verification.
 
+## v4.10.0 Outcome-Driven Orchestration
+
+The current repository capability release adds Outcome-Driven Development to the Chief of Staff, CMO, and AgentOps role Skills. Business checkpoints now separate outcome movement, evidence-pending intervention, justified no-action, business blockage, and business failure from technical health. Progressive T0-T3 evidence loading reduces unnecessary AI/provider work without weakening evidence, verification, security, or human approval.
+
+Canonical Phase 1 authority/runtime contract remains `4.0.0`. Production QNAP remains `4.4.0`. The organization remains exactly 10 registered agents.
+
 ## Current v4.9.1 release documentation
 
 - `release-v4.9.1-media-os-capability-registration.md`: Media OS capability-registration scope, authority preservation, runtime identity, and rollback boundary.

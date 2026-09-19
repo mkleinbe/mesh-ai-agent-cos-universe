@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.11.0 - 2026-09-19
+
+- Integrated the Mesh Commercial Growth OS into Chief of Staff, CRO, COO, and CFO behavior without changing the 10-agent Phase 1 roster.
+- Added plain-language commercial business-state reporting, GTM Orchestrator routing, Product Independence, partner-economics separation, and partner-capacity controls.
+- Added BDD, targeted verification, security review, and exact-SHA semantic release automation.
+
+
 ## 4.10.0 - 2026-09-19 - Outcome-Driven Orchestration
 
 - Added ODD outcome-decision semantics to Chief of Staff and CMO.

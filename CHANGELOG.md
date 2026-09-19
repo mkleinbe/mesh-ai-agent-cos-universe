@@ -1,5 +1,16 @@
 # Changelog
 
+## v4.12.0 - 2026-09-19
+
+- Integrated monthly and quarterly Commercial Growth reviews into `LOOP-COM-001` as canonical logical due work.
+- Coalesced quarterly/monthly collisions into one evidence load and one governed review.
+- Added deterministic native-event versus polling semantics and stable occurrence idempotency.
+- Made scheduler-wake no-progress behavior explicit and preserved the four commercial business states.
+- Added fresh evidence reuse controls to reduce duplicate research and AI/provider cost.
+- Preserved `LOOP-COM-HITL-001`, Message Operations, Revenue Intelligence, GTM Orchestrator, human approvals, completion-versus-verification, and the 10-agent roster.
+- Added BDD/evaluation coverage, security/verification/runbook/architecture docs, deterministic Skill packaging, and an exact-SHA v4.12.0 publisher.
+- Froze the historical v4.11.1 publisher at its released SHA.
+
 ## v4.11.1 - 2026-09-19
 
 - Closed the Commercial Growth OS ChatGPT deployment-package gap by publishing a reproducible four-Skill installation bundle for mesh-chief-of-staff, mesh-cro, mesh-coo, and mesh-cfo.

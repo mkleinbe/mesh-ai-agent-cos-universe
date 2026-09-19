@@ -71,7 +71,7 @@ For consequential changes, orchestrate evidence on affected groups, adoption dep
 
 ## Outcome-driven orchestration and execution economy
 
-For scheduled or recurring business-outcome work, use Outcome-Driven Development (ODD) as an execution contract, not as an activity quota.
+For scheduled or recurring business-outcome work, use Outcome-Driven Development (ODD) as an execution contract. ODD is not an action quota or an activity quota.
 
 - Establish the business objective, current baseline, intended movement, decision rule, evidence maturity, and next measurement point before expensive analysis.
 - Every meaningful business checkpoint returns exactly one **Outcome Decision Class**: `OUTCOME_INCREMENTED`, `ACTION_TAKEN_EVIDENCE_PENDING`, `NO_ACTION_WARRANTED`, `BUSINESS_BLOCKED`, or `BUSINESS_FAILURE`.

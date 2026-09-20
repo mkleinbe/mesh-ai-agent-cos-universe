@@ -1,3 +1,13 @@
+## v4.13.0 - Bidirectional Slack HITL Peer Workflow
+
+- added governed bot-owned INFO, QUESTION, MANUAL_ACTION, BLOCKER, STATUS, INCIDENT, and APPROVAL thread contracts;
+- added persisted Slack interaction state and provider-reread conversational acknowledgment;
+- retained exact explicit approval grammar and fail-closed L4/L5 authority;
+- added replay-safe visible feedback and direct `CHANGES: <details>`;
+- corrected operator documentation from retired Socket Mode semantics to the current ChatGPT-native event-trigger architecture.
+
+See `CHANGELOG-v4.13.0.md`.
+
 # Changelog
 
 ## v4.12.1 - 2026-09-19

@@ -170,6 +170,27 @@ class GovernedAdapterRegistry:
                     message_ts=str(handoff_payload["message_ts"]),
                 )
 
+            if operation == "post_interaction":
+                GovernedAdapterRegistry._require_exact_payload(
+                    handoff_payload,
+                    {
+                        "thread_type",
+                        "task_id",
+                        "summary",
+                        "requested_human_action",
+                        "completion_condition",
+                    },
+                )
+                return notifier.post_interaction(
+                    thread_type=str(handoff_payload["thread_type"]),
+                    task_id=str(handoff_payload["task_id"]),
+                    summary=str(handoff_payload["summary"]),
+                    requested_human_action=str(
+                        handoff_payload["requested_human_action"]
+                    ),
+                    completion_condition=str(handoff_payload["completion_condition"]),
+                )
+
             if operation == "post_message":
                 unexpected = sorted(set(handoff_payload) - {"text", "thread_ts"})
                 if unexpected:

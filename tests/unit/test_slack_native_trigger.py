@@ -238,3 +238,25 @@ def test_native_trigger_rejects_edited_app_authored_wrong_user_and_wrong_thread(
     )
     with pytest.raises(PermissionError, match="thread does not match"):
         wrong_thread.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
+
+
+def test_native_trigger_change_without_prompt_receipt_preserves_fail_closed_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ledger, _, approval_id, service, _ = _service("CHANGE")
+    monkeypatch.setattr(
+        service.compat,
+        "handle_envelope",
+        lambda envelope: {
+            "status": "AWAITING_CHANGE_INPUT",
+            "approval_id": approval_id,
+        },
+    )
+    result = service.reconcile(thread_ts=ROOT, message_ts=MESSAGE)
+    assert result["status"] == "AWAITING_CHANGE_INPUT"
+    assert result["trigger_is_authority"] is False
+    state = ledger.get_record("slack_interaction_state", ROOT)
+    assert state["last_reply_class"] == "APPROVAL_CHANGE_STARTED"
+    assert state["last_bot_acknowledgment"] is None
+    interaction = ledger.list_records("slack_interaction_reply")[-1]
+    assert "acknowledgment_message_ts" not in interaction

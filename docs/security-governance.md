@@ -1,3 +1,11 @@
+# v4.13.0 Slack HITL security addendum
+
+Slack peer interaction does not broaden authority. Work carries provider locators only. Mesh CoS MCP rereads the exact Slack message and verifies channel, manual-human authorship, configured human identity, bound thread, and replay state before interpreting the reply.
+
+For approval threads, pending canonical approval, human owner, and immutable payload fingerprint are revalidated before an exact APPROVE, DENY, CHANGE, or CHANGES command can change state. Natural language, reactions, mentions, bot/app replies, edited messages, wrong users, unbound threads, and provider failure cannot create approval authority.
+
+Outbound governed HITL requests must use the protected Slack bot identity. Human-connected Slack posting is not an approved system-notification path.
+
 # Security and Governance
 
 The canonical Phase 1 authority/runtime contract remains `4.0.0`. Repository remediation `v4.12.1` hardens the delegation request and error contracts while preserving the 10-agent registry, production QNAP deployment `4.4.0`, TaskLedger canonicality, L4/L5 human authority, approval inheritance, deny-by-default MCP policy, and `COMPLETED != VERIFIED`.

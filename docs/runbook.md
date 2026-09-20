@@ -1,3 +1,11 @@
+# v4.13.0 Slack HITL operating addendum
+
+For human interaction in `#mesh-agent-ops`, use `slack-adapter/post_interaction` for non-approval threads and `slack-adapter/post_approval` only when a canonical pending approval exists. Do not use a connected-Slack human posting path for system notices.
+
+Keep one `Mesh Slack HITL Dispatcher`. It forwards only `thread_ts` and `message_ts` to `reconcile_triggered_message`. If a reply receives no bot feedback, trace event delivery, provider reread, thread binding, identity verification, replay state, and the bot acknowledgment post in that order.
+
+Detailed procedure: `docs/runbook-v4.13.0-slack-hitl-peer.md`.
+
 # Operations Runbook
 
 Repository remediation candidate: **`v4.12.1 CoS Delegation and Agent Reporting`**.  

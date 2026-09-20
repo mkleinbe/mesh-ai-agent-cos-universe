@@ -18,6 +18,24 @@ SLACK_API_BASE = "https://slack.com/api"
 SLACK_BOT_API = "SLACK_BOT_API"
 THREAD_BINDING_KIND = "approval_slack_thread_binding"
 CHANGE_REQUEST_KIND = "approval_change_request"
+INTERACTION_STATE_KIND = "slack_interaction_state"
+INTERACTION_REPLY_KIND = "slack_interaction_reply"
+_INTERACTION_HEADERS = {
+    "INFO": "INFORMATION",
+    "QUESTION": "QUESTION",
+    "MANUAL_ACTION": "ACTION REQUIRED",
+    "BLOCKER": "BLOCKED",
+    "STATUS": "INFORMATION",
+    "INCIDENT": "SYSTEM ISSUE",
+}
+_INTERACTION_RESPONSES = {
+    "INFO": [],
+    "QUESTION": ["NATURAL_LANGUAGE"],
+    "MANUAL_ACTION": ["DONE", "NATURAL_LANGUAGE"],
+    "BLOCKER": ["NATURAL_LANGUAGE"],
+    "STATUS": ["NATURAL_LANGUAGE"],
+    "INCIDENT": ["NATURAL_LANGUAGE"],
+}
 _PAYLOAD_FINGERPRINT_RE = re.compile(r"\bpayload_fingerprint=(?P<fingerprint>[A-Fa-f0-9]{64})\b")
 _SAFE_SLACK_ERROR_RE = re.compile(r"^[a-z0-9_]+$")
 _SLACK_GET_METHODS = frozenset({"conversations.history", "conversations.replies"})
@@ -153,11 +171,11 @@ def _rich_text_line(text: str, *, bold: bool = False) -> dict[str, Any]:
 
 def approval_blocks(approval_id: str, action: str) -> list[dict[str, Any]]:
     summary = " ".join(action.split())
-    summary = summary if len(summary) <= 2800 else summary[:2797] + "..."
+    summary = summary if len(summary) <= 2600 else summary[:2597] + "..."
     return [
         {
             "type": "header",
-            "text": {"type": "plain_text", "text": "Approval required", "emoji": True},
+            "text": {"type": "plain_text", "text": "APPROVAL REQUIRED", "emoji": True},
         },
         {
             "type": "rich_text",
@@ -166,10 +184,12 @@ def approval_blocks(approval_id: str, action: str) -> list[dict[str, Any]]:
                 {
                     "type": "rich_text_section",
                     "elements": [
-                        _rich_text_line("Request\n", bold=True),
+                        _rich_text_line("Decision\n", bold=True),
                         _rich_text_line(summary),
                         _rich_text_line("\n\nApproval ID\n", bold=True),
                         _rich_text_line(approval_id),
+                        _rich_text_line("\n\nReply with exactly one\n", bold=True),
+                        _rich_text_line("APPROVE\nDENY\nCHANGES: <details>"),
                     ],
                 }
             ],
@@ -179,7 +199,7 @@ def approval_blocks(approval_id: str, action: str) -> list[dict[str, Any]]:
             "elements": [
                 {
                     "type": "mrkdwn",
-                    "text": "Reply in this thread with *APPROVE*, *DENY*, or *CHANGE*. The reply only wakes the dispatcher; Mesh re-checks Slack provider state before recording authority.",
+                    "text": "Nothing will execute until an explicit decision is recorded. Mesh re-checks Slack provider state before recording authority.",
                 }
             ],
         },
@@ -188,6 +208,10 @@ def approval_blocks(approval_id: str, action: str) -> list[dict[str, Any]]:
 
 def resolved_blocks(approval_id: str, disposition: str) -> list[dict[str, Any]]:
     return [
+        {
+            "type": "header",
+            "text": {"type": "plain_text", "text": "COMPLETED", "emoji": True},
+        },
         {
             "type": "rich_text",
             "block_id": f"approval_resolved_{approval_id}",
@@ -202,8 +226,9 @@ def resolved_blocks(approval_id: str, disposition: str) -> list[dict[str, Any]]:
                     ],
                 }
             ],
-        }
+        },
     ]
+
 
 
 class SlackApprovalNotifier:
@@ -235,6 +260,48 @@ class SlackApprovalNotifier:
                 return dict(record)
         return None
 
+    def _save_interaction_state(
+        self,
+        *,
+        thread_ts: str,
+        thread_type: str,
+        task_id: str,
+        approval_id: str | None,
+        requested_human_action: str,
+        completion_condition: str,
+        response_required: bool,
+    ) -> dict[str, Any]:
+        task = self.ledger.get_task(task_id)
+        if task is None:
+            raise KeyError(task_id)
+        state = {
+            "version": "mesh.cos.slack-interaction-state.v1",
+            "thread_type": thread_type,
+            "task_id": task_id,
+            "approval_id": approval_id,
+            "requesting_agent": task.requested_by,
+            "accountable_owner": task.accountable_agent,
+            "current_task_state": task.status.value,
+            "response_required": response_required,
+            "valid_response_classes": (
+                ["APPROVE", "DENY", "CHANGE", "CHANGES"]
+                if thread_type == "APPROVAL"
+                else list(_INTERACTION_RESPONSES[thread_type])
+            ),
+            "explicit_approval_required": thread_type == "APPROVAL",
+            "requested_human_action": requested_human_action,
+            "completion_condition": completion_condition,
+            "last_processed_reply": None,
+            "last_bot_acknowledgment": None,
+            "replay_idempotency_key": f"slack-interaction:{self.channel_id}:{thread_ts}",
+            "channel_id": self.channel_id,
+            "thread_ts": thread_ts,
+            "recorded_at": utcnow(),
+        }
+        self.ledger.save_record(INTERACTION_STATE_KIND, thread_ts, state)
+        self.ledger.bind_thread(task_id, self.channel_id, thread_ts)
+        return state
+
     def post_approval(self, approval_id: str) -> dict[str, Any]:
         existing = self._existing_binding_for_approval(approval_id)
         if existing is not None:
@@ -258,7 +325,10 @@ class SlackApprovalNotifier:
         action = str(approval.get("action") or "").strip()
         response = self.api.post_message(
             channel_id=self.channel_id,
-            text=f"Approval required: {approval_id}",
+            text=(
+                f"### APPROVAL REQUIRED\nApproval {approval_id}\n"
+                "Reply APPROVE, DENY, or CHANGES: <details>."
+            ),
             blocks=approval_blocks(approval_id, action),
         )
         channel = str(response.get("channel") or "").strip()
@@ -276,6 +346,17 @@ class SlackApprovalNotifier:
             "recorded_at": utcnow(),
         }
         self.ledger.save_record(THREAD_BINDING_KIND, thread_ts, binding)
+        self._save_interaction_state(
+            thread_ts=thread_ts,
+            thread_type="APPROVAL",
+            task_id=str(approval.get("task_id") or ""),
+            approval_id=approval_id,
+            requested_human_action=action,
+            completion_condition=(
+                "An explicit approval decision is recorded against the canonical approval."
+            ),
+            response_required=True,
+        )
         return {
             "status": "POSTED",
             "execution_mode": SLACK_BOT_API,
@@ -284,6 +365,77 @@ class SlackApprovalNotifier:
             "channel_id": channel,
             "thread_ts": thread_ts,
             "format": "BLOCK_KIT_REPLY_DRIVEN_V2",
+        }
+
+    def post_interaction(
+        self,
+        *,
+        thread_type: str,
+        task_id: str,
+        summary: str,
+        requested_human_action: str,
+        completion_condition: str,
+    ) -> dict[str, Any]:
+        normalized_type = thread_type.strip().upper()
+        if normalized_type not in _INTERACTION_HEADERS:
+            raise ValueError("Unsupported Slack interaction thread type")
+        clean_summary = summary.strip()
+        if not clean_summary:
+            raise ValueError("Slack interaction summary is required")
+        action = requested_human_action.strip()
+        completion = completion_condition.strip()
+        response_required = normalized_type in {
+            "QUESTION",
+            "MANUAL_ACTION",
+            "BLOCKER",
+            "INCIDENT",
+        }
+        header = _INTERACTION_HEADERS[normalized_type]
+        if normalized_type == "MANUAL_ACTION":
+            how = (
+                "Reply DONE after the action is complete, or reply normally "
+                "if you need clarification."
+            )
+            authority = "No Slack approval is required. This is a manual action request."
+        elif normalized_type == "QUESTION":
+            how = "Reply in this thread in normal language."
+            authority = "This is a conversational question, not an approval request."
+        elif response_required:
+            how = "Reply in this thread in normal language."
+            authority = "No approval authority is created by conversational replies."
+        else:
+            how = "No response is required."
+            authority = "No approval is required."
+        text = (
+            f"### {header}\n\n"
+            f"**What happened**\n{clean_summary}\n\n"
+            f"**What I need from you**\n{action or 'Nothing.'}\n\n"
+            f"**How to respond**\n{how}\n\n"
+            f"**Authority**\n{authority}\n\n"
+            f"**Task**\n`{task_id}`"
+        )
+        response = self.api.post_message(channel_id=self.channel_id, text=text)
+        channel = str(response.get("channel") or "").strip()
+        thread_ts = str(response.get("ts") or "").strip()
+        if channel != self.channel_id or not thread_ts:
+            raise RuntimeError("Slack did not return the expected interaction message identity")
+        self._save_interaction_state(
+            thread_ts=thread_ts,
+            thread_type=normalized_type,
+            task_id=task_id,
+            approval_id=None,
+            requested_human_action=action,
+            completion_condition=completion,
+            response_required=response_required,
+        )
+        return {
+            "status": "POSTED",
+            "execution_mode": SLACK_BOT_API,
+            "authority": "COLLABORATION_ONLY",
+            "channel_id": channel,
+            "thread_ts": thread_ts,
+            "thread_type": normalized_type,
+            "format": "PEER_HITL_INTERACTION_V1",
         }
 
     def post_thread_reply(self, thread_ts: str, text: str) -> dict[str, Any]:
@@ -309,7 +461,7 @@ class SlackApprovalNotifier:
             self.api.update_message(
                 channel_id=str(binding["channel_id"]),
                 message_ts=str(binding["thread_ts"]),
-                text=f"Approval {disposition.lower()}: {approval_id}",
+                text=f"### COMPLETED\nApproval {disposition.lower()}: {approval_id}",
                 blocks=resolved_blocks(approval_id, disposition),
             )
         except RuntimeError:

@@ -161,7 +161,7 @@ Examples:
 
 ## Identity
 
-All system-originated governed HITL posts must use the Slack bot OAuth identity. Do not use connected-Slack posting as the operator notification path and do not emulate bot identity with display text, `username`, icons, or avatar overrides.
+All system-originated governed HITL posts must use the Slack bot OAuth identity. The connected Slack human surface remains non-authoritative collaboration only and does not create approval authority. Do not use connected-Slack posting as the operator notification path and do not emulate bot identity with display text, `username`, icons, or avatar overrides.
 
 If Slack shows a system notice as authored by MK, treat that as an execution-path defect and trace the originating workflow.
 

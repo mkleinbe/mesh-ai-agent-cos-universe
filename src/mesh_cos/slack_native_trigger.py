@@ -78,7 +78,7 @@ class SlackNativeTriggerApprovalService:
             raise PermissionError("Slack interaction subtype is not manual human input")
         if str(message.get("user") or "").strip() != self.config.approver_user_id:
             raise PermissionError(
-                "Slack interaction was not authored by the configured human principal"
+                "Slack interaction was not authored by the configured approver human principal"
             )
 
     def _interaction_state(self, thread_ts: str) -> dict[str, Any]:

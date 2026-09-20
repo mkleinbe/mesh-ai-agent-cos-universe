@@ -21,6 +21,7 @@ _THREAD_DECISION_RE = re.compile(
     re.IGNORECASE,
 )
 _SLACK_WHOLE_MESSAGE_BOLD_RE = re.compile(r"^\*(?P<body>.+)\*$", re.DOTALL)
+_SLACK_WHOLE_MESSAGE_CODE_RE = re.compile(r"^`(?P<body>[^`\n]+)`$")
 _SLACK_USER_ID_RE = re.compile(r"^[UW][A-Z0-9]+$")
 
 
@@ -98,6 +99,9 @@ def _normalize_thread_decision_text(text: str) -> str:
     """
     clean = text.strip()
     match = _SLACK_WHOLE_MESSAGE_BOLD_RE.fullmatch(clean)
+    if match is not None:
+        clean = match.group("body").strip()
+    match = _SLACK_WHOLE_MESSAGE_CODE_RE.fullmatch(clean)
     if match is not None:
         clean = match.group("body").strip()
     return clean

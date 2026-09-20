@@ -203,8 +203,11 @@ def test_hitl_chat_004_inline_code_approve_is_provider_verified_and_acknowledged
     h, approval_id = _approval_harness()
     h.reply_text = "`APPROVE`"
     result = h.reconcile()
-    assert result["reply_class"] == "APPROVAL_APPROVED"
-    assert result["authority_mutated"] is True
+    assert result["version"] == "mesh.cos.slack-human-decision.v6"
+    assert result["disposition"] == "APPROVE"
+    interaction = h.ledger.list_records("slack_interaction_reply")[-1]
+    assert interaction["reply_class"] == "APPROVAL_APPROVED"
+    assert interaction["authority_mutated"] is True
     assert result["provider_identity_verified"] is True
     assert h.ledger.get_record("approval", approval_id)["status"] == "APPROVED"
     assert "Approved. Approval" in h.thread_posts()[-1]["text"]
@@ -222,8 +225,10 @@ def test_hitl_chat_007_deny_is_canonical_and_acknowledged() -> None:
     h, approval_id = _approval_harness()
     h.reply_text = "DENY"
     result = h.reconcile()
-    assert result["reply_class"] == "APPROVAL_DENIED"
-    assert result["authority_mutated"] is True
+    assert result["disposition"] == "DENY"
+    interaction = h.ledger.list_records("slack_interaction_reply")[-1]
+    assert interaction["reply_class"] == "APPROVAL_DENIED"
+    assert interaction["authority_mutated"] is True
     assert h.ledger.get_record("approval", approval_id)["status"] == "REJECTED"
     assert "No action is authorized" in h.thread_posts()[-1]["text"]
 
@@ -232,8 +237,10 @@ def test_hitl_chat_008_changes_detail_supersedes_approval_and_is_acknowledged() 
     h, approval_id = _approval_harness()
     h.reply_text = "CHANGES: remove the second recipient"
     result = h.reconcile()
-    assert result["reply_class"] == "APPROVAL_CHANGES_REQUESTED"
-    assert result["authority_mutated"] is True
+    assert result["status"] == "PENDING_AGENT_REVISION"
+    interaction = h.ledger.list_records("slack_interaction_reply")[-1]
+    assert interaction["reply_class"] == "APPROVAL_CHANGES_REQUESTED"
+    assert interaction["authority_mutated"] is True
     assert h.ledger.get_record("approval", approval_id)["status"] == "REJECTED"
     changes = h.ledger.list_records("approval_change_request")
     assert changes[-1]["change_instruction"] == "remove the second recipient"
@@ -252,8 +259,7 @@ def test_hitl_chat_009_duplicate_delivery_is_idempotent_without_duplicate_ack() 
     first = h.reconcile()
     ack_count = len(h.thread_posts())
     second = h.reconcile()
-    assert first["acknowledgment_message_ts"] == second["acknowledgment_message_ts"]
-    assert second["replayed"] is True
+    assert first == second
     assert len(h.thread_posts()) == ack_count
 
 

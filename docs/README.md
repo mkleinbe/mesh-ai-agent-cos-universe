@@ -1,3 +1,17 @@
+# Current documentation: v4.13.2 QNAP Source Identity Repair
+
+Current release evidence:
+
+- `release-v4.13.2-qnap-source-identity.md`
+- `release-qnap-v4.4.1-source-identity.md`
+- `security-review-qnap-v4.4.1-source-identity.md`
+- `verification-qnap-v4.4.1-source-identity.md`
+- `chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`
+- `../specs/qnap-source-identity-v4.4.1.feature`
+- `../CHANGELOG-v4.13.2.md`
+
+Current repository release: **v4.13.2**. QNAP deployment candidate: **4.4.1**, pending live exact-source promotion and readback. Canonical Phase 1 authority/runtime contract: **4.0.0**. The production Compose topology is unchanged.
+
 # Current documentation: v4.13.0 Bidirectional Slack HITL Peer Workflow
 
 The current repository release documentation for the Slack HITL remediation is:

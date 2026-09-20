@@ -26,7 +26,7 @@ def test_v4121_skill_documents_agent_vs_capability_and_parent_reconciliation() -
 
 
 def test_superseded_release_publishers_are_historical_read_only() -> None:
-    for version in ("4.10.0", "4.11.0", "4.12.0", "4.12.1"):
+    for version in ("4.10.0", "4.11.0", "4.12.0", "4.12.1", "4.13.0"):
         workflow = read(f".github/workflows/release-v{version}.yml")
         assert "workflow_dispatch:" in workflow
         assert "pull_request:" not in workflow
@@ -35,15 +35,15 @@ def test_superseded_release_publishers_are_historical_read_only() -> None:
         assert "gh release create" not in workflow
 
 
-def test_v4121_assets_remain_immutable_and_v4130_owns_current_qnap_publication() -> None:
+def test_v4121_assets_remain_immutable_and_v4131_owns_current_qnap_publication() -> None:
     historical = read(".github/workflows/release-v4.12.1.yml")
     assert "workflow_dispatch:" in historical
     assert "gh release create" not in historical
     assert "contents: write" not in historical
-    current = read(".github/workflows/release-v4.13.0.yml")
-    assert "gh release create v4.13.0" in current
+    current = read(".github/workflows/release-v4.13.1.yml")
+    assert "gh release create v4.13.1" in current
     assert "mesh-cos-mcp-qnap-v4.4.0.zip" in current
-    assert "docs/release-v4.13.0-slack-hitl-peer.md" in current
+    assert "docs/release-v4.13.1-qnap-doc-sync.md" in current
     builder = read("scripts/build-chatgpt-skill-bundle-v4.12.1.sh")
     assert "VERSION=4.12.1" in builder
     assert "docs/skills-v4.12.1.md" in builder

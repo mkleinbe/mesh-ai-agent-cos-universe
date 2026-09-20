@@ -44,13 +44,13 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     )
 
 
-def test_active_deployment_train_remains_v430_while_ci_is_release_neutral() -> None:
+def test_active_deployment_train_is_v440_while_historical_v430_wrapper_is_preserved() -> None:
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
     builder = read("scripts/build-qnap-release-bundle.sh")
     wrapper = read("scripts/build-qnap-release-v4.3.0.sh")
     ci = read(".github/workflows/ci.yml")
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.3.0" in env_example
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.4.0" in env_example
     assert "MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER" in env_example
     assert "MESH_COS_SLACK_APP_ID=A0B49RNE4K0" in env_example
     assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
@@ -98,10 +98,10 @@ def test_historical_and_current_docs_are_packaged() -> None:
         assert Path(path).name in wrapper
 
 
-def test_chatgpt_acceptance_requires_owner_execution_after_v430_deploy() -> None:
+def test_chatgpt_acceptance_requires_owner_execution_after_v440_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.3.0",
+        "v4.4.0",
         "mcp_version",
         "4.0.0",
         "deployment_release",

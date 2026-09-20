@@ -1,3 +1,9 @@
+# v4.13.1 QNAP Operator Documentation Alignment
+
+This PATCH release corrects stale QNAP v4.3.0 operator references embedded in the v4.13.0 release bundle. Runtime Slack HITL behavior remains v4.13.0-equivalent. Canonical MCP authority/runtime contract remains 4.0.0 and QNAP deployment identity remains 4.4.0.
+
+See `docs/release-v4.13.1-qnap-doc-sync.md`.
+
 # v4.13.0 Bidirectional Slack HITL Peer Workflow
 
 This MINOR release corrects the Slack HITL operator experience and message identity path. It adds governed non-approval interaction threads, same-thread acknowledgments after provider reread, explicit message intent, direct CHANGES detail support, and replay-safe conversational evidence while preserving the locator-only Work dispatcher and fail-closed approval boundary.

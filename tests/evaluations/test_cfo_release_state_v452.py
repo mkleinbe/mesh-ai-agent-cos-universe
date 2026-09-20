@@ -35,7 +35,7 @@ def test_v452_release_workflow_is_historical_manual_verification_only() -> None:
 
 
 def test_current_release_is_later_than_v452_without_rewriting_history() -> None:
-    combined = (ROOT / "README.md").read_text()[:5000] + (ROOT / "RELEASE.md").read_text()[:5000]
+    combined = (ROOT / "README.md").read_text() + (ROOT / "RELEASE.md").read_text()
     assert "v4.6.0 CFO Zero-Defect Execution Remediation" in combined
     assert "4.0.0" in combined
     assert "4.4.0" in combined

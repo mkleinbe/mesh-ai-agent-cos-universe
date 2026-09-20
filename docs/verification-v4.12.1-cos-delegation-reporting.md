@@ -23,10 +23,11 @@ The original `forbidden` condition was reproduced as a caller assertion mismatch
 - orchestrating agent: `cos`
 - child completion: `COMPLETED` with outcome evidence
 - independent verification: `VERIFIED` only after separate CoS verification
-- audit chain: valid, 3,210 events after canary
+- parent reconciliation check-in: `checkin-5311b8b7c75f`
+- audit chain: valid, 3,213 events after reconciliation
 - external action: none
 
-The parent remained independent rather than being silently completed or verified, as required.
+The parent remained `INTAKE` after reconciliation rather than being silently completed or verified, as required.
 
 ## Real Commercial Growth OS handoff-pattern canary
 

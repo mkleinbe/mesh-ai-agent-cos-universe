@@ -1,5 +1,13 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current release: v4.13.2 QNAP Source Identity Repair
+
+v4.13.2 closes the deployment-integrity defect exposed during live Slack HITL acceptance. The QNAP deployment candidate is now a distinct `4.4.1` artifact, the local Mesh image identity is source-commit-qualified, only the application container is forcibly recreated during candidate activation, and post-deploy verification fails unless release metadata, running OCI revision, and governed MCP `source_commit` agree exactly.
+
+The supplied production Compose topology is unchanged. The canonical Phase 1 authority/runtime contract remains `4.0.0`; the organization remains exactly 10 agents. Production activation requires live readback of the exact v4.13.2 release commit.
+
+See `docs/release-v4.13.2-qnap-source-identity.md` and `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`.
+
 ## Current release: v4.13.1 QNAP Operator Documentation Alignment
 
 v4.13.1 is a documentation and packaging-safety PATCH over v4.13.0. Slack HITL peer behavior is unchanged. Active QNAP operator instructions and packaged environment references now consistently target deployment identity 4.4.0.
@@ -34,7 +42,7 @@ v4.11.0 integrates Commercial Growth OS business-state reporting and CRO/CFO/COO
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.12.1 CoS Delegation and Agent Reporting`. Current production QNAP deployment: `4.4.0` pending promotion of the exact current-source candidate. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.13.2 QNAP Source Identity Repair`. Current production QNAP state remains unverified until deployment `4.4.1` is promoted and exact-source readback passes. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
 ## v4.10.0 Outcome-Driven Orchestration
 

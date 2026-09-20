@@ -78,7 +78,8 @@ else
   RELEASE_VERSION=$EXPECTED_RELEASE
 fi
 EXPECTED_IMAGE_VERSION="${EXPECTED_RELEASE}-qnap"
-MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v${RELEASE_VERSION}}
+EXPECTED_COMMIT_SHORT=$(printf '%s' "$EXPECTED_COMMIT" | cut -c1-12)
+MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v${RELEASE_VERSION}-${EXPECTED_COMMIT_SHORT}}
 command -v docker >/dev/null 2>&1 || fail "docker is not available"
 [ -r "$COMPOSE_LIB" ] || fail "Compose discovery helper is missing: $COMPOSE_LIB"
 . "$COMPOSE_LIB"

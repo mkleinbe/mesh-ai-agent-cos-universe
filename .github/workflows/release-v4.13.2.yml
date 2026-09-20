@@ -1,0 +1,159 @@
+name: v4.13.2 QNAP Source Identity Repair
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deployment/qnap/**'
+      - 'scripts/build-qnap-release-bundle.sh'
+      - 'scripts/finalize-qnap-release-v4.4.1.sh'
+      - 'Dockerfile'
+      - '.github/workflows/release-v4.13.1.yml'
+      - '.github/workflows/release-v4.13.2.yml'
+      - 'tests/evaluations/test_historical_release_workflows_v483.py'
+      - 'tests/evaluations/test_release_record_correction_v484.py'
+      - 'tests/evaluations/test_release_closeout_v4121.py'
+      - 'tests/evaluations/test_qnap_release_docs_v4131.py'
+      - 'tests/evaluations/test_qnap_source_identity_v4132.py'
+      - 'specs/qnap-source-identity-v4.4.1.feature'
+      - 'docs/release-v4.13.2-qnap-source-identity.md'
+      - 'docs/release-qnap-v4.4.1-source-identity.md'
+      - 'docs/security-review-qnap-v4.4.1-source-identity.md'
+      - 'docs/verification-qnap-v4.4.1-source-identity.md'
+      - 'docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG-v4.13.2.md'
+      - 'CHANGELOG-QNAP-v4.4.1.md'
+      - 'docs/README.md'
+  pull_request:
+    paths:
+      - 'deployment/qnap/**'
+      - 'scripts/build-qnap-release-bundle.sh'
+      - 'scripts/finalize-qnap-release-v4.4.1.sh'
+      - 'Dockerfile'
+      - '.github/workflows/release-v4.13.1.yml'
+      - '.github/workflows/release-v4.13.2.yml'
+      - 'tests/evaluations/test_historical_release_workflows_v483.py'
+      - 'tests/evaluations/test_release_record_correction_v484.py'
+      - 'tests/evaluations/test_release_closeout_v4121.py'
+      - 'tests/evaluations/test_qnap_release_docs_v4131.py'
+      - 'tests/evaluations/test_qnap_source_identity_v4132.py'
+      - 'specs/qnap-source-identity-v4.4.1.feature'
+      - 'docs/release-v4.13.2-qnap-source-identity.md'
+      - 'docs/release-qnap-v4.4.1-source-identity.md'
+      - 'docs/security-review-qnap-v4.4.1-source-identity.md'
+      - 'docs/verification-qnap-v4.4.1-source-identity.md'
+      - 'docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG-v4.13.2.md'
+      - 'CHANGELOG-QNAP-v4.4.1.md'
+      - 'docs/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/check-owner-execution-readiness.py
+      - run: python scripts/check-capability-closure.py
+      - run: python scripts/check-published-action-surface.py
+      - run: ruff check src
+      - run: ruff check tests scripts --select E9,F63,F7,F82
+      - run: mypy src --check-untyped-defs
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - run: python -m compileall -q src
+      - name: Verify QNAP source-identity regression
+        run: |
+          set -euo pipefail
+          for f in deployment/qnap/scripts/*.sh deployment/qnap/tests/*.sh; do sh -n "$f"; done
+          sh deployment/qnap/tests/test-deployment-source-identity.sh
+          sh deployment/qnap/tests/test-image-provenance.sh
+          sh deployment/qnap/tests/test-transactional-promotion.sh
+          bash -n scripts/build-qnap-release-bundle.sh
+          bash -n scripts/finalize-qnap-release-v4.4.1.sh
+      - name: Build exact QNAP 4.4.1 release candidate
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-qnap-release-bundle.sh 4.4.1
+          bash scripts/finalize-qnap-release-v4.4.1.sh
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.4.1.zip.sha256)
+          grep -q '^version=4.4.1$' dist/qnap-bundle/v4.4.1/cos-mcp/release-metadata.txt
+          grep -q "^commit=$GITHUB_SHA$" dist/qnap-bundle/v4.4.1/cos-mcp/release-metadata.txt
+      - name: Build production-equivalent image
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker build             --build-arg VCS_REF="$GITHUB_SHA"             --build-arg BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"             --build-arg IMAGE_VERSION="4.4.1-qnap"             -t mesh-cos-mcp:ci-v4.4.1             dist/qnap-bundle/v4.4.1/cos-mcp/build-context
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.version" }}' mesh-cos-mcp:ci-v4.4.1)" = "4.4.1-qnap"
+          test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' mesh-cos-mcp:ci-v4.4.1)" = "$GITHUB_SHA"
+      - name: Verify exact governed MCP source identity
+        env:
+          MESH_COS_DEPLOYMENT_RELEASE: '4.4.1'
+          MESH_COS_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.4.1
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Build exact QNAP 4.4.1 release asset
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-qnap-release-bundle.sh 4.4.1
+          bash scripts/finalize-qnap-release-v4.4.1.sh
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.4.1.zip.sha256)
+          grep -q "^commit=$GITHUB_SHA$" dist/qnap-bundle/v4.4.1/cos-mcp/release-metadata.txt
+      - name: Publish exact-SHA v4.13.2 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.13.2 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.13.2 --json targetCommitish --jq .targetCommitish)"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "v4.13.2 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              exit 1
+            fi
+          else
+            gh release create v4.13.2               --target "$GITHUB_SHA"               --title 'Mesh CoS v4.13.2 QNAP Source Identity Repair'               --notes-file docs/release-v4.13.2-qnap-source-identity.md
+          fi
+          gh release upload v4.13.2             dist/mesh-cos-mcp-qnap-v4.4.1.zip             dist/mesh-cos-mcp-qnap-v4.4.1.zip.sha256             --clobber

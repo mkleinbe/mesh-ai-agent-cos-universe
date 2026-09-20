@@ -35,7 +35,10 @@ info() { mesh_log INFO info "$1"; }
 mesh_set_stage prepared_release
 [ -r "$RELEASE_METADATA" ] || fail "release metadata is missing: $RELEASE_METADATA"
 EXPECTED_RELEASE=$(mesh_candidate_release "$RELEASE_METADATA") || fail "release metadata version is not a valid runtime semantic version"
-MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v${EXPECTED_RELEASE}}
+EXPECTED_COMMIT=$(mesh_release_metadata_value commit "$RELEASE_METADATA")
+printf '%s' "$EXPECTED_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$' || fail "release metadata commit is invalid"
+EXPECTED_COMMIT_SHORT=$(printf '%s' "$EXPECTED_COMMIT" | cut -c1-12)
+MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v${EXPECTED_RELEASE}-${EXPECTED_COMMIT_SHORT}}
 docker image inspect "$MESH_IMAGE_TAG" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable; run the normal deploy command once before provisioning"
 
 mesh_set_stage filesystem

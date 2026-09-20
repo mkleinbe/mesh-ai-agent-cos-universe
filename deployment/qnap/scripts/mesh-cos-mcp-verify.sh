@@ -27,7 +27,11 @@ set -a
 . "$VERIFY_ENV_FILE"
 set +a
 [ -n "${MESH_COS_DEPLOYMENT_RELEASE:-}" ] || fail "MESH_COS_DEPLOYMENT_RELEASE missing from verification environment"
-mesh_log INFO verify_environment "source=$VERIFY_ENV_FILE deployment_release=$MESH_COS_DEPLOYMENT_RELEASE"
+ACTIVE_RELEASE_METADATA="$APP_ROOT/release-metadata.txt"
+[ -r "$ACTIVE_RELEASE_METADATA" ] || fail "$ACTIVE_RELEASE_METADATA missing"
+EXPECTED_SOURCE_COMMIT=$(sed -n 's/^commit=//p' "$ACTIVE_RELEASE_METADATA" | tail -n 1)
+printf '%s' "$EXPECTED_SOURCE_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$' || fail "active release metadata commit is invalid"
+mesh_log INFO verify_environment "source=$VERIFY_ENV_FILE deployment_release=$MESH_COS_DEPLOYMENT_RELEASE source_commit=$EXPECTED_SOURCE_COMMIT"
 
 mesh_set_stage container_health
 for name in mesh-cos-mcp mesh-cos-tunnel; do
@@ -48,7 +52,7 @@ SLACK_PROVIDER_CHECK="const fs=require('fs');const token=fs.readFileSync('/run/s
 mesh_run slack_provider_read conversations-history docker exec mesh-cos-mcp node -e "$SLACK_PROVIDER_CHECK" || fail "Slack bot cannot read the governed private channel after bounded network-readiness retries; inspect the sanitized Slack provider error and verify groups:history scope, workspace reinstall, token reprovisioning, channel membership, and QNAP egress"
 pass "Slack bot provider read scope, governed-channel access, and qnet egress readiness"
 
-MCP_ENVELOPE_CHECK="const expected=process.env.EXPECTED_RELEASE;const meta={'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'mesh-qnap-verify',version:expected}};const body={jsonrpc:'2.0',id:'verify-envelope',method:'tools/call',params:{name:'registry.get_agent',arguments:{agent_id:'cos'},_meta:meta}};fetch('http://172.30.60.2:8080/mcp',{method:'POST',headers:{'content-type':'application/json','accept':'application/json, text/event-stream','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'registry.get_agent'},body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error('http_'+r.status);const outer=JSON.parse(await r.text());const content=outer&&outer.result&&outer.result.content;if(!Array.isArray(content))throw new Error('missing_content');const item=content.find(x=>x&&x.type==='text');if(!item||typeof item.text!=='string')throw new Error('missing_text');const envelope=JSON.parse(item.text);if(envelope.ok!==true||envelope.mcp_version!=='4.0.0'||envelope.deployment_release!==expected||envelope.agent_id!=='cos'||!envelope.result)throw new Error('identity_mismatch')}).catch(()=>process.exit(1))"
+MCP_ENVELOPE_CHECK="const expected=process.env.EXPECTED_RELEASE;const expectedCommit=process.env.EXPECTED_SOURCE_COMMIT;const meta={'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'mesh-qnap-verify',version:expected}};const body={jsonrpc:'2.0',id:'verify-envelope',method:'tools/call',params:{name:'registry.get_agent',arguments:{agent_id:'cos'},_meta:meta}};fetch('http://172.30.60.2:8080/mcp',{method:'POST',headers:{'content-type':'application/json','accept':'application/json, text/event-stream','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'registry.get_agent'},body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error('http_'+r.status);const outer=JSON.parse(await r.text());const content=outer&&outer.result&&outer.result.content;if(!Array.isArray(content))throw new Error('missing_content');const item=content.find(x=>x&&x.type==='text');if(!item||typeof item.text!=='string')throw new Error('missing_text');const envelope=JSON.parse(item.text);if(envelope.ok!==true||envelope.mcp_version!=='4.0.0'||envelope.deployment_release!==expected||envelope.source_commit!==expectedCommit||envelope.agent_id!=='cos'||!envelope.result)throw new Error('identity_mismatch')}).catch(()=>process.exit(1))"
 mesh_run runtime_readiness governed-tool-envelope \
   docker run --rm \
     --network container:mesh-cos-tunnel \
@@ -58,6 +62,7 @@ mesh_run runtime_readiness governed-tool-envelope \
     --security-opt no-new-privileges \
     --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
     -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" \
+    -e EXPECTED_SOURCE_COMMIT="$EXPECTED_SOURCE_COMMIT" \
     --entrypoint node "$MESH_COS_IMAGE_ID" -e "$MCP_ENVELOPE_CHECK" || fail "governed MCP tool response envelope identity check failed"
 pass "governed tool envelope dual release identity"
 
@@ -76,9 +81,11 @@ case "$PIDS" in 0|'<nil>'|-1) pass "no PID limit" ;; *) fail "unexpected PID lim
 mesh_set_stage image_identity
 RUNNING_MESH_ID=$(docker inspect -f '{{.Image}}' mesh-cos-mcp)
 [ "$RUNNING_MESH_ID" = "$MESH_COS_IMAGE_ID" ] || fail "running Mesh image differs from prepared image ID"
+RUNNING_MESH_REVISION=$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$RUNNING_MESH_ID" 2>/dev/null || true)
+[ "$RUNNING_MESH_REVISION" = "$EXPECTED_SOURCE_COMMIT" ] || fail "running Mesh image revision differs from active release commit"
 RUNNING_TUNNEL_ID=$(docker inspect -f '{{.Image}}' mesh-cos-tunnel)
 [ "$RUNNING_TUNNEL_ID" = "$TUNNEL_IMAGE_ID" ] || fail "running tunnel image differs from prepared image ID"
-pass "running containers match pinned image identities"
+pass "running containers match pinned image identities and source commit"
 
 mesh_set_stage ingress_denial
 DIRECT_CODE=$(docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/mcp',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).then(r=>process.stdout.write(String(r.status))).catch(()=>process.exit(2))")
@@ -100,9 +107,10 @@ fi
 
 mesh_set_stage complete
 pass "local container verification complete"
-mesh_log INFO verify_complete "deployment_release=$MESH_COS_DEPLOYMENT_RELEASE mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID environment_source=$VERIFY_ENV_FILE"
+mesh_log INFO verify_complete "deployment_release=$MESH_COS_DEPLOYMENT_RELEASE source_commit=$EXPECTED_SOURCE_COMMIT mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID environment_source=$VERIFY_ENV_FILE"
 echo "Deployment release: $MESH_COS_DEPLOYMENT_RELEASE"
 echo "Canonical MCP contract: 4.0.0"
+echo "Source commit: $EXPECTED_SOURCE_COMMIT"
 echo "Mesh image ID: $RUNNING_MESH_ID"
 echo "Tunnel image ID: $RUNNING_TUNNEL_ID"
 docker network inspect lan7 --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || true

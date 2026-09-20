@@ -1,3 +1,11 @@
+# v4.13.2 QNAP Source Identity Repair
+
+This PATCH release corrects QNAP deployment source-identity and artifact-identity defects discovered during live Slack HITL acceptance. QNAP deployment identity advances to 4.4.1 so the release has a distinct archive and extraction root. Candidate image tags are source-commit-qualified, only the application container is forcibly recreated, and post-deploy verification requires exact agreement among release metadata, running OCI revision, and governed MCP `source_commit`.
+
+The production Compose topology, Secure MCP Tunnel network boundary, Slack secret mounts, TaskLedger authority, 10-agent roster, and L4/L5 approval rules are unchanged. Canonical MCP authority/runtime contract remains 4.0.0.
+
+See `docs/release-v4.13.2-qnap-source-identity.md`.
+
 # v4.13.1 QNAP Operator Documentation Alignment
 
 This PATCH release corrects stale QNAP v4.3.0 operator references embedded in the v4.13.0 release bundle. Runtime Slack HITL behavior remains v4.13.0-equivalent. Canonical MCP authority/runtime contract remains 4.0.0 and QNAP deployment identity remains 4.4.0.

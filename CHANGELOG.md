@@ -1,3 +1,13 @@
+## v4.13.2 - QNAP Source Identity Repair
+
+- advanced QNAP deployment artifact identity to 4.4.1 to eliminate reuse of the stale 4.4.0 ZIP/release-root identity;
+- bound candidate Mesh image tags to the exact source commit;
+- changed candidate activation to force-recreate only `mesh-cos-mcp`, while reconciling the tunnel service without forced recreation;
+- added fail-closed checks that active release metadata, running image OCI revision, and governed MCP `source_commit` match exactly;
+- preserved the supplied Compose topology, Secure MCP Tunnel trust boundary, TaskLedger, Slack secret mounts, 10-agent roster, and L4/L5 authority boundaries.
+
+See `CHANGELOG-v4.13.2.md`.
+
 ## v4.13.0 - Bidirectional Slack HITL Peer Workflow
 
 - added governed bot-owned INFO, QUESTION, MANUAL_ACTION, BLOCKER, STATUS, INCIDENT, and APPROVAL thread contracts;

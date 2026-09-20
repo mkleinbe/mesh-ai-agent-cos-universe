@@ -3,6 +3,8 @@ set -eu
 
 IMAGE=${1:-mesh-cos-mcp:ci}
 DEPLOYMENT_RELEASE=${MESH_COS_DEPLOYMENT_RELEASE:-4.1.7}
+EXPECTED_SOURCE_COMMIT=${MESH_COS_EXPECTED_SOURCE_COMMIT:-$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$IMAGE" 2>/dev/null || true)}
+printf '%s' "$EXPECTED_SOURCE_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$' || { echo 'FAIL image has no valid source revision label' >&2; exit 1; }
 NAME=mesh-cos-modern-transport-test
 ROOT=${TMPDIR:-/tmp}/mesh-cos-modern-transport-$$
 STATE=$ROOT/state
@@ -139,6 +141,7 @@ STATUS=$(curl -sS -o "$CALL_OUT" -w '%{http_code}' \
 grep -Fq '\"agent_id\":\"cos\"' "$CALL_OUT" || { echo 'FAIL modern tool response did not preserve cos identity' >&2; cat "$CALL_OUT" >&2; exit 1; }
 grep -Fq '\"mcp_version\":\"4.0.0\"' "$CALL_OUT" || { echo 'FAIL modern tool response missing canonical mcp_version' >&2; cat "$CALL_OUT" >&2; exit 1; }
 grep -Fq "\\\"deployment_release\\\":\\\"$DEPLOYMENT_RELEASE\\\"" "$CALL_OUT" || { echo 'FAIL modern tool response missing deployment_release' >&2; cat "$CALL_OUT" >&2; exit 1; }
+grep -Fq "\\\"source_commit\\\":\\\"$EXPECTED_SOURCE_COMMIT\\\"" "$CALL_OUT" || { echo 'FAIL modern tool response missing exact source_commit' >&2; cat "$CALL_OUT" >&2; exit 1; }
 
 # Security regression: the same endpoint must reject an untrusted source identity.
 docker rm -f "$NAME" >/dev/null 2>&1 || true
@@ -170,4 +173,4 @@ STATUS=$(curl -sS -o "$ROOT/forbidden.json" -w '%{http_code}' \
   --data "$DISCOVER_BODY" "http://127.0.0.1:$PORT/mcp")
 [ "$STATUS" = 403 ] || { echo "FAIL untrusted direct MCP ingress expected HTTP 403, got $STATUS" >&2; exit 1; }
 
-echo "PASS modern server/discover, native Slack readiness, dual release identity, 10 sequential stateless MCP requests, cos identity, and tunnel-only ingress regression for deployment $DEPLOYMENT_RELEASE"
+echo "PASS modern server/discover, native Slack readiness, release/source identity, 10 sequential stateless MCP requests, cos identity, and tunnel-only ingress regression for deployment $DEPLOYMENT_RELEASE source $EXPECTED_SOURCE_COMMIT"

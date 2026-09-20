@@ -1,6 +1,6 @@
-# Current Slack HITL acceptance addendum for repository v4.13.0
+# Current Slack HITL acceptance for repository v4.13.2
 
-The production QNAP deployment identity remains `4.4.1`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.0 current-source promotion, complete the existing QNAP acceptance plus the following Slack peer-workflow proof:
+The production QNAP deployment identity remains `4.4.1`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.2 current-source promotion, complete the existing QNAP acceptance plus the Slack peer-workflow proof introduced in v4.13.0:
 
 1. verify `slack-adapter/post_interaction` posts through the protected bot OAuth identity;
 2. verify INFO states no response required and MANUAL_ACTION states no approval required plus DONE instructions;
@@ -19,7 +19,7 @@ The single `Mesh Slack HITL Dispatcher` remains locator-only. No trigger-provide
 
 Run this only after the **v4.4.1** QNAP deployment passes local deployment, preflight, verification, backup, and the live Slack provider-read/qnet egress-readiness gate. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP authority/runtime contract remains **4.0.0** and the deployment release is **4.4.1**.
 
-v4.4.1 adds the governed `delegation.execute_owner` path for PF-057 while preserving the existing ChatGPT-native Slack dispatcher architecture and the v4.2.3 provider-read/qnet controls.
+v4.4.1 preserves the governed `delegation.execute_owner` path and PF-057 remediation from 4.4.0 while adding exact source-identity deployment controls. It also preserves the existing ChatGPT-native Slack dispatcher architecture and the v4.2.3 provider-read/qnet controls.
 
 ## 1. Local deployment identity
 

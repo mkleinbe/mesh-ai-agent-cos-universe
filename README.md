@@ -1,3 +1,11 @@
+## Current release: v4.13.3 Slack HITL Task Telemetry Repair
+
+v4.13.3 fixes canonical task telemetry for the existing Slack peer-HITL path. Provider-confirmed Slack channel/thread identity is persisted in TaskRecord, and each provider-authenticated manual human interaction increments human_touches exactly once. Human interaction telemetry remains independent from approval authority and task lifecycle.
+
+QNAP candidate identity advances to 4.4.2 because runtime source changed. Canonical MCP authority/runtime contract remains 4.0.0. Production Compose topology and Secure MCP Tunnel architecture are unchanged.
+
+See `docs/release-v4.13.3-slack-hitl-task-telemetry.md` and `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.2.md`.
+
 # Mesh AI Chief of Staff Agent Universe
 
 ## Current release: v4.13.2 QNAP Source Identity Repair

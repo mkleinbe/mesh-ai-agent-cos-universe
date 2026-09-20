@@ -202,7 +202,22 @@ class GovernedAdapterRegistry:
                 if not text:
                     raise ValueError("Slack bot message text is required")
                 thread_ts = str(handoff_payload.get("thread_ts") or "").strip() or None
-                return notifier.post_classified_message(text, thread_ts=thread_ts)
+                response = notifier.api.post_message(
+                    channel_id=configured_channel,
+                    text=text,
+                    thread_ts=thread_ts,
+                )
+                message_ts = str(response.get("ts") or "").strip()
+                if not message_ts:
+                    raise RuntimeError("Slack did not return a message timestamp")
+                return {
+                    "status": "POSTED",
+                    "execution_mode": SLACK_BOT_API,
+                    "authority": "COLLABORATION_ONLY",
+                    "channel_id": configured_channel,
+                    "thread_ts": thread_ts,
+                    "message_ts": message_ts,
+                }
 
             if operation == "list_change_requests":
                 GovernedAdapterRegistry._require_exact_payload(handoff_payload, set())

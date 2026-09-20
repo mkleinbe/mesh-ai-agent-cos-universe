@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The canonical Phase 1 authority/runtime contract remains release **`4.0.0`**, defining **10 registered agents** plus one external governed shared Skill, Mesh Devil's Advocate. Candidate repository/QNAP deployment release **`v4.3.0`** repairs PF-057 by adding registry-driven, identity-aware delegated owner execution without transferring identity or weakening human authority.
+The canonical Phase 1 authority/runtime contract remains release **`4.0.0`**, defining **10 registered agents**. Repository remediation **`v4.12.1`** clarifies the delegation request contract and error semantics without changing authority. The verified production QNAP deployment remains **`4.4.0`** until a governed current-source promotion is independently read back.
 
 `TaskLedger` remains canonical state.
 
@@ -95,6 +95,51 @@ authenticated delegator
 ```
 
 The caller may request an owner-allowed operation. The caller cannot choose the owner identity.
+
+## End-to-end delegation and reporting sequence
+
+```mermaid
+sequenceDiagram
+    actor CEO as Human / CEO
+    participant COS as Chief of Staff
+    participant MCP as Mesh CoS MCP
+    participant TL as TaskLedger / Delegation
+    participant AG as Receiving Agent
+    participant V as Independent Verifier
+
+    CEO->>COS: Governed objective
+    COS->>MCP: Create / resume parent and child
+    MCP->>TL: Persist canonical task graph
+    COS->>MCP: delegation.create(child)
+    MCP->>TL: Derive authority, depth, ancestry, owner
+    alt invalid delegation or authority
+        TL-->>MCP: Fail closed
+        MCP-->>COS: Stable reason code
+    else bounded delegation accepted
+        TL-->>MCP: Delegation + owner route
+        COS->>MCP: delegation.execute_owner
+        MCP->>TL: Resolve canonical owner
+        MCP->>AG: Execute as derived owner
+        AG->>MCP: Start / check-in / evidence
+        MCP->>TL: Persist owner-attributed state
+        alt L4/L5 or consequential action
+            MCP-->>COS: Approval required
+            CEO->>MCP: Qualified human decision
+            MCP->>TL: Persist approval evidence
+        end
+        AG->>MCP: task.complete(outcome, evidence)
+        MCP->>TL: Persist COMPLETED
+        MCP-->>COS: Owner result
+        COS->>MCP: Parent reconciliation check-in
+        MCP->>TL: Persist child-result evidence on parent
+        COS->>V: Request independent verification
+        V->>MCP: Verify acceptance evidence
+        MCP->>TL: Persist VERIFIED only after pass
+        MCP-->>COS: Verified child result
+    end
+```
+
+Failure responses expose stable machine-readable reason codes only where safe. They do not expose secret values or policy internals. A Skill is never substituted for an agent principal.
 
 ## Nested delegation
 
@@ -208,7 +253,7 @@ The deployment release and authority contract remain separate version domains:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.3.0
+deployment_release: 4.4.0
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```

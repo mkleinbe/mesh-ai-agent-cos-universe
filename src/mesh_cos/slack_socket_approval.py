@@ -208,6 +208,7 @@ class SlackSocketApprovalService:
         binding: Mapping[str, Any],
         envelope_id: str,
         provider_event_id: str,
+        prompt_for_detail: bool = True,
     ) -> dict[str, Any]:
         approval_id, approval, fingerprint = self._require_pending_bound_approval(binding)
         prior = self.ledger.get_record(_CHANGE_SESSION_KIND, approval_id)
@@ -231,11 +232,11 @@ class SlackSocketApprovalService:
             "envelope_id": envelope_id,
             "provider_event_id": provider_event_id,
             "prompt": "What would you like to change?",
-            "prompt_delivery": "NOT_ATTEMPTED",
+            "prompt_delivery": "NOT_ATTEMPTED" if prompt_for_detail else "NOT_REQUIRED",
             "recorded_at": utcnow(),
         }
         self.ledger.save_record(_CHANGE_SESSION_KIND, approval_id, session)
-        if self.notifier is not None:
+        if self.notifier is not None and prompt_for_detail:
             try:
                 posted = self.notifier.post_thread_reply(
                     str(binding["thread_ts"]), "What would you like to change?"
@@ -352,12 +353,22 @@ class SlackSocketApprovalService:
                 message_ts=message_ts,
                 instruction=text,
             )
-        disposition, _ = _parse_thread_decision(text)
+        disposition, change_detail = _parse_thread_decision(text)
         if disposition == "CHANGE":
-            return self._begin_change(
+            session = self._begin_change(
                 binding=binding,
                 envelope_id=envelope_id,
                 provider_event_id=event_id,
+                prompt_for_detail=change_detail is None,
+            )
+            if change_detail is None:
+                return session
+            return self._capture_change_instruction(
+                binding=binding,
+                envelope_id=envelope_id,
+                provider_event_id=f"{event_id}:change-input",
+                message_ts=message_ts,
+                instruction=change_detail,
             )
         return self._finalize_decision(
             binding=binding,

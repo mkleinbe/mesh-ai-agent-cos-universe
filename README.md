@@ -1,5 +1,9 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current release: v4.13.1 QNAP Operator Documentation Alignment
+
+v4.13.1 is a documentation and packaging-safety PATCH over v4.13.0. Slack HITL peer behavior is unchanged. Active QNAP operator instructions and packaged environment references now consistently target deployment identity 4.4.0.
+
 ## Current release: v4.13.0 Bidirectional Slack HITL Peer Workflow
 
 v4.13.0 makes `#mesh-agent-ops` a bot-owned, bidirectional operating surface. Governed messages now carry explicit interaction intent, response instructions, authority boundaries, canonical task binding, and persisted thread state. Human replies are reread from Slack provider state and acknowledged in-thread. Conversation remains non-authoritative; only explicit approval commands can change a canonical approval.

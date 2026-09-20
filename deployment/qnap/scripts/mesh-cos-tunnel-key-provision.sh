@@ -36,37 +36,7 @@ mesh_set_stage prepared_release
 [ -r "$RELEASE_METADATA" ] || fail "release metadata is missing: $RELEASE_METADATA"
 EXPECTED_RELEASE=$(mesh_candidate_release "$RELEASE_METADATA") || fail "release metadata version is not a valid runtime semantic version"
 EXPECTED_COMMIT=$(mesh_release_metadata_value commit "$RELEASE_METADATA")
-printf '%s' "$EXPECTED_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}
-docker image inspect "$MESH_IMAGE_TAG" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable; run the normal deploy command once before provisioning"
-
-mesh_set_stage filesystem
-mkdir -p "$SECRET_DIR" || fail "unable to create protected secrets directory"
-chmod 0700 "$SECRET_DIR" 2>/dev/null || fail "unable to set protected secrets directory mode"
-
-if [ -s "$SECRET_FILE" ] && [ "${MESH_COS_FORCE_TUNNEL_KEY_RECONFIGURE:-0}" != "1" ]; then
-  info "preserving existing OpenAI tunnel runtime key file"
-else
-  mesh_set_stage tunnel_key
-  mesh_read_secret_tty "OpenAI tunnel runtime API key (input hidden): " "OpenAI tunnel runtime key" || fail "unable to capture tunnel runtime key securely"
-  [ -n "$MESH_SECRET_VALUE" ] || fail "tunnel runtime key cannot be empty"
-  incoming="$SECRET_FILE.incoming.$$"
-  umask 077
-  printf '%s' "$MESH_SECRET_VALUE" > "$incoming" || { unset MESH_SECRET_VALUE; fail "unable to write protected tunnel runtime key"; }
-  unset MESH_SECRET_VALUE
-  chmod 0400 "$incoming" 2>/dev/null || { rm -f "$incoming"; fail "unable to set protected tunnel runtime key mode"; }
-  mv "$incoming" "$SECRET_FILE" || { rm -f "$incoming"; fail "unable to install protected tunnel runtime key"; }
-  mesh_log INFO tunnel_key_file "status=provisioned value_logged=false"
-fi
-
-mesh_set_stage permissions
-mesh_apply_secret_permissions "$MESH_IMAGE_TAG" "$MESH_UID" "$MESH_GID" "$SECRET_DIR" || fail "unable to normalize protected secret ownership/modes"
-[ -s "$SECRET_FILE" ] || fail "OpenAI tunnel runtime key file is missing or empty after provisioning"
-mesh_log INFO tunnel_key_permissions "owner=$MESH_UID:$MESH_GID mode=0400 value_logged=false"
-
-mesh_set_stage complete
-info "OpenAI tunnel runtime key provisioned; rerun the normal deployment command"
-mesh_log INFO tunnel_key_provision_complete "result=PASS value_logged=false"
- || fail "release metadata commit is invalid"
+printf '%s' "$EXPECTED_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}$' || fail "release metadata commit is invalid"
 EXPECTED_COMMIT_SHORT=$(printf '%s' "$EXPECTED_COMMIT" | cut -c1-12)
 MESH_IMAGE_TAG=${MESH_COS_LOCAL_TAG:-mesh-cos-mcp:qnap-v${EXPECTED_RELEASE}-${EXPECTED_COMMIT_SHORT}}
 docker image inspect "$MESH_IMAGE_TAG" >/dev/null 2>&1 || fail "prepared Mesh candidate release image is unavailable; run the normal deploy command once before provisioning"

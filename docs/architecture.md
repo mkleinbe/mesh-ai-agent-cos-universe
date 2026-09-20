@@ -1,3 +1,38 @@
+# v4.13.0 Slack HITL peer architecture
+
+```mermaid
+sequenceDiagram
+    participant A as Mesh agent / scheduled workflow
+    participant C as Mesh CoS MCP
+    participant L as TaskLedger
+    participant B as Slack bot identity
+    participant S as Slack provider
+    participant M as Michael
+    participant W as ChatGPT Work dispatcher
+    A->>C: governed interaction request
+    C->>L: canonical task / approval state
+    C->>B: classified bot message
+    B->>S: chat.postMessage
+    S-->>M: operating message
+    M->>S: thread reply
+    S-->>W: native event
+    W->>C: thread_ts + message_ts only
+    C->>S: exact provider reread
+    C->>C: verify human, channel, thread, replay
+    alt conversation
+        C->>L: interaction evidence only
+    else exact approval command
+        C->>L: approval validation + canonical decision
+    else ambiguous approval text
+        Note over C,L: fail closed
+    end
+    C->>B: acknowledgment / resulting state
+    B->>S: same-thread bot reply
+    S-->>M: visible feedback
+```
+
+The Slack bot owns outbound governed HITL messages. ChatGPT Work remains a thin event dispatcher and carries no authority. TaskLedger owns task and approval truth. Conversational interpretation and authority interpretation are separate code paths.
+
 # Architecture
 
 ## Purpose

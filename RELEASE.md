@@ -1,3 +1,11 @@
+# v4.13.0 Bidirectional Slack HITL Peer Workflow
+
+This MINOR release corrects the Slack HITL operator experience and message identity path. It adds governed non-approval interaction threads, same-thread acknowledgments after provider reread, explicit message intent, direct CHANGES detail support, and replay-safe conversational evidence while preserving the locator-only Work dispatcher and fail-closed approval boundary.
+
+Canonical authority/runtime contract remains 4.0.0. QNAP deployment identity remains 4.4.0 and requires exact-source candidate promotion before production activation is claimed.
+
+See `docs/release-v4.13.0-slack-hitl-peer.md`, `docs/security-review-v4.13.0-slack-hitl-peer.md`, and `docs/verification-v4.13.0-slack-hitl-peer.md`.
+
 # v4.12.1 CoS Delegation and Agent Reporting
 
 This PATCH release corrects the CoS delegation request contract and failure diagnostics without changing the 10-agent roster, authority contract 4.0.0, Commercial Growth OS decision logic, or external-action boundaries. Server-derived delegation fields are no longer required caller authority inputs, agent principals cannot be invoked as Skills, and explicit parent reconciliation is documented after owner completion.

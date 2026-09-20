@@ -170,6 +170,27 @@ class GovernedAdapterRegistry:
                     message_ts=str(handoff_payload["message_ts"]),
                 )
 
+            if operation == "post_interaction":
+                GovernedAdapterRegistry._require_exact_payload(
+                    handoff_payload,
+                    {
+                        "thread_type",
+                        "task_id",
+                        "summary",
+                        "requested_human_action",
+                        "completion_condition",
+                    },
+                )
+                return notifier.post_interaction(
+                    thread_type=str(handoff_payload["thread_type"]),
+                    task_id=str(handoff_payload["task_id"]),
+                    summary=str(handoff_payload["summary"]),
+                    requested_human_action=str(
+                        handoff_payload["requested_human_action"]
+                    ),
+                    completion_condition=str(handoff_payload["completion_condition"]),
+                )
+
             if operation == "post_message":
                 unexpected = sorted(set(handoff_payload) - {"text", "thread_ts"})
                 if unexpected:
@@ -181,22 +202,7 @@ class GovernedAdapterRegistry:
                 if not text:
                     raise ValueError("Slack bot message text is required")
                 thread_ts = str(handoff_payload.get("thread_ts") or "").strip() or None
-                response = notifier.api.post_message(
-                    channel_id=configured_channel,
-                    text=text,
-                    thread_ts=thread_ts,
-                )
-                message_ts = str(response.get("ts") or "").strip()
-                if not message_ts:
-                    raise RuntimeError("Slack did not return a message timestamp")
-                return {
-                    "status": "POSTED",
-                    "execution_mode": SLACK_BOT_API,
-                    "authority": "COLLABORATION_ONLY",
-                    "channel_id": configured_channel,
-                    "thread_ts": thread_ts,
-                    "message_ts": message_ts,
-                }
+                return notifier.post_classified_message(text, thread_ts=thread_ts)
 
             if operation == "list_change_requests":
                 GovernedAdapterRegistry._require_exact_payload(handoff_payload, set())

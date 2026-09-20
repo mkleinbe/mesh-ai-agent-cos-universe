@@ -1,5 +1,13 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current release: v4.13.0 Bidirectional Slack HITL Peer Workflow
+
+v4.13.0 makes `#mesh-agent-ops` a bot-owned, bidirectional operating surface. Governed messages now carry explicit interaction intent, response instructions, authority boundaries, canonical task binding, and persisted thread state. Human replies are reread from Slack provider state and acknowledged in-thread. Conversation remains non-authoritative; only explicit approval commands can change a canonical approval.
+
+The canonical Phase 1 authority/runtime contract remains `4.0.0`. The QNAP deployment identity remains `4.4.0`; production activation requires promotion and readback of the exact current-source candidate.
+
+See `docs/release-v4.13.0-slack-hitl-peer.md`, `docs/slack-agent-protocol.md`, and `specs/slack-hitl-peer-v4.13.0.feature`.
+
 ## Current release: v4.12.1 CoS Delegation and Agent Reporting
 
 v4.12.1 fixes the delegation request and diagnostic contract exposed by the Commercial Growth OS pilot. `delegation.create` now requires only the canonical delegation work contract; parent authority, depth, ancestry, and active owner are server-derived optional compatibility assertions. Agent execution uses `delegation.execute_owner`; `skills.invoke_governed` remains capability-only. Parent reconciliation is explicit and completion remains separate from verification.

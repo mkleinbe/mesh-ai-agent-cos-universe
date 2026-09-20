@@ -1,6 +1,6 @@
 # Security and Governance
 
-The canonical Phase 1 authority/runtime contract remains `4.0.0`. Candidate repository/QNAP deployment release `v4.3.0` adds identity-aware cross-agent owner execution while preserving the 10-agent registry, TaskLedger canonicality, L4/L5 human authority, approval inheritance, deny-by-default MCP policy, and `COMPLETED != VERIFIED`.
+The canonical Phase 1 authority/runtime contract remains `4.0.0`. Repository remediation `v4.12.1` hardens the delegation request and error contracts while preserving the 10-agent registry, production QNAP deployment `4.4.0`, TaskLedger canonicality, L4/L5 human authority, approval inheritance, deny-by-default MCP policy, and `COMPLETED != VERIFIED`.
 
 ## Trust architecture
 
@@ -67,7 +67,7 @@ Delegation requires a registered direct child, canonical parent/child task relat
 
 The target owner must also be ACTIVE, routable, and capable of the required owner lifecycle before a new delegation is persisted.
 
-Client-supplied `depth`, `ancestry`, `parent_authority`, and `active_owner` values cannot create authority. If supplied, they must equal canonical state.
+Client-supplied `depth`, `ancestry`, `parent_authority`, and `active_owner` values are optional compatibility assertions. They cannot create authority. The server derives all four values from canonical state; if a caller supplies one, it must equal canonical state.
 
 Circularity, authority widening, approval weakening, excessive depth, owner substitution, cross-task execution, and cross-sibling execution are denied.
 
@@ -110,6 +110,10 @@ The production-readiness gate fails if any ACTIVE downstream owner lacks a valid
 Every MCP request uses a closed schema. The policy validates the declared schema registry rather than silently substituting another registry. Schema safety is checked before catalog completeness so malformed schema definitions cannot hide behind a tool-set mismatch.
 
 Client-supplied executable fields, arbitrary code/import paths, shell commands, callables, plugin executables, and Skill implementations remain prohibited.
+
+Agent principals are not Skill capability identifiers. `skills.invoke_governed` rejects registered agent aliases with `unsupported-capability-type`; governed agent work must use the canonical delegation and owner-execution path.
+
+Authorization failures expose only bounded machine-readable reason codes where safe. Delegation diagnostics distinguish authentication, delegator authority, authority widening, depth, recipient eligibility, ownership conflict, approval requirement, and invalid compatibility assertions without returning raw exception text or sensitive policy details.
 
 ## Secure MCP Tunnel and QNAP boundary
 

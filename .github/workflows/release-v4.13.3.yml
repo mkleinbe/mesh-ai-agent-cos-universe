@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'src/mesh_cos/ledger.py'
+      - 'src/mesh_cos/slack_native_trigger.py'
+      - 'tests/unit/test_slack_hitl_task_telemetry_v4133.py'
       - 'deployment/qnap/**'
       - 'scripts/build-qnap-release-bundle.sh'
       - 'scripts/finalize-qnap-release-v4.4.2.sh'
@@ -15,7 +18,7 @@ on:
       - 'tests/evaluations/test_release_closeout_v4121.py'
       - 'tests/evaluations/test_qnap_release_docs_v4131.py'
       - 'tests/evaluations/test_qnap_source_identity_v4132.py'
-      - 'specs/slack-hitl-task-telemetry-v4.4.2.feature'
+      - 'specs/slack-hitl-task-telemetry-v4.13.3.feature'
       - 'docs/release-v4.13.3-slack-hitl-task-telemetry.md'
       - 'docs/release-qnap-v4.4.2-slack-hitl-telemetry.md'
       - 'docs/security-review-qnap-v4.4.2-slack-hitl-telemetry.md'
@@ -29,6 +32,9 @@ on:
       - 'docs/README.md'
   pull_request:
     paths:
+      - 'src/mesh_cos/ledger.py'
+      - 'src/mesh_cos/slack_native_trigger.py'
+      - 'tests/unit/test_slack_hitl_task_telemetry_v4133.py'
       - 'deployment/qnap/**'
       - 'scripts/build-qnap-release-bundle.sh'
       - 'scripts/finalize-qnap-release-v4.4.2.sh'
@@ -40,7 +46,7 @@ on:
       - 'tests/evaluations/test_release_closeout_v4121.py'
       - 'tests/evaluations/test_qnap_release_docs_v4131.py'
       - 'tests/evaluations/test_qnap_source_identity_v4132.py'
-      - 'specs/slack-hitl-task-telemetry-v4.4.2.feature'
+      - 'specs/slack-hitl-task-telemetry-v4.13.3.feature'
       - 'docs/release-v4.13.3-slack-hitl-task-telemetry.md'
       - 'docs/release-qnap-v4.4.2-slack-hitl-telemetry.md'
       - 'docs/security-review-qnap-v4.4.2-slack-hitl-telemetry.md'

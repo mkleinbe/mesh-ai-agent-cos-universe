@@ -44,13 +44,13 @@ def test_remote_runtime_requires_and_reports_deployment_identity() -> None:
     )
 
 
-def test_active_deployment_train_is_v440_while_historical_v430_wrapper_is_preserved() -> None:
+def test_active_deployment_train_is_v441_while_historical_v430_wrapper_is_preserved() -> None:
     env_example = read("deployment/qnap/.env.example")
     prepare = read("deployment/qnap/scripts/mesh-cos-mcp-prepare.sh")
     builder = read("scripts/build-qnap-release-bundle.sh")
     wrapper = read("scripts/build-qnap-release-v4.3.0.sh")
     ci = read(".github/workflows/ci.yml")
-    assert "MESH_COS_DEPLOYMENT_RELEASE=4.4.0" in env_example
+    assert "MESH_COS_DEPLOYMENT_RELEASE=4.4.1" in env_example
     assert "MESH_COS_SLACK_HITL_MODE=CHATGPT_NATIVE_EVENT_TRIGGER" in env_example
     assert "MESH_COS_SLACK_APP_ID=A0B49RNE4K0" in env_example
     assert "MESH_COS_DEPLOYMENT_RELEASE:-4.1.10" not in prepare
@@ -60,11 +60,11 @@ def test_active_deployment_train_is_v440_while_historical_v430_wrapper_is_preser
     assert "actions/setup-node@v7" in ci
     assert "actions/setup-node@v6" not in ci
     assert "Build exact v4.3.0 QNAP release bundle" not in ci
-    assert "Build current-source v4.4.0 candidate artifacts" in ci
-    assert 'CANDIDATE_VERSION: \'4.4.0\'' in ci
+    assert "Build current-source v4.4.1 QNAP candidate artifacts" in ci
+    assert "QNAP_VERSION: '4.4.1'" in ci
     assert 'bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"' in ci
-    assert "dist/mesh-cos-mcp-qnap-v4.4.0.zip" in ci
-    assert "workspace_publication_status=BLOCKED_PENDING_ACTUAL_ACTION_SCHEMA_SNAPSHOT" in ci
+    assert "dist/mesh-cos-mcp-qnap-v4.4.1.zip" in ci
+    assert "workspace_publication_status=UNCHANGED" in ci
 
 
 def test_historical_and_current_docs_are_packaged() -> None:
@@ -98,10 +98,10 @@ def test_historical_and_current_docs_are_packaged() -> None:
         assert Path(path).name in wrapper
 
 
-def test_chatgpt_acceptance_requires_owner_execution_after_v440_deploy() -> None:
+def test_chatgpt_acceptance_requires_owner_execution_after_v441_deploy() -> None:
     acceptance = read("deployment/qnap/CHATGPT-ACCEPTANCE.md")
     for token in [
-        "v4.4.0",
+        "v4.4.1",
         "mcp_version",
         "4.0.0",
         "deployment_release",

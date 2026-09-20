@@ -26,11 +26,11 @@ def test_qnap_verifier_binds_metadata_image_and_mcp_source_commit() -> None:
     assert 'RUNNING_MESH_REVISION" = "$EXPECTED_SOURCE_COMMIT' in verify
 
 
-def test_v4132_is_unique_current_publisher_for_qnap_441() -> None:
-    current = read(".github/workflows/release-v4.13.2.yml")
-    historical = read(".github/workflows/release-v4.13.1.yml")
-    assert "gh release create v4.13.2" in current
-    assert "mesh-cos-mcp-qnap-v4.4.1.zip" in current
+def test_v4133_is_unique_current_publisher_for_qnap_442() -> None:
+    current = read(".github/workflows/release-v4.13.3.yml")
+    historical = read(".github/workflows/release-v4.13.2.yml")
+    assert "gh release create v4.13.3" in current
+    assert "mesh-cos-mcp-qnap-v4.4.2.zip" in current
     assert "branches: [main]" in current
     assert "contents: write" in current
     assert "workflow_dispatch:" in historical
@@ -48,5 +48,5 @@ def test_active_qnap_docs_do_not_reuse_v440_archive() -> None:
         "deployment/qnap/CHATGPT-ACCEPTANCE.md",
     ):
         text = read(path)
-        assert "4.4.1" in text
+        assert "4.4.2" in text
         assert "mesh-cos-mcp-qnap-v4.4.0.zip" not in text

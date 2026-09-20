@@ -195,6 +195,7 @@ export function validateArgumentsSize(value: unknown): Record<string, unknown> {
 export function safeErrorPayload(error: unknown, requestId: string): Record<string, unknown> {
   if (error instanceof PythonBridgeError) {
     const payload: Record<string, unknown> = { ok: false, request_id: requestId, error: error.category };
+    if (error.reasonCode) payload.reason_code = error.reasonCode;
     if (error.category === 'validation_failed' && error.details?.length) payload.details = error.details;
     return payload;
   }

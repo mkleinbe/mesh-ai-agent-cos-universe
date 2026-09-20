@@ -1,3 +1,20 @@
+# Current Slack HITL acceptance addendum for repository v4.13.0
+
+The production QNAP deployment identity remains `4.4.0`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.0 current-source promotion, complete the existing QNAP acceptance plus the following Slack peer-workflow proof:
+
+1. verify `slack-adapter/post_interaction` posts through the protected bot OAuth identity;
+2. verify INFO states no response required and MANUAL_ACTION states no approval required plus DONE instructions;
+3. verify a normal Michael thread reply is reread from Slack provider state and receives one same-thread bot acknowledgment;
+4. verify APPROVE on a non-approval thread cannot mutate authority and receives an explanatory bot response;
+5. verify a canonical approval accepts only explicit APPROVE, DENY, CHANGE, or CHANGES detail;
+6. verify ambiguous approval language remains PENDING and receives an explicit-command reminder;
+7. verify duplicate delivery does not duplicate state changes or acknowledgment spam;
+8. verify wrong-user, bot/app, edited, unavailable, and provider-failure cases fail closed;
+9. verify the complete bot -> Michael -> Work locator -> MCP provider reread -> TaskLedger -> bot acknowledgment path;
+10. verify the live audit chain remains valid.
+
+The single `Mesh Slack HITL Dispatcher` remains locator-only. No trigger-provided text or asserted identity may be used as authority.
+
 # ChatGPT Secure MCP Tunnel, Delegated Owner Execution, and Native Slack HITL Acceptance
 
 Run this only after the **v4.3.0** QNAP deployment passes local deployment, preflight, verification, backup, and the live Slack provider-read/qnet egress-readiness gate. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP authority/runtime contract remains **4.0.0** and the deployment release is **4.3.0**.

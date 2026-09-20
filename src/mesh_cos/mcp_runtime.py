@@ -1069,7 +1069,13 @@ class MCPRuntime:
         return {"disposition": result.disposition, "reason": result.reason, "routed_to": result.routed_to}
 
     def _skill_invoke(self, agent_id: str, args: dict[str, Any]) -> dict[str, Any]:
-        return self.adapters.execute(agent_id, str(args["capability"]), dict(args.get("payload", {})))
+        capability = str(args["capability"])
+        agent_capability_aliases = set(self.registry) | {f"mesh-{registered}" for registered in self.registry}
+        if capability in agent_capability_aliases:
+            raise ValueError(
+                "Capability identifies an agent principal; use delegation.execute_owner for governed agent execution"
+            )
+        return self.adapters.execute(agent_id, capability, dict(args.get("payload", {})))
 
     def _metrics_snapshot(self, _: str, __: dict[str, Any]) -> dict[str, Any]:
         return self.metrics.summary()

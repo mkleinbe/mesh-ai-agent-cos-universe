@@ -1,6 +1,6 @@
-# Current Slack HITL acceptance for repository v4.13.2
+# Current Slack HITL task telemetry acceptance for repository v4.13.3
 
-The production QNAP deployment identity remains `4.4.1`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.2 current-source promotion, complete the existing QNAP acceptance plus the Slack peer-workflow proof introduced in v4.13.0:
+The production QNAP deployment identity remains `4.4.2`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.3 current-source promotion, complete the existing QNAP acceptance plus the Slack peer-workflow and canonical telemetry proof:
 
 1. verify `slack-adapter/post_interaction` posts through the protected bot OAuth identity;
 2. verify INFO states no response required and MANUAL_ACTION states no approval required plus DONE instructions;
@@ -11,15 +11,15 @@ The production QNAP deployment identity remains `4.4.1`, with canonical MCP auth
 7. verify duplicate delivery does not duplicate state changes or acknowledgment spam;
 8. verify wrong-user, bot/app, edited, unavailable, and provider-failure cases fail closed;
 9. verify the complete bot -> Michael -> Work locator -> MCP provider reread -> TaskLedger -> bot acknowledgment path;
-10. verify the live audit chain remains valid.
+10. verify the live audit chain remains valid.\n11. verify task.get persists the provider-confirmed slack_channel_id and slack_thread_ts immediately after posting.\n12. verify a provider-authenticated human reply increments human_touches exactly once and replay does not increment it again.\n13. verify the same telemetry behavior does not change approval authority or task lifecycle.
 
 The single `Mesh Slack HITL Dispatcher` remains locator-only. No trigger-provided text or asserted identity may be used as authority.
 
 # ChatGPT Secure MCP Tunnel, Delegated Owner Execution, and Native Slack HITL Acceptance
 
-Run this only after the **v4.4.1** QNAP deployment passes local deployment, preflight, verification, backup, and the live Slack provider-read/qnet egress-readiness gate. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP authority/runtime contract remains **4.0.0** and the deployment release is **4.4.1**.
+Run this only after the **v4.4.2** QNAP deployment passes local deployment, preflight, verification, backup, and the live Slack provider-read/qnet egress-readiness gate. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP authority/runtime contract remains **4.0.0** and the deployment release is **4.4.2**.
 
-v4.4.1 preserves the governed `delegation.execute_owner` path and PF-057 remediation from 4.4.0 while adding exact source-identity deployment controls. It also preserves the existing ChatGPT-native Slack dispatcher architecture and the v4.2.3 provider-read/qnet controls.
+v4.4.2 preserves the governed `delegation.execute_owner` path and PF-057 remediation from 4.4.0 while adding exact source-identity deployment controls. It also preserves the existing ChatGPT-native Slack dispatcher architecture and the v4.2.3 provider-read/qnet controls.
 
 ## 1. Local deployment identity
 
@@ -31,11 +31,11 @@ sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires image `mesh-cos-mcp:qnap-v4.4.1-<source-sha12>`, healthy application/tunnel containers, and:
+PASS requires image `mesh-cos-mcp:qnap-v4.4.2-<source-sha12>`, healthy application/tunnel containers, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.4.1
+deployment_release: 4.4.2
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
@@ -167,6 +167,6 @@ Do not recreate the task by default.
 
 ## 14. Pass rule
 
-Hosted acceptance passes only when the actual v4.4.1 QNAP serving instance demonstrates release identity, healthy Secure MCP Tunnel/runtime, 10-agent registry, 28-tool CoS catalog, direct-report and nested delegated-owner execution, owner-only completion, replay idempotency, disabled-owner failure, scheduled cross-agent execution, completion/verification separation, successful live Slack provider-read/qnet readiness, dedicated-bot outbound identity, ChatGPT-native event dispatch, positive and negative Slack decisions, TaskLedger persistence, and a valid audit chain.
+Hosted acceptance passes only when the actual v4.4.2 QNAP serving instance demonstrates release identity, healthy Secure MCP Tunnel/runtime, 10-agent registry, 28-tool CoS catalog, direct-report and nested delegated-owner execution, owner-only completion, replay idempotency, disabled-owner failure, scheduled cross-agent execution, completion/verification separation, successful live Slack provider-read/qnet readiness, dedicated-bot outbound identity, ChatGPT-native event dispatch, positive and negative Slack decisions, TaskLedger persistence, and a valid audit chain.
 
-Full production certification additionally requires `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.
+Full production certification additionally requires `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.2.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.

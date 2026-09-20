@@ -62,7 +62,7 @@ class SlackNativeTriggerApprovalService:
         message = dict(exact[0])
         if message.get("edited"):
             raise PermissionError(
-                "Edited Slack messages cannot be reconciled as human interaction"
+                "Edited Slack messages cannot create approval authority or be reconciled as human interaction"
             )
         if str(message.get("thread_ts") or "") != thread_ts:
             raise PermissionError("Slack provider message thread does not match trigger locator")

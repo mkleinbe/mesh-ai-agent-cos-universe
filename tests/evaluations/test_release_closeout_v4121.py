@@ -12,9 +12,9 @@ def read(path: str) -> str:
 
 def test_v4121_delegation_schema_requires_only_canonical_work_contract() -> None:
     schemas = json.loads(read("chatgpt/mcp/tool-input-schemas.v1.json"))
-    assert schemas["delegation.create"]["required"] == ["delegation"]
+    assert schemas["tools"]["delegation.create"]["required"] == ["delegation"]
     for assertion in ("parent_authority", "depth", "ancestry", "active_owner"):
-        assert assertion in schemas["delegation.create"]["properties"]
+        assert assertion in schemas["tools"]["delegation.create"]["properties"]
 
 
 def test_v4121_skill_documents_agent_vs_capability_and_parent_reconciliation() -> None:

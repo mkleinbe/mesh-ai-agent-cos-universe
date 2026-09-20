@@ -1,3 +1,13 @@
+## v4.13.3 - Slack HITL Task Telemetry Repair
+
+- persisted provider-confirmed Slack channel and root thread identity into canonical TaskRecord;
+- added atomic, provider-event-idempotent human_touches updates after provider reread, configured-human verification, manual-authorship verification, and governed thread binding;
+- preserved strict approval authority and task lifecycle separation;
+- added HITL-TELEM-001 through HITL-TELEM-010 behavior coverage and targeted security/verification evidence;
+- advanced immutable QNAP candidate identity to 4.4.2 without modifying production compose.yaml or Secure MCP Tunnel topology.
+
+See `CHANGELOG-v4.13.3.md`.
+
 ## v4.13.2 - QNAP Source Identity Repair
 
 - advanced QNAP deployment artifact identity to 4.4.1 to eliminate reuse of the stale 4.4.0 ZIP/release-root identity;

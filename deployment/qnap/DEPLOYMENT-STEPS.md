@@ -1,6 +1,6 @@
 # Short QNAP Deployment and Upgrade Steps
 
-v4.4.1 adds governed cross-agent owner execution for PF-057 while preserving the v4.2.3 Slack/qnet provider-read and transactional deployment controls. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**.
+v4.4.1 is a source-identity deployment patch over the existing 4.4.0 runtime capability set. It preserves governed cross-agent owner execution, the v4.2.3 Slack/qnet provider-read controls, and the transactional deployment model. The canonical Phase 1 MCP authority/runtime contract remains **4.0.0**.
 
 ## Canonical paths
 

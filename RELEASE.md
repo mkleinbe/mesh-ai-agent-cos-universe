@@ -1,3 +1,9 @@
+# v4.13.2 Slack Interaction Task Preflight
+
+This PATCH release moves canonical task validation ahead of `chat.postMessage` for governed non-approval Slack interactions. Invalid task IDs now fail with zero Slack side effects. Canonical MCP runtime remains 4.0.0 and QNAP deployment identity remains 4.4.0.
+
+See `docs/release-v4.13.2-slack-task-preflight.md`.
+
 # v4.13.1 QNAP Operator Documentation Alignment
 
 This PATCH release corrects stale QNAP v4.3.0 operator references embedded in the v4.13.0 release bundle. Runtime Slack HITL behavior remains v4.13.0-equivalent. Canonical MCP authority/runtime contract remains 4.0.0 and QNAP deployment identity remains 4.4.0.

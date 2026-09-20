@@ -1,3 +1,12 @@
+# Current documentation: v4.13.2
+
+v4.13.2 adds fail-closed task preflight to the Slack peer-interaction path.
+
+- `release-v4.13.2-slack-task-preflight.md`
+- `security-review-v4.13.2-slack-task-preflight.md`
+- `verification-v4.13.2-slack-task-preflight.md`
+- `../CHANGELOG-v4.13.2.md`
+
 # Current documentation: v4.13.0 Bidirectional Slack HITL Peer Workflow
 
 The current repository release documentation for the Slack HITL remediation is:

@@ -124,7 +124,7 @@ def test_post_interaction_validation_question_blocker_and_provider_identity_erro
     assert blocker["thread_type"] == "BLOCKER"
     assert "No approval authority is created" in calls[-1][1]["text"]
 
-    missing, _ = _notifier(TaskLedger())
+    missing, missing_calls = _notifier(TaskLedger())
     with pytest.raises(KeyError, match="missing-task"):
         missing.post_interaction(
             thread_type="STATUS",
@@ -133,6 +133,7 @@ def test_post_interaction_validation_question_blocker_and_provider_identity_erro
             requested_human_action="",
             completion_condition="",
         )
+    assert missing_calls == []
 
     wrong, _ = _notifier(ledger, root_channel="C0OTHER")
     with pytest.raises(RuntimeError, match="expected interaction message identity"):

@@ -272,6 +272,56 @@ class SlackNativeTriggerApprovalService:
         message_ts: str,
     ) -> dict[str, Any]:
         text = str(message.get("text") or "")
+        approval_id = str(state.get("approval_id") or "")
+        change_session = (
+            self.ledger.get_record("approval_change_session", approval_id)
+            if approval_id
+            else None
+        )
+        if change_session is not None and change_session.get("status") == "AWAITING_CHANGE_INPUT":
+            event = {
+                "type": "message",
+                "channel": self.config.channel_id,
+                "thread_ts": str(state["thread_ts"]),
+                "ts": message_ts,
+                "user": message.get("user"),
+                "text": text,
+            }
+            envelope = {
+                "type": "events_api",
+                "envelope_id": provider_event_id,
+                "payload": {
+                    "type": "event_callback",
+                    "api_app_id": self.config.app_id,
+                    "event_id": provider_event_id,
+                    "event": event,
+                },
+            }
+            result = dict(self.compat.handle_envelope(envelope))
+            result["trigger_is_authority"] = False
+            result["provider_reconciled"] = True
+            self.ledger.save_record(
+                INTERACTION_REPLY_KIND,
+                provider_event_id,
+                {
+                    "version": "mesh.cos.slack-interaction-reply.v1",
+                    "source": _NATIVE_SOURCE,
+                    "provider_event_id": provider_event_id,
+                    "channel_id": self.config.channel_id,
+                    "thread_ts": str(state["thread_ts"]),
+                    "message_ts": message_ts,
+                    "task_id": state.get("task_id"),
+                    "approval_id": approval_id,
+                    "thread_type": "APPROVAL",
+                    "reply_class": "APPROVAL_CHANGE_DETAIL",
+                    "provider_identity_verified": True,
+                    "trigger_is_authority": False,
+                    "provider_reconciled": True,
+                    "authority_mutated": True,
+                    "canonical_result": result,
+                },
+            )
+            return result
         try:
             disposition, change_detail = _parse_thread_decision(text)
         except PermissionError:

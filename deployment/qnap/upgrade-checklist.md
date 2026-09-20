@@ -1,6 +1,6 @@
 # Upgrade Checklist
 
-- [ ] Exact v4.4.0 candidate passes Python, Node, contract/doc drift, owner-readiness, security, QNAP shell, bundle, container provenance, and modern MCP gates
+- [ ] Exact v4.4.1 candidate passes Python, Node, contract/doc drift, owner-readiness, security, QNAP shell, bundle, container provenance, and modern MCP gates
 - [ ] exact candidate proves 100% Python coverage
 - [ ] `delegation.execute_owner` is present in the governed CoS catalog and closed input schema
 - [ ] caller cannot provide owner/principal, ancestry, depth, or authority to select execution identity
@@ -15,16 +15,16 @@
 - [ ] `COMPLETED != VERIFIED` remains enforced
 - [ ] scheduled CoS -> child-owner execution passes without parent impersonation
 - [ ] final diff review finds no unintended authority expansion
-- [ ] security receipt is bound to the exact v4.4.0 candidate SHA
-- [ ] independent verification receipt is bound to the exact v4.4.0 candidate SHA
+- [ ] security receipt is bound to the exact v4.4.1 candidate SHA
+- [ ] independent verification receipt is bound to the exact v4.4.1 candidate SHA
 - [ ] SQLite schema compatibility evaluated; no destructive migration required
-- [ ] approved v4.4.0 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] approved v4.4.1 ZIP and checksum are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
 - [ ] ZIP checksum verifies before extraction
-- [ ] extraction creates `v4.4.0/` automatically
+- [ ] extraction creates `v4.4.1/` automatically
 - [ ] human release/deployment authority is valid
-- [ ] operator uses `sudo sh ./v4.4.0/mesh-cos-mcp-deploy.sh`
-- [ ] deployment validates `v4.4.0` beneath the canonical releases root and matches staged metadata
+- [ ] operator uses `sudo sh ./v4.4.1/mesh-cos-mcp-deploy.sh`
+- [ ] deployment validates `v4.4.1` beneath the canonical releases root and matches staged metadata
 - [ ] pre-deploy backup gate passes and canonical TaskLedger is preserved
 - [ ] Secure MCP tunnel identity/runtime key are preserved
 - [ ] governed Michael/MK Slack user principal remains protected and valid
@@ -33,7 +33,7 @@
 - [ ] bot token scopes remain `chat:write` and `groups:history`
 - [ ] protected bot credential is `xoxb-`, runtime UID/GID `65532:65532`, mode `0400`, read-only mounted
 - [ ] no `xapp-` Socket Mode credential is configured/mounted
-- [ ] staged `release-metadata.txt` reports `version=4.4.0` and exact release commit
+- [ ] staged `release-metadata.txt` reports `version=4.4.1` and exact release commit
 - [ ] same-tag image reuse requires matching OCI version/revision; mismatch forces rebuild
 - [ ] staged `.env.runtime` contains no tunnel or Slack credential value
 - [ ] staged `.env.runtime` contains `MESH_COS_SLACK_APP_ID=A0B49RNE4K0`
@@ -45,7 +45,7 @@
 - [ ] transactional promotion and rollback controls remain intact
 - [ ] live Slack provider-read verification runs inside the actual `mesh-cos-mcp` container
 - [ ] only pre-provider qnet/network exceptions retry; Slack/provider failures fail closed
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.4.0`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.4.1`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
 - [ ] exactly 10 agents remain registered and Devil's Advocate remains a shared Skill
 - [ ] CoS governed agent tool count is 28
@@ -57,7 +57,7 @@
 - [ ] fresh synthetic Slack APPROVE/DENY/CHANGE and negative security paths pass
 - [ ] final governance audit chain verifies
 - [ ] run `CHATGPT-ACCEPTANCE.md` through installed **Mesh CoS MCP** app
-- [ ] run `docs/chatgpt-published-app-production-acceptance-v4.4.0.md`
+- [ ] run `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`
 - [ ] re-run read-only PF-057 stranded-task inventory before recovery
 - [ ] re-read `task-b0b613daff51` and preserve its canonical identity
 - [ ] production recovery begins only after human-authorized deployment and acceptance

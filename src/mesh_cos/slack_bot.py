@@ -36,16 +36,6 @@ _INTERACTION_RESPONSES = {
     "STATUS": ["NATURAL_LANGUAGE"],
     "INCIDENT": ["NATURAL_LANGUAGE"],
 }
-_CLASSIFIED_PREFIXES = (
-    "### INFORMATION",
-    "### ACTION REQUIRED",
-    "### APPROVAL REQUIRED",
-    "### QUESTION",
-    "### BLOCKED",
-    "### COMPLETED",
-    "### VERIFIED",
-    "### SYSTEM ISSUE",
-)
 _PAYLOAD_FINGERPRINT_RE = re.compile(r"\bpayload_fingerprint=(?P<fingerprint>[A-Fa-f0-9]{64})\b")
 _SAFE_SLACK_ERROR_RE = re.compile(r"^[a-z0-9_]+$")
 _SLACK_GET_METHODS = frozenset({"conversations.history", "conversations.replies"})
@@ -238,11 +228,6 @@ def resolved_blocks(approval_id: str, disposition: str) -> list[dict[str, Any]]:
             ],
         },
     ]
-
-
-def _classified_message(text: str) -> bool:
-    clean = text.lstrip()
-    return any(clean.startswith(prefix) for prefix in _CLASSIFIED_PREFIXES)
 
 
 
@@ -463,33 +448,6 @@ class SlackApprovalNotifier:
         if not message_ts:
             raise RuntimeError("Slack did not return a thread reply timestamp")
         return {
-            "channel_id": self.channel_id,
-            "thread_ts": thread_ts,
-            "message_ts": message_ts,
-        }
-
-    def post_classified_message(
-        self,
-        text: str,
-        *,
-        thread_ts: str | None = None,
-    ) -> dict[str, Any]:
-        if not _classified_message(text):
-            raise ValueError(
-                "Slack operational messages require an explicit interaction classification"
-            )
-        response = self.api.post_message(
-            channel_id=self.channel_id,
-            text=text,
-            thread_ts=thread_ts,
-        )
-        message_ts = str(response.get("ts") or "").strip()
-        if not message_ts:
-            raise RuntimeError("Slack did not return a message timestamp")
-        return {
-            "status": "POSTED",
-            "execution_mode": SLACK_BOT_API,
-            "authority": "COLLABORATION_ONLY",
             "channel_id": self.channel_id,
             "thread_ts": thread_ts,
             "message_ts": message_ts,

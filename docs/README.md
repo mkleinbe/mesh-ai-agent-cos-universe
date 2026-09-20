@@ -1,3 +1,17 @@
+# Current documentation: v4.13.0 Bidirectional Slack HITL Peer Workflow
+
+The current repository release documentation for the Slack HITL remediation is:
+
+- `release-v4.13.0-slack-hitl-peer.md`
+- `security-review-v4.13.0-slack-hitl-peer.md`
+- `verification-v4.13.0-slack-hitl-peer.md`
+- `runbook-v4.13.0-slack-hitl-peer.md`
+- `slack-agent-protocol.md`
+- `../specs/slack-hitl-peer-v4.13.0.feature`
+- `../CHANGELOG-v4.13.0.md`
+
+The canonical authority/runtime contract remains 4.0.0. QNAP deployment identity remains 4.4.0 and requires exact-source current-candidate promotion before production v4.13.0 behavior is claimed.
+
 # Documentation Index
 
 Current repository release: **`v4.12.1 CoS Delegation and Agent Reporting`**.  

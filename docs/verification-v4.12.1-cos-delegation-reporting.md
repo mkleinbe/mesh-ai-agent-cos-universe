@@ -28,6 +28,22 @@ The original `forbidden` condition was reproduced as a caller assertion mismatch
 
 The parent remained independent rather than being silently completed or verified, as required.
 
+## Real Commercial Growth OS handoff-pattern canary
+
+The existing pilot child `task-d6102bf423df` under parent `task-e4a1d8e769e1` was exercised without changing account outcomes or advancing task lifecycle state.
+
+- delegation: `dlg-commercial-growth-cro-pilot-20260919`
+- owner execution operation: read-only `task.get`
+- orchestrating agent: `cos`
+- executing principal: `cro`
+- authorization result: `ALLOW`
+- child state before and after: `INTAKE`
+- BMO, Fulton Financial, and ANTHC business state: unchanged
+- external action: none
+- audit chain after canary: valid, 3,212 events
+
+This proves the live pilot handoff can be dispatched through the governed CRO owner path and returned to CoS without CoS impersonation or synthetic commercial outcomes.
+
 ## Repository verification scope
 
 The exact v4.12.1 candidate must pass:

@@ -62,7 +62,7 @@ def test_active_deployment_train_is_v441_while_historical_v430_wrapper_is_preser
     assert "Build exact v4.3.0 QNAP release bundle" not in ci
     assert "Build current-source v4.4.1 QNAP candidate artifacts" in ci
     assert "QNAP_VERSION: '4.4.1'" in ci
-    assert 'bash scripts/build-qnap-release-bundle.sh "$CANDIDATE_VERSION"' in ci
+    assert 'bash scripts/build-qnap-release-bundle.sh "$QNAP_VERSION"' in ci
     assert "dist/mesh-cos-mcp-qnap-v4.4.1.zip" in ci
     assert "workspace_publication_status=UNCHANGED" in ci
 

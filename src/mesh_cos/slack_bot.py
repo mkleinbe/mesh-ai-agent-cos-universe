@@ -382,6 +382,9 @@ class SlackApprovalNotifier:
         clean_summary = summary.strip()
         if not clean_summary:
             raise ValueError("Slack interaction summary is required")
+        task = self.ledger.get_task(task_id)
+        if task is None:
+            raise KeyError(task_id)
         action = requested_human_action.strip()
         completion = completion_condition.strip()
         response_required = normalized_type in {

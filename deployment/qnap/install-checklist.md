@@ -20,23 +20,23 @@
 - [ ] Bot Token Scopes include `chat:write` and `groups:history`
 - [ ] Single ChatGPT Work **Mesh Slack HITL Dispatcher** exists and is enabled
 
-No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.3.0 HITL path.
+No Slack `xapp-` Socket Mode credential is required or permitted by the production v4.4.0 HITL path.
 
-## v4.3.0 release-root staging
+## v4.4.0 release-root staging
 
-- [ ] `mesh-cos-mcp-qnap-v4.3.0.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
+- [ ] `mesh-cos-mcp-qnap-v4.4.0.zip` and `.sha256` are placed directly in `/share/Docker/cos-mcp/releases`
 - [ ] operator working directory is `/share/Docker/cos-mcp/releases`
-- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.3.0.zip.sha256` passes
-- [ ] extraction creates `v4.3.0/` automatically
+- [ ] `sha256sum -c mesh-cos-mcp-qnap-v4.4.0.zip.sha256` passes
+- [ ] extraction creates `v4.4.0/` automatically
 - [ ] no manual release-directory creation, helper copy, payload move, or chmod is required
-- [ ] `v4.3.0/cos-mcp/release-metadata.txt` reports `version=4.3.0` and the exact authorized commit
+- [ ] `v4.4.0/cos-mcp/release-metadata.txt` reports `version=4.4.0` and the exact authorized commit
 - [ ] release-directory basename agrees with staged metadata
-- [ ] build context contains the v4.3.0 MCP contract with `delegation.execute_owner`
+- [ ] build context contains the v4.4.0 MCP contract with `delegation.execute_owner`
 
 ## Automated deployment
 
 ```sh
-sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
+sudo sh ./v4.4.0/mesh-cos-mcp-deploy.sh
 ```
 
 - [ ] canonical `/share/Docker/cos-mcp` state/secrets tree is preserved
@@ -58,8 +58,8 @@ sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
 
 ## Runtime and delegated-owner acceptance
 
-- [ ] active release/image are `4.3.0` / `mesh-cos-mcp:qnap-v4.3.0`
-- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.3.0`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
+- [ ] active release/image are `4.4.0` / `mesh-cos-mcp:qnap-v4.4.0`
+- [ ] `/healthz` and `/readyz` report `mcp_version=4.0.0`, `deployment_release=4.4.0`, `agent_id=cos`, `transport=SECURE_MCP_TUNNEL`
 - [ ] hosted `/readyz` reports `slack_hitl_ready=true`
 - [ ] exactly 10 agents remain registered
 - [ ] CoS governed agent tool count is 28
@@ -93,7 +93,7 @@ sudo sh ./v4.3.0/mesh-cos-mcp-deploy.sh
 
 ## Production recovery boundary
 
-- [ ] `docs/chatgpt-published-app-production-acceptance-v4.3.0.md` passes before recovery
+- [ ] `docs/chatgpt-published-app-production-acceptance-v4.4.0.md` passes before recovery
 - [ ] read-only stranded-task inventory is refreshed after deployment acceptance
 - [ ] `task-b0b613daff51` is re-read and preserved as the same canonical task
 - [ ] stranded work is resumed in place, not recreated by default

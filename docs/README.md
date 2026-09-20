@@ -1,18 +1,22 @@
 # Documentation Index
 
-Current repository release: **`v4.9.1 Media OS Capability Registration`**.  
-Current production QNAP deployment: **`4.4.0`** pending promotion of the verified current-source candidate.  
+Current repository release: **`v4.12.1 CoS Delegation and Agent Reporting`**.  
+Current production QNAP deployment: **`4.4.0`** pending promotion of the exact current-source candidate.  
 Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
 
 The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, historical-release immutability, and release verification.
 
-## v4.10.0 Outcome-Driven Orchestration
+## v4.12.1 CoS Delegation and Agent Reporting
 
-The current repository capability release adds Outcome-Driven Development to the Chief of Staff, CMO, and AgentOps role Skills. Business checkpoints now separate outcome movement, evidence-pending intervention, justified no-action, business blockage, and business failure from technical health. Progressive T0-T3 evidence loading reduces unnecessary AI/provider work without weakening evidence, verification, security, or human approval.
+The current patch corrects the delegation request contract, stable failure classification, agent-principal versus Skill-capability routing, and explicit child-result reconciliation to the CoS parent. The Commercial Growth OS is unchanged. See `release-v4.12.1-cos-delegation-reporting.md`, `security-review-v4.12.1-cos-delegation-reporting.md`, `verification-v4.12.1-cos-delegation-reporting.md`, and `skills-v4.12.1.md`.
+
+## Historical v4.10.0 Outcome-Driven Orchestration
+
+That historical repository capability release adds Outcome-Driven Development to the Chief of Staff, CMO, and AgentOps role Skills. Business checkpoints now separate outcome movement, evidence-pending intervention, justified no-action, business blockage, and business failure from technical health. Progressive T0-T3 evidence loading reduces unnecessary AI/provider work without weakening evidence, verification, security, or human approval.
 
 Canonical Phase 1 authority/runtime contract remains `4.0.0`. Production QNAP remains `4.4.0`. The organization remains exactly 10 registered agents.
 
-## Current v4.9.1 release documentation
+## Historical v4.9.1 release documentation
 
 - `release-v4.9.1-media-os-capability-registration.md`: Media OS capability-registration scope, authority preservation, runtime identity, and rollback boundary.
 - `security-review-v4.9.1-media-os-capability-registration.md`: TARGETED registry, MCP, release-control, and QNAP provenance review.

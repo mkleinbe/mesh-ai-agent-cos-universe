@@ -1,3 +1,11 @@
+## v4.13.2 - Slack Interaction Task Preflight
+
+- validate TaskLedger task existence before any governed Slack interaction provider write;
+- regression proves invalid task IDs cause zero Slack transport calls;
+- no approval grammar or authority-boundary change.
+
+See `CHANGELOG-v4.13.2.md`.
+
 ## v4.13.0 - Bidirectional Slack HITL Peer Workflow
 
 - added governed bot-owned INFO, QUESTION, MANUAL_ACTION, BLOCKER, STATUS, INCIDENT, and APPROVAL thread contracts;

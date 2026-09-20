@@ -89,9 +89,46 @@ def execute_request(
         ledger.conn.close()
 
 
+def _safe_reason_code(exc: BaseException, message: str) -> str | None:
+    if isinstance(exc, PermissionError):
+        if "approval" in message:
+            return "approval-required"
+        if "delegation is not permitted" in message:
+            return "delegator-not-authorized"
+        if "registered direct child" in message or "delegation target" in message:
+            return "recipient-not-delegable"
+        if "canonical delegation depth exceeds" in message:
+            return "delegation-depth-exceeded"
+        if (
+            "caller-supplied delegation depth" in message
+            or "caller-supplied parent authority" in message
+            or "caller-supplied ancestry" in message
+            or "delegation parent task does not match" in message
+        ):
+            return "invalid-delegation-contract"
+        if (
+            "delegation owner must match" in message
+            or "active owner" in message
+            or "accountable owner mismatch" in message
+        ):
+            return "ownership-conflict"
+        if (
+            "cannot widen authority" in message
+            or "delegation authority must match" in message
+            or "authority exceeds" in message
+        ):
+            return "authority-exceeded"
+        if "capability is not explicitly permitted" in message:
+            return "capability-not-delegated"
+    if isinstance(exc, ValueError) and "agent principal" in message:
+        return "unsupported-capability-type"
+    return None
+
+
 def _safe_error(exc: BaseException) -> dict[str, Any]:
     details: list[dict[str, str]] | None = None
     message = str(exc).lower()
+    reason_code = _safe_reason_code(exc, message)
     if isinstance(exc, RequestValidationError):
         category = "validation_failed"
         details = list(exc.details)
@@ -112,6 +149,7 @@ def _safe_error(exc: BaseException) -> dict[str, Any]:
             or "tool_name" in message
             or "request body" in message
             or "maximum size" in message
+            or "agent principal" in message
         ):
             category = "invalid_request"
         elif "current accountable owner" in message or "already decided" in message:
@@ -127,10 +165,11 @@ def _safe_error(exc: BaseException) -> dict[str, Any]:
         "runtime_version": __version__,
         "error": category,
     }
+    if reason_code:
+        payload["reason_code"] = reason_code
     if details:
         payload["details"] = details
     return payload
-
 
 def _read_stdin() -> Any:
     raw = sys.stdin.buffer.read(MAX_REQUEST_BYTES + 1)

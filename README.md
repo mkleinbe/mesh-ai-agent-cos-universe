@@ -1,5 +1,11 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current release: v4.12.1 CoS Delegation and Agent Reporting
+
+v4.12.1 fixes the delegation request and diagnostic contract exposed by the Commercial Growth OS pilot. `delegation.create` now requires only the canonical delegation work contract; parent authority, depth, ancestry, and active owner are server-derived optional compatibility assertions. Agent execution uses `delegation.execute_owner`; `skills.invoke_governed` remains capability-only. Parent reconciliation is explicit and completion remains separate from verification.
+
+The canonical Phase 1 authority/runtime contract remains `4.0.0`. The live QNAP deployment remains `4.4.0` until the exact current-source candidate is promoted and independently read back. Repository release does not itself deploy QNAP or install the packaged ChatGPT Skill.
+
 ## Current Commercial Growth OS cadence
 
 v4.12.0 is the current Commercial Growth operating-model release. It keeps `LOOP-COM-001` as the single scheduled dispatcher, integrates monthly and quarterly reviews as logical TaskLedger due work, distinguishes native events from polling, preserves `LOOP-COM-HITL-001`, and packages the materially changed `mesh-chief-of-staff` Skill for human installation. The canonical Phase 1 runtime authority contract remains 4.0.0 and production QNAP remains 4.4.0.
@@ -16,7 +22,7 @@ v4.11.0 integrates Commercial Growth OS business-state reporting and CRO/CFO/COO
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.9.1 Media OS Capability Registration`. Current production QNAP deployment: `4.4.0` pending promotion of the verified current-source candidate. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Current repository release: `v4.12.1 CoS Delegation and Agent Reporting`. Current production QNAP deployment: `4.4.0` pending promotion of the exact current-source candidate. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
 ## v4.10.0 Outcome-Driven Orchestration
 
@@ -143,4 +149,4 @@ The authority-closure release established the current 10-agent Phase 1 authority
 
 ## Release model
 
-`v4.9.1 Media OS Capability Registration` is the current repository PATCH. The canonical Phase 1 authority/runtime contract remains `4.0.0`. The live QNAP deployment remains `4.4.0` until current-source promotion is independently proven. Completion requires exact-candidate verification, merged `main`, exact-SHA tag/Release equality, verified QNAP candidate artifacts, governed production promotion, and live registry/source readback before production Media OS activation is claimed.
+`v4.9.1 Media OS Capability Registration` is a historical repository PATCH. The canonical Phase 1 authority/runtime contract remains `4.0.0`. The live QNAP deployment remains `4.4.0` until current-source promotion is independently proven. Completion requires exact-candidate verification, merged `main`, exact-SHA tag/Release equality, verified QNAP candidate artifacts, governed production promotion, and live registry/source readback before production Media OS activation is claimed.

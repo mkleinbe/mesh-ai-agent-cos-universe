@@ -13,11 +13,13 @@ def test_v4120_bundle_contains_only_changed_skill() -> None:
         assert unchanged not in script
 
 
-def test_v4120_release_workflow_publishes_exact_sha() -> None:
+def test_v4120_release_workflow_is_frozen_after_v4121() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release-v4.12.0.yml").read_text()
-    assert "gh release create v4.12.0" in workflow
-    assert '--target "$GITHUB_SHA"' in workflow
-    assert "mesh-cos-chief-of-staff-v4.12.0.zip" in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "push:" not in workflow
+    assert "pull_request:" not in workflow
+    assert "435843437ae908167e788a8376b5fb8fdb42b8d5" in workflow
+    assert "gh release create v4.12.0" not in workflow
 
 
 def test_v4111_publisher_is_frozen() -> None:

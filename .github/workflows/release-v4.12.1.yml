@@ -1,0 +1,152 @@
+name: v4.12.1 CoS Delegation and Agent Reporting
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/mesh_cos/mcp_runtime.py'
+      - 'src/mesh_cos/mcp_stdio_bridge.py'
+      - 'mcp/src/python-bridge.ts'
+      - 'mcp/src/server.ts'
+      - 'mcp/src/tests/server.test.ts'
+      - 'chatgpt/mcp/tool-input-schemas.v1.json'
+      - 'chatgpt/skills/mesh-chief-of-staff/**'
+      - 'tests/evaluations/test_cos_delegation_reporting_v4121.py'
+      - 'tests/evaluations/test_release_closeout_v4121.py'
+      - 'tests/unit/test_mcp_stdio_bridge.py'
+      - 'specs/cos-delegation-reporting-v4.12.1.feature'
+      - 'scripts/build-chatgpt-skill-bundle-v4.12.1.sh'
+      - '.github/workflows/release-v4.10.0.yml'
+      - '.github/workflows/release-v4.11.0.yml'
+      - '.github/workflows/release-v4.12.0.yml'
+      - '.github/workflows/release-v4.12.1.yml'
+      - 'docs/*v4.12.1*'
+      - 'docs/architecture.md'
+      - 'docs/delegation-model.md'
+      - 'docs/runbook.md'
+      - 'docs/security-governance.md'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG-v4.12.1.md'
+  pull_request:
+    paths:
+      - 'src/mesh_cos/mcp_runtime.py'
+      - 'src/mesh_cos/mcp_stdio_bridge.py'
+      - 'mcp/src/python-bridge.ts'
+      - 'mcp/src/server.ts'
+      - 'mcp/src/tests/server.test.ts'
+      - 'chatgpt/mcp/tool-input-schemas.v1.json'
+      - 'chatgpt/skills/mesh-chief-of-staff/**'
+      - 'tests/evaluations/test_cos_delegation_reporting_v4121.py'
+      - 'tests/evaluations/test_release_closeout_v4121.py'
+      - 'tests/unit/test_mcp_stdio_bridge.py'
+      - 'specs/cos-delegation-reporting-v4.12.1.feature'
+      - 'scripts/build-chatgpt-skill-bundle-v4.12.1.sh'
+      - '.github/workflows/release-v4.10.0.yml'
+      - '.github/workflows/release-v4.11.0.yml'
+      - '.github/workflows/release-v4.12.0.yml'
+      - '.github/workflows/release-v4.12.1.yml'
+      - 'docs/*v4.12.1*'
+      - 'docs/architecture.md'
+      - 'docs/delegation-model.md'
+      - 'docs/runbook.md'
+      - 'docs/security-governance.md'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG-v4.12.1.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: mcp/package-lock.json
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: npm ci
+        working-directory: mcp
+      - run: npm run check
+        working-directory: mcp
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/check-owner-execution-readiness.py
+      - run: python scripts/check-capability-closure.py
+      - run: python scripts/check-published-action-surface.py
+      - run: ruff check src
+      - run: ruff check tests scripts chatgpt/skills/mesh-chief-of-staff/scripts --select E9,F63,F7,F82
+      - run: mypy src --check-untyped-defs
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - run: python -m compileall -q src chatgpt/skills/mesh-chief-of-staff/scripts
+      - run: pytest -q tests/evaluations/test_cos_delegation_reporting_v4121.py tests/evaluations/test_release_closeout_v4121.py
+      - run: bash scripts/build-chatgpt-skill-bundle-v4.12.1.sh
+      - run: unzip -t dist/mesh-cos-chief-of-staff-v4.12.1.zip
+      - run: sha256sum -c mesh-cos-chief-of-staff-v4.12.1.zip.sha256
+        working-directory: dist
+      - name: Build exact current-source QNAP candidate
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-qnap-release-bundle.sh 4.4.0
+          bash scripts/finalize-qnap-release-v4.4.0.sh
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.4.0.zip.sha256)
+          grep -q "^commit=$GITHUB_SHA$" dist/qnap-bundle/v4.4.0/cos-mcp/release-metadata.txt
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Build release assets
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-chatgpt-skill-bundle-v4.12.1.sh
+          bash scripts/build-qnap-release-bundle.sh 4.4.0
+          bash scripts/finalize-qnap-release-v4.4.0.sh
+          (cd dist && sha256sum -c mesh-cos-chief-of-staff-v4.12.1.zip.sha256)
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.4.0.zip.sha256)
+          grep -q "^commit=$GITHUB_SHA$" dist/qnap-bundle/v4.4.0/cos-mcp/release-metadata.txt
+      - name: Publish exact-SHA v4.12.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.12.1 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.12.1 --json targetCommitish --jq .targetCommitish)"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "v4.12.1 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              exit 1
+            fi
+          else
+            gh release create v4.12.1 --target "$GITHUB_SHA" --title 'Mesh CoS v4.12.1 Delegation and Agent Reporting' --notes-file docs/release-v4.12.1-cos-delegation-reporting.md
+          fi
+          gh release upload v4.12.1 \
+            dist/mesh-cos-chief-of-staff-v4.12.1.zip \
+            dist/mesh-cos-chief-of-staff-v4.12.1.zip.sha256 \
+            dist/mesh-cos-mcp-qnap-v4.4.0.zip \
+            dist/mesh-cos-mcp-qnap-v4.4.0.zip.sha256 \
+            --clobber

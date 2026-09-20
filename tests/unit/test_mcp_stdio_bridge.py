@@ -155,6 +155,34 @@ def test_safe_errors_expose_category_not_exception_message(exc: BaseException, c
     assert "secret" not in json.dumps(payload)
 
 
+def test_safe_delegation_errors_expose_stable_reason_codes_without_policy_detail() -> None:
+    cases = [
+        (PermissionError("approval required"), "approval-required"),
+        (PermissionError("Delegation is not permitted for answer-desk"), "delegator-not-authorized"),
+        (PermissionError("Delegation target must be a registered direct child of the delegating agent"), "recipient-not-delegable"),
+        (PermissionError("delegation target rejected"), "recipient-not-delegable"),
+        (PermissionError("Canonical delegation depth exceeds delegating agent authority"), "delegation-depth-exceeded"),
+        (PermissionError("Caller-supplied delegation depth does not match canonical registry"), "invalid-delegation-contract"),
+        (PermissionError("Caller-supplied parent authority does not match canonical parent task"), "invalid-delegation-contract"),
+        (PermissionError("Caller-supplied ancestry does not match canonical registry"), "invalid-delegation-contract"),
+        (PermissionError("Delegation parent task does not match canonical work graph"), "invalid-delegation-contract"),
+        (PermissionError("Delegation owner must match the canonical child task owner"), "ownership-conflict"),
+        (PermissionError("Caller-supplied active owner does not match canonical owner"), "ownership-conflict"),
+        (PermissionError("current accountable owner mismatch"), "ownership-conflict"),
+        (PermissionError("Delegation cannot widen authority"), "authority-exceeded"),
+        (PermissionError("Delegation authority must match canonical child task authority"), "authority-exceeded"),
+        (PermissionError("requested authority exceeds policy"), "authority-exceeded"),
+        (PermissionError("Capability is not explicitly permitted by this delegation"), "capability-not-delegated"),
+        (ValueError("Capability identifies an agent principal; use delegated owner execution"), "unsupported-capability-type"),
+    ]
+    for exc, reason_code in cases:
+        payload = bridge._safe_error(exc)
+        assert payload["reason_code"] == reason_code
+        assert str(exc) not in json.dumps(payload)
+
+    assert "reason_code" not in bridge._safe_error(PermissionError("generic policy denial"))
+
+
 def test_safe_validation_error_exposes_only_bounded_details() -> None:
     exc = RequestValidationError([{"field": "accountable_agent", "reason": "required"}])
     payload = bridge._safe_error(exc)

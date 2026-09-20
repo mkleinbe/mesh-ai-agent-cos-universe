@@ -22,6 +22,7 @@ export type BridgeResponse = {
   result?: unknown;
   error?: string;
   error_type?: string;
+  reason_code?: string;
   details?: unknown;
 };
 
@@ -42,12 +43,16 @@ function sanitizeErrorDetails(value: unknown): SafeErrorDetail[] | undefined {
 
 export class PythonBridgeError extends Error {
   readonly category: string;
+  readonly reasonCode?: string;
   readonly details?: SafeErrorDetail[];
 
-  constructor(category: string, details?: unknown) {
+  constructor(category: string, details?: unknown, reasonCode?: string) {
     super(`Python bridge failed: ${category}`);
     this.name = 'PythonBridgeError';
     this.category = category;
+    this.reasonCode = typeof reasonCode === 'string' && /^[a-z0-9-]{1,80}$/.test(reasonCode)
+      ? reasonCode
+      : undefined;
     this.details = sanitizeErrorDetails(details);
   }
 }
@@ -112,7 +117,11 @@ async function invokePython(request: BridgeRequest, env: NodeJS.ProcessEnv): Pro
     throw new PythonBridgeError('invalid_bridge_response');
   }
   if (response.ok !== true) {
-    throw new PythonBridgeError(response.error || 'execution_failed', response.details);
+    throw new PythonBridgeError(
+      response.error || 'execution_failed',
+      response.details,
+      response.reason_code,
+    );
   }
   return response;
 }

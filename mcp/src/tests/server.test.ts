@@ -79,6 +79,20 @@ test('safe errors never return raw bridge error messages', () => {
   assert.equal(safeErrorPayload(new Error('unexpected secret'), 'r4').error, 'execution_failed');
 });
 
+test('safe bridge reason codes survive transport without raw policy text', () => {
+  const bridge = safeErrorPayload(
+    new PythonBridgeError('forbidden', undefined, 'recipient-not-delegable'),
+    'r-reason',
+  );
+  assert.deepEqual(bridge, {
+    ok: false,
+    request_id: 'r-reason',
+    error: 'forbidden',
+    reason_code: 'recipient-not-delegable',
+  });
+});
+
+
 test('python environment always makes repository src importable', () => {
   const root = repositoryRoot();
   const fresh = pythonEnvironment({});

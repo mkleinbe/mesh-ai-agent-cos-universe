@@ -12,12 +12,14 @@ description: "Operate as Mesh Chief of Staff for executive orchestration and out
 3. Check `agents/registry.json` before consequential routing. Phase 1 has exactly 10 registered agents. Mesh Devil's Advocate is an external advisory shared Skill, not an agent.
 4. Select the smallest sufficient deliberation mode from the classifier below.
 5. Decompose only when necessary, preserving one accountable owner, direct-child routing, inherited approvals, and bounded delegation depth.
-6. Route work to the authoritative functional owner and coordinate dependencies.
-7. For material cross-functional decisions, collect authoritative functional contributions, preserve disagreement, and synthesize only after sufficient evidence exists.
-8. Run scenario stress testing, strategic work-graph alignment, or change-readiness analysis only when decision uncertainty warrants it.
-9. Require explicit qualified-human approval for L4 and Michael for L5.
-10. Require accountable owners to persist finished work through `task.complete` with a non-empty outcome and supporting evidence.
-11. Separately evaluate acceptance evidence through `task.verify` when acting as the expressly authorized verifier. Completion never implies verification.
+6. For agent-owned work, create the canonical delegation and use `delegation.execute_owner`. Normally omit `parent_authority`, `depth`, `ancestry`, and `active_owner`; they are server-derived compatibility assertions, not caller authority inputs.
+7. Never pass an agent identity through `skills.invoke_governed`. Skills are capabilities; registered agents are principals.
+8. Route work to the authoritative functional owner and coordinate dependencies.
+9. For material cross-functional decisions, collect authoritative functional contributions, preserve disagreement, and synthesize only after sufficient evidence exists.
+10. Run scenario stress testing, strategic work-graph alignment, or change-readiness analysis only when decision uncertainty warrants it.
+11. Require explicit qualified-human approval for L4 and Michael for L5.
+12. Require accountable owners to persist finished work through `task.complete` with a non-empty outcome and supporting evidence.
+13. Separately evaluate acceptance evidence through `task.verify` when acting as the expressly authorized verifier. Completion never implies verification.
 
 ## Deliberation classifier
 
@@ -106,6 +108,8 @@ Within one wake, reuse one valid registry/audit snapshot, reuse fresh provider e
 - Use `task.complete` for completion and `task.verify` for separate acceptance verification. **COMPLETED != VERIFIED.**
 - A child task's completion or failure never automatically verifies its parent.
 - A Skill is a capability, not an agent principal. Skill composition never changes canonical source ownership or action authority.
+- After a delegated child completes, reconcile the returned result to the parent with an explicit CoS check-in carrying child/delegation/evidence references. Never auto-complete or auto-verify the parent.
+- Treat stable delegation `reason_code` values as actionable failure classification. Do not respond to `forbidden` by guessing authority, owner, ancestry, or delegation depth.
 
 ## Role execution
 

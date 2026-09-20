@@ -1,6 +1,7 @@
 # Operations Runbook
 
-Candidate repository/QNAP deployment release: **`v4.3.0 Cross-Agent Owner Execution`**.  
+Repository remediation candidate: **`v4.12.1 CoS Delegation and Agent Reporting`**.  
+Verified production QNAP deployment: **`4.4.0`** until governed current-source promotion.  
 Canonical Phase 1 authority/runtime contract: **`4.0.0`**.
 
 This runbook distinguishes repository readiness, QNAP deployment readiness, published ChatGPT app acceptance, delegated-owner execution, and production recovery.
@@ -9,7 +10,7 @@ This runbook distinguishes repository readiness, QNAP deployment readiness, publ
 
 1. Confirm the Python package and canonical MCP authority/runtime contract remain `4.0.0`.
 2. Confirm `agents/registry.json` contains exactly 10 registered agents and exactly two external shared Skills: Mesh Devil's Advocate for CoS/CRO and Mesh Data Analytics for CFO analytical execution.
-3. Confirm the candidate deployment train is `4.3.0` across current release assets.
+3. Confirm repository release identity is `v4.12.1`; confirm the QNAP current-source candidate remains independently labeled and verified before production promotion.
 4. Confirm CoS has 28 governed agent tools, including `delegation.execute_owner`, and no agent catalog contains human-only operations.
 5. Run the full release suite.
 6. Require `OWNER_EXECUTION_READINESS=PASS` for every current downstream owner.
@@ -32,7 +33,7 @@ mypy src --check-untyped-defs
 pytest --cov=mesh_cos --cov-report=term-missing --cov-report=xml --cov-fail-under=100
 bandit -q -r src -lll
 python -m compileall -q src
-bash scripts/build-qnap-release-bundle.sh 4.3.0
+bash scripts/build-qnap-release-bundle.sh 4.4.0
 ```
 
 Repository CI additionally exercises the production image, OCI provenance, QNAP POSIX regressions, deterministic bundle/checksum, modern MCP discovery, sequential requests, least-privilege runtime controls, and SQLite backup/restart recovery.
@@ -66,6 +67,16 @@ delegation.execute_owner(task.complete)
 ```
 
 Do not call `task.complete` directly as CoS for a child-owned task.
+
+### Delegation request and reporting contract
+
+For ordinary direct-child delegation, send the delegation work contract only. Do not calculate or populate `parent_authority`, `depth`, `ancestry`, or `active_owner` unless intentionally asserting an expected canonical value for drift detection. The server derives those fields from TaskLedger and the Agent Registry.
+
+If delegation fails, use the stable `reason_code` rather than retrying with guessed identity or authority values. Common codes include `delegator-not-authorized`, `authority-exceeded`, `delegation-depth-exceeded`, `recipient-not-delegable`, `ownership-conflict`, `approval-required`, and `invalid-delegation-contract`.
+
+Do not invoke an agent through `skills.invoke_governed`. That API accepts registered capabilities. Agent-owned work uses `delegation.execute_owner`, which derives the execution principal from canonical delegation state.
+
+After owner completion, CoS retrieves or receives the child result and records a parent `task.check_in` containing the child task ID, delegation ID, owner result summary, and evidence references. This reconciles the child result to the parent without automatically completing or verifying the parent.
 
 ## Nested delegation operation
 
@@ -128,7 +139,7 @@ If an execution failed after the at-most-once claim and the effect may be ambigu
 
 ## QNAP deployment path
 
-1. Stage the authorized `mesh-cos-mcp-qnap-v4.3.0.zip` and checksum under the canonical releases root workflow.
+1. Stage the exact verified current-source QNAP candidate and checksum under the canonical releases root workflow.
 2. Follow `deployment/qnap/DEPLOYMENT-STEPS.md`.
 3. Preserve `/share/Docker/cos-mcp/state`, TaskLedger, tunnel identity, protected Slack configuration, logs, and backups.
 4. Require pre-deploy SQLite backup integrity.
@@ -138,7 +149,7 @@ If an execution failed after the at-most-once claim and the effect may be ambigu
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.3.0
+deployment_release: 4.4.0
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 ```
@@ -208,4 +219,4 @@ Before activation or acceptance verify:
 
 Rollback restores the prior authorized immutable release and preserves canonical TaskLedger state. Software rollback must not delete or recreate canonical work.
 
-If v4.3.0 is rolled back before stranded work is recovered, leave those tasks in their existing state. Resume them only after a corrected owner transport is again deployed and authorized.
+If the current-source candidate is rolled back before delegated work is recovered, leave those tasks in their existing state. Resume them only after the governed owner transport is again deployed and authorized.

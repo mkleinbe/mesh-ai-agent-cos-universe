@@ -24,7 +24,7 @@ The normal agent delegation depth is CoS -> functional executive/controller/oper
 
 The path `Michael -> CoS -> COO -> Consultant Network Steward` is legal. In agent-depth terms, CoS -> COO is depth 1 and COO -> Consultant Network Steward is depth 2. Consultant Network Steward has max delegation depth 0 and cannot delegate further.
 
-Mesh Devil's Advocate is an external shared Skill. Invoking it is not delegation and never transfers task ownership.
+Mesh Devil's Advocate is an external shared Skill. Invoking it is not delegation and never transfers task ownership. `skills.invoke_governed` accepts registered capabilities only. Agent principals such as CRO execute through the canonical delegation plus `delegation.execute_owner` path and must never be represented as Skills.
 
 ## Closed-loop delegation protocol
 
@@ -120,7 +120,32 @@ flowchart LR
 
 Delegation can narrow authority. It cannot widen it. Required L4/L5 approval gates are inherited and cannot be weakened by a child task.
 
-Client `depth`, `ancestry`, `parent_authority`, and `active_owner` values are compatibility assertions only. Where present, they must equal canonical server-derived state and cannot create authority.
+Client `depth`, `ancestry`, `parent_authority`, and `active_owner` values are optional compatibility assertions only. They are not required authority inputs. The server derives them from TaskLedger and the Agent Registry. Where a caller supplies one, it must exactly equal canonical state and cannot create authority.
+
+### Canonical `delegation.create` request contract
+
+The caller supplies the delegation work contract and canonical child task identity. It should normally omit server-derived compatibility assertions.
+
+```json
+{
+  "delegation": {
+    "delegation_id": "stable-id",
+    "task_id": "canonical-child-task",
+    "accountable_agent": "cro",
+    "business_objective": "bounded objective",
+    "expected_outcome": "business outcome",
+    "deliverable": "result contract",
+    "success_criteria": ["measurable result"],
+    "priority": "P1",
+    "authority_level": 2,
+    "acceptance_test": "falsifiable acceptance test"
+  }
+}
+```
+
+The runtime derives canonical parent authority, delegation depth, ancestry, active owner, inherited approvals, owner permissions, and prohibited actions. A supplied compatibility assertion is useful for drift detection only and fails closed if it differs from canonical state.
+
+Stable safe error reason codes distinguish common rejection classes without exposing sensitive policy internals: `delegator-not-authorized`, `authority-exceeded`, `delegation-depth-exceeded`, `recipient-not-delegable`, `ownership-conflict`, `approval-required`, and `invalid-delegation-contract`.
 
 ## Identity invariant
 
@@ -138,7 +163,7 @@ Authoritative owner lifecycle writes require the canonical task owner. A parent 
 
 A child owner may use `task.complete` for its own task after producing outcome and evidence. That changes only the child to `COMPLETED`. It does not mark the parent `COMPLETED` or `VERIFIED`.
 
-Parent synthesis, parent completion, and independent verification are explicit actions. Verification requires acceptance evidence and an expressly authorized verifier operation.
+Parent synthesis, parent completion, and independent verification are explicit actions. After a child result returns, CoS records an explicit parent check-in referencing the child task, delegation, owner result, and material evidence before evaluating the parent's own acceptance test. That reconciliation makes the result observable without silently changing parent status. Verification requires acceptance evidence and an expressly authorized verifier operation.
 
 `COMPLETED != VERIFIED` remains a mandatory invariant.
 

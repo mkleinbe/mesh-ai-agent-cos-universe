@@ -1,3 +1,11 @@
+# v4.12.1 CoS Delegation and Agent Reporting
+
+This PATCH release corrects the CoS delegation request contract and failure diagnostics without changing the 10-agent roster, authority contract 4.0.0, Commercial Growth OS decision logic, or external-action boundaries. Server-derived delegation fields are no longer required caller authority inputs, agent principals cannot be invoked as Skills, and explicit parent reconciliation is documented after owner completion.
+
+The release includes a human-installable Chief of Staff Skill bundle and an exact-current-source QNAP 4.4.0 candidate bundle. Repository publication does not itself promote QNAP or update the installed ChatGPT Skill.
+
+See `docs/release-v4.12.1-cos-delegation-reporting.md`, `docs/security-review-v4.12.1-cos-delegation-reporting.md`, and `docs/verification-v4.12.1-cos-delegation-reporting.md`.
+
 # v4.12.0 Commercial Growth Cadence
 
 This MINOR release integrates Commercial Growth monthly, quarterly, scheduled, ad hoc, and supported native-event execution into the existing TaskLedger-controlled Commercial Operations model. `LOOP-COM-001` remains the single scheduled dispatcher. A scheduler wake is never business progress. Quarterly review subsumes a colliding monthly review. Polling cannot claim native-event compliance. Existing `LOOP-COM-HITL-001`, Message Operations, Revenue Intelligence, GTM Orchestrator, CRO/COO/CFO boundaries, human approval, and completion-versus-verification controls remain unchanged.

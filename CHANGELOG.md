@@ -1,5 +1,16 @@
 # Changelog
 
+## v4.12.1 - 2026-09-19
+
+- Corrected `delegation.create` so server-derived parent authority and delegation depth are optional compatibility assertions rather than required caller inputs.
+- Added stable safe reason codes for delegation, ownership, authority, depth, approval, and unsupported capability-type failures.
+- Rejected agent principals routed through `skills.invoke_governed`; governed agent execution remains `delegation.execute_owner`.
+- Added explicit parent reconciliation guidance after child completion without automatic parent completion or verification.
+- Added CDR-001 through CDR-010 BDD/evaluation coverage and Python/Node error-contract tests.
+- Froze superseded v4.10.0, v4.11.0, and v4.12.0 release publishers to immutable historical verification.
+- Added v4.12.1 exact-SHA release automation, Chief of Staff Skill bundle, and current-source QNAP 4.4.0 candidate asset.
+- Preserved the 10-agent roster, TaskLedger, L0-L5 authority, L4/L5 approval boundaries, external-action controls, and `COMPLETED != VERIFIED`.
+
 ## v4.12.0 - 2026-09-19
 
 - Integrated monthly and quarterly Commercial Growth reviews into `LOOP-COM-001` as canonical logical due work.

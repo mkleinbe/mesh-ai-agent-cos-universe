@@ -57,6 +57,7 @@ jobs:
           bash -n scripts/build-qnap-release-bundle.sh
           bash -n scripts/finalize-qnap-release-v4.4.0.sh
           bash -n scripts/finalize-qnap-release-v4.4.1.sh
+          bash -n scripts/finalize-qnap-release-v4.4.2.sh
           bash -n scripts/build-chatgpt-skill-bundle-v4.4.0.sh
           ! grep -q '^  pull_request:' .github/workflows/release-v4.3.0.yml
           ! grep -q 'MESH_COS_SLACK_VERIFIER_TOKEN_FILE' deployment/qnap/compose.yaml
@@ -81,15 +82,15 @@ jobs:
           grep -q 'internal: true' deployment/qnap/compose.yaml
           grep -q 'mesh-cos-egress:' deployment/qnap/compose.yaml
           grep -q -- '--network none' deployment/qnap/scripts/mesh-cos-mcp-backup.sh
-      - name: Build current-source v4.4.1 QNAP candidate artifacts
+      - name: Build current-source v4.4.2 QNAP candidate artifacts
         env:
           GITHUB_SHA: ${{ github.sha }}
-          QNAP_VERSION: '4.4.1'
+          QNAP_VERSION: '4.4.2'
           SKILL_VERSION: '4.4.0'
         run: |
           set -euo pipefail
           bash scripts/build-qnap-release-bundle.sh "$QNAP_VERSION"
-          bash scripts/finalize-qnap-release-v4.4.1.sh
+          bash scripts/finalize-qnap-release-v4.4.2.sh
           bash scripts/build-chatgpt-skill-bundle-v4.4.0.sh
           ZIP="dist/mesh-cos-mcp-qnap-v${QNAP_VERSION}.zip"
           SKILL_ZIP="dist/mesh-cos-chatgpt-skills-v${SKILL_VERSION}.zip"
@@ -98,19 +99,19 @@ jobs:
           test -f "$SKILL_ZIP" && test -f "$SKILL_ZIP.sha256"
           grep -q "^version=${QNAP_VERSION}$" "$BUNDLE/cos-mcp/release-metadata.txt"
           grep -q "^commit=$GITHUB_SHA$" "$BUNDLE/cos-mcp/release-metadata.txt"
-          test -f "$BUNDLE/cos-mcp/CHANGELOG-QNAP-v4.4.1.md"
-          test -f "$BUNDLE/cos-mcp/release-qnap-v4.4.1-source-identity.md"
-          test -f "$BUNDLE/cos-mcp/security-review-qnap-v4.4.1-source-identity.md"
-          test -f "$BUNDLE/cos-mcp/verification-qnap-v4.4.1-source-identity.md"
-          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md"
-          test -f "$BUNDLE/cos-mcp/qnap-source-identity-v4.4.1.feature"
+          test -f "$BUNDLE/cos-mcp/CHANGELOG-QNAP-v4.4.2.md"
+          test -f "$BUNDLE/cos-mcp/release-qnap-v4.4.2-slack-hitl-telemetry.md"
+          test -f "$BUNDLE/cos-mcp/security-review-qnap-v4.4.2-slack-hitl-telemetry.md"
+          test -f "$BUNDLE/cos-mcp/verification-qnap-v4.4.2-slack-hitl-telemetry.md"
+          test -f "$BUNDLE/cos-mcp/chatgpt-published-app-production-acceptance-qnap-v4.4.2.md"
+          test -f "$BUNDLE/cos-mcp/slack-hitl-task-telemetry-v4.13.3.feature"
           grep -q "^source_commit=$GITHUB_SHA$" dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
           grep -q '^skill_count=8$' dist/chatgpt-skill-bundle/v4.4.0/MANIFEST.txt
           (cd dist && sha256sum -c "mesh-cos-mcp-qnap-v${QNAP_VERSION}.zip.sha256")
           (cd dist && sha256sum -c "mesh-cos-chatgpt-skills-v${SKILL_VERSION}.zip.sha256")
       - name: Build production-equivalent container from current QNAP candidate
         env:
-          CANDIDATE_VERSION: '4.4.1'
+          CANDIDATE_VERSION: '4.4.2'
         run: |
           set -euo pipefail
           BUNDLE="dist/qnap-bundle/v${CANDIDATE_VERSION}"
@@ -119,15 +120,15 @@ jobs:
           test "$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "mesh-cos-mcp:ci-v${CANDIDATE_VERSION}")" = "$GITHUB_SHA"
       - name: Verify modern MCP discovery and exact source commit
         env:
-          MESH_COS_DEPLOYMENT_RELEASE: '4.4.1'
+          MESH_COS_DEPLOYMENT_RELEASE: '4.4.2'
           MESH_COS_EXPECTED_SOURCE_COMMIT: ${{ github.sha }}
-        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.4.1
+        run: sh deployment/qnap/tests/test-modern-mcp-transport.sh mesh-cos-mcp:ci-v4.4.2
       - name: Write current candidate verification receipt
         run: |
           set -euo pipefail
           mkdir -p dist
           {
-            printf 'candidate_version=4.4.1\n'
+            printf 'candidate_version=4.4.2\n'
             printf 'candidate_sha=%s\n' "$GITHUB_SHA"
             printf 'ci_run_id=%s\n' "$GITHUB_RUN_ID"
             printf 'runtime_contract=4.0.0\n'
@@ -147,10 +148,10 @@ jobs:
           grep -q '^PUBLISHED_ACTION_SURFACE=SOURCE_CONTRACT_ONLY' dist/verification-receipt-current.txt
       - uses: actions/upload-artifact@v6
         with:
-          name: mesh-cos-mcp-v4.4.1-candidate
+          name: mesh-cos-mcp-v4.4.2-candidate
           path: |
-            dist/mesh-cos-mcp-qnap-v4.4.1.zip
-            dist/mesh-cos-mcp-qnap-v4.4.1.zip.sha256
+            dist/mesh-cos-mcp-qnap-v4.4.2.zip
+            dist/mesh-cos-mcp-qnap-v4.4.2.zip.sha256
             dist/mesh-cos-chatgpt-skills-v4.4.0.zip
             dist/mesh-cos-chatgpt-skills-v4.4.0.zip.sha256
             dist/verification-receipt-current.txt

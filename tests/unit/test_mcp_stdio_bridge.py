@@ -155,6 +155,22 @@ def test_safe_errors_expose_category_not_exception_message(exc: BaseException, c
     assert "secret" not in json.dumps(payload)
 
 
+def test_safe_delegation_errors_expose_stable_reason_codes_without_policy_detail() -> None:
+    cases = [
+        (PermissionError("Delegation target must be a registered direct child of the delegating agent"), "recipient-not-delegable"),
+        (PermissionError("Delegation owner must match the canonical child task owner"), "ownership-conflict"),
+        (PermissionError("Caller-supplied delegation depth does not match canonical registry"), "invalid-delegation-contract"),
+        (PermissionError("Canonical delegation depth exceeds delegating agent authority"), "delegation-depth-exceeded"),
+        (PermissionError("Delegation cannot widen authority"), "authority-exceeded"),
+        (ValueError("Capability identifies an agent principal; use delegated owner execution"), "unsupported-capability-type"),
+    ]
+    for exc, reason_code in cases:
+        payload = bridge._safe_error(exc)
+        assert payload["reason_code"] == reason_code
+        assert str(exc) not in json.dumps(payload)
+
+
+
 def test_safe_validation_error_exposes_only_bounded_details() -> None:
     exc = RequestValidationError([{"field": "accountable_agent", "reason": "required"}])
     payload = bridge._safe_error(exc)

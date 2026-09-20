@@ -205,7 +205,7 @@ cd "$BUNDLE_APP_ROOT" || fail "cannot enter candidate application payload $BUNDL
 mesh_run compose_render compose-config mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" config || fail "candidate Compose render failed"
 
 mesh_set_stage compose_up
-if ! mesh_run compose_up compose-up mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" up -d --no-build; then
+if ! mesh_run compose_up compose-up mesh_compose --env-file "$CANDIDATE_ENV" -f "$CANDIDATE_COMPOSE" up -d --no-build --force-recreate; then
   fail_candidate_before_promotion "candidate Compose deployment failed"
 fi
 

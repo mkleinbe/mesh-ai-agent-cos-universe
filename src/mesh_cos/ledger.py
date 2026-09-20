@@ -6,7 +6,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from .models import AuthorityLevel, TaskRecord, TaskStatus
+from .models import AuthorityLevel, TaskRecord, TaskStatus, utcnow
 
 
 class TaskLedger:
@@ -112,12 +112,75 @@ class TaskLedger:
         self.conn.commit()
 
     def bind_thread(self, task_id: str, channel_id: str, thread_ts: str) -> dict:
-        self.conn.execute(
-            "INSERT INTO task_threads(task_id,channel_id,thread_ts) VALUES(?,?,?) ON CONFLICT(task_id) DO UPDATE SET channel_id=excluded.channel_id, thread_ts=excluded.thread_ts",
-            (task_id, channel_id, thread_ts),
-        )
-        self.conn.commit()
+        with self.transaction() as conn:
+            conn.execute(
+                "INSERT INTO task_threads(task_id,channel_id,thread_ts) VALUES(?,?,?) ON CONFLICT(task_id) DO UPDATE SET channel_id=excluded.channel_id, thread_ts=excluded.thread_ts",
+                (task_id, channel_id, thread_ts),
+            )
+            row = conn.execute(
+                "SELECT payload FROM tasks WHERE task_id=?",
+                (task_id,),
+            ).fetchone()
+            if row is not None:
+                task = self._task_from_payload(row[0])
+                task.slack_channel_id = channel_id
+                task.slack_thread_ts = thread_ts
+                conn.execute(
+                    "UPDATE tasks SET payload=? WHERE task_id=?",
+                    (json.dumps(task.to_dict(), sort_keys=True), task_id),
+                )
         return {"task_id": task_id, "channel_id": channel_id, "thread_ts": thread_ts}
+
+    def record_human_touch(
+        self,
+        task_id: str,
+        *,
+        provider_event_id: str,
+        channel_id: str,
+        thread_ts: str,
+        message_ts: str,
+    ) -> bool:
+        """Record one provider-authenticated human interaction exactly once.
+
+        The caller must establish provider identity and governed task/thread binding before
+        invoking this canonical telemetry write. The provider event record is inserted in
+        the same transaction as the TaskRecord increment so retry after process failure is
+        replay-safe across durable TaskLedger state.
+        """
+        record = {
+            "version": "mesh.cos.task-human-touch.v1",
+            "provider_event_id": provider_event_id,
+            "task_id": task_id,
+            "channel_id": channel_id,
+            "thread_ts": thread_ts,
+            "message_ts": message_ts,
+            "recorded_at": utcnow(),
+        }
+        try:
+            with self.transaction() as conn:
+                row = conn.execute(
+                    "SELECT payload FROM tasks WHERE task_id=?",
+                    (task_id,),
+                ).fetchone()
+                if row is None:
+                    raise KeyError(task_id)
+                conn.execute(
+                    "INSERT INTO records(kind,record_id,payload) VALUES(?,?,?)",
+                    (
+                        "task_human_touch",
+                        provider_event_id,
+                        json.dumps(record, sort_keys=True),
+                    ),
+                )
+                task = self._task_from_payload(row[0])
+                task.human_touches += 1
+                conn.execute(
+                    "UPDATE tasks SET payload=? WHERE task_id=?",
+                    (json.dumps(task.to_dict(), sort_keys=True), task_id),
+                )
+        except sqlite3.IntegrityError:
+            return False
+        return True
 
     def get_thread(self, task_id: str) -> dict | None:
         row = self.conn.execute(

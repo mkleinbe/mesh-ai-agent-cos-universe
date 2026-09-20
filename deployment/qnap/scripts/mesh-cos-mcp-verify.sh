@@ -27,7 +27,95 @@ set -a
 . "$VERIFY_ENV_FILE"
 set +a
 [ -n "${MESH_COS_DEPLOYMENT_RELEASE:-}" ] || fail "MESH_COS_DEPLOYMENT_RELEASE missing from verification environment"
-mesh_log INFO verify_environment "source=$VERIFY_ENV_FILE deployment_release=$MESH_COS_DEPLOYMENT_RELEASE"
+ACTIVE_RELEASE_METADATA="$APP_ROOT/release-metadata.txt"
+[ -r "$ACTIVE_RELEASE_METADATA" ] || fail "$ACTIVE_RELEASE_METADATA missing"
+EXPECTED_SOURCE_COMMIT=$(sed -n 's/^commit=//p' "$ACTIVE_RELEASE_METADATA" | tail -n 1)
+printf '%s' "$EXPECTED_SOURCE_COMMIT" | grep -Eq '^[0-9a-fA-F]{40}
+mesh_set_stage container_health
+for name in mesh-cos-mcp mesh-cos-tunnel; do
+  docker inspect "$name" >/dev/null 2>&1 || fail "missing container: $name"
+  [ "$(docker inspect -f '{{.State.Health.Status}}' "$name" 2>/dev/null || echo unknown)" = "healthy" ] || fail "$name is not healthy"
+done
+pass "both containers healthy"
+
+mesh_set_stage runtime_readiness
+IDENTITY_CHECK="fetch('http://127.0.0.1:8080/STATUS').then(async r=>{const j=await r.json();if(!r.ok||j.ok!==true||j.mcp_version!=='4.0.0'||j.deployment_release!==process.env.EXPECTED_RELEASE||j.agent_id!=='cos'||j.transport!=='SECURE_MCP_TUNNEL')process.exit(1)})"
+mesh_run runtime_readiness healthz docker exec -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" mesh-cos-mcp node -e "$(printf '%s' "$IDENTITY_CHECK" | sed 's/STATUS/healthz/g')" || fail "healthz identity check failed"
+mesh_run runtime_readiness readyz docker exec -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" mesh-cos-mcp node -e "$(printf '%s' "$IDENTITY_CHECK" | sed 's/STATUS/readyz/g')" || fail "readyz identity check failed"
+mesh_run runtime_readiness runtime-preflight docker exec mesh-cos-mcp python3 deployment/qnap/runtime_preflight.py || fail "canonical runtime preflight failed"
+pass "runtime health, readiness, dual release identity, and canonical preflight"
+
+mesh_set_stage slack_provider_read
+SLACK_PROVIDER_CHECK="const fs=require('fs');const token=fs.readFileSync('/run/secrets/slack_bot_token','utf8').trim();const channel=process.env.MESH_COS_SLACK_AGENT_OPS_CHANNEL_ID;const url=new URL('https://slack.com/api/conversations.history');url.searchParams.set('channel',channel);url.searchParams.set('limit','1');const maxAttempts=6;const retryDelayMs=5000;const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));(async()=>{for(let attempt=1;attempt<=maxAttempts;attempt++){let response;try{response=await fetch(url,{headers:{Authorization:'Bearer '+token}})}catch{if(attempt===maxAttempts){console.error('slack_provider_read_failed:network_error');process.exit(1)}console.error('slack_provider_read_retry:network_error:attempt='+attempt);await sleep(retryDelayMs);continue}let j;try{j=await response.json()}catch{console.error('slack_provider_read_failed:invalid_response');process.exit(1)}if(!j||j.ok!==true){const code=j&&typeof j.error==='string'&&/^[a-z0-9_]+$/.test(j.error)?j.error:'unknown_error';console.error('slack_provider_read_failed:'+code);process.exit(1)}return}})().catch(()=>{console.error('slack_provider_read_failed:internal_error');process.exit(1)})"
+mesh_run slack_provider_read conversations-history docker exec mesh-cos-mcp node -e "$SLACK_PROVIDER_CHECK" || fail "Slack bot cannot read the governed private channel after bounded network-readiness retries; inspect the sanitized Slack provider error and verify groups:history scope, workspace reinstall, token reprovisioning, channel membership, and QNAP egress"
+pass "Slack bot provider read scope, governed-channel access, and qnet egress readiness"
+
+MCP_ENVELOPE_CHECK="const expected=process.env.EXPECTED_RELEASE;const expectedCommit=process.env.EXPECTED_SOURCE_COMMIT;const meta={'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'mesh-qnap-verify',version:expected}};const body={jsonrpc:'2.0',id:'verify-envelope',method:'tools/call',params:{name:'registry.get_agent',arguments:{agent_id:'cos'},_meta:meta}};fetch('http://172.30.60.2:8080/mcp',{method:'POST',headers:{'content-type':'application/json','accept':'application/json, text/event-stream','MCP-Protocol-Version':'2026-07-28','Mcp-Method':'tools/call','Mcp-Name':'registry.get_agent'},body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error('http_'+r.status);const outer=JSON.parse(await r.text());const content=outer&&outer.result&&outer.result.content;if(!Array.isArray(content))throw new Error('missing_content');const item=content.find(x=>x&&x.type==='text');if(!item||typeof item.text!=='string')throw new Error('missing_text');const envelope=JSON.parse(item.text);if(envelope.ok!==true||envelope.mcp_version!=='4.0.0'||envelope.deployment_release!==expected||envelope.source_commit!==expectedCommit||envelope.agent_id!=='cos'||!envelope.result)throw new Error('identity_mismatch')}).catch(()=>process.exit(1))"
+mesh_run runtime_readiness governed-tool-envelope \
+  docker run --rm \
+    --network container:mesh-cos-tunnel \
+    --read-only \
+    --user 65532:65532 \
+    --cap-drop ALL \
+    --security-opt no-new-privileges \
+    --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+    -e EXPECTED_RELEASE="$MESH_COS_DEPLOYMENT_RELEASE" \
+    -e EXPECTED_SOURCE_COMMIT="$EXPECTED_SOURCE_COMMIT" \
+    --entrypoint node "$MESH_COS_IMAGE_ID" -e "$MCP_ENVELOPE_CHECK" || fail "governed MCP tool response envelope identity check failed"
+pass "governed tool envelope dual release identity"
+
+mesh_set_stage runtime_controls
+test "$(docker exec mesh-cos-mcp id -u)" = "65532" || fail "runtime UID"
+test "$(docker inspect -f '{{.HostConfig.Privileged}}' mesh-cos-mcp)" = "false" || fail "privileged mode"
+test "$(docker inspect -f '{{.HostConfig.ReadonlyRootfs}}' mesh-cos-mcp)" = "true" || fail "read-only root filesystem"
+test "$(docker inspect -f '{{.HostConfig.NanoCpus}}' mesh-cos-mcp)" = "2000000000" || fail "2 CPU limit"
+test "$(docker inspect -f '{{.HostConfig.Memory}}' mesh-cos-mcp)" = "25769803776" || fail "24 GiB memory limit"
+docker exec mesh-cos-mcp test ! -S /var/run/docker.sock || fail "Docker socket present"
+pass "least-privilege and resource controls"
+
+PIDS=$(docker inspect -f '{{.HostConfig.PidsLimit}}' mesh-cos-mcp 2>/dev/null || echo unknown)
+case "$PIDS" in 0|'<nil>'|-1) pass "no PID limit" ;; *) fail "unexpected PID limit: $PIDS" ;; esac
+
+mesh_set_stage image_identity
+RUNNING_MESH_ID=$(docker inspect -f '{{.Image}}' mesh-cos-mcp)
+[ "$RUNNING_MESH_ID" = "$MESH_COS_IMAGE_ID" ] || fail "running Mesh image differs from prepared image ID"
+RUNNING_MESH_REVISION=$(docker image inspect -f '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$RUNNING_MESH_ID" 2>/dev/null || true)
+[ "$RUNNING_MESH_REVISION" = "$EXPECTED_SOURCE_COMMIT" ] || fail "running Mesh image revision differs from active release commit"
+RUNNING_TUNNEL_ID=$(docker inspect -f '{{.Image}}' mesh-cos-tunnel)
+[ "$RUNNING_TUNNEL_ID" = "$TUNNEL_IMAGE_ID" ] || fail "running tunnel image differs from prepared image ID"
+pass "running containers match pinned image identities and source commit"
+
+mesh_set_stage ingress_denial
+DIRECT_CODE=$(docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/mcp',{method:'POST',headers:{'content-type':'application/json'},body:'{}'}).then(r=>process.stdout.write(String(r.status))).catch(()=>process.exit(2))")
+[ "$DIRECT_CODE" = "403" ] || fail "non-tunnel direct MCP request returned $DIRECT_CODE instead of 403"
+pass "non-tunnel direct MCP request denied"
+
+if command -v curl >/dev/null 2>&1; then
+  LAN_CODE=$(curl -sS --connect-timeout 3 --max-time 5 -o /tmp/mesh-cos-mcp-lan-denied.json -w '%{http_code}' -X POST -H 'content-type: application/json' -d '{}' http://192.168.7.60:8080/mcp 2>/dev/null)
+  CURL_RC=$?
+  if [ "$CURL_RC" -eq 0 ]; then
+    [ "$LAN_CODE" = "403" ] || fail "LAN MCP request returned $LAN_CODE instead of 403"
+    pass "LAN MCP request denied with 403"
+  else
+    warn "QNAP host could not route to its qnet service IP; direct non-tunnel denial already passed and tunnel acceptance remains required"
+  fi
+else
+  warn "curl is unavailable on the QNAP host; direct non-tunnel denial already passed"
+fi
+
+mesh_set_stage complete
+pass "local container verification complete"
+mesh_log INFO verify_complete "deployment_release=$MESH_COS_DEPLOYMENT_RELEASE source_commit=$EXPECTED_SOURCE_COMMIT mesh_image_id=$RUNNING_MESH_ID tunnel_image_id=$RUNNING_TUNNEL_ID environment_source=$VERIFY_ENV_FILE"
+echo "Deployment release: $MESH_COS_DEPLOYMENT_RELEASE"
+echo "Canonical MCP contract: 4.0.0"
+echo "Source commit: $EXPECTED_SOURCE_COMMIT"
+echo "Mesh image ID: $RUNNING_MESH_ID"
+echo "Tunnel image ID: $RUNNING_TUNNEL_ID"
+docker network inspect lan7 --format '{{range .Containers}}{{.Name}} {{.IPv4Address}}{{println}}{{end}}' 2>/dev/null || true
+echo "DIAGNOSTIC_LOG=$MESH_COS_LOG_FILE"
+echo "NEXT: verify the ChatGPT-native Mesh Slack HITL Dispatcher is enabled, then run CHATGPT-ACCEPTANCE.md for deployment release $MESH_COS_DEPLOYMENT_RELEASE."
+ || fail "active release metadata commit is invalid"
+mesh_log INFO verify_environment "source=$VERIFY_ENV_FILE deployment_release=$MESH_COS_DEPLOYMENT_RELEASE source_commit=$EXPECTED_SOURCE_COMMIT"
 
 mesh_set_stage container_health
 for name in mesh-cos-mcp mesh-cos-tunnel; do

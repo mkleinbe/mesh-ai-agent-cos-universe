@@ -24,7 +24,11 @@ def test_v4111_historical_publisher_is_frozen() -> None:
 
 def test_v4110_historical_publisher_is_frozen() -> None:
     workflow = (ROOT / ".github" / "workflows" / "release-v4.11.0.yml").read_text(encoding="utf-8")
-    assert "github.sha == '2e7ff513e5e1da1c9520a2d2abc7510f6a83a4c5'" in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "push:" not in workflow
+    assert "pull_request:" not in workflow
+    assert "2e7ff513e5e1da1c9520a2d2abc7510f6a83a4c5" in workflow
+    assert "gh release create v4.11.0" not in workflow
 
 
 def test_v4111_bundle_manifest_documents_human_install_boundary() -> None:

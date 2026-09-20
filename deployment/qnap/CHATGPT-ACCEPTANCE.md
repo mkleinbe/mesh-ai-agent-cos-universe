@@ -1,6 +1,6 @@
 # Current Slack HITL acceptance addendum for repository v4.13.0
 
-The production QNAP deployment identity remains `4.4.0`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.0 current-source promotion, complete the existing QNAP acceptance plus the following Slack peer-workflow proof:
+The production QNAP deployment identity remains `4.4.1`, with canonical MCP authority/runtime contract `4.0.0`. For v4.13.0 current-source promotion, complete the existing QNAP acceptance plus the following Slack peer-workflow proof:
 
 1. verify `slack-adapter/post_interaction` posts through the protected bot OAuth identity;
 2. verify INFO states no response required and MANUAL_ACTION states no approval required plus DONE instructions;
@@ -17,9 +17,9 @@ The single `Mesh Slack HITL Dispatcher` remains locator-only. No trigger-provide
 
 # ChatGPT Secure MCP Tunnel, Delegated Owner Execution, and Native Slack HITL Acceptance
 
-Run this only after the **v4.4.0** QNAP deployment passes local deployment, preflight, verification, backup, and the live Slack provider-read/qnet egress-readiness gate. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP authority/runtime contract remains **4.0.0** and the deployment release is **4.4.0**.
+Run this only after the **v4.4.1** QNAP deployment passes local deployment, preflight, verification, backup, and the live Slack provider-read/qnet egress-readiness gate. The published **Mesh CoS MCP** app reaches the QNAP runtime through the **OpenAI Secure MCP Tunnel**. The canonical MCP authority/runtime contract remains **4.0.0** and the deployment release is **4.4.1**.
 
-v4.4.0 adds the governed `delegation.execute_owner` path for PF-057 while preserving the existing ChatGPT-native Slack dispatcher architecture and the v4.2.3 provider-read/qnet controls.
+v4.4.1 adds the governed `delegation.execute_owner` path for PF-057 while preserving the existing ChatGPT-native Slack dispatcher architecture and the v4.2.3 provider-read/qnet controls.
 
 ## 1. Local deployment identity
 
@@ -31,11 +31,11 @@ sed -n 's/^version=//p' /share/Docker/cos-mcp/release-metadata.txt
 sudo docker exec mesh-cos-mcp node -e "fetch('http://127.0.0.1:8080/readyz').then(r=>r.text()).then(console.log)"
 ```
 
-PASS requires image `mesh-cos-mcp:qnap-v4.4.0`, healthy application/tunnel containers, and:
+PASS requires image `mesh-cos-mcp:qnap-v4.4.1-<source-sha12>`, healthy application/tunnel containers, and:
 
 ```text
 mcp_version: 4.0.0
-deployment_release: 4.4.0
+deployment_release: 4.4.1
 agent_id: cos
 transport: SECURE_MCP_TUNNEL
 slack_hitl_mode: CHATGPT_NATIVE_EVENT_TRIGGER
@@ -167,6 +167,6 @@ Do not recreate the task by default.
 
 ## 14. Pass rule
 
-Hosted acceptance passes only when the actual v4.4.0 QNAP serving instance demonstrates release identity, healthy Secure MCP Tunnel/runtime, 10-agent registry, 28-tool CoS catalog, direct-report and nested delegated-owner execution, owner-only completion, replay idempotency, disabled-owner failure, scheduled cross-agent execution, completion/verification separation, successful live Slack provider-read/qnet readiness, dedicated-bot outbound identity, ChatGPT-native event dispatch, positive and negative Slack decisions, TaskLedger persistence, and a valid audit chain.
+Hosted acceptance passes only when the actual v4.4.1 QNAP serving instance demonstrates release identity, healthy Secure MCP Tunnel/runtime, 10-agent registry, 28-tool CoS catalog, direct-report and nested delegated-owner execution, owner-only completion, replay idempotency, disabled-owner failure, scheduled cross-agent execution, completion/verification separation, successful live Slack provider-read/qnet readiness, dedicated-bot outbound identity, ChatGPT-native event dispatch, positive and negative Slack decisions, TaskLedger persistence, and a valid audit chain.
 
-Full production certification additionally requires `docs/chatgpt-published-app-production-acceptance-v4.4.0.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.
+Full production certification additionally requires `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`, zero open CRITICAL/HIGH defects, and no required acceptance blocker.

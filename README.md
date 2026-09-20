@@ -1,5 +1,9 @@
 # Mesh AI Chief of Staff Agent Universe
 
+## Current release: v4.13.2 Slack Interaction Task Preflight
+
+v4.13.2 strengthens the governed Slack peer-interaction path by proving canonical TaskLedger task existence before any Slack provider write. Runtime authority boundaries remain unchanged.
+
 ## Current release: v4.13.1 QNAP Operator Documentation Alignment
 
 v4.13.1 is a documentation and packaging-safety PATCH over v4.13.0. Slack HITL peer behavior is unchanged. Active QNAP operator instructions and packaged environment references now consistently target deployment identity 4.4.0.

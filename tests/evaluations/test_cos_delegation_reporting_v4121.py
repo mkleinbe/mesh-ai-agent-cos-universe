@@ -161,6 +161,48 @@ def test_complete_cos_cro_cos_round_trip_preserves_identity_and_verification_sep
     )
     assert checkin["result"]["agent_id"] == "cro"
 
+    decision = _execute(
+        runtime,
+        child["task_id"],
+        "governance.record_decision",
+        {
+            "decision_type": "COMMERCIAL_RECOMMENDATION",
+            "decision_title": "Internal canary recommendation",
+            "task_id": child["task_id"],
+            "correlation_id": "corr-cdr-roundtrip",
+            "agent_id": "cos",
+            "agent_role": "Chief of Staff",
+            "decision_owner": "cro",
+            "authority_level": 2,
+            "human_approval_required": False,
+            "decision": "Continue internal evidence review; do not take external action.",
+            "disposition": "RECOMMENDED",
+            "decision_basis_summary": "Synthetic internal canary evidence supports bounded internal continuation only.",
+            "evidence_references": ["synthetic://delegation", "synthetic://checkin"],
+            "source_systems": ["TaskLedger"],
+            "alternatives_considered": ["continue internal review", "stop canary"],
+            "selection_criteria": ["owner attribution", "no external action"],
+            "confidence": 1.0,
+            "risk_level": "LOW",
+            "affected_entities": [child["task_id"]],
+            "reversibility": "REVERSIBLE",
+            "reversal_condition": "Any authority or approval mismatch",
+            "policy_rule_ids": ["bounded-delegation", "no-impersonation"],
+            "model_provider": None,
+            "model_id_version": None,
+            "prompt_template_version": None,
+            "skill_agent_version": "synthetic",
+            "data_classification": "INTERNAL",
+            "outcome_validation": "Decision remains within L2 and causes no external action",
+            "outcome_status": "PENDING",
+            "retention_class": "GOVERNANCE_LONG_TERM",
+        },
+        "decision",
+    )
+    assert decision["result"]["agent_id"] == "cro"
+    assert decision["result"]["decision_owner"] == "cro"
+    assert decision["result"]["authority_level"] == 2
+
     _execute(
         runtime,
         child["task_id"],

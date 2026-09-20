@@ -1,6 +1,6 @@
 # mesh-cos-mcp on QNAP Container Station
 
-**Current deployment release: v4.4.1 Cross-Agent Owner Execution.**  
+**Current deployment release: v4.4.1 Source Identity Repair.**  
 **Canonical Phase 1 authority/runtime contract: 4.0.0.**
 
 ## Production topology
@@ -9,9 +9,9 @@ Production uses **OpenAI Secure MCP Tunnel**. `mesh-cos-mcp` retains `192.168.7.
 
 The shared `mesh-cos-private` bridge is `internal: true`. No host MCP ports, router forwarding, UPnP, public QNAP administration exposure, duplicate TaskLedger, or additional data service are introduced.
 
-## v4.4.1 delegated owner execution
+## Delegated owner execution carried forward from v4.4.0
 
-v4.4.1 adds the governed `delegation.execute_owner` operation and repairs PF-057 across the full Phase 1 workforce. The external MCP process remains bound to `MESH_COS_AGENT_ID=cos`; that transport identity is immutable and is not treated as child authority.
+v4.4.1 preserves the governed `delegation.execute_owner` operation and PF-057 remediation from the established 4.4.0 runtime capability set. The external MCP process remains bound to `MESH_COS_AGENT_ID=cos`; that transport identity is immutable and is not treated as child authority.
 
 For delegated work, the server:
 

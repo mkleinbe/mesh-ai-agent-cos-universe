@@ -337,7 +337,7 @@ class SlackNativeTriggerApprovalService:
                 authority_mutated=False,
             )
 
-        event: dict[str, Any] = {
+        approval_event: dict[str, Any] = {
             "type": "message",
             "channel": self.config.channel_id,
             "thread_ts": str(state["thread_ts"]),
@@ -352,7 +352,7 @@ class SlackNativeTriggerApprovalService:
                 "type": "event_callback",
                 "api_app_id": self.config.app_id,
                 "event_id": provider_event_id,
-                "event": event,
+                "event": approval_event,
             },
         }
         result = dict(self.compat.handle_envelope(envelope))

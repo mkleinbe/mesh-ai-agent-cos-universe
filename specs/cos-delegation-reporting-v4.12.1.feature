@@ -39,14 +39,21 @@ Feature: Governed CoS delegation and agent reporting round trip
     And CRO can advance its lifecycle and record a check-in
     And CoS does not impersonate CRO
 
-  Scenario: CDR-006 Skill invocation cannot masquerade as agent invocation
+  Scenario: CDR-006 CRO records a governed recommendation within authority
+    Given CRO is executing a valid L2 delegated task
+    When CRO records an evidence-backed commercial recommendation
+    Then the decision record is attributed to CRO
+    And the evidence and provenance are persisted
+    And the recommendation does not expand CRO authority
+
+  Scenario: CDR-007 Skill invocation cannot masquerade as agent invocation
     Given CRO is a registered agent principal
     When skills.invoke_governed is called with mesh-cro as though it were a Skill
     Then the request fails with unsupported-capability-type
     And the response directs the caller to the delegated owner execution contract
     And no Skill becomes an agent principal
 
-  Scenario: CDR-007 CRO completes and the parent receives a reconcilable result
+  Scenario: CDR-008 CRO completes and the parent receives a reconcilable result
     Given CRO-owned work is in QA
     When CRO completes through delegated owner execution
     Then completion is attributed to CRO
@@ -55,20 +62,20 @@ Feature: Governed CoS delegation and agent reporting round trip
     And CoS can record an explicit parent reconciliation check-in
     And the child does not automatically complete or verify the parent
 
-  Scenario: CDR-008 Completion remains separate from verification
+  Scenario: CDR-009 Completion remains separate from verification
     Given CRO has completed delegated work
     When the owner completion is persisted
     Then the child is COMPLETED but not VERIFIED
     And only the authorized verifier may independently verify acceptance evidence
 
-  Scenario: CDR-009 Consequential action remains human gated
+  Scenario: CDR-010 Consequential action remains human gated
     Given delegated work reaches an L4 or L5 action boundary
     When owner execution attempts the consequential action without canonical approval
     Then execution stops
     And approval-required is returned
     And no external action occurs
 
-  Scenario: CDR-010 Complete CoS to agent to CoS round trip
+  Scenario: CDR-011 Complete CoS to agent to CoS round trip
     Given a harmless internal parent task
     When CoS delegates to CRO
     And CRO starts, checks in, records evidence, and completes

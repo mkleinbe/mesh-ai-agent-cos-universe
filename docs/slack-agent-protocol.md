@@ -1,3 +1,9 @@
+## Canonical task telemetry
+
+The Slack peer-HITL protocol persists provider-confirmed root channel/thread identity into TaskRecord after a successful governed post. Provider-authenticated manual human replies increment TaskRecord.human_touches exactly once per distinct provider event after governed binding validation.
+
+human_touches is interaction telemetry only. It is not approval evidence and never expands authority. Approval continues to require the canonical approval thread and strict approval grammar. Task lifecycle remains independently governed.
+
 # Slack Agent Protocol
 
 Slack is the observable collaboration and human-interaction layer for Mesh operations. TaskLedger remains canonical for task, approval, completion, verification, and audit state.

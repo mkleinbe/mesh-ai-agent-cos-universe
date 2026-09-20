@@ -1,3 +1,19 @@
+# Current documentation: v4.13.3 Slack HITL Task Telemetry Repair
+
+Current release evidence:
+
+- `release-v4.13.3-slack-hitl-task-telemetry.md`
+- `security-review-v4.13.3-slack-hitl-task-telemetry.md`
+- `verification-v4.13.3-slack-hitl-task-telemetry.md`
+- `release-qnap-v4.4.2-slack-hitl-telemetry.md`
+- `security-review-qnap-v4.4.2-slack-hitl-telemetry.md`
+- `verification-qnap-v4.4.2-slack-hitl-telemetry.md`
+- `chatgpt-published-app-production-acceptance-qnap-v4.4.2.md`
+- `../specs/slack-hitl-task-telemetry-v4.13.3.feature`
+- `../CHANGELOG-v4.13.3.md`
+
+Current repository release candidate: **v4.13.3**. QNAP deployment candidate: **4.4.2**. Canonical Phase 1 authority/runtime contract: **4.0.0**. Production Compose topology is unchanged.
+
 # Current documentation: v4.13.2 QNAP Source Identity Repair
 
 Current release evidence:

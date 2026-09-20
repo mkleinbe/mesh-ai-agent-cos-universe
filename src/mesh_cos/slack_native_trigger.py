@@ -155,6 +155,35 @@ class SlackNativeTriggerApprovalService:
         self.ledger.save_record(INTERACTION_REPLY_KIND, provider_event_id, record)
         return record
 
+    def _record_verified_human_touch(
+        self,
+        *,
+        state: Mapping[str, Any],
+        provider_event_id: str,
+        message_ts: str,
+    ) -> bool:
+        """Persist task telemetry only for a provider-verified governed task binding."""
+        task_id = str(state.get("task_id") or "").strip()
+        if not task_id:
+            return False
+        task = self.ledger.get_task(task_id)
+        binding = self.ledger.get_thread(task_id)
+        if task is None or binding is None:
+            return False
+        if (
+            str(state.get("channel_id") or "") != self.config.channel_id
+            or str(state.get("thread_ts") or "") != str(binding.get("thread_ts") or "")
+            or str(binding.get("channel_id") or "") != self.config.channel_id
+        ):
+            return False
+        return self.ledger.record_human_touch(
+            task_id,
+            provider_event_id=provider_event_id,
+            channel_id=self.config.channel_id,
+            thread_ts=str(binding["thread_ts"]),
+            message_ts=message_ts,
+        )
+
     @staticmethod
     def _is_completion_text(text: str) -> bool:
         clean = " ".join(text.strip().lower().split())
@@ -453,6 +482,11 @@ class SlackNativeTriggerApprovalService:
             return replay
         message = self._provider_message(thread_ts=thread_ts, message_ts=message_ts)
         state = self._interaction_state(thread_ts)
+        self._record_verified_human_touch(
+            state=state,
+            provider_event_id=provider_event_id,
+            message_ts=message_ts,
+        )
         if str(state.get("thread_type") or "") == "APPROVAL":
             return self._reconcile_approval(
                 state=state,

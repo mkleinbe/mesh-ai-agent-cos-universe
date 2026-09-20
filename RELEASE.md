@@ -1,3 +1,11 @@
+# v4.13.3 Slack HITL Task Telemetry Repair
+
+This PATCH release corrects canonical TaskRecord writeback for provider-confirmed Slack thread binding and provider-authenticated human interaction telemetry. It preserves the existing peer-HITL, approval, replay, lifecycle, TaskLedger authority, audit, and Secure MCP Tunnel boundaries.
+
+QNAP candidate identity advances to 4.4.2. Repository publication does not establish production acceptance. Production acceptance requires exact-source readback plus a fresh dispatcher-only human UAT.
+
+See `docs/release-v4.13.3-slack-hitl-task-telemetry.md`.
+
 # v4.13.2 QNAP Source Identity Repair
 
 This PATCH release corrects QNAP deployment source-identity and artifact-identity defects discovered during live Slack HITL acceptance. QNAP deployment identity advances to 4.4.1 so the release has a distinct archive and extraction root. Candidate image tags are source-commit-qualified, only the application container is forcibly recreated, and post-deploy verification requires exact agreement among release metadata, running OCI revision, and governed MCP `source_commit`.

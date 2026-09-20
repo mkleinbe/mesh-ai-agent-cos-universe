@@ -1,3 +1,11 @@
+## v4.13.3 canonical task telemetry addendum
+
+For every governed root post, treat Slack's returned channel and root message timestamp as provider-confirmed identity. The notifier must bind those values to both the secondary task thread index and the canonical TaskRecord. task.get is the acceptance surface for slack_channel_id and slack_thread_ts.
+
+For inbound human replies, human_touches means provider-authenticated human interaction with the canonical task. Count only after exact provider reread, configured-human identity verification, manual-authorship verification, and governed task/thread binding. The provider event `native-slack:<channel_id>:<message_ts>` is the idempotency identity and must count at most once.
+
+Do not infer approval from human_touches. A nonapproval APPROVE reply can count as a touch while remaining incapable of creating authority. Bot acknowledgments, apps, bots, edited messages, wrong users, unbound messages, rejected events, and replay do not count. Telemetry does not complete or verify a task.
+
 # Slack HITL Peer Workflow Runbook v4.13.0
 
 ## Operator contract

@@ -214,6 +214,8 @@ def approval_blocks(approval_id: str, action: str) -> list[dict[str, Any]]:
             ],
         },
     ]
+
+
 def resolved_blocks(approval_id: str, disposition: str) -> list[dict[str, Any]]:
     return [
         {
@@ -377,7 +379,7 @@ class SlackApprovalNotifier:
             "approval_id": approval_id,
             "channel_id": channel,
             "thread_ts": thread_ts,
-            "format": "PEER_HITL_APPROVAL_V1",
+            "format": "BLOCK_KIT_REPLY_DRIVEN_V2",
         }
 
     def post_interaction(

@@ -119,11 +119,6 @@ class SlackNativeTriggerApprovalService:
         authority_mutated: bool,
         result: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
-        prior = self.ledger.get_record(INTERACTION_REPLY_KIND, provider_event_id)
-        if prior is not None:
-            replay = dict(prior)
-            replay["replayed"] = True
-            return replay
         posted = self.notifier.post_thread_reply(str(state["thread_ts"]), acknowledgment)
         task_id = str(state.get("task_id") or "")
         task = self.ledger.get_task(task_id) if task_id else None
@@ -380,9 +375,11 @@ class SlackNativeTriggerApprovalService:
                 provider_event_id,
                 interaction,
             )
-            return interaction
+            result["trigger_is_authority"] = False
+            result["provider_reconciled"] = True
+            return result
 
-        return self._record_acknowledgment(
+        self._record_acknowledgment(
             state=state,
             provider_event_id=provider_event_id,
             message_ts=message_ts,
@@ -391,13 +388,18 @@ class SlackNativeTriggerApprovalService:
             authority_mutated=mutated,
             result=result,
         )
+        result["trigger_is_authority"] = False
+        result["provider_reconciled"] = True
+        return result
 
     def reconcile(self, *, thread_ts: str, message_ts: str) -> dict[str, Any]:
         provider_event_id = f"native-slack:{self.config.channel_id}:{message_ts}"
         prior = self.ledger.get_record(INTERACTION_REPLY_KIND, provider_event_id)
         if prior is not None:
             replay = dict(prior)
-            replay["replayed"] = True
+            canonical = replay.get("canonical_result")
+            if isinstance(canonical, Mapping):
+                return dict(canonical)
             return replay
         message = self._provider_message(thread_ts=thread_ts, message_ts=message_ts)
         state = self._interaction_state(thread_ts)

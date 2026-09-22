@@ -103,3 +103,25 @@ Feature: Governed CoS delegation and agent reporting round trip
     Then delegation fails with ownership-conflict
     And no delegation record is persisted
     And recovery does not reassign the child or substitute another agent identity
+
+
+  @CDR-014 @scheduled @security
+  Scenario: An explicitly supplied empty ancestry is still a compatibility assertion
+    Given canonical registry lineage for a direct CoS child is cos
+    When a caller supplies ancestry as an empty list
+    Then delegation fails with invalid-delegation-contract
+    And the empty list is not treated as though ancestry were omitted
+    And no delegation record is persisted
+    And recovery may retry the same work once with ancestry omitted
+
+  @CDR-015 @scheduled @nested @recovery
+  Scenario: CMO to VP Content nested delegation uses the same recovery contract
+    Given CMO is executing a valid CoS-delegated Marketing Authority task
+    And CMO creates one canonical VP Content child
+    When the nested delegation request supplies active_owner as CMO
+    Then delegation fails with ownership-conflict
+    And no nested delegation record is persisted
+    When CMO retries the same nested delegation ID once without caller ownership assertions
+    Then the canonical VP Content delegation is persisted
+    And nested owner execution identifies VP Content as the executing principal
+    And inherited CMO and human publishing gates remain intact

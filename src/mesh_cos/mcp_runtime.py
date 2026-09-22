@@ -593,7 +593,11 @@ class MCPRuntime:
             raise PermissionError("Caller-supplied delegation depth does not match canonical registry")
         if "parent_authority" in args and int(args["parent_authority"]) != int(parent_task.authority_level):
             raise PermissionError("Caller-supplied parent authority does not match canonical parent task")
-        if args.get("ancestry") and list(args["ancestry"]) != parent_lineage:
+        if (
+            "ancestry" in args
+            and args["ancestry"] is not None
+            and list(args["ancestry"]) != parent_lineage
+        ):
             raise PermissionError("Caller-supplied ancestry does not match canonical registry")
         if args.get("active_owner") not in {None, delegation.accountable_agent}:
             raise PermissionError("Caller-supplied active owner does not match canonical owner")

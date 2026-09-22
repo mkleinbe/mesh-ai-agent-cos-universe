@@ -151,3 +151,157 @@ def test_cdr_013_canonical_owner_mismatch_is_not_auto_repaired() -> None:
     assert safe["reason_code"] == "ownership-conflict"
     assert ledger.get_record("delegation", mismatched["delegation_id"]) is None
     assert ledger.get_task(child["task_id"]).accountable_agent == "agentops"
+
+
+@pytest.mark.parametrize(
+    ("assertions", "message", "reason_code"),
+    [
+        ({"parent_authority": 3}, "parent authority", "invalid-delegation-contract"),
+        ({"depth": 2}, "depth", "invalid-delegation-contract"),
+        ({"ancestry": []}, "ancestry", "invalid-delegation-contract"),
+        ({"ancestry": ["cos", "cmo"]}, "ancestry", "invalid-delegation-contract"),
+        ({"active_owner": "cos"}, "active owner", "ownership-conflict"),
+    ],
+)
+def test_cdr_014_present_compatibility_assertions_fail_closed_when_they_do_not_match(
+    assertions: dict,
+    message: str,
+    reason_code: str,
+) -> None:
+    ledger = TaskLedger()
+    runtime = MCPRuntime(ledger)
+    parent = _parent(runtime)
+    child = _child(runtime, parent)
+    delegation = _delegation(child)
+    delegation["delegation_id"] = "D-MKT-ASSERTION-MATRIX-001"
+
+    with pytest.raises(PermissionError, match=message) as caught:
+        runtime.call_agent(
+            "cos",
+            "delegation.create",
+            {"delegation": delegation, **assertions},
+        )
+
+    safe = bridge._safe_error(caught.value)
+    assert safe["reason_code"] == reason_code
+    assert ledger.get_record("delegation", delegation["delegation_id"]) is None
+
+    recovered = runtime.call_agent(
+        "cos",
+        "delegation.create",
+        {"delegation": delegation},
+    )
+    assert recovered["delegation_id"] == delegation["delegation_id"]
+    assert recovered["accountable_agent"] == "agentops"
+
+
+def test_cdr_015_nested_cmo_to_vp_content_recovery_reuses_the_canonical_work_graph() -> None:
+    ledger = TaskLedger()
+    runtime = MCPRuntime(ledger)
+    root = _parent(runtime)
+    cmo_task = _child(runtime, root, owner="cmo")
+    cmo_delegation = _delegation(cmo_task, owner="cmo")
+    cmo_delegation["delegation_id"] = "D-MKT-NESTED-CMO-001"
+    runtime.call_agent("cos", "delegation.create", {"delegation": cmo_delegation})
+
+    for index, target in enumerate(("TRIAGED", "PLANNED", "ASSIGNED", "IN_PROGRESS"), start=1):
+        runtime.call_agent(
+            "cos",
+            "delegation.execute_owner",
+            {
+                "protocol_version": "mesh.cos.owner-execution.v2",
+                "delegation_id": cmo_delegation["delegation_id"],
+                "task_id": cmo_task["task_id"],
+                "tool_name": "task.transition",
+                "arguments": {"task_id": cmo_task["task_id"], "target": target},
+                "idempotency_key": f"nested-cmo-transition-{index}",
+            },
+        )
+
+    decomposed = runtime.call_agent(
+        "cos",
+        "delegation.execute_owner",
+        {
+            "protocol_version": "mesh.cos.owner-execution.v2",
+            "delegation_id": cmo_delegation["delegation_id"],
+            "task_id": cmo_task["task_id"],
+            "tool_name": "task.decompose",
+            "arguments": {
+                "parent_task_id": cmo_task["task_id"],
+                "work_packages": [
+                    {
+                        "objective": "VP Content nested authority canary",
+                        "expected_outcome": "Internal nested owner evidence",
+                        "accountable_agent": "vp-content",
+                        "decision_owner": "vp-content",
+                        "priority": "P1",
+                        "authority_level": 2,
+                        "acceptance_test": "VP Content executes through canonical nested owner transport",
+                    }
+                ],
+            },
+            "idempotency_key": "nested-cmo-decompose-vp",
+        },
+    )
+    vp_task = decomposed["result"][0]
+    vp_delegation = _delegation(vp_task, owner="vp-content")
+    vp_delegation["delegation_id"] = "D-MKT-NESTED-VP-001"
+
+    with pytest.raises(PermissionError, match="active owner") as caught:
+        runtime.call_agent(
+            "cos",
+            "delegation.execute_owner",
+            {
+                "protocol_version": "mesh.cos.owner-execution.v2",
+                "delegation_id": cmo_delegation["delegation_id"],
+                "task_id": cmo_task["task_id"],
+                "tool_name": "delegation.create",
+                "arguments": {
+                    "delegation": vp_delegation,
+                    "active_owner": "cmo",
+                },
+                "idempotency_key": "nested-vp-malformed-owner",
+            },
+        )
+
+    safe = bridge._safe_error(caught.value)
+    assert safe["reason_code"] == "ownership-conflict"
+    assert ledger.get_record("delegation", vp_delegation["delegation_id"]) is None
+
+    created = runtime.call_agent(
+        "cos",
+        "delegation.execute_owner",
+        {
+            "protocol_version": "mesh.cos.owner-execution.v2",
+            "delegation_id": cmo_delegation["delegation_id"],
+            "task_id": cmo_task["task_id"],
+            "tool_name": "delegation.create",
+            "arguments": {"delegation": vp_delegation},
+            "idempotency_key": "nested-vp-canonical-recovery",
+        },
+    )
+    assert created["result"]["delegation_id"] == vp_delegation["delegation_id"]
+    assert created["result"]["accountable_agent"] == "vp-content"
+
+    nested = runtime.call_agent(
+        "cos",
+        "delegation.execute_owner",
+        {
+            "protocol_version": "mesh.cos.owner-execution.v2",
+            "delegation_id": cmo_delegation["delegation_id"],
+            "task_id": cmo_task["task_id"],
+            "tool_name": "delegation.execute_owner",
+            "arguments": {
+                "protocol_version": "mesh.cos.owner-execution.v2",
+                "delegation_id": vp_delegation["delegation_id"],
+                "task_id": vp_task["task_id"],
+                "tool_name": "task.transition",
+                "arguments": {"task_id": vp_task["task_id"], "target": "TRIAGED"},
+                "idempotency_key": "nested-vp-triage",
+            },
+            "idempotency_key": "nested-cmo-route-vp-triage",
+        },
+    )
+    assert nested["result"]["executing_principal"] == "vp-content"
+    assert nested["result"]["orchestrating_agent"] == "cmo"
+    assert nested["result"]["result"]["status"] == TaskStatus.TRIAGED

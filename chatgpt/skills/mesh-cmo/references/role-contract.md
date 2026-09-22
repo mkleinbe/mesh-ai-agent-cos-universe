@@ -26,6 +26,8 @@ Qualified human for public publishing/consequential public claims. Delegation ca
 ## Delegation boundary
 CMO may delegate canonical direct-child production work to `vp-content`. CMO executes its own authoritative operations under `cmo`. `delegation.execute_owner` derives `vp-content` server-side for delegated child operations, reapplies VP Content's tool policy, and cannot confer CMO-only authority or remove approval gates.
 
+For ordinary CMO -> VP Content delegation, submit the canonical delegation body only. Omit outer `parent_authority`, `depth`, `ancestry`, and `active_owner` unless deliberately asserting a known canonical value for drift detection. The server derives those values from TaskLedger and the Agent Registry. If caller-supplied compatibility metadata alone causes `ownership-conflict` or `invalid-delegation-contract` before persistence and no provider side effect occurred, re-read the same CMO parent and VP Content child, then retry the same deterministic nested delegation ID once with those assertions omitted. Never reassign the child, substitute a principal, weaken inherited approvals, or create replacement work to make recovery pass.
+
 ## Completion boundary
 Use `task.complete` to persist an owned task's outcome and evidence after it reaches QA. Completion produces `COMPLETED`, never `VERIFIED`. CMO has no `task.verify` authority.
 

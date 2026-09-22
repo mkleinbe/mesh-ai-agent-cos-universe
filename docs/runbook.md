@@ -84,6 +84,8 @@ If delegation fails, use the stable `reason_code` rather than retrying with gues
 
 For scheduled direct-owner work, an `ownership-conflict` or `invalid-delegation-contract` caused only by caller-supplied compatibility assertions may be recovered once before any provider side effect. Re-read the canonical parent and child, confirm the child owner is the intended registered direct child and the deterministic delegation ID is not bound to different work, then retry the same delegation contract with `parent_authority`, `depth`, `ancestry`, and `active_owner` omitted. Do not reassign the child or substitute another principal to make the retry pass.
 
+Treat any explicitly supplied compatibility assertion as an assertion, including an empty `ancestry` list. Only an omitted or `null` assertion delegates derivation entirely to canonical server state. This same recovery rule applies to registered nested routes such as CMO -> VP Content; the delegating owner must reuse the same child and deterministic nested delegation ID.
+
 If the parent was moved to `BLOCKED` solely by that pre-persistence delegation failure, and the corrected delegation succeeds with the same nonterminal child and no provider effect, resume the same parent through `BLOCKED -> IN_PROGRESS`. Do not create a replacement parent, duplicate child, new logical occurrence, or second action fingerprint.
 
 Do not invoke an agent through `skills.invoke_governed`. That API accepts registered capabilities. Agent-owned work uses `delegation.execute_owner`, which derives the execution principal from canonical delegation state.

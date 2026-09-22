@@ -83,3 +83,23 @@ Feature: Governed CoS delegation and agent reporting round trip
     And an authorized verifier verifies the child
     Then the round trip is auditable end to end
     And authority and approval boundaries remain intact
+
+  @CDR-012 @scheduled @recovery
+  Scenario: Pre-persistence caller assertion failure can recover without replacing canonical work
+    Given a scheduled CoS parent is blocked only because delegation.create supplied an incorrect active_owner compatibility assertion
+    And the direct-owner child remains nonterminal
+    And no delegation record or provider side effect was persisted
+    When the scheduler rereads canonical parent and child state
+    And retries the same delegation ID and work contract once without parent_authority, depth, ancestry, or active_owner
+    Then the delegation is persisted for the canonical child owner
+    And the same parent resumes from BLOCKED to IN_PROGRESS
+    And the same child continues through delegation.execute_owner
+    And no duplicate parent, child, delegation, or external effect is created
+
+  @CDR-013 @scheduled @security
+  Scenario: Canonical owner mismatch is never repaired by changing the child owner
+    Given a scheduled child is canonically owned by AgentOps
+    When a delegation body names CMO as the accountable owner
+    Then delegation fails with ownership-conflict
+    And no delegation record is persisted
+    And recovery does not reassign the child or substitute another agent identity

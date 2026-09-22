@@ -82,6 +82,10 @@ For ordinary direct-child delegation, send the delegation work contract only. Do
 
 If delegation fails, use the stable `reason_code` rather than retrying with guessed identity or authority values. Common codes include `delegator-not-authorized`, `authority-exceeded`, `delegation-depth-exceeded`, `recipient-not-delegable`, `ownership-conflict`, `approval-required`, and `invalid-delegation-contract`.
 
+For scheduled direct-owner work, an `ownership-conflict` or `invalid-delegation-contract` caused only by caller-supplied compatibility assertions may be recovered once before any provider side effect. Re-read the canonical parent and child, confirm the child owner is the intended registered direct child and the deterministic delegation ID is not bound to different work, then retry the same delegation contract with `parent_authority`, `depth`, `ancestry`, and `active_owner` omitted. Do not reassign the child or substitute another principal to make the retry pass.
+
+If the parent was moved to `BLOCKED` solely by that pre-persistence delegation failure, and the corrected delegation succeeds with the same nonterminal child and no provider effect, resume the same parent through `BLOCKED -> IN_PROGRESS`. Do not create a replacement parent, duplicate child, new logical occurrence, or second action fingerprint.
+
 Do not invoke an agent through `skills.invoke_governed`. That API accepts registered capabilities. Agent-owned work uses `delegation.execute_owner`, which derives the execution principal from canonical delegation state.
 
 After owner completion, CoS retrieves or receives the child result and records a parent `task.check_in` containing the child task ID, delegation ID, owner result summary, and evidence references. This reconciles the child result to the parent without automatically completing or verifying the parent.

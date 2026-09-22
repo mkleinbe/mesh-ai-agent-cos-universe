@@ -18,6 +18,26 @@ A time-based poll is not an event trigger. If native event delivery is unavailab
 
 `LOOP-COM-HITL-001` remains separate for provider-bound approval/external-action paths. Do not weaken, replace, or poll around its controls.
 
+## Delegated commercial execution
+
+When CoS routes non-CoS commercial-family work to CRO, reuse one canonical CoS parent, one deterministic CRO child, and one deterministic delegation for the logical occurrence.
+
+Call `delegation.create` with the canonical delegation body only. Do not calculate, populate, or infer the outer compatibility assertions `parent_authority`, `depth`, `ancestry`, or `active_owner`. The Mesh CoS server derives them from TaskLedger and the Agent Registry. In particular, never send `active_owner=cos` for a CRO-owned child.
+
+Use `permitted_capabilities` only as an explicit literal subset of the CRO registry when the occurrence requires bounded capability access, such as `mesh-revenue-intelligence` and `mesh-gtm-orchestrator`. Omit caller `permitted_actions` unless every requested action is an exact subset of the CRO registry.
+
+All CRO-owned child lifecycle, check-in, governed Skill handoff, and completion operations execute through `delegation.execute_owner`, which derives `cro` server-side. CoS remains the parent orchestrator and performs separate verification. A Skill authorization handoff does not itself establish commercial truth or satisfy the child acceptance test.
+
+## Bounded delegation recovery
+
+If `delegation.create` returns `ownership-conflict` or `invalid-delegation-contract`, first re-read the existing canonical parent and child. Confirm the child `accountable_agent` is CRO, the parent remains CoS-owned, the deterministic delegation ID is not bound to different work, and no provider or external side effect occurred.
+
+When the rejected request contained caller-derived compatibility assertions, retry the same delegation ID, parent, child, owner, authority, and work contract exactly once with `parent_authority`, `depth`, `ancestry`, and `active_owner` omitted. Never reassign the child or substitute another principal to make the retry pass.
+
+If the same parent is `BLOCKED` solely because of that pre-persistence delegation failure, the child remains nonterminal, and the corrected delegation succeeds, reuse the existing work graph. Resume the parent through `BLOCKED -> IN_PROGRESS` and continue the existing child through `delegation.execute_owner`. Do not create a replacement parent, duplicate child, second delegation ID, or duplicate commercial action.
+
+If canonical ownership is actually inconsistent, the delegation ID is bound to different work, the single corrected retry fails, or side-effect state is ambiguous, preserve the existing work graph and classify the affected scope as `SYSTEM_FAILURE`.
+
 ## Monthly and quarterly reviews
 
 Monthly and quarterly reviews are logical due work inside `LOOP-COM-001`, not separate schedulers.

@@ -1,0 +1,84 @@
+name: v4.13.4 Marketing Authority Delegation Hardening Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-v4.13.4.yml'
+      - 'docs/release-v4.13.4-marketing-authority-delegation-hardening.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TARGET_SHA: 0968d7acd603d9164e174648d32139561673e015
+      RELEASE_TAG: v4.13.4
+      QNAP_VERSION: '4.4.2'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Preserve release notes
+        run: cp docs/release-v4.13.4-marketing-authority-delegation-hardening.md /tmp/release-notes.md
+
+      - name: Require successful exact-target CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          successful="$(gh run list --workflow ci.yml --commit "$TARGET_SHA" --json status,conclusion --jq '[.[] | select(.status == "completed" and .conclusion == "success")] | length')"
+          test "$successful" -ge 1
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+
+      - name: Validate CMO Skill source
+        run: |
+          set -euo pipefail
+          python scripts/check-chatgpt-packages.py
+          grep -q 'For ordinary CMO -> VP Content delegation' chatgpt/skills/mesh-cmo/references/role-contract.md
+          grep -q 'including an empty .*ancestry.* list' chatgpt/skills/mesh-cmo/references/production-readiness.md
+          printf '%s' '{"operation":"growth_recommendation","inputs":{"includes_revenue":true,"includes_investment":true}}' | python chatgpt/skills/mesh-cmo/scripts/fme_behavior.py | grep -q '"ok": true'
+
+      - name: Build exact QNAP runtime release asset
+        run: |
+          set -euo pipefail
+          export GITHUB_SHA="$TARGET_SHA"
+          bash scripts/build-qnap-release-bundle.sh "$QNAP_VERSION"
+          bash scripts/finalize-qnap-release-v4.4.2.sh
+          (cd dist && sha256sum -c mesh-cos-mcp-qnap-v4.4.2.zip.sha256)
+          grep -q '^version=4.4.2$' dist/qnap-bundle/v4.4.2/cos-mcp/release-metadata.txt
+          grep -q "^commit=$TARGET_SHA$" dist/qnap-bundle/v4.4.2/cos-mcp/release-metadata.txt
+
+      - name: Package standalone CMO Skill
+        run: |
+          set -euo pipefail
+          rm -f dist/skill.zip dist/skill.zip.sha256
+          (
+            cd chatgpt/skills
+            zip -qr ../../dist/skill.zip mesh-cmo -x '*/__pycache__/*' '*.pyc'
+          )
+          unzip -t dist/skill.zip
+          unzip -p dist/skill.zip mesh-cmo/references/role-contract.md | grep -q 'For ordinary CMO -> VP Content delegation'
+          (cd dist && sha256sum skill.zip > skill.zip.sha256)
+
+      - name: Publish exact-target release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            existing_target="$(gh release view "$RELEASE_TAG" --json targetCommitish --jq .targetCommitish)"
+            test "$existing_target" = "$TARGET_SHA"
+          else
+            gh release create "$RELEASE_TAG" --target "$TARGET_SHA" --title 'Mesh CoS v4.13.4 Marketing Authority Delegation Hardening' --notes-file /tmp/release-notes.md
+          fi
+          gh release upload "$RELEASE_TAG" dist/mesh-cos-mcp-qnap-v4.4.2.zip dist/mesh-cos-mcp-qnap-v4.4.2.zip.sha256 dist/skill.zip dist/skill.zip.sha256 --clobber

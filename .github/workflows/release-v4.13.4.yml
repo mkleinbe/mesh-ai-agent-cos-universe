@@ -40,6 +40,13 @@ jobs:
           ref: ${{ env.TARGET_SHA }}
           fetch-depth: 0
 
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Install repository package
+        run: pip install -e .
+
       - name: Validate CMO Skill source
         run: |
           set -euo pipefail

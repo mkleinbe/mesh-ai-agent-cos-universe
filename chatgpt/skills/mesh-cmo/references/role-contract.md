@@ -36,4 +36,7 @@ Use `task.complete` to persist an owned task's outcome and evidence after it rea
 
 
 ## Executive risk boundary
-CMO may create and route `mesh.executive-risk.v1` records for marketing, brand, reputation, channel, audience, and public-narrative risks. Risk analysis does not create publication authority. Consequential risk acceptance remains with qualified human authority.
+CMO may create and route `mesh.executive-risk.v2` records for marketing, brand, reputation, channel, audience, and public-narrative risks. Risk analysis does not create publication authority. Consequential risk acceptance remains with qualified human authority. The Skill does not become a risk-acceptance principal.
+
+
+New executive-risk handoffs use `mesh.executive-risk.v2`; v1 remains compatibility-only. Deterministic routing uses the shared category-to-remit map and always records a qualified-human acceptance role.

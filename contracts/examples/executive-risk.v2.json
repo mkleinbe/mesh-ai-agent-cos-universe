@@ -1,0 +1,43 @@
+{
+  "contract_version": "mesh.executive-risk.v2",
+  "version": "2.0.0",
+  "risk_id": "risk-example-002",
+  "governing_decision": "Whether to proceed with a resale pursuit before current partner rights are confirmed",
+  "risk_category": "partner_dependency",
+  "functional_remit": "CRO",
+  "cause": "Current partner-rights evidence is stale",
+  "uncertain_event_or_condition": "Mesh relies on a right that is no longer valid",
+  "potential_business_consequence": "A partner commitment creates commercial exposure",
+  "evidence": [
+    {
+      "source": "partner profile",
+      "freshness": "STALE"
+    }
+  ],
+  "assumptions": [],
+  "material_unknowns": [
+    "Current agreement terms"
+  ],
+  "qualitative_likelihood": "UNKNOWN",
+  "qualitative_impact": "HIGH",
+  "exposure_rationale": "The dependent commitment cannot be supported until current rights are verified.",
+  "current_controls": [
+    "Field-level blocking",
+    "Qualified-human partner commitment approval"
+  ],
+  "treatment": "TEST_BEFORE_COMMITMENT",
+  "treatment_owner": "CRO",
+  "monitoring_indicator": "Current executed partner-right evidence is available",
+  "trigger_or_escalation_condition": "Before deal registration or partner commitment",
+  "reversibility": "MODERATE",
+  "residual_risk": "Independent pursuit preparation can continue.",
+  "review_horizon": "Before dependent external action",
+  "approval_or_risk_acceptance_owner": "QUALIFIED_HUMAN",
+  "acceptance_role": "CRO_HUMAN_OWNER",
+  "source_lineage": [
+    {
+      "source": "partner profile",
+      "observed_at": "2026-09-24"
+    }
+  ]
+}

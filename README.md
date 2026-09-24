@@ -1,3 +1,11 @@
+## Current release: v4.15.0 CxO Executive Risk Routing
+
+v4.15.0 closes the CxO risk-routing execution gap with deterministic category-to-remit routing and `mesh.executive-risk.v2`. CRO, CFO, COO, and CMO retain their existing evidence ownership. Consequential risk acceptance remains with a qualified human role. Unknown delivery capacity remains non-blocking until concrete delivery need makes a staffing or timeline decision relevant.
+
+This is a ChatGPT Skill/source capability release. Canonical MCP authority/runtime contract remains 4.0.0 and QNAP deployment release remains 4.4.2. No QNAP redeployment is required.
+
+See `docs/release-v4.15.0-cxo-risk.md`, `docs/architecture-v4.15.0-cxo-risk.md`, and `docs/security-review-v4.15.0-cxo-risk.md`.
+
 ## Current release: v4.14.0 CxO Executive Risk Management
 
 v4.14.0 adds one shared `mesh.executive-risk.v1` contract and explicit executive-risk remits to CRO, CFO, COO, and CMO. Each CxO retains its existing functional evidence authority, cross-functional risks route to the appropriate owner, and consequential risk acceptance remains human-controlled. Unknown delivery capacity remains non-blocking until concrete delivery need makes staffing or timeline commitment relevant.

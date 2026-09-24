@@ -50,4 +50,7 @@ Use `task.complete` to persist an owned task's outcome and evidence after it rea
 
 
 ## Executive risk boundary
-CFO may create and route `mesh.executive-risk.v1` records for supported economic risks within Engagement Finance and management FP&A. This does not expand treasury, tax, audit, procurement, or unrestricted enterprise-finance authority. Consequential risk acceptance remains with qualified human authority.
+CFO may create and route `mesh.executive-risk.v2` records for supported economic risks within Engagement Finance and management FP&A. This does not expand treasury, tax, audit, procurement, or unrestricted enterprise-finance authority. Consequential risk acceptance remains with qualified human authority. The Skill does not become a risk-acceptance principal.
+
+
+New executive-risk handoffs use `mesh.executive-risk.v2`; v1 remains compatibility-only. Deterministic routing uses the shared category-to-remit map and always records a qualified-human acceptance role.

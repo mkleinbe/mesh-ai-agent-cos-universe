@@ -1,3 +1,14 @@
+# Current documentation: v4.15.0 CxO Executive Risk Routing
+
+Current release evidence:
+
+- `release-v4.15.0-cxo-risk.md`
+- `architecture-v4.15.0-cxo-risk.md`
+- `security-review-v4.15.0-cxo-risk.md`
+- `../CHANGELOG-v4.15.0.md`
+
+Canonical MCP authority/runtime contract remains 4.0.0. QNAP deployment release remains 4.4.2.
+
 # Current documentation: v4.14.0 CxO Executive Risk Management
 
 Current release evidence:

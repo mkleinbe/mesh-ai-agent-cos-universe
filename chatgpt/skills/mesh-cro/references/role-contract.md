@@ -39,4 +39,7 @@ Use `task.complete` to persist an owned task's outcome and evidence after it rea
 
 
 ## Executive risk boundary
-CRO may create and route `mesh.executive-risk.v1` records for commercial risks within its remit. Commercial risk recommendation remains L3. Financial truth remains with CFO, delivery feasibility with COO, marketing/public narrative with CMO, and consequential risk acceptance with qualified human authority.
+CRO may create and route `mesh.executive-risk.v2` records for commercial risks within its remit. Commercial risk recommendation remains L3. Financial truth remains with CFO, delivery feasibility with COO, marketing/public narrative with CMO, and consequential risk acceptance with qualified human authority.
+
+
+New executive-risk handoffs use `mesh.executive-risk.v2`; v1 remains compatibility-only. Deterministic routing uses the shared category-to-remit map and always records a qualified-human acceptance role.

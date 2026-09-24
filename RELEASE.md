@@ -1,3 +1,15 @@
+# v4.15.0 CxO Executive Risk Routing
+
+This backward-compatible MINOR release closes the specification-only risk-routing gap by adding deterministic cross-functional routing behind CRO, CFO, COO, and CMO risk remits.
+
+New work uses `mesh.executive-risk.v2` with source lineage, risk category, functional remit, and qualified-human acceptance roles. v1 remains backward-compatible intake.
+
+Canonical Phase 1 authority/runtime contract remains `4.0.0`. QNAP deployment release remains `4.4.2`. No QNAP redeployment is required.
+
+Release asset: `mesh-cxo-risk-skills-v4.15.0.zip`.
+
+See `docs/release-v4.15.0-cxo-risk.md`.
+
 # v4.14.0 CxO Executive Risk Management
 
 This backward-compatible MINOR release adds the shared `mesh.executive-risk.v1` contract and explicit risk-management remits to CRO, CFO, COO, and CMO.

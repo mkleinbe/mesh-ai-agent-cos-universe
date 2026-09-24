@@ -15,17 +15,17 @@ def test_v483_release_records_explicitly_include_v460_retirement() -> None:
         assert "v4.8.2" in text, path
 
 
-def test_v491_is_historical_and_v4133_is_the_only_current_publisher() -> None:
+def test_v491_is_historical_and_v4150_is_the_only_current_publisher() -> None:
     historical = _active_yaml_text(WORKFLOWS / "release-v4.9.1.yml")
     assert "workflow_dispatch:" in historical
     assert "branches: [main]" not in historical
     assert "pull_request:" not in historical
     assert "gh release create" not in historical
     assert "contents: write" not in historical
-    current = _active_yaml_text(WORKFLOWS / "release-v4.14.0.yml")
+    current = _active_yaml_text(WORKFLOWS / "release-v4.15.0.yml")
     assert "branches: [main]" in current
     assert "pull_request:" in current
-    assert "gh release create v4.14.0" in current
+    assert "gh release create v4.15.0" in current
     assert "--target \"$GITHUB_SHA\"" in current
     assert "contents: write" in current
 

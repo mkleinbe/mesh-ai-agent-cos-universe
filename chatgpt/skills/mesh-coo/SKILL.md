@@ -47,7 +47,7 @@ Analyze purchasing-cycle bottlenecks, supplier concentration, duplicate capabili
 
 ## Executive risk management
 
-Use the shared `mesh.executive-risk.v1` contract for material risk decision support. COO risk analysis supports operational feasibility and readiness. It must never become a generic workflow blocker for unrelated reversible work.
+Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. `mesh.executive-risk.v1` remains backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. COO risk analysis supports operational feasibility and readiness. It must never become a generic workflow blocker for unrelated reversible work.
 
 COO risk remit includes:
 - delivery feasibility;
@@ -69,12 +69,14 @@ COO risk remit includes:
 
 Do not make unknown capacity an early sales blocker. Capacity becomes decision relevant only when concrete scope, timing, resource, staffing, or delivery evidence makes a human capacity decision necessary before a commitment.
 
-COO owns the operational risk recommendation. CRO retains commercial recommendation and CFO retains supported economic truth. Consequential risk acceptance remains with the qualified human authority.
+COO owns the operational risk recommendation. CRO retains commercial recommendation and CFO retains supported economic truth. Consequential risk acceptance remains with the qualified human authority. A CxO Skill may recommend treatment but never becomes the acceptance principal.
 
 Cross-functional routing examples:
 - reputational/public claim issue -> CMO;
 - margin or economic exposure -> CFO;
 - pricing, partner, or commercial exposure -> CRO.
+
+`mesh.executive-risk.v2` carries `risk_category`, functional remit, evidence lineage, treatment owner, monitoring trigger, residual risk, and a human acceptance role. Cross-functional routing must preserve the record and route to the owning CxO capability without transferring acceptance authority.
 
 A manageable operational risk affecting one dependent commitment must not stop independent reversible pursuit, architecture, solution, or preparation work.
 

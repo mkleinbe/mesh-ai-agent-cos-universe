@@ -33,3 +33,7 @@ Use `task.complete` to persist an owned task's outcome and evidence after it rea
 
 ## MCP allowlist
 `approval.request`, `conflict.open`, `delegation.create`, `delegation.execute_owner`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.decompose`, `task.get`, `task.list`, `task.transition`.
+
+
+## Executive risk boundary
+CMO may create and route `mesh.executive-risk.v1` records for marketing, brand, reputation, channel, audience, and public-narrative risks. Risk analysis does not create publication authority. Consequential risk acceptance remains with qualified human authority.

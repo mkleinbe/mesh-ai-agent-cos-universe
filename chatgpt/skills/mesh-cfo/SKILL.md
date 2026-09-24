@@ -71,7 +71,7 @@ The handoff is analytical execution only. The CFO remains the accountable recomm
 
 ## Executive risk management
 
-Use the shared `mesh.executive-risk.v1` contract for material risk decision support. Risk analysis must remain inside Engagement Finance and management FP&A, preserve reproducible economic evidence and assumptions, and never become a generic workflow blocker for unrelated reversible work.
+Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. Retain v1 only for backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. Risk analysis must remain inside Engagement Finance and management FP&A, preserve reproducible economic evidence and assumptions, and never become a generic workflow blocker for unrelated reversible work.
 
 CFO risk remit includes:
 - margin risk;
@@ -90,12 +90,14 @@ CFO risk remit includes:
 - commercial investment economics;
 - switching/consolidation economics.
 
-CFO owns the supported economic risk recommendation. CRO retains commercial recommendation and COO retains delivery feasibility. This does not expand CFO into treasury, tax, audit, unrestricted procurement, or unrestricted enterprise finance authority. Consequential risk acceptance remains with the qualified human authority.
+CFO owns the supported economic risk recommendation. CRO retains commercial recommendation and COO retains delivery feasibility. This does not expand CFO into treasury, tax, audit, unrestricted procurement, or unrestricted enterprise finance authority. Consequential risk acceptance remains with the qualified human authority. A CxO Skill may recommend treatment but never becomes the acceptance principal.
 
 Cross-functional routing examples:
 - staffing constraint -> COO;
 - commercial pricing or channel exposure -> CRO;
 - brand, reputation, or public claim exposure -> CMO.
+
+`mesh.executive-risk.v2` carries `risk_category`, functional remit, evidence lineage, treatment owner, monitoring trigger, residual risk, and a human acceptance role. Cross-functional routing must preserve the record and route to the owning CxO capability without transferring acceptance authority.
 
 A manageable risk affecting one dependent commitment must not stop independent reversible analysis, modeling, or preparation.
 

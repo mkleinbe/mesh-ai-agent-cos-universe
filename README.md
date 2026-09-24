@@ -1,10 +1,10 @@
-## Current release: v4.13.3 Slack HITL Task Telemetry Repair
+## Current release: v4.14.0 CxO Executive Risk Management
 
-v4.13.3 fixes canonical task telemetry for the existing Slack peer-HITL path. Provider-confirmed Slack channel/thread identity is persisted in TaskRecord, and each provider-authenticated manual human interaction increments human_touches exactly once. Human interaction telemetry remains independent from approval authority and task lifecycle.
+v4.14.0 adds one shared `mesh.executive-risk.v1` contract and explicit executive-risk remits to CRO, CFO, COO, and CMO. Each CxO retains its existing functional evidence authority, cross-functional risks route to the appropriate owner, and consequential risk acceptance remains human-controlled. Unknown delivery capacity remains non-blocking until concrete delivery need makes staffing or timeline commitment relevant.
 
-QNAP candidate identity advances to 4.4.2 because runtime source changed. Canonical MCP authority/runtime contract remains 4.0.0. Production Compose topology and Secure MCP Tunnel architecture are unchanged.
+This is a ChatGPT Skill/source capability release. Canonical MCP authority/runtime contract remains 4.0.0 and QNAP deployment release remains 4.4.2. No QNAP redeployment is required for the CxO Skill update.
 
-See `docs/release-v4.13.3-slack-hitl-task-telemetry.md` and `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.2.md`.
+See `docs/release-v4.14.0-cxo-risk.md`, `docs/architecture-v4.14.0-cxo-risk.md`, and `docs/security-review-v4.14.0-cxo-risk.md`.
 
 # Mesh AI Chief of Staff Agent Universe
 

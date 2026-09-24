@@ -89,7 +89,7 @@ jobs:
           grep -q '^shared_contract=mesh.executive-risk.v2$' dist/cxo-risk-skill-bundle/v4.15.0/MANIFEST.txt
           grep -q '^acceptance_principal=QUALIFIED_HUMAN$' dist/cxo-risk-skill-bundle/v4.15.0/MANIFEST.txt
           grep -q '^qnap_runtime_change=false$' dist/cxo-risk-skill-bundle/v4.15.0/MANIFEST.txt
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: mesh-cxo-risk-skills-v4.15.0
           path: |

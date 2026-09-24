@@ -40,7 +40,7 @@ jobs:
           unzip -p "$ZIP" v4.1.13/mesh-cos-slack-hitl-configure.sh | grep -q 'DEFAULT_APPROVER_USER_ID=.*U01KG3CNYHK'
           ! unzip -p "$ZIP" v4.1.13/mesh-cos-slack-hitl-configure.sh | grep -q 'read_visible_tty'
           ! unzip -Z1 "$ZIP" | grep -Eq '(^|/)(state|secrets)(/|$)|(^|/)\.env\.runtime$'
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: mesh-cos-mcp-qnap-v4.1.13
           path: |

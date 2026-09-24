@@ -47,7 +47,7 @@ Analyze purchasing-cycle bottlenecks, supplier concentration, duplicate capabili
 
 ## Executive risk management
 
-Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. Retain v1 only for backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. COO risk analysis supports operational feasibility and readiness. It must never become a generic workflow blocker for unrelated reversible work.
+Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. `mesh.executive-risk.v1` remains backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. COO risk analysis supports operational feasibility and readiness. It must never become a generic workflow blocker for unrelated reversible work.
 
 COO risk remit includes:
 - delivery feasibility;

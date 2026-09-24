@@ -42,7 +42,7 @@ def test_v4121_assets_remain_immutable_and_v4150_owns_current_semver_publication
     assert "contents: write" not in historical
     current = read(".github/workflows/release-v4.15.0.yml")
     assert "gh release create v4.15.0" in current
-    assert "mesh-cxo-risk-skills-v4.14.0.zip" in current
+    assert "mesh-cxo-risk-skills-v4.15.0.zip" in current
     assert "docs/release-v4.14.0-cxo-risk.md" in current
     builder = read("scripts/build-chatgpt-skill-bundle-v4.12.1.sh")
     assert "VERSION=4.12.1" in builder

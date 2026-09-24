@@ -71,7 +71,7 @@ The handoff is analytical execution only. The CFO remains the accountable recomm
 
 ## Executive risk management
 
-Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. Retain v1 only for backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. Risk analysis must remain inside Engagement Finance and management FP&A, preserve reproducible economic evidence and assumptions, and never become a generic workflow blocker for unrelated reversible work.
+Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. `mesh.executive-risk.v1` remains backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. Risk analysis must remain inside Engagement Finance and management FP&A, preserve reproducible economic evidence and assumptions, and never become a generic workflow blocker for unrelated reversible work.
 
 CFO risk remit includes:
 - margin risk;

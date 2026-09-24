@@ -30,6 +30,20 @@ See `CHANGELOG-v4.13.0.md`.
 
 # Changelog
 
+## v4.14.0 - CxO Executive Risk Management
+
+- added shared `mesh.executive-risk.v1` decision-support contract;
+- added explicit CRO commercial-risk, CFO economic-risk, COO operational-risk, and CMO marketing/reputation-risk remits;
+- added cross-functional risk routing while preserving each CxO's existing evidence authority;
+- preserved human consequential risk acceptance and prevented manageable risk from becoming a generic workflow veto;
+- kept delivery capacity as a human decision only when concrete delivery need makes it relevant;
+- added ready BDD, deterministic contract validation, targeted security review, Mermaid architecture, and four-Skill release packaging;
+- retired v4.13.3 SemVer publishing to historical read-only verification;
+- preserved QNAP deployment release 4.4.2 and canonical runtime contract 4.0.0.
+
+See `CHANGELOG-v4.14.0.md`.
+
+
 ## v4.12.1 - 2026-09-19
 
 - Corrected `delegation.create` so server-derived parent authority and delegation depth are optional compatibility assertions rather than required caller inputs.

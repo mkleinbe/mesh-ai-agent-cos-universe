@@ -1,0 +1,128 @@
+name: v4.14.0 CxO Executive Risk Management
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'chatgpt/skills/mesh-cro/**'
+      - 'chatgpt/skills/mesh-cfo/**'
+      - 'chatgpt/skills/mesh-coo/**'
+      - 'chatgpt/skills/mesh-cmo/**'
+      - 'contracts/executive-risk.v1.schema.json'
+      - 'contracts/examples/executive-risk.v1.json'
+      - 'scripts/validate-executive-risk.py'
+      - 'scripts/build-cxo-risk-skill-bundle-v4.14.0.sh'
+      - 'specs/cxo-executive-risk-v4.14.0.feature'
+      - 'tests/evaluations/test_cxo_executive_risk_v4140.py'
+      - 'docs/architecture-v4.14.0-cxo-risk.md'
+      - 'docs/security-review-v4.14.0-cxo-risk.md'
+      - 'docs/release-v4.14.0-cxo-risk.md'
+      - '.github/workflows/release-v4.13.3.yml'
+      - '.github/workflows/release-v4.14.0.yml'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG-v4.14.0.md'
+      - 'docs/README.md'
+  pull_request:
+    paths:
+      - 'chatgpt/skills/mesh-cro/**'
+      - 'chatgpt/skills/mesh-cfo/**'
+      - 'chatgpt/skills/mesh-coo/**'
+      - 'chatgpt/skills/mesh-cmo/**'
+      - 'contracts/executive-risk.v1.schema.json'
+      - 'contracts/examples/executive-risk.v1.json'
+      - 'scripts/validate-executive-risk.py'
+      - 'scripts/build-cxo-risk-skill-bundle-v4.14.0.sh'
+      - 'specs/cxo-executive-risk-v4.14.0.feature'
+      - 'tests/evaluations/test_cxo_executive_risk_v4140.py'
+      - 'docs/architecture-v4.14.0-cxo-risk.md'
+      - 'docs/security-review-v4.14.0-cxo-risk.md'
+      - 'docs/release-v4.14.0-cxo-risk.md'
+      - '.github/workflows/release-v4.13.3.yml'
+      - '.github/workflows/release-v4.14.0.yml'
+      - 'README.md'
+      - 'RELEASE.md'
+      - 'CHANGELOG.md'
+      - 'CHANGELOG-v4.14.0.md'
+      - 'docs/README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: python scripts/validate-executive-risk.py contracts/examples/executive-risk.v1.json
+      - run: pytest tests/evaluations/test_cxo_executive_risk_v4140.py -q
+      - run: pytest --cov=mesh_cos --cov-report=term-missing --cov-fail-under=100
+      - run: bandit -q -r src -lll
+      - name: Build CxO Skill release asset
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-cxo-risk-skill-bundle-v4.14.0.sh
+          (cd dist && sha256sum -c mesh-cxo-risk-skills-v4.14.0.zip.sha256)
+          grep -q "^source_commit=$GITHUB_SHA$" dist/cxo-risk-skill-bundle/v4.14.0/MANIFEST.txt
+          grep -q '^skill_count=4$' dist/cxo-risk-skill-bundle/v4.14.0/MANIFEST.txt
+          grep -q '^qnap_runtime_change=false$' dist/cxo-risk-skill-bundle/v4.14.0/MANIFEST.txt
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mesh-cxo-risk-skills-v4.14.0
+          path: |
+            dist/mesh-cxo-risk-skills-v4.14.0.zip
+            dist/mesh-cxo-risk-skills-v4.14.0.zip.sha256
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Build exact CxO Skill release asset
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-cxo-risk-skill-bundle-v4.14.0.sh
+          (cd dist && sha256sum -c mesh-cxo-risk-skills-v4.14.0.zip.sha256)
+      - name: Publish exact-SHA v4.14.0 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.14.0 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.14.0 --json targetCommitish --jq .targetCommitish)"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "v4.14.0 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              exit 1
+            fi
+          else
+            gh release create v4.14.0 \
+              --target "$GITHUB_SHA" \
+              --title 'Mesh CoS v4.14.0 CxO Executive Risk Management' \
+              --notes-file docs/release-v4.14.0-cxo-risk.md
+          fi
+          gh release upload v4.14.0 \
+            dist/mesh-cxo-risk-skills-v4.14.0.zip \
+            dist/mesh-cxo-risk-skills-v4.14.0.zip.sha256 \
+            --clobber

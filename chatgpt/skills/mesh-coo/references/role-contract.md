@@ -43,4 +43,7 @@ COO retains delivery feasibility, capacity, staffing/resource readiness, partner
 
 
 ## Executive risk boundary
-COO may create and route `mesh.executive-risk.v1` records for operational and delivery-feasibility risks. Unknown capacity alone is not an early commercial blocker. Capacity becomes decision relevant only when concrete delivery need requires staffing or timeline commitment. Consequential risk acceptance remains with qualified human authority.
+COO may create and route `mesh.executive-risk.v2` records for operational and delivery-feasibility risks. Unknown capacity alone is not an early commercial blocker. Capacity becomes decision relevant only when concrete delivery need requires staffing or timeline commitment. Consequential risk acceptance remains with qualified human authority. The Skill does not become a risk-acceptance principal.
+
+
+New executive-risk handoffs use `mesh.executive-risk.v2`; v1 remains compatibility-only. Deterministic routing uses the shared category-to-remit map and always records a qualified-human acceptance role.

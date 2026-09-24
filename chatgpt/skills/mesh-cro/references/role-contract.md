@@ -36,3 +36,7 @@ Use `task.complete` to persist an owned task's outcome and evidence after it rea
 
 ## MCP allowlist
 `approval.request`, `conflict.open`, `delegation.create`, `governance.record_decision`, `governance.record_event`, `registry.get_agent`, `skills.invoke_governed`, `task.check_in`, `task.complete`, `task.get`, `task.list`, `task.transition`.
+
+
+## Executive risk boundary
+CRO may create and route `mesh.executive-risk.v1` records for commercial risks within its remit. Commercial risk recommendation remains L3. Financial truth remains with CFO, delivery feasibility with COO, marketing/public narrative with CMO, and consequential risk acceptance with qualified human authority.

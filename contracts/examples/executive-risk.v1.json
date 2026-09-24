@@ -1,18 +1,29 @@
 {
   "contract_version": "mesh.executive-risk.v1",
+  "version": "1.0.0",
   "risk_id": "risk-example-001",
   "governing_decision": "Whether to proceed with a resale pursuit before current partner rights are confirmed",
   "functional_remit": "CRO",
   "cause": "Current partner-rights evidence is stale",
   "uncertain_event_or_condition": "Mesh relies on a right that is no longer valid",
   "potential_business_consequence": "A partner commitment or public representation creates commercial or reputational exposure",
-  "evidence": [{"source": "partner profile", "freshness": "STALE"}],
+  "evidence": [
+    {
+      "source": "partner profile",
+      "freshness": "STALE"
+    }
+  ],
   "assumptions": [],
-  "material_unknowns": ["Current agreement terms"],
+  "material_unknowns": [
+    "Current agreement terms"
+  ],
   "qualitative_likelihood": "UNKNOWN",
   "qualitative_impact": "HIGH",
   "exposure_rationale": "The dependent commitment cannot be supported until current rights are verified.",
-  "current_controls": ["Field-level blocking", "Qualified-human partner commitment approval"],
+  "current_controls": [
+    "Field-level blocking",
+    "Qualified-human partner commitment approval"
+  ],
   "treatment": "TEST_BEFORE_COMMITMENT",
   "treatment_owner": "CRO",
   "monitoring_indicator": "Current executed partner-right evidence is available",
@@ -21,5 +32,7 @@
   "residual_risk": "Internal research and pursuit preparation can continue while the dependent commitment remains staged.",
   "review_horizon": "Before the dependent external action",
   "approval_or_risk_acceptance_owner": "Qualified human commercial authority",
-  "source_lineage": ["partner profile"]
+  "source_lineage": [
+    "partner profile"
+  ]
 }

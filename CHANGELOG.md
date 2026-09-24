@@ -1,3 +1,16 @@
+# Changelog
+
+## v4.15.0 - CxO Executive Risk Routing
+
+- added deterministic category-to-remit CxO risk routing;
+- added `mesh.executive-risk.v2` with source lineage and human acceptance roles;
+- proved CRO/CFO/COO/CMO cross-functional routing with executable tests;
+- preserved non-blocking early delivery-capacity semantics;
+- preserved human-only consequential risk acceptance and all CxO authority boundaries;
+- retained v1 compatibility and retired v4.14.0 publication to historical verification.
+
+See `CHANGELOG-v4.15.0.md`.
+
 ## v4.13.3 - Slack HITL Task Telemetry Repair
 
 - persisted provider-confirmed Slack channel and root thread identity into canonical TaskRecord;

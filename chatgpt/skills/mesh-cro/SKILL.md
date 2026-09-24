@@ -44,7 +44,7 @@ Extract requirements and classify them as mandatory, weighted, or nice-to-have. 
 
 ## Executive risk management
 
-Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. Retain v1 only for backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. Risk analysis must improve the governing decision, remain within CRO commercial remit, preserve source lineage and unknowns, and never become a generic workflow blocker for unrelated reversible work. Use qualitative likelihood and impact unless supported evidence justifies more precise economics through CFO.
+Use the shared `mesh.executive-risk.v2` contract for new material risk decision support. `mesh.executive-risk.v1` remains backward-compatible intake. Use `scripts/cxo_risk_router.py` as the deterministic category/remit and human-acceptance reference when the repository runtime is available for material risk decision support. Risk analysis must improve the governing decision, remain within CRO commercial remit, preserve source lineage and unknowns, and never become a generic workflow blocker for unrelated reversible work. Use qualitative likelihood and impact unless supported evidence justifies more precise economics through CFO.
 
 CRO risk remit includes:
 - opportunity-quality risk;

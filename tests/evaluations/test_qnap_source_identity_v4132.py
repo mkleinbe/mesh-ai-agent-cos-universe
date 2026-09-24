@@ -35,7 +35,7 @@ def test_qnap_442_publisher_is_historical_and_v4150_does_not_repackage_qnap() ->
     assert "contents: write" not in historical
     assert "gh release create v4.15.0" in current
     assert "mesh-cos-mcp-qnap-v4.4.2.zip" not in current
-    assert "mesh-cxo-risk-skills-v4.14.0.zip" in current
+    assert "mesh-cxo-risk-skills-v4.15.0.zip" in current
 
 
 def test_active_qnap_docs_do_not_reuse_v440_archive() -> None:

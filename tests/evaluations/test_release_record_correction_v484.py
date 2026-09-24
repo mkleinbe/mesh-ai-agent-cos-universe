@@ -22,10 +22,10 @@ def test_v491_is_historical_and_v4133_is_the_only_current_publisher() -> None:
     assert "pull_request:" not in historical
     assert "gh release create" not in historical
     assert "contents: write" not in historical
-    current = _active_yaml_text(WORKFLOWS / "release-v4.13.3.yml")
+    current = _active_yaml_text(WORKFLOWS / "release-v4.14.0.yml")
     assert "branches: [main]" in current
     assert "pull_request:" in current
-    assert "gh release create v4.13.3" in current
+    assert "gh release create v4.14.0" in current
     assert "--target \"$GITHUB_SHA\"" in current
     assert "contents: write" in current
 

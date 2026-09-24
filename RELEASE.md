@@ -1,3 +1,15 @@
+# v4.14.0 CxO Executive Risk Management
+
+This backward-compatible MINOR release adds the shared `mesh.executive-risk.v1` contract and explicit risk-management remits to CRO, CFO, COO, and CMO.
+
+Canonical Phase 1 authority/runtime contract: `4.0.0`.
+
+The release preserves the 10-agent roster, TaskLedger authority, QNAP deployment release 4.4.2, CxO functional boundaries, qualified-human consequential risk acceptance, public-publishing controls, and delivery-capacity human decision boundary.
+
+Release asset: `mesh-cxo-risk-skills-v4.14.0.zip`.
+
+See `docs/release-v4.14.0-cxo-risk.md`.
+
 # v4.13.3 Slack HITL Task Telemetry Repair
 
 This PATCH release corrects canonical TaskRecord writeback for provider-confirmed Slack thread binding and provider-authenticated human interaction telemetry. It preserves the existing peer-HITL, approval, replay, lifecycle, TaskLedger authority, audit, and Secure MCP Tunnel boundaries.

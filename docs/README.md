@@ -1,54 +1,12 @@
-# Current documentation: v4.13.3 Slack HITL Task Telemetry Repair
+# Current documentation: v4.14.0 CxO Executive Risk Management
 
 Current release evidence:
 
-- `release-v4.13.3-slack-hitl-task-telemetry.md`
-- `security-review-v4.13.3-slack-hitl-task-telemetry.md`
-- `verification-v4.13.3-slack-hitl-task-telemetry.md`
-- `release-qnap-v4.4.2-slack-hitl-telemetry.md`
-- `security-review-qnap-v4.4.2-slack-hitl-telemetry.md`
-- `verification-qnap-v4.4.2-slack-hitl-telemetry.md`
-- `chatgpt-published-app-production-acceptance-qnap-v4.4.2.md`
-- `../specs/slack-hitl-task-telemetry-v4.13.3.feature`
-- `../CHANGELOG-v4.13.3.md`
+- `release-v4.14.0-cxo-risk.md`
+- `architecture-v4.14.0-cxo-risk.md`
+- `security-review-v4.14.0-cxo-risk.md`
 
-Current repository release candidate: **v4.13.3**. QNAP deployment candidate: **4.4.2**. Canonical Phase 1 authority/runtime contract: **4.0.0**. Production Compose topology is unchanged.
-
-# Current documentation: v4.13.2 QNAP Source Identity Repair
-
-Current release evidence:
-
-- `release-v4.13.2-qnap-source-identity.md`
-- `release-qnap-v4.4.1-source-identity.md`
-- `security-review-qnap-v4.4.1-source-identity.md`
-- `verification-qnap-v4.4.1-source-identity.md`
-- `chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`
-- `../specs/qnap-source-identity-v4.4.1.feature`
-- `../CHANGELOG-v4.13.2.md`
-
-Current repository release: **v4.13.2**. QNAP deployment candidate: **4.4.1**, pending live exact-source promotion and readback. Canonical Phase 1 authority/runtime contract: **4.0.0**. The production Compose topology is unchanged.
-
-# Current documentation: v4.13.0 Bidirectional Slack HITL Peer Workflow
-
-The current repository release documentation for the Slack HITL remediation is:
-
-- `release-v4.13.0-slack-hitl-peer.md`
-- `security-review-v4.13.0-slack-hitl-peer.md`
-- `verification-v4.13.0-slack-hitl-peer.md`
-- `runbook-v4.13.0-slack-hitl-peer.md`
-- `slack-agent-protocol.md`
-- `../specs/slack-hitl-peer-v4.13.0.feature`
-- `../CHANGELOG-v4.13.0.md`
-
-The canonical authority/runtime contract remains 4.0.0. QNAP deployment identity remains 4.4.0 and requires exact-source current-candidate promotion before production v4.13.0 behavior is claimed.
-
-# Documentation Index
-
-Current repository release: **`v4.12.1 CoS Delegation and Agent Reporting`**.  
-Current production QNAP deployment: **`4.4.0`** pending promotion of the exact current-source candidate.  
-Canonical Phase 1 agent authority/runtime contract: **`4.0.0`**.
-
-The current documentation describes the canonical **10-agent** Phase 1 workforce, governed external shared Skills, Mesh CoS MCP, TaskLedger authority, completion/verification separation, bounded delegation, QNAP deployment controls, security, behavior-level evaluation, donor governance, historical-release immutability, and release verification.
+Canonical MCP authority/runtime contract remains 4.0.0. QNAP deployment release remains 4.4.2.
 
 ## v4.12.1 CoS Delegation and Agent Reporting
 

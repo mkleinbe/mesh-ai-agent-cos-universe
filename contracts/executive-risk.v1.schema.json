@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mesh.executive-risk.v1",
+  "title": "Mesh Executive Risk",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "version",
+    "risk_id",
+    "governing_decision",
+    "functional_remit",
+    "cause",
+    "uncertain_event_or_condition",
+    "potential_business_consequence",
+    "evidence",
+    "assumptions",
+    "material_unknowns",
+    "qualitative_likelihood",
+    "qualitative_impact",
+    "exposure_rationale",
+    "current_controls",
+    "treatment",
+    "treatment_owner",
+    "monitoring_indicator",
+    "trigger_or_escalation_condition",
+    "reversibility",
+    "residual_risk",
+    "review_horizon",
+    "approval_or_risk_acceptance_owner",
+    "source_lineage"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "mesh.executive-risk.v1"
+    },
+    "risk_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "governing_decision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "functional_remit": {
+      "enum": [
+        "CRO",
+        "CFO",
+        "COO",
+        "CMO",
+        "CROSS_FUNCTIONAL"
+      ]
+    },
+    "cause": {
+      "type": "string",
+      "minLength": 1
+    },
+    "uncertain_event_or_condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "potential_business_consequence": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence": {
+      "type": "array"
+    },
+    "assumptions": {
+      "type": "array"
+    },
+    "material_unknowns": {
+      "type": "array"
+    },
+    "qualitative_likelihood": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "UNKNOWN"
+      ]
+    },
+    "qualitative_impact": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL",
+        "UNKNOWN"
+      ]
+    },
+    "exposure_rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "current_controls": {
+      "type": "array"
+    },
+    "treatment": {
+      "enum": [
+        "AVOID",
+        "REDUCE_MITIGATE",
+        "TRANSFER_SHARE",
+        "ACCEPT",
+        "MONITOR",
+        "TEST_BEFORE_COMMITMENT"
+      ]
+    },
+    "treatment_owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "monitoring_indicator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trigger_or_escalation_condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reversibility": {
+      "enum": [
+        "EASY",
+        "MODERATE",
+        "HARD",
+        "IRREVERSIBLE",
+        "UNKNOWN"
+      ]
+    },
+    "residual_risk": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_horizon": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approval_or_risk_acceptance_owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_lineage": {
+      "type": "array"
+    },
+    "version": {
+      "const": "1.0.0"
+    }
+  }
+}

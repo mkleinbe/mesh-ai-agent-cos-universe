@@ -26,14 +26,14 @@ def test_qnap_verifier_binds_metadata_image_and_mcp_source_commit() -> None:
     assert 'RUNNING_MESH_REVISION" = "$EXPECTED_SOURCE_COMMIT' in verify
 
 
-def test_qnap_442_publisher_is_historical_and_v4140_does_not_repackage_qnap() -> None:
+def test_qnap_442_publisher_is_historical_and_v4150_does_not_repackage_qnap() -> None:
     historical = read(".github/workflows/release-v4.13.3.yml")
-    current = read(".github/workflows/release-v4.14.0.yml")
+    current = read(".github/workflows/release-v4.15.0.yml")
     assert "workflow_dispatch:" in historical
     assert "branches: [main]" not in historical
     assert "gh release create" not in historical
     assert "contents: write" not in historical
-    assert "gh release create v4.14.0" in current
+    assert "gh release create v4.15.0" in current
     assert "mesh-cos-mcp-qnap-v4.4.2.zip" not in current
     assert "mesh-cxo-risk-skills-v4.14.0.zip" in current
 

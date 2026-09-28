@@ -1,0 +1,7 @@
+{
+  "schema": "mesh.skill-metadata.v1",
+  "name": "mesh-vp-content",
+  "version": "4.15.1",
+  "source_repository": "mkleinbe/mesh-ai-agent-cos-universe",
+  "source_path": "chatgpt/skills/mesh-vp-content"
+}

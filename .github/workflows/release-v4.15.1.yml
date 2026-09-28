@@ -1,0 +1,92 @@
+name: v4.15.1 AgentOps Controller Skill Package
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/build-chatgpt-skill-bundle-v4.15.1.sh'
+      - 'docs/release-v4.15.1-agentops-controller-package.md'
+      - 'CHANGELOG-v4.15.1.md'
+      - '.github/workflows/release-v4.15.1.yml'
+  pull_request:
+    paths:
+      - 'scripts/build-chatgpt-skill-bundle-v4.15.1.sh'
+      - 'docs/release-v4.15.1-agentops-controller-package.md'
+      - 'CHANGELOG-v4.15.1.md'
+      - '.github/workflows/release-v4.15.1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: python scripts/validate-contracts.py
+      - run: python scripts/check-runtime-doc-drift.py
+      - run: python scripts/check-chatgpt-packages.py
+      - run: pytest -q
+      - name: Build exact AgentOps Skill release asset
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-chatgpt-skill-bundle-v4.15.1.sh
+          (cd dist && sha256sum -c mesh-agentops-controller-v4.15.1.zip.sha256)
+          test "$(unzip -Z1 dist/mesh-agentops-controller-v4.15.1.zip | grep -Ec '^mesh-agentops-controller/SKILL.md$')" = "1"
+          test "$(unzip -Z1 dist/mesh-agentops-controller-v4.15.1.zip | grep -Ev '^mesh-agentops-controller/' | wc -l)" = "0"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mesh-agentops-controller-v4.15.1
+          path: |
+            dist/mesh-agentops-controller-v4.15.1.zip
+            dist/mesh-agentops-controller-v4.15.1.zip.sha256
+          if-no-files-found: error
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Build exact AgentOps Skill release asset
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          bash scripts/build-chatgpt-skill-bundle-v4.15.1.sh
+          (cd dist && sha256sum -c mesh-agentops-controller-v4.15.1.zip.sha256)
+      - name: Publish exact-SHA v4.15.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view v4.15.1 >/dev/null 2>&1; then
+            existing_target="$(gh release view v4.15.1 --json targetCommitish --jq .targetCommitish)"
+            if [ "$existing_target" != "$GITHUB_SHA" ]; then
+              echo "v4.15.1 already exists at $existing_target, expected $GITHUB_SHA" >&2
+              exit 1
+            fi
+          else
+            gh release create v4.15.1 \
+              --target "$GITHUB_SHA" \
+              --title 'Mesh CoS v4.15.1 AgentOps Controller Skill Package' \
+              --notes-file docs/release-v4.15.1-agentops-controller-package.md
+          fi
+          gh release upload v4.15.1 \
+            dist/mesh-agentops-controller-v4.15.1.zip \
+            dist/mesh-agentops-controller-v4.15.1.zip.sha256 \
+            --clobber

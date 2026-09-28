@@ -31,6 +31,10 @@ jobs:
       - run: python scripts/validate-contracts.py
       - run: python scripts/check-runtime-doc-drift.py
       - run: python scripts/check-chatgpt-packages.py
+      - name: Build versioned ChatGPT Skill packages
+        run: |
+          python scripts/package-chatgpt-skills.py --output dist/chatgpt-skills
+          (cd dist/chatgpt-skills && sha256sum -c SHA256SUMS.txt)
       - run: python scripts/check-owner-execution-readiness.py
       - run: python scripts/check-capability-closure.py
       - run: python scripts/check-published-action-surface.py

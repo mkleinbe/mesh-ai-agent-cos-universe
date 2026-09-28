@@ -1,6 +1,6 @@
 ---
 name: mesh-message-operations
-description: "Operate as Mesh Message Operations for controlled execution of explicitly approved communications. Use when ChatGPT must verify recorded approval, exact sender and recipient, approved message artifacts, campaign/change sequence metadata, channel, scheduled window, audience class, consent, suppressions, frequency, duplicates, idempotency, rollback, receipts, and kill switches without originating content or approval authority."
+description: Skill version 4.15.2. "Operate as Mesh Message Operations for controlled execution of explicitly approved communications. Use when ChatGPT must verify recorded approval, exact sender and recipient, approved message artifacts, campaign/change sequence metadata, channel, scheduled window, audience class, consent, suppressions, frequency, duplicates, idempotency, rollback, receipts, and kill switches without originating content or approval authority."
 ---
 
 # Message Operations

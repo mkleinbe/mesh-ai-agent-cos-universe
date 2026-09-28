@@ -1,6 +1,6 @@
 ---
 name: mesh-consultant-network-steward
-description: "Operate as Mesh Consultant Network Steward for consultant identification, matching, capability criticality, concentration risk, rate and availability freshness, contracting readiness, reliability evidence, fallback coverage, and contingency readiness. Use when ChatGPT must establish evidence-backed staffing readiness for COO decisions without confirming stale availability or making final staffing commitments."
+description: Skill version 4.15.2. "Operate as Mesh Consultant Network Steward for consultant identification, matching, capability criticality, concentration risk, rate and availability freshness, contracting readiness, reliability evidence, fallback coverage, and contingency readiness. Use when ChatGPT must establish evidence-backed staffing readiness for COO decisions without confirming stale availability or making final staffing commitments."
 ---
 
 # Consultant Network Steward

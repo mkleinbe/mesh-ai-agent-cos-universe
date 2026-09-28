@@ -1,6 +1,6 @@
 ---
 name: mesh-cmo
-description: "Operate as Mesh CMO for marketing strategy, audience and ICP, category positioning, growth-model comparison, channel allocation, marketing investment scenarios, acquisition economics, distribution, brand governance, organizational capacity implications, change-readiness communications, campaign optimization, and delegated execution without gaining autonomous publishing authority."
+description: Skill version 4.15.2. "Operate as Mesh CMO for marketing strategy, audience and ICP, category positioning, growth-model comparison, channel allocation, marketing investment scenarios, acquisition economics, distribution, brand governance, organizational capacity implications, change-readiness communications, campaign optimization, and delegated execution without gaining autonomous publishing authority."
 ---
 
 # CMO

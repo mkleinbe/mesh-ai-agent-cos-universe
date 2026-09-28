@@ -124,17 +124,29 @@ for agent_id, allowed in allowlists.items():
 
 skill_dirs = {path.name for path in SKILLS.iterdir() if path.is_dir()}
 require(skill_dirs == {item[2] for item in EXPECTED.values()}, "Repository-local role Skill roster drifted")
+version_index_path = SKILLS / "versions.json"
+require(version_index_path.is_file(), "ChatGPT Skill version index missing")
+version_index = json.loads(version_index_path.read_text())
+require(version_index.get("schema_version") == "mesh.skill-version-index.v1", "Skill version index schema drifted")
+indexed_versions = version_index.get("skills", {})
+
 manifest_paths = sorted(AGENTS.glob("*.json"))
 require(len(manifest_paths) == 10, "Workspace Agent package must contain exactly 10 manifests")
 
 for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     record = registry[agent_id]
     skill_dir = SKILLS / skill_name
-    for relative in ("SKILL.md", "agents/openai.yaml", "references/role-contract.md", "references/production-readiness.md"):
+    for relative in ("SKILL.md", "VERSION", "agents/openai.yaml", "references/role-contract.md", "references/production-readiness.md"):
         require((skill_dir / relative).is_file(), f"{agent_id}: missing Skill resource {relative}")
     frontmatter = parse_frontmatter((skill_dir / "SKILL.md").read_text())
     require(frontmatter.get("name") == skill_name, f"{agent_id}: Skill name drifted")
     require(len(frontmatter.get("description", "")) >= 80, f"{agent_id}: Skill description too thin")
+    skill_version = (skill_dir / "VERSION").read_text().strip()
+    require(re.fullmatch(r"(?:0|[1-9]\d*)(?:\.(?:0|[1-9]\d*)){2}(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?", skill_version) is not None, f"{agent_id}: Skill VERSION must be SemVer")
+    require(frontmatter.get("description", "").startswith(f"Skill version {skill_version}. "), f"{agent_id}: Skill description version metadata drifted")
+    indexed = indexed_versions.get(skill_name, {})
+    require(indexed.get("version") == skill_version, f"{agent_id}: Skill version index drifted")
+    require(indexed.get("path") == f"chatgpt/skills/{skill_name}", f"{agent_id}: Skill version index path drifted")
     readiness = (skill_dir / "references" / "production-readiness.md").read_text()
     require("10 Workspace Agents" in readiness, f"{agent_id}: production-readiness roster drifted")
     require("all 11 Workspace Agents" not in readiness, f"{agent_id}: superseded 11-agent wording remains current")
@@ -169,6 +181,8 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(("mesh-devils-advocate" in record.get("skills", [])) is (agent_id in DA_CONSUMERS), f"{agent_id}: Devil's Advocate entitlement drifted")
     require(("mesh-data-analytics" in record.get("skills", [])) is (agent_id in ANALYTICS_CONSUMERS), f"{agent_id}: Mesh Data Analytics entitlement drifted")
     require(("mesh-opex-bot" in record.get("skills", [])) is (agent_id in OPEX_CONSUMERS), f"{agent_id}: Mesh OpEx Bot entitlement drifted")
+
+require(set(indexed_versions) == {item[2] for item in EXPECTED.values()}, "Skill version index roster drifted")
 
 package = json.loads((ROOT / "mcp" / "package.json").read_text())
 package_lock = json.loads((ROOT / "mcp" / "package-lock.json").read_text())

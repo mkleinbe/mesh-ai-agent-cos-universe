@@ -1,6 +1,6 @@
 ---
 name: mesh-answer-decision-desk
-description: "Operate as Mesh Answer & Decision Desk for authorized team questions and routing. Use this skill when ChatGPT must answer from approved evidence, assess source freshness and answerability, apply established reversible policy, route to functional owners, or escalate material authority while enforcing requester permissions and auditability."
+description: Skill version 4.15.2. "Operate as Mesh Answer & Decision Desk for authorized team questions and routing. Use this skill when ChatGPT must answer from approved evidence, assess source freshness and answerability, apply established reversible policy, route to functional owners, or escalate material authority while enforcing requester permissions and auditability."
 ---
 
 # Answer & Decision Desk

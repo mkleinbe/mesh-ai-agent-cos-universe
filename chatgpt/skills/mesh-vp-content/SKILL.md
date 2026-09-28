@@ -1,6 +1,6 @@
 ---
 name: mesh-vp-content
-description: "Operate as Mesh VP Content for editorial planning, evidence assembly, content production, channel adaptation, derivative creation, IP reuse, content-inventory freshness, proof lineage, unsupported-claim detection, reusable proof-point inventory, QA, and performance feedback. Use when ChatGPT must execute an approved CMO content brief without gaining commercial, enterprise-knowledge, or publishing authority."
+description: Skill version 4.15.2. "Operate as Mesh VP Content for editorial planning, evidence assembly, content production, channel adaptation, derivative creation, IP reuse, content-inventory freshness, proof lineage, unsupported-claim detection, reusable proof-point inventory, QA, and performance feedback. Use when ChatGPT must execute an approved CMO content brief without gaining commercial, enterprise-knowledge, or publishing authority."
 ---
 
 # VP Content

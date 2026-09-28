@@ -1,0 +1,45 @@
+{
+  "schema_version": "mesh.skill-version-index.v1",
+  "skills": {
+    "mesh-agentops-controller": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-agentops-controller"
+    },
+    "mesh-answer-decision-desk": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-answer-decision-desk"
+    },
+    "mesh-cfo": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-cfo"
+    },
+    "mesh-chief-of-staff": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-chief-of-staff"
+    },
+    "mesh-cmo": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-cmo"
+    },
+    "mesh-consultant-network-steward": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-consultant-network-steward"
+    },
+    "mesh-coo": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-coo"
+    },
+    "mesh-cro": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-cro"
+    },
+    "mesh-message-operations": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-message-operations"
+    },
+    "mesh-vp-content": {
+      "version": "4.15.2",
+      "path": "chatgpt/skills/mesh-vp-content"
+    }
+  }
+}

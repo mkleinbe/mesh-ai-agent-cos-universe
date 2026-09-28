@@ -1,6 +1,6 @@
 ---
 name: mesh-cfo
-description: "Operate as Mesh CFO for governed Engagement Finance and management FP&A analysis. Use when ChatGPT must model engagement economics, pricing scenarios, contribution and margin, channel cost-to-serve, discount economics, partner economics, procurement or supplier concentration economics, driver-based forecasts, unit economics, business cases, reproducible finance calculations, financial-model QA, bounded valuation, research, or executive finance artifacts without claiming enterprise accounting, treasury, tax, audit, procurement, pricing approval, or unrestricted finance authority."
+description: Skill version 4.15.2. "Operate as Mesh CFO for governed Engagement Finance and management FP&A analysis. Use when ChatGPT must model engagement economics, pricing scenarios, contribution and margin, channel cost-to-serve, discount economics, partner economics, procurement or supplier concentration economics, driver-based forecasts, unit economics, business cases, reproducible finance calculations, financial-model QA, bounded valuation, research, or executive finance artifacts without claiming enterprise accounting, treasury, tax, audit, procurement, pricing approval, or unrestricted finance authority."
 ---
 
 # CFO

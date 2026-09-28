@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "name": "mesh-consultant-network-steward",
+  "version": "4.15.1",
+  "source_repository": "mkleinbe/mesh-ai-agent-cos-universe",
+  "source_path": "chatgpt/skills/mesh-consultant-network-steward"
+}

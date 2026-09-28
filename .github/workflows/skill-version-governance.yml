@@ -1,0 +1,55 @@
+name: Skill version governance
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: {fetch-depth: 0}
+      - name: Validate Skill versions and metadata
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          python - <<'PY'
+          import json, os, re, subprocess
+          from pathlib import Path
+          semver=re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$")
+          excluded={"tests","fixtures","generated","dist","node_modules",".git"}
+          roots=[p.parent for p in Path("chatgpt/skills").rglob("SKILL.md") if not any(x in excluded for x in p.parts)]
+          failures=[]
+          def vt(v):
+              m=re.match(r"^(\d+)\.(\d+)\.(\d+)",v); return tuple(map(int,m.groups())) if m else (-1,-1,-1)
+          for root in roots:
+              vp=root/"VERSION"; mp=root/"metadata"/"skill.json"
+              if not vp.is_file(): failures.append(f"{root}: missing VERSION"); continue
+              version=vp.read_text().strip()
+              if not semver.fullmatch(version): failures.append(f"{root}: invalid VERSION {version!r}")
+              if not mp.is_file(): failures.append(f"{root}: missing metadata/skill.json"); continue
+              meta=json.loads(mp.read_text()); source_path=root.as_posix()
+              expected={"schema":"mesh.skill-metadata.v1","version":version,"source_repository":os.environ["GITHUB_REPOSITORY"],"source_path":source_path}
+              fm=re.match(r"^---\n(.*?)\n---\n",(root/"SKILL.md").read_text(),re.S)
+              if fm:
+                  m=re.search(r"(?m)^name:\s*['\"]?([^'\"\n]+)",fm.group(1))
+                  if m and meta.get("name")!=m.group(1).strip(): failures.append(f"{root}: metadata name mismatch")
+              for k,v in expected.items():
+                  if meta.get(k)!=v: failures.append(f"{root}: metadata {k} mismatch")
+          base=os.environ.get("BASE_SHA","")
+          if base and set(base)!={"0"}:
+              changed=subprocess.check_output(["git","diff","--name-only",base,"HEAD"],text=True).splitlines()
+              for root in roots:
+                  prefix=root.as_posix()+"/"; scoped=[p for p in changed if p.startswith(prefix)]
+                  if not scoped: continue
+                  vr=prefix+"VERSION"; mr=prefix+"metadata/skill.json"; meaningful=[p for p in scoped if p not in {vr,mr}]
+                  try: old=subprocess.check_output(["git","show",f"{base}:{vr}"],text=True,stderr=subprocess.DEVNULL).strip()
+                  except subprocess.CalledProcessError: old=None
+                  new=(root/"VERSION").read_text().strip()
+                  if old and ((meaningful or vr in scoped) and vt(new)<=vt(old)): failures.append(f"{root}: Skill change requires VERSION > {old}, found {new}")
+          if failures: raise SystemExit("\n".join(failures))
+          print(f"validated {len(roots)} governed Skills")
+          PY

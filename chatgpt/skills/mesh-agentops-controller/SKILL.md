@@ -1,6 +1,6 @@
 ---
 name: mesh-agentops-controller
-description: "Operate as Mesh AgentOps Controller for agent operations and performance management. Use this skill when ChatGPT must monitor the Phase 1 agent workforce, evaluate TaskLedger and telemetry evidence, diagnose cycle time, wait time, rework, WIP, bottlenecks, queue health, stalls or defects, and recommend governed routing or health changes without expanding agent authority."
+description: Skill version 4.15.2. "Operate as Mesh AgentOps Controller for agent operations and performance management. Use this skill when ChatGPT must monitor the Phase 1 agent workforce, evaluate TaskLedger and telemetry evidence, diagnose cycle time, wait time, rework, WIP, bottlenecks, queue health, stalls or defects, and recommend governed routing or health changes without expanding agent authority."
 ---
 
 # AgentOps Controller

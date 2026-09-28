@@ -142,7 +142,7 @@ for agent_id, (display_name, parent_id, skill_name) in EXPECTED.items():
     require(frontmatter.get("name") == skill_name, f"{agent_id}: Skill name drifted")
     require(len(frontmatter.get("description", "")) >= 80, f"{agent_id}: Skill description too thin")
     skill_version = (skill_dir / "VERSION").read_text().strip()
-    require(re.fullmatch(r"0|[1-9]\\d*(?:\\.(?:0|[1-9]\\d*)){2}(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?", skill_version) is not None, f"{agent_id}: Skill VERSION must be SemVer")
+    require(re.fullmatch(r"(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){2}(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?", skill_version) is not None, f"{agent_id}: Skill VERSION must be SemVer")
     require(frontmatter.get("description", "").startswith(f"Skill version {skill_version}. "), f"{agent_id}: Skill description version metadata drifted")
     indexed = indexed_versions.get(skill_name, {})
     require(indexed.get("version") == skill_version, f"{agent_id}: Skill version index drifted")

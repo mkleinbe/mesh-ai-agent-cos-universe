@@ -197,6 +197,8 @@ def package_relevant(rel_to_skill: str) -> bool:
         return False
     if len(path.parts) == 1 and path.name in CONTROL_FILES | INFRA_ROOT_FILES:
         return False
+    if path.as_posix() == "scripts/validate_skill_versions.py":
+        return False
     if path.name.endswith(".pyc"):
         return False
     return True

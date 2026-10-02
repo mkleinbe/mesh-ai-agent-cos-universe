@@ -26,16 +26,19 @@ def test_qnap_verifier_binds_metadata_image_and_mcp_source_commit() -> None:
     assert 'RUNNING_MESH_REVISION" = "$EXPECTED_SOURCE_COMMIT' in verify
 
 
-def test_qnap_442_publisher_is_historical_and_v4150_does_not_repackage_qnap() -> None:
-    historical = read(".github/workflows/release-v4.13.3.yml")
-    current = read(".github/workflows/release-v4.15.0.yml")
-    assert "workflow_dispatch:" in historical
-    assert "branches: [main]" not in historical
-    assert "gh release create" not in historical
-    assert "contents: write" not in historical
-    assert "gh release create v4.15.0" in current
+def test_retired_publishers_are_read_only_and_skill_publisher_does_not_repackage_qnap() -> None:
+    for version in ("4.13.3", "4.15.0"):
+        historical = read(f".github/workflows/release-v{version}.yml")
+        assert "workflow_dispatch:" in historical
+        assert "branches: [main]" not in historical
+        assert "gh release create" not in historical
+        assert "contents: write" not in historical
+    current = read(".github/workflows/release-v4.15.2.yml")
+    assert "gh release create v4.15.2" in current
     assert "mesh-cos-mcp-qnap-v4.4.2.zip" not in current
-    assert "mesh-cxo-risk-skills-v4.15.0.zip" in current
+    assert "scripts/package-chatgpt-skills.py" in current
+    assert "--target \"$GITHUB_SHA\"" in current
+    assert "--clobber" not in current
 
 
 def test_active_qnap_docs_do_not_reuse_v440_archive() -> None:

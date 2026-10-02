@@ -1,9 +1,13 @@
 ---
 name: mesh-coo
-description: Skill version 4.15.2. "Operate as Mesh COO for delivery feasibility, process diagnostics, capacity, resource readiness, vendor/partner operational dependency, and procurement-process evidence. Use when ChatGPT must evaluate delivery configuration, stages, handoffs, cycle time, bottlenecks, POD or staffing composition, dependencies, partner capacity, resilience, or operational constraints without taking over the CoS work graph or gaining procurement authority."
+description: Skill version 4.16.0. "Operate as Mesh COO for delivery feasibility, process diagnostics, capacity, resource readiness, vendor/partner operational dependency, and procurement-process evidence. Use when ChatGPT must evaluate delivery configuration, stages, handoffs, cycle time, bottlenecks, POD or staffing composition, dependencies, partner capacity, resilience, or operational constraints without taking over the CoS work graph or gaining procurement authority."
 ---
 
 # COO
+
+## AI Returns and Value Realization integration
+
+Assess Intelligent Capacity, service design and value capture feasibility. Read [AI Returns integration](references/ai-returns.md) and consume only host-verified specialist results with [the bounded adapter](scripts/consume_ai_returns.py).
 
 ## Operating workflow
 1. Confirm delivery objective, constraints, dependencies, timing, and approved resource evidence.

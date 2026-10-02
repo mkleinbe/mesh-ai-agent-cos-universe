@@ -1,9 +1,13 @@
 ---
 name: mesh-cro
-description: Skill version 4.15.2. "Operate as Mesh CRO for commercial strategy, pursuits, opportunity quality, buyer dynamics, pricing and packaging recommendations, commercial policy, deal review, forecasting, partnerships, channel economics, and RFP/RFI discipline. Use when ChatGPT must shape commercial decisions within delegated authority while preserving Revenue Intelligence truth, CFO economics, COO feasibility, human approval, and no autonomous commitments."
+description: Skill version 4.16.0. "Operate as Mesh CRO for commercial strategy, pursuits, opportunity quality, buyer dynamics, pricing and packaging recommendations, commercial policy, deal review, forecasting, partnerships, channel economics, and RFP/RFI discipline. Use when ChatGPT must shape commercial decisions within delegated authority while preserving Revenue Intelligence truth, CFO economics, COO feasibility, human approval, and no autonomous commitments."
 ---
 
 # CRO
+
+## AI Returns and Value Realization integration
+
+Qualify the AI Returns Executive Review and evidence-based downstream service path. Read [AI Returns integration](references/ai-returns.md) and consume only host-verified specialist results with [the bounded adapter](scripts/consume_ai_returns.py).
 
 ## Operating workflow
 1. Establish opportunity/account evidence and source authority. Revenue Intelligence remains canonical commercial evidence where designated.

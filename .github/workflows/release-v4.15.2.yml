@@ -1,25 +1,6 @@
 name: v4.15.2 Skill Version Governance
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'chatgpt/skills/**'
-      - 'scripts/package-chatgpt-skills.py'
-      - 'scripts/check-chatgpt-packages.py'
-      - 'docs/skill-version-contract.md'
-      - 'docs/release-v4.15.2-skill-version-governance.md'
-      - 'CHANGELOG-v4.15.2.md'
-      - '.github/workflows/release-v4.15.2.yml'
-  pull_request:
-    paths:
-      - 'chatgpt/skills/**'
-      - 'scripts/package-chatgpt-skills.py'
-      - 'scripts/check-chatgpt-packages.py'
-      - 'docs/skill-version-contract.md'
-      - 'docs/release-v4.15.2-skill-version-governance.md'
-      - 'CHANGELOG-v4.15.2.md'
-      - '.github/workflows/release-v4.15.2.yml'
   workflow_dispatch:
 
 permissions:

@@ -1,4 +1,10 @@
-## Current release: v4.15.0 CxO Executive Risk Routing
+<!-- AI_RETURNS_CURRENT -->
+## AI Returns and Value Realization: Version 4.16.0
+
+Source capability and installation guidance: [AI Returns integration](docs/ai-returns.md). Release verification is bound to the semantic tag and GitHub Release. Runtime installation and live client outcomes require separate evidence.
+<!-- /AI_RETURNS_CURRENT -->
+
+## Historical release: v4.15.0 CxO Executive Risk Routing
 
 v4.15.0 closes the CxO risk-routing execution gap with deterministic category-to-remit routing and `mesh.executive-risk.v2`. CRO, CFO, COO, and CMO retain their existing evidence ownership. Consequential risk acceptance remains with a qualified human role. Unknown delivery capacity remains non-blocking until concrete delivery need makes a staffing or timeline decision relevant.
 
@@ -6,7 +12,7 @@ This is a ChatGPT Skill/source capability release. Canonical MCP authority/runti
 
 See `docs/release-v4.15.0-cxo-risk.md`, `docs/architecture-v4.15.0-cxo-risk.md`, and `docs/security-review-v4.15.0-cxo-risk.md`.
 
-## Current release: v4.14.0 CxO Executive Risk Management
+## Historical release: v4.14.0 CxO Executive Risk Management
 
 v4.14.0 adds one shared `mesh.executive-risk.v1` contract and explicit executive-risk remits to CRO, CFO, COO, and CMO. Each CxO retains its existing functional evidence authority, cross-functional risks route to the appropriate owner, and consequential risk acceptance remains human-controlled. Unknown delivery capacity remains non-blocking until concrete delivery need makes staffing or timeline commitment relevant.
 
@@ -16,7 +22,7 @@ See `docs/release-v4.14.0-cxo-risk.md`, `docs/architecture-v4.14.0-cxo-risk.md`,
 
 # Mesh AI Chief of Staff Agent Universe
 
-## Current release: v4.13.2 QNAP Source Identity Repair
+## Historical release: v4.13.2 QNAP Source Identity Repair
 
 v4.13.2 closes the deployment-integrity defect exposed during live Slack HITL acceptance. The QNAP deployment candidate is now a distinct `4.4.1` artifact, the local Mesh image identity is source-commit-qualified, only the application container is forcibly recreated during candidate activation, and post-deploy verification fails unless release metadata, running OCI revision, and governed MCP `source_commit` agree exactly.
 
@@ -24,11 +30,11 @@ The supplied production Compose topology is unchanged. The canonical Phase 1 aut
 
 See `docs/release-v4.13.2-qnap-source-identity.md` and `docs/chatgpt-published-app-production-acceptance-qnap-v4.4.1.md`.
 
-## Current release: v4.13.1 QNAP Operator Documentation Alignment
+## Historical release: v4.13.1 QNAP Operator Documentation Alignment
 
 v4.13.1 is a documentation and packaging-safety PATCH over v4.13.0. Slack HITL peer behavior is unchanged. Active QNAP operator instructions and packaged environment references now consistently target deployment identity 4.4.0.
 
-## Current release: v4.13.0 Bidirectional Slack HITL Peer Workflow
+## Historical release: v4.13.0 Bidirectional Slack HITL Peer Workflow
 
 v4.13.0 makes `#mesh-agent-ops` a bot-owned, bidirectional operating surface. Governed messages now carry explicit interaction intent, response instructions, authority boundaries, canonical task binding, and persisted thread state. Human replies are reread from Slack provider state and acknowledged in-thread. Conversation remains non-authoritative; only explicit approval commands can change a canonical approval.
 
@@ -36,17 +42,17 @@ The canonical Phase 1 authority/runtime contract remains `4.0.0`. The QNAP deplo
 
 See `docs/release-v4.13.0-slack-hitl-peer.md`, `docs/slack-agent-protocol.md`, and `specs/slack-hitl-peer-v4.13.0.feature`.
 
-## Current release: v4.12.1 CoS Delegation and Agent Reporting
+## Historical release: v4.12.1 CoS Delegation and Agent Reporting
 
 v4.12.1 fixes the delegation request and diagnostic contract exposed by the Commercial Growth OS pilot. `delegation.create` now requires only the canonical delegation work contract; parent authority, depth, ancestry, and active owner are server-derived optional compatibility assertions. Agent execution uses `delegation.execute_owner`; `skills.invoke_governed` remains capability-only. Parent reconciliation is explicit and completion remains separate from verification.
 
 The canonical Phase 1 authority/runtime contract remains `4.0.0`. The live QNAP deployment remains `4.4.0` until the exact current-source candidate is promoted and independently read back. Repository release does not itself deploy QNAP or install the packaged ChatGPT Skill.
 
-## Current Commercial Growth OS cadence
+## Historical Commercial Growth OS cadence
 
 v4.12.0 is the current Commercial Growth operating-model release. It keeps `LOOP-COM-001` as the single scheduled dispatcher, integrates monthly and quarterly reviews as logical TaskLedger due work, distinguishes native events from polling, preserves `LOOP-COM-HITL-001`, and packages the materially changed `mesh-chief-of-staff` Skill for human installation. The canonical Phase 1 runtime authority contract remains 4.0.0 and production QNAP remains 4.4.0.
 
-## Current Commercial Growth OS package
+## Historical Commercial Growth OS package
 
 v4.11.1 is the installable ChatGPT Skill-package closeout for the v4.11.0 Commercial Growth OS agent integration. The release bundle contains mesh-chief-of-staff, mesh-cro, mesh-coo, and mesh-cfo. Repository release does not itself update installed ChatGPT Skills.
 
@@ -58,7 +64,7 @@ v4.11.0 integrates Commercial Growth OS business-state reporting and CRO/CFO/COO
 
 Production operating core for Mesh Digital LLC's governed AI Chief of Staff workforce.
 
-**Current repository release: `v4.13.2 QNAP Source Identity Repair`. Current production QNAP state remains unverified until deployment `4.4.1` is promoted and exact-source readback passes. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
+**Historical repository release: `v4.13.2 QNAP Source Identity Repair`. Current production QNAP state remains unverified until deployment `4.4.1` is promoted and exact-source readback passes. Canonical Phase 1 authority/runtime contract: `4.0.0`.**
 
 ## v4.10.0 Outcome-Driven Orchestration
 

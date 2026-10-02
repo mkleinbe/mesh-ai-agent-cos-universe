@@ -1,0 +1,10 @@
+{
+  "consumer_skill": "mesh-vp-content",
+  "contract_family": "mesh.ai-returns.*.v1",
+  "helper_sha256": "54b3ab628eb3c9039afe8f0e6b86a98825512917afd2b1c3f049b36aaa071f66",
+  "helper_source_path": "src/ai_returns/handoff.py",
+  "policy": "Regenerate the adapter from the canonical released FP&A source; preserve exact bytes. The host establishes access and provenance before supplying expected fields.",
+  "schema_owner": "meshdigitalio/mesh-ai-team-skills-fpa-ai-workforce-os",
+  "schema_revision": "1.0.0",
+  "source_release_state": "CANDIDATE_PENDING_CANONICAL_RELEASE"
+}

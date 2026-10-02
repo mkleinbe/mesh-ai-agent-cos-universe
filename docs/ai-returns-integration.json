@@ -1,0 +1,31 @@
+{
+  "program": "Mesh AI Returns and Value Realization v1.1",
+  "new_agents": 0,
+  "entries": [
+    {
+      "skill_id": "mesh-cfo",
+      "path": "chatgpt/skills/mesh-cfo",
+      "helper_sha256": "54b3ab628eb3c9039afe8f0e6b86a98825512917afd2b1c3f049b36aaa071f66"
+    },
+    {
+      "skill_id": "mesh-coo",
+      "path": "chatgpt/skills/mesh-coo",
+      "helper_sha256": "54b3ab628eb3c9039afe8f0e6b86a98825512917afd2b1c3f049b36aaa071f66"
+    },
+    {
+      "skill_id": "mesh-cro",
+      "path": "chatgpt/skills/mesh-cro",
+      "helper_sha256": "54b3ab628eb3c9039afe8f0e6b86a98825512917afd2b1c3f049b36aaa071f66"
+    },
+    {
+      "skill_id": "mesh-cmo",
+      "path": "chatgpt/skills/mesh-cmo",
+      "helper_sha256": "54b3ab628eb3c9039afe8f0e6b86a98825512917afd2b1c3f049b36aaa071f66"
+    },
+    {
+      "skill_id": "mesh-vp-content",
+      "path": "chatgpt/skills/mesh-vp-content",
+      "helper_sha256": "54b3ab628eb3c9039afe8f0e6b86a98825512917afd2b1c3f049b36aaa071f66"
+    }
+  ]
+}

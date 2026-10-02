@@ -11,21 +11,22 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+    env:
+      PYTHONPATH: src
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Apply exact reviewed patch and correct generated whitespace
+      - name: Apply reviewed patch and validate
         shell: python
         run: |
           import base64, hashlib, json, lzma, os, re, subprocess
           from pathlib import Path, PurePosixPath
-          def git(*args, data=None):
-              return subprocess.check_output(['git','-c','core.hooksPath=/dev/null',*args], input=data, timeout=60).decode().strip()
+          def git(*args):
+              return subprocess.check_output(['git','-c','core.hooksPath=/dev/null',*args],timeout=60).decode().strip()
           parent=git('rev-parse','HEAD')
-          encoded=''.join(Path(f'.ai-returns-patch-{i}.b64').read_text().strip() for i in range(1,4))
-          raw=base64.b64decode(encoded,validate=True)
+          raw=base64.b64decode(''.join(Path(f'.ai-returns-patch-{i}.b64').read_text().strip() for i in range(1,4)),validate=True)
           if hashlib.sha256(raw).hexdigest()!='7fd63b405ca0316328acb789458da08ecb43e7468fba9ae031d0811893f29803': raise SystemExit('Transfer integrity failed')
           decoder=lzma.LZMADecompressor(memlimit=256*1024*1024)
           data=decoder.decompress(raw,max_length=2*1024*1024)
@@ -53,7 +54,7 @@ jobs:
           commit=git('commit-tree',tree,'-p',parent,'-m','feat: integrate AI Returns responsibilities and release controls v4.16.0')
           Path(os.environ['RUNNER_TEMP'],'ai-returns-candidate-sha').write_text(commit)
           print(json.dumps({'parent':parent,'candidate':commit,'tree':tree}))
-      - name: Push verified candidate without overwriting concurrent work
+      - name: Push candidate without overwriting concurrent work
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

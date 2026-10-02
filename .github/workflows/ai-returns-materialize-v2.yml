@@ -18,7 +18,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Apply reviewed patch and validate
+      - name: Apply reviewed patch and validate after workflow registration
         shell: python
         run: |
           import base64, hashlib, json, lzma, os, re, subprocess

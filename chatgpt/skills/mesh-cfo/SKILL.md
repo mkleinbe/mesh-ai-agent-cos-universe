@@ -1,9 +1,13 @@
 ---
 name: mesh-cfo
-description: Skill version 4.15.2. "Operate as Mesh CFO for governed Engagement Finance and management FP&A analysis. Use when ChatGPT must model engagement economics, pricing scenarios, contribution and margin, channel cost-to-serve, discount economics, partner economics, procurement or supplier concentration economics, driver-based forecasts, unit economics, business cases, reproducible finance calculations, financial-model QA, bounded valuation, research, or executive finance artifacts without claiming enterprise accounting, treasury, tax, audit, procurement, pricing approval, or unrestricted finance authority."
+description: Skill version 4.16.0. "Operate as Mesh CFO for governed Engagement Finance and management FP&A analysis. Use when ChatGPT must model engagement economics, pricing scenarios, contribution and margin, channel cost-to-serve, discount economics, partner economics, procurement or supplier concentration economics, driver-based forecasts, unit economics, business cases, reproducible finance calculations, financial-model QA, bounded valuation, research, or executive finance artifacts without claiming enterprise accounting, treasury, tax, audit, procurement, pricing approval, or unrestricted finance authority."
 ---
 
 # CFO
+
+## AI Returns and Value Realization integration
+
+Review AI investment economics and benefit recognition within existing CFO authority. Read [AI Returns integration](references/ai-returns.md) and consume only host-verified specialist results with [the bounded adapter](scripts/consume_ai_returns.py).
 
 ## Operating workflow
 1. Confirm the decision, approved source scope, as-of date, metric definitions, materiality, and assumptions.

@@ -10,7 +10,7 @@
       "path": "chatgpt/skills/mesh-answer-decision-desk"
     },
     "mesh-cfo": {
-      "version": "4.15.2",
+      "version": "4.16.0",
       "path": "chatgpt/skills/mesh-cfo"
     },
     "mesh-chief-of-staff": {
@@ -18,7 +18,7 @@
       "path": "chatgpt/skills/mesh-chief-of-staff"
     },
     "mesh-cmo": {
-      "version": "4.15.2",
+      "version": "4.16.0",
       "path": "chatgpt/skills/mesh-cmo"
     },
     "mesh-consultant-network-steward": {
@@ -26,11 +26,11 @@
       "path": "chatgpt/skills/mesh-consultant-network-steward"
     },
     "mesh-coo": {
-      "version": "4.15.2",
+      "version": "4.16.0",
       "path": "chatgpt/skills/mesh-coo"
     },
     "mesh-cro": {
-      "version": "4.15.2",
+      "version": "4.16.0",
       "path": "chatgpt/skills/mesh-cro"
     },
     "mesh-message-operations": {
@@ -38,7 +38,7 @@
       "path": "chatgpt/skills/mesh-message-operations"
     },
     "mesh-vp-content": {
-      "version": "4.15.2",
+      "version": "4.16.0",
       "path": "chatgpt/skills/mesh-vp-content"
     }
   }

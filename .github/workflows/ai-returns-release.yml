@@ -1,0 +1,60 @@
+name: AI Returns verified release v4.16.0
+on:
+  workflow_run:
+    workflows: [ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build exact validated source packages
+        run: |
+          set -eu
+          test "$(cat SOURCE_VERSION)" = '4.16.0'
+          python -m pip install pyyaml==6.0.3 jsonschema==4.25.1
+          python -B -m unittest discover -s tests/ai_returns -v
+          python scripts/package-chatgpt-skills.py --output dist/chatgpt-skills
+          (cd dist/chatgpt-skills && sha256sum -c SHA256SUMS.txt)
+      - name: Publish only the verified main revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$VERIFIED_SHA"
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main --jq .object.sha)" = "$VERIFIED_SHA"
+          tag='v4.16.0'
+          if gh release view "$tag" >/dev/null 2>&1; then
+            git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+            test "$(git rev-parse "$tag^{commit}")" = "$VERIFIED_SHA"
+            mkdir -p "$RUNNER_TEMP/released"
+            gh release download "$tag" --dir "$RUNNER_TEMP/released"
+            for file in dist/chatgpt-skills/*; do
+              test -f "$file"
+              cmp "$file" "$RUNNER_TEMP/released/$(basename "$file")"
+            done
+          else
+            gh release create "$tag" dist/chatgpt-skills/* --target "$VERIFIED_SHA" --title "Mesh AI Returns integration $tag" --notes-file RELEASE_NOTES.md
+          fi
+          git fetch --no-tags origin "refs/tags/$tag:refs/tags/$tag"
+          test "$(git rev-parse "$tag^{commit}")" = "$VERIFIED_SHA"
+          gh release view "$tag" --json url,tagName,targetCommitish,assets > release-receipt.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-receipt-v4.16.0
+          path: release-receipt.json
+          if-no-files-found: error

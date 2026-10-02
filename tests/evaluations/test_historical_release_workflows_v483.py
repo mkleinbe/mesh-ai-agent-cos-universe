@@ -30,13 +30,17 @@ def test_all_published_historical_release_workflows_are_read_only_manual_verifie
 
 
 def test_current_skill_publisher_preserves_published_releases() -> None:
-    current = _active_yaml_text((WORKFLOWS / "release-v4.15.2.yml").read_text(encoding="utf-8"))
+    current = _active_yaml_text((WORKFLOWS / "ai-returns-release.yml").read_text(encoding="utf-8"))
+    version = (ROOT / "SOURCE_VERSION").read_text(encoding="utf-8").strip()
+    assert f"tag='v{version}'" in current
+    assert "workflow_run:" in current
     assert "branches: [main]" in current
-    assert "pull_request:" in current
-    assert "gh release create v4.15.2" in current
-    assert "--target \"$GITHUB_SHA\"" in current
+    assert "github.event.workflow_run.conclusion == 'success'" in current
+    assert "--target \"$VERIFIED_SHA\"" in current
     assert "permissions:\n  contents: read" in current
     assert "contents: write" in current
     assert "--clobber" not in current
     assert "gh release upload" not in current
-    assert current.index("if gh release view v4.15.2") < current.index("exit 0") < current.index("gh release create v4.15.2")
+    assert 'if gh release view "$tag"' in current
+    assert 'git rev-parse "$tag^{commit}"' in current
+    assert 'cmp "$file" "$RUNNER_TEMP/released/$(basename "$file")"' in current

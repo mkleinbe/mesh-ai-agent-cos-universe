@@ -40,12 +40,15 @@ def test_prior_assets_remain_immutable_under_versioned_skill_publication() -> No
     assert "workflow_dispatch:" in historical
     assert "gh release create" not in historical
     assert "contents: write" not in historical
-    current = read(".github/workflows/release-v4.15.2.yml")
-    assert "gh release create v4.15.2" in current
-    assert "scripts/package-chatgpt-skills.py" in current
-    assert "docs/release-v4.15.2-skill-version-governance.md" in current
-    assert "if gh release view v4.15.2" in current
-    assert "exit 0" in current.split("if gh release view v4.15.2", 1)[1].split("fi", 1)[0]
+    packaging = read(".github/workflows/release-v4.15.2.yml")
+    assert "workflow_dispatch:" in packaging
+    assert "scripts/package-chatgpt-skills.py" in packaging
+    assert "docs/release-v4.15.2-skill-version-governance.md" in packaging
+    assert "--clobber" not in packaging
+    current = read(".github/workflows/ai-returns-release.yml")
+    assert 'if gh release view "$tag"' in current
+    assert 'git rev-parse "$tag^{commit}"' in current
+    assert 'cmp "$file" "$RUNNER_TEMP/released/$(basename "$file")"' in current
     assert "--clobber" not in current
     builder = read("scripts/build-chatgpt-skill-bundle-v4.12.1.sh")
     assert "VERSION=4.12.1" in builder

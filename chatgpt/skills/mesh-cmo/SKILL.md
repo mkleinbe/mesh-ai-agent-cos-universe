@@ -1,9 +1,13 @@
 ---
 name: mesh-cmo
-description: Skill version 4.15.2. "Operate as Mesh CMO for marketing strategy, audience and ICP, category positioning, growth-model comparison, channel allocation, marketing investment scenarios, acquisition economics, distribution, brand governance, organizational capacity implications, change-readiness communications, campaign optimization, and delegated execution without gaining autonomous publishing authority."
+description: Skill version 4.16.0. "Operate as Mesh CMO for marketing strategy, audience and ICP, category positioning, growth-model comparison, channel allocation, marketing investment scenarios, acquisition economics, distribution, brand governance, organizational capacity implications, change-readiness communications, campaign optimization, and delegated execution without gaining autonomous publishing authority."
 ---
 
 # CMO
+
+## AI Returns and Value Realization integration
+
+Position the complimentary review with evidence-led demand and claim controls. Read [AI Returns integration](references/ai-returns.md) and consume only host-verified specialist results with [the bounded adapter](scripts/consume_ai_returns.py).
 
 ## Operating workflow
 1. Establish the marketing objective, audience/ICP, authoritative evidence, and business outcome.

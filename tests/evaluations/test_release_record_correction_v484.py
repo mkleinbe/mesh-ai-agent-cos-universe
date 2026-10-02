@@ -23,14 +23,15 @@ def test_retired_publishers_and_current_skill_release_are_immutable() -> None:
         assert "pull_request:" not in historical
         assert "gh release create" not in historical
         assert "contents: write" not in historical
-    current = _active_yaml_text(WORKFLOWS / "release-v4.15.2.yml")
+    current = _active_yaml_text(WORKFLOWS / "ai-returns-release.yml")
+    assert "workflow_run:" in current
     assert "branches: [main]" in current
-    assert "pull_request:" in current
-    assert "gh release create v4.15.2" in current
-    assert "--target \"$GITHUB_SHA\"" in current
+    assert 'gh release create "$tag"' in current
+    assert "--target \"$VERIFIED_SHA\"" in current
     assert "contents: write" in current
     assert "--clobber" not in current
     assert "gh release upload" not in current
+    assert 'cmp "$file"' in current
 
 
 def test_v4100_release_identity_preserves_runtime_and_topology() -> None:

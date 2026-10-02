@@ -1,0 +1,16 @@
+{
+  "repository_key": "cos",
+  "source_version": "4.16.0",
+  "previous_version": "4.15.2",
+  "program_plan_version": "1.1",
+  "source_state": "VERIFIED_RELEASE_REQUIRED",
+  "runtime_installation": "NOT_PERFORMED",
+  "new_principal_agents": 0,
+  "changed_responsibilities": [
+    "mesh-cfo",
+    "mesh-coo",
+    "mesh-cro",
+    "mesh-cmo",
+    "mesh-vp-content"
+  ]
+}

@@ -16,10 +16,11 @@ jobs:
       - name: Apply bounded correction and verify behavior
         shell: python
         run: |
-          import importlib.util, math, subprocess
+          import subprocess
           from pathlib import Path
           expected = '1033fcd4a59f28ce46f91d5e21c299737bfb731c'
-          assert subprocess.check_output(['git','rev-parse','origin/main'],text=True).strip() == expected
+          if subprocess.check_output(['git','rev-parse','origin/main'],text=True).strip() != expected:
+              raise SystemExit('Main moved')
           p = Path('chatgpt/skills/mesh-cfo/scripts/financial_math.py')
           s = p.read_text()
           a = s.index('    low = -0.999999999',s.index('def irr'))
@@ -63,9 +64,6 @@ jobs:
                       low, low_value = midpoint, midpoint_value
               raise FinanceInputError("IRR did not converge within the iteration limit")
           '''
-          # Strip YAML nesting from the literal, retaining Python function indentation.
-          lines = replacement.splitlines()
-          replacement = lines[0] + '\n' + '\n'.join(line[10:] if line.startswith('          ') else line for line in lines[1:]) + '\n'
           p.write_text(s[:a] + replacement + s[b:])
           test = Path('tests/ai_returns/test_finance_regression.py')
           test.parent.mkdir(parents=True,exist_ok=True)

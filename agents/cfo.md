@@ -42,3 +42,7 @@ CFO economics are analytical evidence, not approval. Pricing, discount, procurem
 `CFO` is the stable organizational role name. Repository capability release advances to `v4.8.0`; canonical Phase 1 runtime contract remains `4.0.0`; production QNAP deployment remains `4.4.0`. Runtime implementation version remains defined in `agents/registry.json` unless separately changed.
 
 Exact sources, tools, actions, authority, approvals, and prohibited behavior are defined in `agents/registry.json`.
+
+## AI Returns and Value Realization integration
+
+Review AI investment economics and benefit recognition within existing CFO authority. Keep scripts/financial_math.py the canonical core formula implementation. Review TCO, ROI, NPV, IRR, simple/discounted payback, break-even, contribution, scenarios and normalized operating cost. Distinguish cost avoidance from expense reduction, capacity from captured value, working-capital release from earnings, revenue from contribution and modeled risk from realized loss avoidance. Validate allocation, omitted costs and financial capture independently from causal attribution. Evaluate complimentary-review acquisition economics using all Mesh human effort and unsuccessful assessments. No enterprise accounting, tax, audit or pricing approval authority is added. Use the existing role Skill intake and authorized entitlements. No new agent, tool permission, or decision right is granted.

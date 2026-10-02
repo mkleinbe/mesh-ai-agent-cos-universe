@@ -49,3 +49,7 @@ The CRO cannot autonomously approve pricing or discounts, make contractual or ir
 Unsupported buyer intent remains unknown. Commercial evidence authority remains with the approved authoritative source where designated. A Skill is a capability, not an agent principal. Skill capability is not agent authority.
 
 Exact sources, tools, skills, authority, approvals, and prohibited actions are defined in `agents/registry.json`.
+
+## AI Returns and Value Realization integration
+
+Qualify the AI Returns Executive Review and evidence-based downstream service path. Use canonical Revenue Intelligence account, fit, opportunity and buying-group truth. Confirm sponsor and buyer-path evidence without inferring intent from interest, job title or engagement. Route one decision and up to two workflows through GTM. Measure follow-on contribution quality and buyer-owned commitments rather than assessment volume. Allow no paid follow-on, reduce or stop outcomes. Preserve product independence and existing commercial approval authority. Use the existing role Skill intake and authorized entitlements. No new agent, tool permission, or decision right is granted.

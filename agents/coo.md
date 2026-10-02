@@ -39,3 +39,7 @@ The COO does not create unsupported staffing facts, treat stale consultant avail
 A process map, capacity model, vendor analysis, procurement diagnostic, workshop artifact, meeting commitment, decision memo, hypothesis, synthesis, or critic result does not authorize staffing or procurement and cannot supersede canonical delivery evidence.
 
 Exact source/tool permissions, authority, approvals, delegation, and prohibited actions are defined in `agents/registry.json`.
+
+## AI Returns and Value Realization integration
+
+Assess Intelligent Capacity, service design and value capture feasibility. Evaluate the combined workforce, customer/service boundary, bottlenecks, constraints, exception work, supervision and sustainable redeployment. Identify what the additional capacity actually enables and the operating actions required for capture. Review the Executive Review against the 100-minute target and 120 total human-minute cap, counting specialist assistance and rework. Narrow scope or identify paid Diagnostic work when the cap is infeasible. Retain existing staffing, TaskLedger and L0-L5 authority. Use the existing role Skill intake and authorized entitlements. No new agent, tool permission, or decision right is granted.

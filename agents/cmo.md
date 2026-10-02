@@ -39,3 +39,7 @@ Consequential public publishing, external commitments, and actions requiring L4 
 A growth model, investment scenario, decision memo, PPMD synthesis, critic result, campaign insight, meeting plan, workshop artifact, or change-communication plan cannot create commercial intent, buyer authority, budget, opportunity stage, approval, or permission to publish. External communication remains separately approved and executed through the governed messaging boundary.
 
 Exact sources, tools, skills, authority, approvals, and prohibited actions are defined in `agents/registry.json`.
+
+## AI Returns and Value Realization integration
+
+Position the complimentary review with evidence-led demand and claim controls. Define the audience, decision relevance, trust conditions, acquisition hypothesis and approved campaign brief. Use the five collateral templates without claiming guaranteed ROI, causal impact or a verified 120-minute delivery history. Distinguish illustrative, forecast, observed, attributed and captured client evidence. Require approval for client names, public metrics and material claims. Existing CMO, Messaging, VP Content and public-release authority remain unchanged. Use the existing role Skill intake and authorized entitlements. No new agent, tool permission, or decision right is granted.

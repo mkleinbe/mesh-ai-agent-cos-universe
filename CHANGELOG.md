@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.16.0] - 2026-10-02
+
+AI Returns and Value Realization integration, deterministic evidence boundaries, package compatibility and regression coverage. See `docs/ai-returns.md` and `RELEASE_NOTES.md`.
+
 ## v4.15.0 - CxO Executive Risk Routing
 
 - added deterministic category-to-remit CxO risk routing;

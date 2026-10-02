@@ -1,0 +1,11 @@
+name: Skill version governance
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    uses: mkleinbe/mesh-ai-agent-cos-universe/.github/workflows/skill-version-contract.yml@563707fe8c2af8e84f1bbbbaec94c5ee999f5af7

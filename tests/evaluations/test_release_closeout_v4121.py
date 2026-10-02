@@ -26,7 +26,7 @@ def test_v4121_skill_documents_agent_vs_capability_and_parent_reconciliation() -
 
 
 def test_superseded_release_publishers_are_historical_read_only() -> None:
-    for version in ("4.10.0", "4.11.0", "4.12.0", "4.12.1", "4.13.0", "4.13.1"):
+    for version in ("4.10.0", "4.11.0", "4.12.0", "4.12.1", "4.13.0", "4.13.1", "4.15.0"):
         workflow = read(f".github/workflows/release-v{version}.yml")
         assert "workflow_dispatch:" in workflow
         assert "pull_request:" not in workflow
@@ -35,15 +35,21 @@ def test_superseded_release_publishers_are_historical_read_only() -> None:
         assert "gh release create" not in workflow
 
 
-def test_v4121_assets_remain_immutable_and_v4150_owns_current_semver_publication() -> None:
+def test_prior_assets_remain_immutable_under_versioned_skill_publication() -> None:
     historical = read(".github/workflows/release-v4.13.3.yml")
     assert "workflow_dispatch:" in historical
     assert "gh release create" not in historical
     assert "contents: write" not in historical
-    current = read(".github/workflows/release-v4.15.0.yml")
-    assert "gh release create v4.15.0" in current
-    assert "mesh-cxo-risk-skills-v4.15.0.zip" in current
-    assert "docs/release-v4.15.0-cxo-risk.md" in current
+    packaging = read(".github/workflows/release-v4.15.2.yml")
+    assert "workflow_dispatch:" in packaging
+    assert "scripts/package-chatgpt-skills.py" in packaging
+    assert "docs/release-v4.15.2-skill-version-governance.md" in packaging
+    assert "--clobber" not in packaging
+    current = read(".github/workflows/ai-returns-release.yml")
+    assert 'if gh release view "$tag"' in current
+    assert 'git rev-parse "$tag^{commit}"' in current
+    assert 'cmp "$file" "$RUNNER_TEMP/released/$(basename "$file")"' in current
+    assert "--clobber" not in current
     builder = read("scripts/build-chatgpt-skill-bundle-v4.12.1.sh")
     assert "VERSION=4.12.1" in builder
     assert "docs/skills-v4.12.1.md" in builder

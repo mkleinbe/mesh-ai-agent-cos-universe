@@ -9,7 +9,7 @@ HISTORICAL = (
     "4.4.1", "4.4.2",
     "4.5.0", "4.5.1", "4.5.2",
     "4.6.0", "4.7.0", "4.8.0", "4.8.1", "4.8.2", "4.8.3", "4.8.4", "4.9.0", "4.9.1",
-    "4.10.0", "4.11.0", "4.11.1", "4.12.0", "4.12.1", "4.13.0", "4.13.1", "4.13.2", "4.13.3", "4.14.0",
+    "4.10.0", "4.11.0", "4.11.1", "4.12.0", "4.12.1", "4.13.0", "4.13.1", "4.13.2", "4.13.3", "4.14.0", "4.15.0",
 )
 
 
@@ -29,11 +29,18 @@ def test_all_published_historical_release_workflows_are_read_only_manual_verifie
         assert "contents: write" not in text, version
 
 
-def test_v4150_is_the_only_semver_release_publisher() -> None:
-    current = _active_yaml_text((WORKFLOWS / "release-v4.15.0.yml").read_text(encoding="utf-8"))
+def test_current_skill_publisher_preserves_published_releases() -> None:
+    current = _active_yaml_text((WORKFLOWS / "ai-returns-release.yml").read_text(encoding="utf-8"))
+    version = (ROOT / "SOURCE_VERSION").read_text(encoding="utf-8").strip()
+    assert f"tag='v{version}'" in current
+    assert "workflow_run:" in current
     assert "branches: [main]" in current
-    assert "pull_request:" in current
-    assert "gh release create v4.15.0" in current
-    assert "--target \"$GITHUB_SHA\"" in current
+    assert "github.event.workflow_run.conclusion == 'success'" in current
+    assert "--target \"$VERIFIED_SHA\"" in current
     assert "permissions:\n  contents: read" in current
     assert "contents: write" in current
+    assert "--clobber" not in current
+    assert "gh release upload" not in current
+    assert 'if gh release view "$tag"' in current
+    assert 'git rev-parse "$tag^{commit}"' in current
+    assert 'cmp "$file" "$RUNNER_TEMP/released/$(basename "$file")"' in current

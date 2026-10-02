@@ -1,0 +1,43 @@
+name: Mesh Skill version contract
+on:
+  workflow_call:
+    inputs:
+      base_sha:
+        description: Exact base revision for version progression
+        required: false
+        type: string
+permissions:
+  contents: read
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: subject
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out the pinned verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: mkleinbe/mesh-ai-agent-cos-universe
+          ref: 6a0170c977b8e7f0b932fac5ac9716de0c92756d
+          path: governance
+          persist-credentials: false
+      - name: Verify complete Skill identity and version progression
+        working-directory: subject
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before }}
+          PYTHONOPTIMIZE: '0'
+          PYTHONNOUSERSITE: '1'
+        run: python3 -I ../governance/scripts/verify_skill_identity_v1.py
+      - name: Retain the candidate identity receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: skill-version-verification
+          path: ${{ runner.temp }}/skill-version-verification.json
+          if-no-files-found: error
+          retention-days: 30

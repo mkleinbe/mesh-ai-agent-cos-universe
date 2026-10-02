@@ -62,27 +62,44 @@ def irr(cash_flows: Sequence[float], *, tolerance: float = 1e-10, max_iterations
             "IRR is ambiguous for non-conventional cash flows with multiple sign changes; use an NPV profile or scenario analysis"
         )
 
-    low = -0.999999999
-    high = 1.0
-    low_value = npv(low, flows)
-    high_value = npv(high, flows)
+    tolerance = _number(tolerance, "tolerance")
+    if not 0 < tolerance <= 1:
+        raise FinanceInputError("tolerance must be greater than zero and no greater than one")
+    if isinstance(max_iterations, bool) or not isinstance(max_iterations, int) or not 1 <= max_iterations <= 10000:
+        raise FinanceInputError("max_iterations must be an integer from 1 through 10000")
+
+    # Log scaling preserves the NPV sign without overflowing at rates near -1.
+    terms = [(period, math.copysign(1, value), math.log(abs(value)))
+             for period, value in enumerate(flows) if value != 0]
+
+    def signed_value(rate: float) -> float:
+        log_rate = math.log1p(rate)
+        exponents = [magnitude - period * log_rate for period, _, magnitude in terms]
+        offset = max(exponents)
+        return math.fsum(sign * math.exp(exponent - offset)
+                         for (_, sign, _), exponent in zip(terms, exponents, strict=True))
+
+    low, high = -0.999999999, 1.0
+    low_value, high_value = signed_value(low), signed_value(high)
     while low_value * high_value > 0 and high < 1_000_000:
         high = high * 2 + 1
-        high_value = npv(high, flows)
+        high_value = signed_value(high)
+    if low_value == 0:
+        return low
+    if high_value == 0:
+        return high
     if low_value * high_value > 0:
         raise FinanceInputError("cash flows do not yield a bracketed IRR")
-
     for _ in range(max_iterations):
         midpoint = (low + high) / 2
-        midpoint_value = npv(midpoint, flows)
-        if abs(midpoint_value) <= tolerance or abs(high - low) <= tolerance:
+        midpoint_value = signed_value(midpoint)
+        if midpoint_value == 0 or abs(high - low) <= tolerance * max(1, abs(midpoint)):
             return midpoint
         if low_value * midpoint_value <= 0:
             high = midpoint
         else:
-            low = midpoint
-            low_value = midpoint_value
-    return (low + high) / 2
+            low, low_value = midpoint, midpoint_value
+    raise FinanceInputError("IRR did not converge within the iteration limit")
 
 
 def payback_period(cash_flows: Sequence[float], *, discount_rate: float | None = None) -> float | None:

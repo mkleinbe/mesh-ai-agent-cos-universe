@@ -1,0 +1,66 @@
+name: Materialize AI Returns CoS candidate
+on:
+  push:
+    branches: [codex/ai-returns-v1-1]
+    paths: [.github/workflows/ai-returns-materialize.yml]
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Recover the reviewed patch and verify the candidate
+        shell: python
+        run: |
+          import base64, hashlib, json, lzma, os, re, subprocess
+          from pathlib import Path, PurePosixPath
+          def git(*args, data=None):
+              return subprocess.check_output(['git','-c','core.hooksPath=/dev/null',*args], input=data, timeout=60).decode().strip()
+          parent=git('rev-parse','HEAD')
+          encoded=''.join(Path(f'.ai-returns-patch-{i}.b64').read_text().strip() for i in range(1,4))
+          raw=base64.b64decode(encoded,validate=True)
+          if hashlib.sha256(raw).hexdigest()!='7fd63b405ca0316328acb789458da08ecb43e7468fba9ae031d0811893f29803':
+              raise SystemExit('Transfer integrity failed')
+          decoder=lzma.LZMADecompressor(memlimit=256*1024*1024)
+          data=decoder.decompress(raw,max_length=2*1024*1024)
+          if not decoder.eof or decoder.unused_data: raise SystemExit('Invalid transfer boundary')
+          payload=json.loads(data)
+          if set(payload)!={'version','base_sha','main_sha','patch'} or payload['version']!=1: raise SystemExit('Invalid transfer contract')
+          if payload['base_sha']!='1033fcd4a59f28ce46f91d5e21c299737bfb731c' or git('rev-parse','origin/main')!=payload['main_sha']:
+              raise SystemExit('Baseline changed; reconciliation required')
+          patch=payload['patch'].encode()
+          for line in payload['patch'].splitlines():
+              if line.startswith('diff --git '):
+                  m=re.fullmatch(r'diff --git a/(\S+) b/(\S+)',line)
+                  if not m: raise SystemExit('Unsupported patch path')
+                  for name in m.groups():
+                      parts=PurePosixPath(name).parts
+                      if '..' in parts or '.git' in parts or name.startswith('/'): raise SystemExit('Unsafe patch path')
+              if line.startswith(('new file mode 120000','new file mode 160000')): raise SystemExit('Links and submodules forbidden')
+          git('read-tree','--reset','-u',payload['base_sha'])
+          subprocess.run(['git','apply','--check','--whitespace=error','-'],input=patch,check=True,timeout=60)
+          subprocess.run(['git','apply','--index','--whitespace=error','-'],input=patch,check=True,timeout=60)
+          subprocess.run(['python','-m','pip','install','pyyaml==6.0.3','jsonschema==4.25.1'],check=True,timeout=180)
+          subprocess.run(['python','-B','-m','unittest','discover','-s','tests/ai_returns','-v'],check=True,timeout=120)
+          subprocess.run(['python','scripts/check-chatgpt-packages.py'],check=True,timeout=120)
+          git('diff','--cached','--check')
+          tree=git('write-tree')
+          os.environ.update(GIT_AUTHOR_NAME='Mesh Engineering',GIT_AUTHOR_EMAIL='engineering@meshdigital.io',GIT_COMMITTER_NAME='Mesh Engineering',GIT_COMMITTER_EMAIL='engineering@meshdigital.io')
+          commit=git('commit-tree',tree,'-p',parent,'-m','feat: integrate AI Returns responsibilities and release controls v4.16.0')
+          Path(os.environ['RUNNER_TEMP'],'ai-returns-candidate-sha').write_text(commit)
+          print(json.dumps({'parent':parent,'candidate':commit,'tree':tree,'target':'codex/ai-returns-v1-1'}))
+      - name: Push verified candidate without overwriting concurrent work
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          gh auth setup-git
+          candidate="$(cat "$RUNNER_TEMP/ai-returns-candidate-sha")"
+          git push origin "$candidate:refs/heads/codex/ai-returns-v1-1"
